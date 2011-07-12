@@ -27,8 +27,6 @@ public:
 	virtual void	RenderOffscreenBuffers();
 	virtual void	RenderFullscreenBuffers();
 
-	void			RenderBloomPass(CFrameBuffer* apSources, CFrameBuffer* apTargets, bool bHorizontal);
-
 	const CFrameBuffer*	GetExplosionBuffer() { return &m_oExplosionBuffer; }
 	const CFrameBuffer*	GetVisibility1Buffer() { return &m_oVisibility1Buffer; }
 	const CFrameBuffer*	GetVisibility2Buffer() { return &m_oVisibility2Buffer; }

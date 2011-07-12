@@ -38,19 +38,19 @@ CLIENT_COMMAND(CONNECTION_UNDEFINED, ClientChatSay)
 		int iIntClient = iClient;
 		if (iIntClient < 0)
 		{
-			if (Game()->GetNumLocalTeams() > 0)
-				sName = Game()->GetLocalTeam(0)->GetTeamName();
+			if (Game()->GetNumLocalPlayers() > 0)
+				sName = Game()->GetLocalPlayer(0)->GetPlayerName();
 		}
 		else
 		{
-			for (size_t i = 0; i < Game()->GetNumTeams(); i++)
+			for (size_t i = 0; i < Game()->GetNumPlayers(); i++)
 			{
-				if (iIntClient < 0 && !Game()->GetTeam(i)->IsPlayerControlled())
+				if (iIntClient < 0 && !Game()->GetPlayer(i)->GetTeam()->IsPlayerControlled())
 					continue;
 
-				if (Game()->GetTeam(i)->GetClient() == iIntClient)
+				if (Game()->GetPlayer(i)->GetClient() == iIntClient)
 				{
-					sName = Game()->GetTeam(i)->GetTeamName();
+					sName = Game()->GetPlayer(i)->GetPlayerName();
 					break;
 				}
 			}

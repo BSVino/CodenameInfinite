@@ -24,6 +24,8 @@ CApplication* CApplication::s_pApplication = NULL;
 
 CApplication::CApplication(int argc, char** argv)
 {
+	ilInit();
+
 	TPortal_Startup();
 
 	s_pApplication = this;

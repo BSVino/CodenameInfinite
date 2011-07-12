@@ -33,6 +33,8 @@ set (TENGINE_SOURCES
 	game/networkedeffect.cpp
 	game/team.cpp
 	game/entities/counter.cpp
+	game/entities/character.cpp
+	game/entities/player.cpp
 
 	models/models.cpp
 	models/texturelibrary.cpp

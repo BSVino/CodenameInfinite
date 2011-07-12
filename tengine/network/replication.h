@@ -206,6 +206,8 @@ public:
 	void				SetEpsilon(float flEpsilon) { m_flEpsilon = flEpsilon; }
 	float				GetEpsilon() { return m_flEpsilon; }
 
+	bool				IsInitialized() { return m_bInitialized; }
+
 public:
 	// Everything below will be serialized, change serialization functions otherwise.
 	C					m_oVariable;

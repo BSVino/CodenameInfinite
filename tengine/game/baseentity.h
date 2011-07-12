@@ -5,6 +5,7 @@
 #include <EASTL/vector.h>
 
 #include <vector.h>
+#include <matrix.h>
 #include <common.h>
 
 #include <network/network.h>
@@ -312,6 +313,9 @@ public:
 	virtual Vector							GetRenderOrigin() const { return GetOrigin(); };
 	virtual EAngle							GetRenderAngles() const { return GetAngles(); };
 
+	const Matrix4x4&						GetTransformation() { return m_mTransformation; }
+	void									SetTransformation(const Matrix4x4& m);
+
 	virtual inline Vector					GetOrigin() const { return m_vecOrigin; };
 	void									SetOrigin(const Vector& vecOrigin);
 	virtual void							OnSetOrigin(const Vector& vecOrigin) {}
@@ -323,10 +327,12 @@ public:
 	void									SetVelocity(const Vector& vecVelocity) { m_vecVelocity = vecVelocity; };
 
 	inline EAngle							GetAngles() const { return m_angAngles; };
-	void									SetAngles(const EAngle& angAngles) { m_angAngles = angAngles; };
+	void									SetAngles(const EAngle& angAngles);
 
 	inline Vector							GetGravity() const { return m_vecGravity; };
 	void									SetGravity(Vector vecGravity) { m_vecGravity = vecGravity; };
+
+	virtual Vector							GetUpVector() { return Vector(0, 1, 0); };
 
 	bool									GetSimulated() const { return m_bSimulated; };
 	void									SetSimulated(bool bSimulated) { m_bSimulated = bSimulated; };
@@ -465,6 +471,7 @@ protected:
 	eastl::string							m_sName;
 	tstring									m_sClassName;
 
+	Matrix4x4								m_mTransformation;
 	CNetworkedVector						m_vecOrigin;
 	Vector									m_vecLastOrigin;
 	CNetworkedEAngle						m_angAngles;

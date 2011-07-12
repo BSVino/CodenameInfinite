@@ -15,12 +15,12 @@
 REGISTER_ENTITY(CGame);
 
 NETVAR_TABLE_BEGIN(CGame);
-	NETVAR_DEFINE_CALLBACK(CEntityHandle<CTeam>, m_ahTeams, &CGame::ClearLocalTeams);
+	NETVAR_DEFINE_CALLBACK(CEntityHandle<CPlayer>, m_ahPlayers, &CGame::ClearLocalPlayers);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CGame);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CTeam>, m_ahTeams);
-	SAVEDATA_DEFINE(CSaveData::DATA_OMIT, CEntityHandle<CTeam>, m_ahLocalTeams);	// Detected on the fly.
+	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlayer>, m_ahPlayers);
+	SAVEDATA_DEFINE(CSaveData::DATA_OMIT, CEntityHandle<CPlayer>, m_ahLocalPlayers);	// Detected on the fly.
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CGame);
@@ -34,8 +34,8 @@ CGame::CGame()
 
 CGame::~CGame()
 {
-	for (size_t i = 0; i < m_ahTeams.size(); i++)
-		m_ahTeams[i]->Delete();
+	for (size_t i = 0; i < m_ahPlayers.size(); i++)
+		m_ahPlayers[i]->Delete();
 }
 
 void CGame::Spawn()
@@ -59,11 +59,11 @@ void CGame::OnClientEnterGame(int iClient)
 
 void CGame::OnClientDisconnect(int iClient)
 {
-	for (size_t i = 0; i < m_ahTeams.size(); i++)
-	{
-		if (m_ahTeams[i]->GetClient() == iClient)
-		{
-			m_ahTeams[i]->SetClient(NETWORK_BOT);
+	for (size_t i = 0; i < m_ahPlayers.size(); i++)
+ 	{
+		if (m_ahPlayers[i]->GetClient() == iClient)
+ 		{
+			m_ahPlayers[i]->SetClient(NETWORK_BOT);
 			return;
 		}
 	}
@@ -75,47 +75,47 @@ void CGame::EnterGame()
 {
 }
 
-void CGame::AddTeam(CTeam* pTeam)
+void CGame::AddPlayer(CPlayer* pPlayer)
 {
-	if (!pTeam)
+	if (!pPlayer)
 		return;
 
 	// Prevent dupes
-	for (size_t i = 0; i < m_ahTeams.size(); i++)
+	for (size_t i = 0; i < m_ahPlayers.size(); i++)
 	{
-		if (pTeam == m_ahTeams[i])
+		if (pPlayer == m_ahPlayers[i])
 			return;
 	}
 
-	m_ahTeams.push_back(pTeam);
-	m_ahLocalTeams.clear();
+	m_ahPlayers.push_back(pPlayer);
+	m_ahLocalPlayers.clear();
 }
 
-void CGame::RemoveTeam(CTeam* pTeam)
+void CGame::RemovePlayer(CPlayer* pPlayer)
 {
-	if (!pTeam)
+	if (!pPlayer)
 		return;
 
-	for (size_t i = 0; i < m_ahTeams.size(); i++)
+	for (size_t i = 0; i < m_ahPlayers.size(); i++)
 	{
-		if (pTeam == m_ahTeams[i])
+		if (pPlayer == m_ahPlayers[i])
 		{
-			m_ahTeams.erase(i);
+			m_ahPlayers.erase(i);
 			break;
 		}
 	}
 
-	m_ahLocalTeams.clear();
+	m_ahLocalPlayers.clear();
 }
 
 void CGame::OnDeleted()
 {
-	m_ahLocalTeams.clear();
+	m_ahLocalPlayers.clear();
 }
 
 void CGame::OnDeleted(CBaseEntity* pEntity)
 {
-	RemoveTeam(dynamic_cast<CTeam*>(pEntity));
+	RemovePlayer(dynamic_cast<CPlayer*>(pEntity));
 }
 
 bool CGame::TraceLine(const Vector& s1, const Vector& s2, Vector& vecHit, CBaseEntity** pHit, int iCollisionGroup)
@@ -152,12 +152,12 @@ bool CGame::TraceLine(const Vector& s1, const Vector& s2, Vector& vecHit, CBaseE
 	return bHit;
 }
 
-CTeam* CGame::GetTeam(size_t i) const
+CPlayer* CGame::GetPlayer(size_t i) const
 {
-	if (i >= m_ahTeams.size())
+	if (i >= m_ahPlayers.size())
 		return NULL;
 
-	return m_ahTeams[i];
+	return m_ahPlayers[i];
 }
 
 bool CGame::IsTeamControlledByMe(const CTeam* pTeam)
@@ -165,59 +165,72 @@ bool CGame::IsTeamControlledByMe(const CTeam* pTeam)
 	if (!pTeam)
 		return false;
 
-	if (pTeam->IsPlayerControlled() && pTeam->GetClient() == GameServer()->GetClientIndex())
-		return true;
+	if (!pTeam->IsPlayerControlled())
+		return false;
+
+	for (size_t i = 0; i < GetNumLocalPlayers(); i++)
+	{
+		if (GetLocalPlayer(i)->GetTeam() == pTeam)
+			return true;
+	}
 
 	return false;
 }
 
-const eastl::vector<CEntityHandle<CTeam> >& CGame::GetLocalTeams()
+const eastl::vector<CEntityHandle<CPlayer> >& CGame::GetLocalPlayers()
 {
-	if (m_ahLocalTeams.size() == 0)
+	if (m_ahLocalPlayers.size() == 0)
 	{
-		// Force the const version so that accessing doesn't send it over the wire
-		const CNetworkedSTLVector<CEntityHandle<CTeam> >& ahTeams = m_ahTeams;
-
 		CGameServer* pGameServer = GameServer();
-		for (size_t i = 0; i < ahTeams.size(); i++)
+		for (size_t i = 0; i < m_ahPlayers.size(); i++)
 		{
-			if (!ahTeams[i])
+			if (!m_ahPlayers[i])
 				continue;
 
-			if (!ahTeams[i]->IsPlayerControlled())
-				continue;
-
-			if (ahTeams[i]->GetClient() == pGameServer->GetClientIndex())
-				m_ahLocalTeams.push_back(ahTeams[i]);
+			if (m_ahPlayers[i]->GetClient() == pGameServer->GetClientIndex())
+				m_ahLocalPlayers.push_back(m_ahPlayers[i]);
 		}
 	}
 
-	return m_ahLocalTeams;
+	return m_ahLocalPlayers;
 }
 
-size_t CGame::GetNumLocalTeams()
+size_t CGame::GetNumLocalPlayers()
 {
-	if (m_ahLocalTeams.size() == 0)
-		GetLocalTeams();
+	if (m_ahLocalPlayers.size() == 0)
+		GetLocalPlayers();
 
-	return m_ahLocalTeams.size();
+	return m_ahLocalPlayers.size();
 }
 
-CTeam* CGame::GetLocalTeam(size_t i)
+CPlayer* CGame::GetLocalPlayer(size_t i)
 {
-	if (m_ahLocalTeams.size() == 0)
-		GetLocalTeams();
+	if (m_ahLocalPlayers.size() == 0)
+		GetLocalPlayers();
 
-	return m_ahLocalTeams[i];
+	return m_ahLocalPlayers[i];
 }
 
-void CGame::ClearLocalTeams(CNetworkedVariableBase* pVariable)
+CPlayer* CGame::GetLocalPlayer()
+{
+	if (m_ahLocalPlayers.size() == 0)
+		GetLocalPlayers();
+
+	TAssert(m_ahLocalPlayers.size() == 1);
+
+	if (!m_ahLocalPlayers.size())
+		return NULL;
+
+	return m_ahLocalPlayers[0];
+}
+
+void CGame::ClearLocalPlayers(CNetworkedVariableBase* pVariable)
 {
 	CGame* pGame = Game();
 	if (!pGame)
 		return;
 
-	pGame->m_ahLocalTeams.clear();
+	pGame->m_ahLocalPlayers.clear();
 }
 
 CVar cheats("cheats", "off");

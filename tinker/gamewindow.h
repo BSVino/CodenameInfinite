@@ -43,6 +43,10 @@ protected:
 	class CRenderer*			m_pRenderer;
 
 	class CChatBox*				m_pChatBox;
+
+	bool						m_bHaveLastMouse;
+	int							m_iLastMouseX;
+	int							m_iLastMouseY;
 };
 
 inline CGameWindow* GameWindow()

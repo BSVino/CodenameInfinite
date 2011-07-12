@@ -972,36 +972,7 @@ void CDigitanksRenderer::RenderOffscreenBuffers()
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	if (ShouldUseFramebuffers() && ShouldUseShaders())
-	{
-		TPROF("Bloom");
-
-		// Use a bright-pass filter to catch only the bright areas of the image
-		GLuint iBrightPass = (GLuint)CShaderLibrary::GetBrightPassProgram();
-		UseProgram(iBrightPass);
-
-		GLint iSource = glGetUniformLocation(iBrightPass, "iSource");
-		glUniform1i(iSource, 0);
-
-		GLint flScale = glGetUniformLocation(iBrightPass, "flScale");
-		glUniform1f(flScale, (float)1/BLOOM_FILTERS);
-
-		GLint flBrightness = glGetUniformLocation(iBrightPass, "flBrightness");
-
-		for (size_t i = 0; i < BLOOM_FILTERS; i++)
-		{
-			glUniform1f(flBrightness, 0.6f - 0.1f*i);
-			RenderMapToBuffer(m_oSceneBuffer.m_iMap, &m_oBloom1Buffers[i]);
-		}
-
-		ClearProgram();
-
-		RenderBloomPass(m_oBloom1Buffers, m_oBloom2Buffers, true);
-		RenderBloomPass(m_oBloom2Buffers, m_oBloom1Buffers, false);
-
-		RenderBloomPass(m_oBloom1Buffers, m_oBloom2Buffers, true);
-		RenderBloomPass(m_oBloom2Buffers, m_oBloom1Buffers, false);
-	}
+	BaseClass::RenderOffscreenBuffers();
 }
 
 void CDigitanksRenderer::RenderFullscreenBuffers()
@@ -1011,13 +982,13 @@ void CDigitanksRenderer::RenderFullscreenBuffers()
 	if (!DigitanksGame())
 		return;
 
+	BaseClass::RenderFullscreenBuffers();
+
 	glEnable(GL_BLEND);
 
 	if (ShouldUseFramebuffers())
 	{
 		glBlendFunc(GL_ONE, GL_ONE);
-		for (size_t i = 0; i < BLOOM_FILTERS; i++)
-			RenderMapFullscreen(m_oBloom1Buffers[i].m_iMap);
 
 		float flBloomPulseLength = 0.5f;
 		float flGameTime = GameServer()->GetGameTime();
@@ -1045,40 +1016,6 @@ void CDigitanksRenderer::RenderFullscreenBuffers()
 #endif
 
 	glDisable(GL_BLEND);
-}
-
-#define KERNEL_SIZE   3
-//float aflKernel[KERNEL_SIZE] = { 5, 6, 5 };
-float aflKernel[KERNEL_SIZE] = { 0.3125f, 0.375f, 0.3125f };
-
-void CDigitanksRenderer::RenderBloomPass(CFrameBuffer* apSources, CFrameBuffer* apTargets, bool bHorizontal)
-{
-	GLuint iBlur = (GLuint)CShaderLibrary::GetBlurProgram();
-	UseProgram(iBlur);
-
-	GLint iSource = glGetUniformLocation(iBlur, "iSource");
-    glUniform1i(iSource, 0);
-
-	// Can't I get rid of this and hard code it into the shader?
-	GLint aflCoefficients = glGetUniformLocation(iBlur, "aflCoefficients");
-    glUniform1fv(aflCoefficients, KERNEL_SIZE, aflKernel);
-
-    GLint flOffsetX = glGetUniformLocation(iBlur, "flOffsetX");
-    glUniform1f(flOffsetX, 0);
-
-	GLint flOffset = glGetUniformLocation(iBlur, "flOffsetY");
-    glUniform1f(flOffset, 0);
-    if (bHorizontal)
-        flOffset = glGetUniformLocation(iBlur, "flOffsetX");
-
-    // Perform the blurring.
-    for (size_t i = 0; i < BLOOM_FILTERS; i++)
-    {
-		glUniform1f(flOffset, 1.2f / apSources[i].m_iWidth);
-		RenderMapToBuffer(apSources[i].m_iMap, &apTargets[i]);
-    }
-
-	ClearProgram();
 }
 
 void CDigitanksRenderer::BloomPulse()

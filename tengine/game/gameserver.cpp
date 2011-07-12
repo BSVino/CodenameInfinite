@@ -343,17 +343,17 @@ void CGameServer::ClientDisconnect(int iClient)
 
 void CGameServer::SetClientNickname(int iClient, const tstring& sNickname)
 {
-	if (iClient == GetClientIndex() && Game()->GetNumLocalTeams())
+	if (iClient == GetClientIndex() && Game()->GetNumLocalPlayers())
 	{
-		Game()->GetLocalTeam(0)->SetTeamName(sNickname);
+		Game()->GetLocalPlayer(0)->SetPlayerName(sNickname);
 		return;
 	}
 
-	for (size_t i = 0; i < Game()->GetNumTeams(); i++)
+	for (size_t i = 0; i < Game()->GetNumPlayers(); i++)
 	{
-		if (Game()->GetTeam(i)->GetClient() == iClient)
+		if (Game()->GetPlayer(i)->GetClient() == iClient)
 		{
-			Game()->GetTeam(i)->SetTeamName(sNickname);
+			Game()->GetPlayer(i)->SetPlayerName(sNickname);
 			return;
 		}
 	}
@@ -536,6 +536,7 @@ void CGameServer::Render()
 
 	GameWindow()->GetRenderer()->SetCameraPosition(m_pCamera->GetCameraPosition());
 	GameWindow()->GetRenderer()->SetCameraTarget(m_pCamera->GetCameraTarget());
+	GameWindow()->GetRenderer()->SetCameraUp(m_pCamera->GetCameraUp());
 	GameWindow()->GetRenderer()->SetCameraFOV(m_pCamera->GetCameraFOV());
 	GameWindow()->GetRenderer()->SetCameraNear(m_pCamera->GetCameraNear());
 	GameWindow()->GetRenderer()->SetCameraFar(m_pCamera->GetCameraFar());
@@ -853,7 +854,7 @@ void CGameServer::UpdateValue(int iConnection, CNetworkParameters* p)
 void CGameServer::ClientInfo(int iConnection, CNetworkParameters* p)
 {
 	if (m_iClient != p->i1)
-		CGame::ClearLocalTeams(NULL);
+		CGame::ClearLocalPlayers(NULL);
 
 	m_iClient = p->i1;
 	float flNewGameTime = p->fl2;
@@ -887,20 +888,18 @@ void ShowStatus(class CCommand* pCommand, eastl::vector<tstring>& asTokens, cons
 	TMsg(eastl::string("Level: ") + CVar::GetCVarValue("game_level") + "\n");
 	TMsg(convertstring<tchar, char>(sprintf(tstring("Clients: %d Entities: %d/%d\n"), GameNetwork()->GetClientsConnected(), CBaseEntity::GetNumEntities(), GameServer()->GetMaxEntities())));
 
-	for (size_t i = 0; i < Game()->GetNumTeams(); i++)
+	for (size_t i = 0; i < Game()->GetNumPlayers(); i++)
 	{
-		const CTeam* pTeam = Game()->GetTeam(i);
-		if (!pTeam)
+		const CPlayer* pPlayer = Game()->GetPlayer(i);
+		if (!pPlayer)
 			continue;
 
-		if (!pTeam->IsPlayerControlled())
-			TMsg("Bot: ");
-		else if (pTeam->GetClient() < 0)
+		if (pPlayer->GetClient() < 0)
 			TMsg("Local: ");
 		else
-			TMsg(convertstring<tchar, char>(sprintf(tstring("%d: "), pTeam->GetClient())));
+			TMsg(convertstring<tchar, char>(sprintf(tstring("%d: "), pPlayer->GetClient())));
 
-		TMsg(pTeam->GetTeamName());
+		TMsg(pPlayer->GetPlayerName());
 
 		TMsg("\n");
 	}

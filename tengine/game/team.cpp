@@ -11,7 +11,6 @@ NETVAR_TABLE_BEGIN(CTeam);
 	NETVAR_DEFINE(Color, m_clrTeam);
 	NETVAR_DEFINE(CEntityHandle<CBaseEntity>, m_ahMembers);
 	NETVAR_DEFINE(bool, m_bClientControlled);
-	NETVAR_DEFINE_CALLBACK(int, m_iClient, &CGame::ClearLocalTeams);
 	NETVAR_DEFINE(tstring, m_sName);
 NETVAR_TABLE_END();
 
@@ -20,8 +19,6 @@ SAVEDATA_TABLE_BEGIN(CTeam);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, Color, m_clrTeam);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CBaseEntity>, m_ahMembers);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, bool, m_bClientControlled);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, int, m_iClient);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iInstallID);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, tstring, m_sName);
 SAVEDATA_TABLE_END();
 
@@ -32,7 +29,6 @@ CTeam::CTeam()
 {
 	m_bClientControlled = false;
 	m_bHumanPlayable = true;
-	m_iClient = NETWORK_LOCAL;
 }
 
 CTeam::~CTeam()
@@ -46,9 +42,6 @@ CTeam::~CTeam()
 
 bool CTeam::OnUnserialize(std::istream& i)
 {
-	if (IsPlayerControlled() && m_iClient >= 0)
-		SetClient(NETWORK_BOT);
-
 	return BaseClass::OnUnserialize(i);
 }
 
@@ -99,16 +92,6 @@ void CTeam::OnDeleted(CBaseEntity* pEntity)
 			break;
 		}
 	}
-}
-
-void CTeam::SetClient(int iClient)
-{
-	m_iClient = iClient;
-
-	if (iClient == NETWORK_BOT)
-		m_bClientControlled = false;
-	else
-		m_bClientControlled = true;
 }
 
 CBaseEntity* CTeam::GetMember(size_t i) const

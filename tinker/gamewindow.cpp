@@ -7,10 +7,12 @@
 #include <glgui/glgui.h>
 #include <game/camera.h>
 #include <renderer/renderer.h>
+#include <tengine/game/game.h>
 
 CGameWindow::CGameWindow(int argc, char** argv)
 	: CApplication(argc, argv)
 {
+	m_bHaveLastMouse = false;
 }
 
 void CGameWindow::OpenWindow()
@@ -110,6 +112,15 @@ void CGameWindow::KeyPress(int c)
 
 	if (GameServer() && GameServer()->GetCamera())
 		GameServer()->GetCamera()->KeyDown(c);
+
+	if (Game())
+	{
+		for (size_t i = 0; i < Game()->GetNumLocalPlayers(); i++)
+		{
+			CPlayer* pPlayer = Game()->GetLocalPlayer(i);
+			pPlayer->KeyPress(c);
+		}
+	}
 }
 
 void CGameWindow::KeyRelease(int c)
@@ -118,6 +129,15 @@ void CGameWindow::KeyRelease(int c)
 
 	if (GameServer() && GameServer()->GetCamera())
 		GameServer()->GetCamera()->KeyUp(c);
+
+	if (Game())
+	{
+		for (size_t i = 0; i < Game()->GetNumLocalPlayers(); i++)
+		{
+			CPlayer* pPlayer = Game()->GetLocalPlayer(i);
+			pPlayer->KeyRelease(c);
+		}
+	}
 }
 
 void CGameWindow::MouseMotion(int x, int y)
@@ -126,6 +146,22 @@ void CGameWindow::MouseMotion(int x, int y)
 
 	if (GameServer() && GameServer()->GetCamera())
 		GameServer()->GetCamera()->MouseInput(x, y);
+
+	if (Game() && m_bHaveLastMouse)
+	{
+		int dx = x - m_iLastMouseX;
+		int dy = y - m_iLastMouseY;
+
+		for (size_t i = 0; i < Game()->GetNumLocalPlayers(); i++)
+		{
+			CPlayer* pPlayer = Game()->GetLocalPlayer(i);
+			pPlayer->MouseMotion(dx, dy);
+		}
+	}
+
+	m_bHaveLastMouse = true;
+	m_iLastMouseX = x;
+	m_iLastMouseY = y;
 }
 
 void CGameWindow::MouseInput(int iButton, int iState)

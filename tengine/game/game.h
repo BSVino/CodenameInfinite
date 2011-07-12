@@ -7,7 +7,7 @@
 
 #include "baseentity.h"
 #include "gameserver.h"
-#include "team.h"
+#include "entities/player.h"
 
 class CGame : public CBaseEntity, public INetworkListener
 {
@@ -28,8 +28,8 @@ public:
 
 	virtual void								EnterGame();
 
-	void										AddTeam(CTeam* pTeam);
-	void										RemoveTeam(CTeam* pTeam);
+	void										AddPlayer(CPlayer* pPlayer);
+	void										RemovePlayer(CPlayer* pPlayer);
 
 	virtual void								OnDeleted();
 
@@ -38,22 +38,23 @@ public:
 
 	virtual bool								TraceLine(const Vector& s1, const Vector& s2, Vector& vecHit, CBaseEntity** pHit, int iCollisionGroup = 0);
 
-	size_t										GetNumTeams() const { return m_ahTeams.size(); };
-	CTeam*										GetTeam(size_t i) const;
-	bool										IsTeamControlledByMe(const CTeam* pTeam);
+	size_t										GetNumPlayers() const { return m_ahPlayers.size(); };
+	CPlayer*									GetPlayer(size_t i) const;
+	bool										IsTeamControlledByMe(const class CTeam* pTeam);
 
-	const eastl::vector<CEntityHandle<CTeam> >&	GetLocalTeams();
-	size_t										GetNumLocalTeams();
-	CTeam*										GetLocalTeam(size_t i);
+	const eastl::vector<CEntityHandle<CPlayer> >&	GetLocalPlayers();
+	size_t										GetNumLocalPlayers();
+	CPlayer*									GetLocalPlayer(size_t i);
+	CPlayer*									GetLocalPlayer();
 
-	static void									ClearLocalTeams(CNetworkedVariableBase* pVariable);
+	static void									ClearLocalPlayers(CNetworkedVariableBase* pVariable);
 
 	virtual bool								AllowCheats();
 
 protected:
-	CNetworkedSTLVector<CEntityHandle<CTeam> >	m_ahTeams;
+	CNetworkedSTLVector<CEntityHandle<CPlayer> >	m_ahPlayers;
 
-	eastl::vector<CEntityHandle<CTeam> >		m_ahLocalTeams;
+	eastl::vector<CEntityHandle<CPlayer> >		m_ahLocalPlayers;
 };
 
 inline class CGame* Game()

@@ -159,15 +159,18 @@ public:
 	virtual void	DrawBackground();
 	virtual void	StartRendering();
 	virtual void	FinishRendering();
-	virtual void	RenderOffscreenBuffers() {};
-	virtual void	RenderFullscreenBuffers() {};
+	virtual void	RenderOffscreenBuffers();
+	virtual void	RenderFullscreenBuffers();
 	virtual void	SetupSceneShader() {};
+
+	void			RenderBloomPass(CFrameBuffer* apSources, CFrameBuffer* apTargets, bool bHorizontal);
 
 	void			RenderMapFullscreen(size_t iMap);
 	void			RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer);
 
 	void			SetCameraPosition(Vector vecCameraPosition) { m_vecCameraPosition = vecCameraPosition; };
 	void			SetCameraTarget(Vector vecCameraTarget) { m_vecCameraTarget = vecCameraTarget; };
+	void			SetCameraUp(Vector vecCameraUp) { m_vecCameraUp = vecCameraUp; };
 	void			SetCameraFOV(float flFOV) { m_flCameraFOV = flFOV; };
 	void			SetCameraNear(float flNear) { m_flCameraNear = flNear; };
 	void			SetCameraFar(float flFar) { m_flCameraFar = flFar; };
@@ -228,6 +231,7 @@ protected:
 
 	Vector			m_vecCameraPosition;
 	Vector			m_vecCameraTarget;
+	Vector			m_vecCameraUp;
 	float			m_flCameraFOV;
 	float			m_flCameraNear;
 	float			m_flCameraFar;

@@ -45,8 +45,8 @@ public:
 	// Add a transformation
 	Matrix4x4	AddScale(const Vector& vecScale);
 
-	Vector		GetTranslation();
-	EAngle		GetAngles();
+	Vector		GetTranslation() const;
+	EAngle		GetAngles() const;
 
 	// Transform a vector
 	Vector		operator*(const Vector& v) const;
@@ -59,7 +59,6 @@ public:
 	void		InvertTR();
 
 	float		Trace();
-	Vector		RotationAxis();
 
 	operator float*()
 	{
@@ -208,14 +207,14 @@ inline void Matrix4x4::SetRotation(const EAngle& angDir)
 	float cr = cos(angDir.r * M_PI/180);
 
 	m[0][0] = cy*cp;
-	m[0][1] = -sr*sy*cp-cr*sp;
-	m[0][2] = -cr*sy*cp+sr*sp;
-	m[1][0] = cy*sp;
-	m[1][1] = -sr*sy*sp+cr*cp;
-	m[1][2] = -cr*sy*sp-sr*cp;
-	m[2][0] = sy;
-	m[2][1] = sr*cy;
-	m[2][2] = cr*cy;
+	m[0][1] = sr*sy-sp*cr*cy;
+	m[0][2] = sp*sr*cy+cr*sy;
+	m[1][0] = sp;
+	m[1][1] = cp*cr;
+	m[1][2] = -cp*sr;
+	m[2][0] = sy*cp;
+	m[2][1] = -sp*cr*sy-sr*cy;
+	m[2][2] = -cr*cy+sy*sp*sr;
 }
 
 inline void Matrix4x4::SetRotation(float flAngle, const Vector& v)
@@ -344,12 +343,12 @@ inline Matrix4x4 Matrix4x4::AddScale(const Vector& vecScale)
 	return *this;
 }
 
-inline Vector Matrix4x4::GetTranslation()
+inline Vector Matrix4x4::GetTranslation() const
 {
 	return Vector(m[0][3], m[1][3], m[2][3]);
 }
 
-inline EAngle Matrix4x4::GetAngles()
+inline EAngle Matrix4x4::GetAngles() const
 {
 	// Clamp to [-1, 1] looping
 	float flPitch = fmod(m[0][1], 2);
@@ -416,11 +415,6 @@ inline void Matrix4x4::InvertTR()
 inline float Matrix4x4::Trace()
 {
 	return m[0][0] + m[1][1] + m[2][2];
-}
-
-inline Vector Matrix4x4::RotationAxis()
-{
-	return Vector(m[2][1] - m[1][2], m[0][2] - m[2][0], m[1][0] + m[0][1]).Normalized();
 }
 
 #endif

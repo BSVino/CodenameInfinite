@@ -61,6 +61,11 @@ Vector CCamera::GetCameraTarget()
 	return Vector(0,0,0);
 }
 
+Vector CCamera::GetCameraUp()
+{
+	return Vector(0, 1, 0);
+}
+
 float CCamera::GetCameraFOV()
 {
 	return 44.0f;
