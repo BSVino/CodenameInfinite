@@ -63,9 +63,9 @@ void CCharacter::Move(movetype_t eMoveType)
 		m_vecGoalVelocity.x = 1;
 	else if (eMoveType == MOVE_BACKWARD)
 		m_vecGoalVelocity.x = -1;
-	else if (eMoveType == MOVE_LEFT)
-		m_vecGoalVelocity.z = 1;
 	else if (eMoveType == MOVE_RIGHT)
+		m_vecGoalVelocity.z = 1;
+	else if (eMoveType == MOVE_LEFT)
 		m_vecGoalVelocity.z = -1;
 }
 
@@ -75,9 +75,9 @@ void CCharacter::StopMove(movetype_t eMoveType)
 		m_vecGoalVelocity.x = 0;
 	else if (eMoveType == MOVE_BACKWARD && m_vecGoalVelocity.x < 0)
 		m_vecGoalVelocity.x = 0;
-	else if (eMoveType == MOVE_LEFT && m_vecGoalVelocity.z > 0)
+	else if (eMoveType == MOVE_LEFT && m_vecGoalVelocity.z < 0)
 		m_vecGoalVelocity.z = 0;
-	else if (eMoveType == MOVE_RIGHT && m_vecGoalVelocity.z < 0)
+	else if (eMoveType == MOVE_RIGHT && m_vecGoalVelocity.z > 0)
 		m_vecGoalVelocity.z = 0;
 }
 

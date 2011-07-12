@@ -6,6 +6,7 @@
 
 #include <vector.h>
 #include <matrix.h>
+#include <quaternion.h>
 #include <common.h>
 
 #include <network/network.h>
@@ -316,6 +317,9 @@ public:
 	const Matrix4x4&						GetTransformation() { return m_mTransformation; }
 	void									SetTransformation(const Matrix4x4& m);
 
+	const Quaternion&						GetRotation() { return m_qRotation; }
+	void									SetRotation(const Quaternion& q);
+
 	virtual inline Vector					GetOrigin() const { return m_vecOrigin; };
 	void									SetOrigin(const Vector& vecOrigin);
 	virtual void							OnSetOrigin(const Vector& vecOrigin) {}
@@ -472,6 +476,7 @@ protected:
 	tstring									m_sClassName;
 
 	Matrix4x4								m_mTransformation;
+	Quaternion								m_qRotation;
 	CNetworkedVector						m_vecOrigin;
 	Vector									m_vecLastOrigin;
 	CNetworkedEAngle						m_angAngles;

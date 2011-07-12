@@ -48,8 +48,8 @@ void CSPWindow::SetupSP()
 	Game()->AddPlayer(pPlayer);
 
 	CSPCharacter* pCharacter = GameServer()->Create<CSPCharacter>("CSPCharacter");
-	pCharacter->SetOrigin(Vector(100, 0, 0));
-	pCharacter->SetAngles(EAngle(0, 180, 0));
+	pCharacter->SetOrigin(Vector(1, 100, 0));
+	pCharacter->SetAngles(EAngle(-65, 0, 0));
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");

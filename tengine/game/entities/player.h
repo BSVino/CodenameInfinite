@@ -13,9 +13,9 @@ public:
 									CPlayer();
 
 public:
-	void							MouseMotion(int x, int y);
-	void							KeyPress(int c);
-	void							KeyRelease(int c);
+	virtual void					MouseMotion(int x, int y);
+	virtual void					KeyPress(int c);
+	virtual void					KeyRelease(int c);
 
 	void							SetCharacter(CCharacter* pCharacter);
 	CCharacter*						GetCharacter() const;

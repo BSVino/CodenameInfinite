@@ -8,6 +8,7 @@ class CSPPlayer : public CPlayer
 	REGISTER_ENTITY_CLASS(CSPPlayer, CPlayer);
 
 public:
+	virtual void					MouseMotion(int x, int y);
 };
 
 #endif

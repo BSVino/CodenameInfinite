@@ -45,6 +45,7 @@ SAVEDATA_TABLE_BEGIN(CBaseEntity);
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, eastl::string, m_sName);
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sClassName);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Matrix4x4, m_mTransformation);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Quaternion, m_qRotation);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, Vector, m_vecOrigin);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecLastOrigin);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, EAngle, m_angAngles);
@@ -156,6 +157,15 @@ void CBaseEntity::SetTransformation(const Matrix4x4& m)
 	SetAngles(m.GetAngles());
 
 	m_mTransformation = m;
+	m_qRotation = Quaternion(m);
+}
+
+void CBaseEntity::SetRotation(const Quaternion& q)
+{
+	SetAngles(q.GetAngles());
+	m_mTransformation.SetRotation(q);
+
+	m_qRotation = q;
 }
 
 void CBaseEntity::SetOrigin(const Vector& vecOrigin)
@@ -177,6 +187,7 @@ void CBaseEntity::SetAngles(const EAngle& angAngles)
 	m_angAngles = angAngles;
 
 	m_mTransformation.SetRotation(angAngles);
+	m_qRotation.SetAngles(angAngles);
 }
 
 CBaseEntity* CBaseEntity::GetEntity(size_t iHandle)
