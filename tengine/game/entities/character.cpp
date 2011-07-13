@@ -48,7 +48,7 @@ void CCharacter::Think()
 		Matrix4x4 m = GetTransformation();
 		m.SetTranslation(Vector(0,0,0));
 
-		Vector vecMove = m_vecMoveVelocity * (GameServer()->GetFrameTime() * 800);
+		Vector vecMove = m_vecMoveVelocity * (GameServer()->GetFrameTime() * CharacterSpeed());
 		vecVelocity = m * vecMove;
 
 		SetVelocity(vecVelocity);

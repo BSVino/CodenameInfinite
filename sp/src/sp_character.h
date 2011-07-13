@@ -16,6 +16,8 @@ public:
 
 	void						LockViewToPlanet();
 
+	virtual float				CharacterSpeed();
+
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 };

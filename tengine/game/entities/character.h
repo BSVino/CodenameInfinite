@@ -27,6 +27,8 @@ public:
 	void							SetControllingPlayer(CPlayer* pCharacter);
 	CPlayer*						GetControllingPlayer() const;
 
+	virtual float					CharacterSpeed() { return 80; }
+
 protected:
 	CNetworkedHandle<CPlayer>		m_hControllingPlayer;
 

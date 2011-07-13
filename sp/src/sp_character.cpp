@@ -98,3 +98,8 @@ void CSPCharacter::LockViewToPlanet()
 	angLockedRotation.r = mLockedRotation.GetAngles().r;
 	SetAngles(angLockedRotation);
 }
+
+float CSPCharacter::CharacterSpeed()
+{
+	return 80000;
+}

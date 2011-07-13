@@ -48,12 +48,12 @@ void CSPWindow::SetupSP()
 	Game()->AddPlayer(pPlayer);
 
 	CSPCharacter* pCharacter = GameServer()->Create<CSPCharacter>("CSPCharacter");
-	pCharacter->SetOrigin(Vector(1, 100, 0));
-	pCharacter->SetAngles(EAngle(-65, 0, 0));
+	pCharacter->SetOrigin(Vector(10000, 0, 0));
+	pCharacter->SetAngles(EAngle(0, 180, 0));
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetRadius(63.78100f);	// Radius of Earth, 6378.1 km
+	pPlanet->SetRadius(6378.100f);	// Radius of Earth, 6378.1 km
 	pPlanet->SetOrigin(Vector(0, 0, 0));
 }
 
