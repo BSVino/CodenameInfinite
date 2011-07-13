@@ -483,6 +483,9 @@ void CGameServer::Simulate()
 		for (float flCurrentSimulationTime = m_flSimulationTime; flCurrentSimulationTime < m_flGameTime; flCurrentSimulationTime += flSimulationFrameTime)
 		{
 			Vector vecVelocity = pEntity->GetVelocity();
+			if (vecVelocity.LengthSqr() == 0)
+				continue;
+
 			pEntity->SetOrigin(pEntity->GetOrigin() + vecVelocity * flSimulationFrameTime);
 			pEntity->SetVelocity(vecVelocity + pEntity->GetGravity() * flSimulationFrameTime);
 		}

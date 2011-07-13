@@ -18,7 +18,6 @@ public:
 	virtual void	DrawBackground() {};	// Skybox instead
 	virtual void	StartRendering();
 	virtual void	RenderSkybox();
-	virtual void	RenderGround();
 
 protected:
 	size_t			m_iSkyboxFT;

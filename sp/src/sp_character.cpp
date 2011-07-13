@@ -10,42 +10,80 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlanet>, m_hNearestPlanet);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
 INPUTS_TABLE_END();
 
-CPlanet* CSPCharacter::GetNearestPlanet()
+CSPCharacter::CSPCharacter()
 {
-	if (m_hNearestPlanet == NULL)
+	m_flNextPlanetCheck = 0;
+}
+
+CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
+{
+	if (GameServer()->GetGameTime() > m_flNextPlanetCheck)
 	{
-		float flNearestDistance;
-		for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
-		{
-			CPlanet* pPlanet = dynamic_cast<CPlanet*>(CBaseEntity::GetEntity(i));
-			if (!pPlanet)
-				continue;
+		CPlanet* pNearestPlanet = FindNearestPlanet();
 
-			float flDistance = pPlanet->Distance(GetOrigin());
-			if (flDistance > 10000)
-				continue;
+		float flDistance = pNearestPlanet->Distance(GetOrigin()) - pNearestPlanet->GetRadius();
+		if (flDistance < pNearestPlanet->GetAtmosphereThickness())
+			m_hNearestPlanet = pNearestPlanet;
+		else
+			m_hNearestPlanet = NULL;
 
-			if (m_hNearestPlanet == NULL)
-			{
-				m_hNearestPlanet = pPlanet;
-				flNearestDistance = flDistance;
-				continue;
-			}
+		m_flNextPlanetCheck = GameServer()->GetGameTime() + 0.3f;
+	}
 
-			if (flDistance > flNearestDistance)
-				continue;
+	if (eFindPlanet != FINDPLANET_INATMOSPHERE)
+	{
+		if (m_hNearestPlanet != NULL)
+			return m_hNearestPlanet;
 
-			m_hNearestPlanet = pPlanet;
-			flNearestDistance = flDistance;
-		}
+		CPlanet* pNearestPlanet = FindNearestPlanet();
+		if (eFindPlanet == FINDPLANET_ANY)
+			return pNearestPlanet;
+
+		float flDistance = pNearestPlanet->Distance(GetOrigin()) - pNearestPlanet->GetRadius();
+		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit())
+			return NULL;
+		else
+			return pNearestPlanet;
 	}
 
 	return m_hNearestPlanet;
+}
+
+CPlanet* CSPCharacter::FindNearestPlanet()
+{
+	CPlanet* pNearestPlanet = NULL;
+	float flNearestDistance;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CPlanet* pPlanet = dynamic_cast<CPlanet*>(CBaseEntity::GetEntity(i));
+		if (!pPlanet)
+			continue;
+
+		float flDistance = pPlanet->Distance(GetOrigin());
+		flDistance -= pPlanet->GetRadius();
+
+		if (pNearestPlanet == NULL)
+		{
+			pNearestPlanet = pPlanet;
+			flNearestDistance = flDistance;
+			continue;
+		}
+
+		if (flDistance > flNearestDistance)
+			continue;
+
+		pNearestPlanet = pPlanet;
+		flNearestDistance = flDistance;
+	}
+
+	return pNearestPlanet;
 }
 
 Vector CSPCharacter::GetUpVector()
@@ -99,7 +137,30 @@ void CSPCharacter::LockViewToPlanet()
 	SetAngles(angLockedRotation);
 }
 
+void CSPCharacter::StandOnNearestPlanet()
+{
+	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_ANY);
+	if (!pPlanet)
+		return;
+
+	Vector vecPlanetOrigin = pPlanet->GetOrigin();
+	Vector vecCharacterDirection = (GetOrigin() - pPlanet->GetOrigin()).Normalized();
+
+	SetOrigin(vecPlanetOrigin + vecCharacterDirection*pPlanet->GetRadius());
+}
+
+float CSPCharacter::EyeHeight()
+{
+	// 180 centimeters
+	return 0.00018f;
+}
+
 float CSPCharacter::CharacterSpeed()
 {
-	return 80000;
+	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
+
+	if (!pPlanet)
+		return 80000;
+
+	return RemapValClamped(pPlanet->Distance(GetOrigin()), pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness(), pPlanet->GetRadius()+pPlanet->GetCloseOrbit(), 200.0f, 80000);
 }

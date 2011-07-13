@@ -14,7 +14,13 @@ Vector CSPCamera::GetCameraPosition()
 	if (m_bFreeMode)
 		return BaseClass::GetCameraPosition();
 
-	return Game()->GetLocalPlayer()->GetCharacter()->GetOrigin();
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	if (!pCharacter)
+		return Vector(10,0,0);
+
+	Vector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
+
+	return Game()->GetLocalPlayer()->GetCharacter()->GetOrigin() + vecEyeHeight;
 }
 
 Vector CSPCamera::GetCameraTarget()
@@ -27,14 +33,15 @@ Vector CSPCamera::GetCameraTarget()
 	if (!pCharacter)
 		return Vector(0,0,0);
 
-	return pCharacter->GetOrigin() + Vector(pCharacter->GetTransformation().GetColumn(0));
+	Vector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
+
+	return pCharacter->GetOrigin() + vecEyeHeight + Vector(pCharacter->GetTransformation().GetColumn(0));
 }
 
 Vector CSPCamera::GetCameraUp()
 {
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter)
-//		return pCharacter->GetUpVector();
 		return Vector(pCharacter->GetTransformation().GetColumn(1));
 
 	return BaseClass::GetCameraUp();

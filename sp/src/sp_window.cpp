@@ -53,8 +53,11 @@ void CSPWindow::SetupSP()
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetRadius(6378.100f);	// Radius of Earth, 6378.1 km
 	pPlanet->SetOrigin(Vector(0, 0, 0));
+	pPlanet->SetRadius(6378.100f);			// Radius of Earth, 6378.1 km
+	pPlanet->SetAtmosphereThickness(50);	// Atmosphere of Earth, about 50m until the end of the stratosphere
+
+	pCharacter->StandOnNearestPlanet();
 }
 
 void CSPWindow::RenderLoading()

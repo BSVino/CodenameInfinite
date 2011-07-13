@@ -45,8 +45,6 @@ void CSPRenderer::StartRendering()
 	BaseClass::StartRendering();
 
 	RenderSkybox();
-
-	RenderGround();
 }
 
 void CSPRenderer::RenderSkybox()
@@ -139,95 +137,4 @@ void CSPRenderer::RenderSkybox()
 		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
 
 	glClear(GL_DEPTH_BUFFER_BIT);
-}
-
-void CSPRenderer::RenderGround(void)
-{
-#ifdef _DEBUG
-	glDisable(GL_LIGHTING);
-	glDisable(GL_TEXTURE_2D);
-
-	glPushMatrix();
-
-	int i;
-
-	for (i = 0; i < 20; i++)
-	{
-		Vector vecStartX(-100, 0, -100);
-		Vector vecEndX(-100, 0, 100);
-		Vector vecStartZ(-100, 0, -100);
-		Vector vecEndZ(100, 0, -100);
-
-		for (int j = 0; j <= 20; j++)
-		{
-			GLfloat aflBorderLineBright[3] = { 0.7f, 0.7f, 0.7f };
-			GLfloat aflBorderLineDarker[3] = { 0.6f, 0.6f, 0.6f };
-			GLfloat aflInsideLineBright[3] = { 0.5f, 0.5f, 0.5f };
-			GLfloat aflInsideLineDarker[3] = { 0.4f, 0.4f, 0.4f };
-
-			glBegin(GL_LINES);
-
-				if (j == 0 || j == 20 || j == 10)
-					glColor3fv(aflBorderLineBright);
-				else
-					glColor3fv(aflInsideLineBright);
-
-				glVertex3fv(vecStartX);
-
-				if (j == 0 || j == 20 || j == 10)
-					glColor3fv(aflBorderLineDarker);
-				else
-					glColor3fv(aflInsideLineDarker);
-
-				if (j == 10)
-					glVertex3fv(Vector(0, 0, 0));
-				else
-					glVertex3fv(vecEndX);
-
-				if (j == 10)
-				{
-					glColor3f(0.7f, 0.2f, 0.2f);
-					glVertex3fv(Vector(0, 0, 0));
-					glVertex3fv(Vector(100, 0, 0));
-				}
-
-			glEnd();
-
-			glBegin(GL_LINES);
-
-				if (j == 0 || j == 20 || j == 10)
-					glColor3fv(aflBorderLineBright);
-				else
-					glColor3fv(aflInsideLineBright);
-
-				glVertex3fv(vecStartZ);
-
-				if (j == 0 || j == 20 || j == 10)
-					glColor3fv(aflBorderLineDarker);
-				else
-					glColor3fv(aflInsideLineDarker);
-
-				if (j == 10)
-					glVertex3fv(Vector(0, 0, 0));
-				else
-					glVertex3fv(vecEndZ);
-
-				if (j == 10)
-				{
-					glColor3f(0.2f, 0.2f, 0.7f);
-					glVertex3fv(Vector(0, 0, 0));
-					glVertex3fv(Vector(0, 0, 100));
-				}
-
-			glEnd();
-
-			vecStartX.x += 10;
-			vecEndX.x += 10;
-			vecStartZ.z += 10;
-			vecEndZ.z += 10;
-		}
-	}
-
-	glPopMatrix();
-#endif
 }

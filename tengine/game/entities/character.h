@@ -27,6 +27,7 @@ public:
 	void							SetControllingPlayer(CPlayer* pCharacter);
 	CPlayer*						GetControllingPlayer() const;
 
+	virtual float					EyeHeight() { return 180; }
 	virtual float					CharacterSpeed() { return 80; }
 
 protected:

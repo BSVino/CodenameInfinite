@@ -21,8 +21,14 @@ public:
 	void						SetRadius(float flRadius) { m_flRadius = flRadius; }
 	float						GetRadius() { return m_flRadius; }
 
+	void						SetAtmosphereThickness(float flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
+	float						GetAtmosphereThickness() { return m_flAtmosphereThickness; }
+
+	float						GetCloseOrbit();
+
 protected:
 	float						m_flRadius;
+	float						m_flAtmosphereThickness;
 };
 
 #endif

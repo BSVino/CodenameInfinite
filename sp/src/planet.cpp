@@ -9,6 +9,7 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRadius);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flAtmosphereThickness);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlanet);
@@ -22,6 +23,11 @@ void CPlanet::Precache()
 void CPlanet::Spawn()
 {
 	SetModel("models/planet.obj");
+
+	// 1500km, a bit smaller than the moon
+	SetRadius(1500);
+	// 20 km thick
+	SetAtmosphereThickness(20);
 }
 
 void CPlanet::Think()
@@ -40,4 +46,10 @@ void CPlanet::ModifyContext(CRenderingContext* pContext, bool bTransparent) cons
 void CPlanet::PostRender(bool bTransparent) const
 {
 	BaseClass::PostRender(bTransparent);
+}
+
+float CPlanet::GetCloseOrbit()
+{
+	// For Earth values this resolves to about 600km above the ground, or about twice the altitude of the ISS.
+	return GetRadius()/10;
 }
