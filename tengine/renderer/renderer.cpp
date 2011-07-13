@@ -854,6 +854,9 @@ CFrameBuffer CRenderer::CreateFrameBuffer(size_t iWidth, size_t iHeight, bool bD
 
 void CRenderer::CreateNoise()
 {
+	if (!WantNoise())
+		return;
+
 	CSimplexNoise n1(mtrand()+0);
 	CSimplexNoise n2(mtrand()+1);
 	CSimplexNoise n3(mtrand()+2);
@@ -909,6 +912,14 @@ void CRenderer::CreateNoise()
 	glPopMatrix();
 
 	glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+}
+
+void CRenderer::PreFrame()
+{
+}
+
+void CRenderer::PostFrame()
+{
 }
 
 void CRenderer::SetupFrame()

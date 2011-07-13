@@ -28,18 +28,6 @@ Vector CSPCamera::GetCameraTarget()
 		return Vector(0,0,0);
 
 	return pCharacter->GetOrigin() + Vector(pCharacter->GetTransformation().GetColumn(0));
-
-/*	EAngle angLocal = pCharacter->GetAngles();
-
-	Vector vecCharacterUp = pCharacter->GetUpVector();
-	Vector vecCharacterForward = Vector(1, 0, 0);
-	Vector vecCharacterRight = vecCharacterUp.Cross(vecCharacterForward);
-	vecCharacterForward = vecCharacterUp.Cross(vecCharacterRight);
-
-	Vector vecUp = vecCharacterUp * sin(angLocal.p * (M_PI*2 / 360));
-	Vector vecForward = vecCharacterForward * cos(angLocal.p * (M_PI*2 / 360));
-
-	return pCharacter->GetOrigin() + vecUp + vecForward;*/
 }
 
 Vector CSPCamera::GetCameraUp()

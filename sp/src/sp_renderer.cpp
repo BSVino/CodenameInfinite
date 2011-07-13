@@ -13,6 +13,7 @@
 
 #include "sp_window.h"
 #include "sp_game.h"
+#include "sp_character.h"
 
 CSPRenderer::CSPRenderer()
 	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
@@ -23,6 +24,18 @@ CSPRenderer::CSPRenderer()
 	m_iSkyboxRT = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-rt.png"), 2);
 	m_iSkyboxDN = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-dn.png"), 2);
 	m_iSkyboxUP = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-up.png"), 2);
+}
+
+void CSPRenderer::PreFrame()
+{
+	BaseClass::PreFrame();
+
+	SPGame()->GetLocalPlayerCharacter()->LockViewToPlanet();
+}
+
+void CSPRenderer::PostFrame()
+{
+	BaseClass::PostFrame();
 }
 
 void CSPRenderer::StartRendering()

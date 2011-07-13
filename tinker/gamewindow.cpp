@@ -82,11 +82,23 @@ void CGameWindow::Run()
 					Render();
 				}
 			}
+
+			PostFrame();
 		}
 
 		CProfiler::Render();
 		SwapBuffers();
 	}
+}
+
+void CGameWindow::PreFrame()
+{
+	GameServer()->GetRenderer()->PreFrame();
+}
+
+void CGameWindow::PostFrame()
+{
+	GameServer()->GetRenderer()->PostFrame();
 }
 
 void CGameWindow::Render()

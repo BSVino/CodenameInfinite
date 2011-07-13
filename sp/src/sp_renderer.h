@@ -12,6 +12,9 @@ public:
 					CSPRenderer();
 
 public:
+	virtual void	PreFrame();
+	virtual void	PostFrame();
+
 	virtual void	DrawBackground() {};	// Skybox instead
 	virtual void	StartRendering();
 	virtual void	RenderSkybox();

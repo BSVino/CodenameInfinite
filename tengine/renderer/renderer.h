@@ -154,6 +154,10 @@ public:
 	CFrameBuffer	CreateFrameBuffer(size_t iWidth, size_t iHeight, bool bDepth, bool bLinear);
 
 	void			CreateNoise();
+	virtual bool	WantNoise() { return false; };
+
+	virtual void	PreFrame();
+	virtual void	PostFrame();
 
 	virtual void	SetupFrame();
 	virtual void	DrawBackground();

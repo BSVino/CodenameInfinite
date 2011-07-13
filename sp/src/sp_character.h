@@ -14,6 +14,8 @@ public:
 
 	virtual Vector				GetUpVector();
 
+	void						LockViewToPlanet();
+
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 };

@@ -17,7 +17,8 @@ public:
 	void						OpenWindow();
 
 	void						Run();
-	virtual void				PreFrame() {};
+	virtual void				PreFrame();
+	virtual void				PostFrame();
 	virtual void				RenderLoading() {};
 
 	virtual void				Render();
