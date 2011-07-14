@@ -53,13 +53,13 @@ void CSPWindow::SetupSP()
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetGlobalOrigin(Vector(500, 0, 500));
+	pPlanet->SetGlobalOrigin(Vector(7000, 0, 7000));
 	pPlanet->SetRadius(6378.100f);			// Radius of Earth, 6378.1 km
 	pPlanet->SetAtmosphereThickness(50);	// Atmosphere of Earth, about 50km until the end of the stratosphere
 	pPlanet->SetMinutesPerRevolution(30);
 
 	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetGlobalOrigin(Vector(10000, 0, 10000));
+	pPlanet->SetGlobalOrigin(Vector(-5000, 0, -5000));
 	pPlanet->SetRadius(3397.0f);			// Radius of Mars, 3397 km
 	pPlanet->SetAtmosphereThickness(25);
 	pPlanet->SetMinutesPerRevolution(20);
