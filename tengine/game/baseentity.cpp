@@ -184,6 +184,13 @@ void CBaseEntity::SetOrigin(const Vector& vecOrigin)
 
 void CBaseEntity::SetAngles(const EAngle& angAngles)
 {
+	if (!m_angAngles.IsInitialized())
+		m_angAngles = angAngles;
+
+	EAngle angDifference = angAngles - m_angAngles;
+	if (fabs(angDifference.p) < 0.001f && fabs(angDifference.y) < 0.001f && fabs(angDifference.r) < 0.001f)
+		return;
+
 	m_angAngles = angAngles;
 
 	m_mTransformation.SetRotation(angAngles);

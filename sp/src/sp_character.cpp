@@ -1,5 +1,7 @@
 #include "sp_character.h"
 
+#include <tinker/application.h>
+
 #include "planet.h"
 
 REGISTER_ENTITY(CSPCharacter);
@@ -132,9 +134,10 @@ void CSPCharacter::LockViewToPlanet()
 	Matrix4x4 mLockedRotation = mPlanet * mLockedLocalRotation;
 
 	// Only use the changed r value to avoid floating point crap
-	EAngle angLockedRotation = GetAngles();
-	angLockedRotation.r = mLockedRotation.GetAngles().r;
-	SetAngles(angLockedRotation);
+	EAngle angNewLockedRotation = GetAngles();
+	EAngle angOverloadRotation = mLockedRotation.GetAngles();
+	angNewLockedRotation.r = angOverloadRotation.r;
+	SetAngles(angNewLockedRotation);
 }
 
 void CSPCharacter::StandOnNearestPlanet()
