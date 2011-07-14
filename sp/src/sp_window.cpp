@@ -48,14 +48,21 @@ void CSPWindow::SetupSP()
 	Game()->AddPlayer(pPlayer);
 
 	CSPCharacter* pCharacter = GameServer()->Create<CSPCharacter>("CSPCharacter");
-	pCharacter->SetGlobalOrigin(Vector(10000, 0, 0));
+	pCharacter->SetGlobalOrigin(Vector(0, 0, 0));
 	pCharacter->SetGlobalAngles(EAngle(10, 80, 90));
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetGlobalOrigin(Vector(500, 500, 500));
+	pPlanet->SetGlobalOrigin(Vector(500, 0, 500));
 	pPlanet->SetRadius(6378.100f);			// Radius of Earth, 6378.1 km
 	pPlanet->SetAtmosphereThickness(50);	// Atmosphere of Earth, about 50km until the end of the stratosphere
+	pPlanet->SetMinutesPerRevolution(30);
+
+	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+	pPlanet->SetGlobalOrigin(Vector(10000, 0, 10000));
+	pPlanet->SetRadius(3397.0f);			// Radius of Mars, 3397 km
+	pPlanet->SetAtmosphereThickness(25);
+	pPlanet->SetMinutesPerRevolution(20);
 
 	pCharacter->StandOnNearestPlanet();
 }

@@ -203,12 +203,20 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 
 	Matrix4x4 mGlobalToLocal = m_hMoveParent->GetGlobalToLocalTransform();
 
-	m_vecLocalVelocity = mGlobalToLocal * vecPreviousVelocity;
 	m_vecLastLocalOrigin = mGlobalToLocal * vecPreviousLastOrigin;
 	m_mLocalTransform = mGlobalToLocal * mPreviousTransform;
 	m_vecLocalOrigin = m_mLocalTransform.GetTranslation();
 	m_qLocalRotation = Quaternion(m_mLocalTransform);
 	m_angLocalAngles = m_mLocalTransform.GetAngles();
+
+	float flVelocityLength = vecPreviousVelocity.Length();
+	if (flVelocityLength > 0)
+	{
+		mGlobalToLocal.SetTranslation(Vector(0, 0, 0));
+		m_vecLocalVelocity = (mGlobalToLocal * (vecPreviousVelocity/flVelocityLength))*flVelocityLength;
+	}
+	else
+		m_vecLocalVelocity = Vector(0, 0, 0);
 
 	InvalidateGlobalTransforms();
 }
@@ -318,12 +326,30 @@ void CBaseEntity::SetGlobalAngles(const EAngle& angAngles)
 
 Vector CBaseEntity::GetGlobalVelocity()
 {
-	return GetGlobalTransform() * GetLocalVelocity();
+	Matrix4x4 mGlobalToLocalRotation = GetGlobalToLocalTransform();
+	mGlobalToLocalRotation.SetTranslation(Vector(0,0,0));
+
+	if (m_vecLocalVelocity.Get().LengthSqr() > 0)
+	{
+		float flLength = m_vecLocalVelocity.Get().Length();
+		return (mGlobalToLocalRotation * (m_vecLocalVelocity/flLength))*flLength;
+	}
+	else
+		return Vector(0, 0, 0);
 }
 
 Vector CBaseEntity::GetGlobalVelocity() const
 {
-	return GetGlobalTransform() * GetLocalVelocity();
+	Matrix4x4 mGlobalToLocalRotation = GetGlobalToLocalTransform();
+	mGlobalToLocalRotation.SetTranslation(Vector(0,0,0));
+
+	if (m_vecLocalVelocity.Get().LengthSqr() > 0)
+	{
+		float flLength = m_vecLocalVelocity.Get().Length();
+		return (mGlobalToLocalRotation * (m_vecLocalVelocity/flLength))*flLength;
+	}
+	else
+		return Vector(0, 0, 0);
 }
 
 void CBaseEntity::SetLocalTransform(const Matrix4x4& m)

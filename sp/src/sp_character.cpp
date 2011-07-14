@@ -172,7 +172,7 @@ void CSPCharacter::StandOnNearestPlanet()
 		return;
 
 	Vector vecPlanetOrigin = pPlanet->GetGlobalOrigin();
-	Vector vecCharacterDirection = (GetGlobalOrigin() - pPlanet->GetGlobalOrigin()).Normalized();
+	Vector vecCharacterDirection = (GetGlobalOrigin() - vecPlanetOrigin).Normalized();
 
 	SetGlobalOrigin(vecPlanetOrigin + vecCharacterDirection*pPlanet->GetRadius());
 

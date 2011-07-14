@@ -26,9 +26,12 @@ public:
 
 	float						GetCloseOrbit();
 
+	void						SetMinutesPerRevolution(float f) { m_flMinutesPerRevolution = f; }
+
 protected:
 	float						m_flRadius;
 	float						m_flAtmosphereThickness;
+	float						m_flMinutesPerRevolution;
 };
 
 #endif

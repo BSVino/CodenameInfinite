@@ -10,6 +10,7 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRadius);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flAtmosphereThickness);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flMinutesPerRevolution);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlanet);
@@ -34,8 +35,7 @@ void CPlanet::Think()
 {
 	BaseClass::Think();
 
-	int iMinutesToRevolve = 30;
-	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/iMinutesToRevolve));
+	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution));
 }
 
 void CPlanet::ModifyContext(CRenderingContext* pContext, bool bTransparent) const

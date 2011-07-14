@@ -478,6 +478,9 @@ void CGameServer::Simulate()
 		if (!pEntity)
 			continue;
 
+		Matrix4x4 mGlobalToLocalRotation = pEntity->GetGlobalToLocalTransform();
+		mGlobalToLocalRotation.SetTranslation(Vector(0,0,0));
+
 		// Break simulations up into very small steps in order to preserve accuracy.
 		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
 		for (float flCurrentSimulationTime = m_flSimulationTime; flCurrentSimulationTime < m_flGameTime; flCurrentSimulationTime += flSimulationFrameTime)
@@ -486,7 +489,16 @@ void CGameServer::Simulate()
 			if (vecVelocity.LengthSqr() == 0)
 				continue;
 
-			Vector vecLocalGravity = pEntity->GetGlobalToLocalTransform() * pEntity->GetGlobalGravity();
+			Vector vecGlobalGravity = pEntity->GetGlobalGravity();
+			Vector vecLocalGravity;
+			if (vecGlobalGravity.LengthSqr() > 0)
+			{
+				float flLength = vecGlobalGravity.Length();
+				vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
+			}
+			else
+				vecLocalGravity = Vector(0, 0, 0);
+
 			pEntity->SetLocalOrigin(pEntity->GetLocalOrigin() + vecVelocity * flSimulationFrameTime);
 			pEntity->SetLocalVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
 		}

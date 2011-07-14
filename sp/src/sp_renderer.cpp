@@ -18,12 +18,12 @@
 CSPRenderer::CSPRenderer()
 	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
 {
-	m_iSkyboxFT = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-ft.png"), 2);
-	m_iSkyboxLF = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-lf.png"), 2);
-	m_iSkyboxBK = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-bk.png"), 2);
-	m_iSkyboxRT = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-rt.png"), 2);
-	m_iSkyboxDN = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-dn.png"), 2);
-	m_iSkyboxUP = CTextureLibrary::AddTextureID(_T("textures/skybox/standard-up.png"), 2);
+	m_iSkyboxFT = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	m_iSkyboxLF = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	m_iSkyboxBK = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	m_iSkyboxRT = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	m_iSkyboxDN = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	m_iSkyboxUP = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
 }
 
 void CSPRenderer::PreFrame()
