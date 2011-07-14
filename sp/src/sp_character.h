@@ -19,6 +19,8 @@ public:
 								CSPCharacter();
 
 public:
+	virtual void				Think();
+
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
 	CPlanet*					FindNearestPlanet();
 
@@ -34,6 +36,9 @@ public:
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 	float						m_flNextPlanetCheck;
+
+	float						m_flLastEnteredAtmosphere;
+	float						m_flRollFromSpace;
 };
 
 #endif

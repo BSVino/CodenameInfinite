@@ -13,6 +13,8 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlanet>, m_hNearestPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
@@ -21,6 +23,22 @@ INPUTS_TABLE_END();
 CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
+	m_flLastEnteredAtmosphere = -1000;
+}
+
+void CSPCharacter::Think()
+{
+	BaseClass::Think();
+
+	CPlanet* pPlanet = GetNearestPlanet();
+
+	if (pPlanet && !HasMoveParent())
+	{
+		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
+		m_flRollFromSpace = GetGlobalAngles().r;
+	}
+
+	SetMoveParent(pPlanet);
 }
 
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
@@ -29,7 +47,7 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 	{
 		CPlanet* pNearestPlanet = FindNearestPlanet();
 
-		float flDistance = pNearestPlanet->Distance(GetOrigin()) - pNearestPlanet->GetRadius();
+		float flDistance = pNearestPlanet->Distance(GetGlobalOrigin()) - pNearestPlanet->GetRadius();
 		if (flDistance < pNearestPlanet->GetAtmosphereThickness())
 			m_hNearestPlanet = pNearestPlanet;
 		else
@@ -47,7 +65,7 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 		if (eFindPlanet == FINDPLANET_ANY)
 			return pNearestPlanet;
 
-		float flDistance = pNearestPlanet->Distance(GetOrigin()) - pNearestPlanet->GetRadius();
+		float flDistance = pNearestPlanet->Distance(GetGlobalOrigin()) - pNearestPlanet->GetRadius();
 		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit())
 			return NULL;
 		else
@@ -68,7 +86,7 @@ CPlanet* CSPCharacter::FindNearestPlanet()
 		if (!pPlanet)
 			continue;
 
-		float flDistance = pPlanet->Distance(GetOrigin());
+		float flDistance = pPlanet->Distance(GetGlobalOrigin());
 		flDistance -= pPlanet->GetRadius();
 
 		if (pNearestPlanet == NULL)
@@ -92,7 +110,7 @@ Vector CSPCharacter::GetUpVector()
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return (GetOrigin() - pNearestPlanet->GetOrigin()).Normalized();
+		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).Normalized();
 
 	return Vector(0, 1, 0);
 }
@@ -104,7 +122,7 @@ void CSPCharacter::LockViewToPlanet()
 	if (!pNearestPlanet)
 		return;
 
-	Matrix4x4 mRotation = GetTransformation();
+	Matrix4x4 mRotation = GetGlobalTransform();
 	mRotation.SetTranslation(Vector(0,0,0));
 
 	// Construct a "local space" for the planet
@@ -134,10 +152,17 @@ void CSPCharacter::LockViewToPlanet()
 	Matrix4x4 mLockedRotation = mPlanet * mLockedLocalRotation;
 
 	// Only use the changed r value to avoid floating point crap
-	EAngle angNewLockedRotation = GetAngles();
+	EAngle angNewLockedRotation = GetGlobalAngles();
 	EAngle angOverloadRotation = mLockedRotation.GetAngles();
-	angNewLockedRotation.r = angOverloadRotation.r;
-	SetAngles(angNewLockedRotation);
+
+	// Lerp our way there
+	float flTimeToLocked = 1;
+	if (GameServer()->GetGameTime() - m_flLastEnteredAtmosphere > flTimeToLocked)
+		angNewLockedRotation.r = angOverloadRotation.r;
+	else
+		angNewLockedRotation.r = RemapValClamped(SLerp(GameServer()->GetGameTime() - m_flLastEnteredAtmosphere, 0.3f), 0, flTimeToLocked, m_flRollFromSpace, angOverloadRotation.r);
+
+	SetGlobalAngles(angNewLockedRotation);
 }
 
 void CSPCharacter::StandOnNearestPlanet()
@@ -146,10 +171,12 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
-	Vector vecPlanetOrigin = pPlanet->GetOrigin();
-	Vector vecCharacterDirection = (GetOrigin() - pPlanet->GetOrigin()).Normalized();
+	Vector vecPlanetOrigin = pPlanet->GetGlobalOrigin();
+	Vector vecCharacterDirection = (GetGlobalOrigin() - pPlanet->GetGlobalOrigin()).Normalized();
 
-	SetOrigin(vecPlanetOrigin + vecCharacterDirection*pPlanet->GetRadius());
+	SetGlobalOrigin(vecPlanetOrigin + vecCharacterDirection*pPlanet->GetRadius());
+
+	SetMoveParent(pPlanet);
 }
 
 float CSPCharacter::EyeHeight()
@@ -162,8 +189,10 @@ float CSPCharacter::CharacterSpeed()
 {
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
 
-	if (!pPlanet)
-		return 80000;
+	float flSpeed = 80000;
 
-	return RemapValClamped(pPlanet->Distance(GetOrigin()), pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness(), pPlanet->GetRadius()+pPlanet->GetCloseOrbit(), 200.0f, 80000);
+	if (pPlanet)
+		flSpeed = RemapValClamped(pPlanet->Distance(GetGlobalOrigin()), pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness(), pPlanet->GetRadius()+pPlanet->GetCloseOrbit(), 2000.0f, 80000);
+
+	return flSpeed;
 }

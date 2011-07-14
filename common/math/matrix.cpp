@@ -308,7 +308,7 @@ Matrix4x4 Matrix4x4::operator+=(const EAngle& a)
 	return *this;
 }
 
-Matrix4x4 Matrix4x4::operator*(const Matrix4x4& t)
+Matrix4x4 Matrix4x4::operator*(const Matrix4x4& t) const
 {
 	Matrix4x4 r;
 

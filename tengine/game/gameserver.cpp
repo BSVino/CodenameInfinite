@@ -463,7 +463,7 @@ void CGameServer::Simulate()
 		if (!pEntity)
 			continue;
 
-		pEntity->SetLastOrigin(pEntity->GetOrigin());
+		pEntity->SetLastLocalOrigin(pEntity->GetLocalOrigin());
 
 		if (!pEntity->ShouldSimulate())
 			continue;
@@ -482,12 +482,13 @@ void CGameServer::Simulate()
 		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
 		for (float flCurrentSimulationTime = m_flSimulationTime; flCurrentSimulationTime < m_flGameTime; flCurrentSimulationTime += flSimulationFrameTime)
 		{
-			Vector vecVelocity = pEntity->GetVelocity();
+			Vector vecVelocity = pEntity->GetLocalVelocity();
 			if (vecVelocity.LengthSqr() == 0)
 				continue;
 
-			pEntity->SetOrigin(pEntity->GetOrigin() + vecVelocity * flSimulationFrameTime);
-			pEntity->SetVelocity(vecVelocity + pEntity->GetGravity() * flSimulationFrameTime);
+			Vector vecLocalGravity = pEntity->GetGlobalToLocalTransform() * pEntity->GetGlobalGravity();
+			pEntity->SetLocalOrigin(pEntity->GetLocalOrigin() + vecVelocity * flSimulationFrameTime);
+			pEntity->SetLocalVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
 		}
 	}
 
@@ -519,7 +520,7 @@ void CGameServer::Simulate()
 			Vector vecPoint;
 			if (pEntity->IsTouching(pEntity2, vecPoint))
 			{
-				pEntity->SetOrigin(vecPoint);
+				pEntity->SetGlobalOrigin(vecPoint);
 				pEntity->Touching(pEntity2);
 			}
 		}

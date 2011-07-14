@@ -329,7 +329,7 @@ void CSystemInstance::Simulate()
 	if (m_hFollow != NULL)
 	{
 		m_vecOrigin = m_hFollow->GetRenderOrigin();
-		m_vecInheritedVelocity = m_hFollow->GetVelocity();
+		m_vecInheritedVelocity = m_hFollow->GetGlobalVelocity();
 	}
 
 	for (size_t i = 0; i < m_aParticles.size(); i++)

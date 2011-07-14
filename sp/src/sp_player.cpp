@@ -34,14 +34,14 @@ void CSPPlayer::MouseMotion(int x, int y)
 	Matrix4x4 mRotate;
 	mRotate.SetRotation(angMouse);
 
-	Matrix4x4 mTransform = m_hCharacter->GetTransformation();
+	Matrix4x4 mTransform = m_hCharacter->GetLocalTransform();
 	mTransform.SetTranslation(Vector(0,0,0));
 
 	Matrix4x4 mNewTransform = mTransform * mRotate;
 
-	mNewTransform.SetTranslation(m_hCharacter->GetOrigin());
+	mNewTransform.SetTranslation(m_hCharacter->GetLocalOrigin());
 
-	m_hCharacter->SetTransformation(mNewTransform);
+	m_hCharacter->SetLocalTransform(mNewTransform);
 }
 
 CSPCharacter* CSPPlayer::GetSPCharacter()

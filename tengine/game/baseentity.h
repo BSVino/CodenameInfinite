@@ -311,30 +311,55 @@ public:
 	void									SetModel(size_t iModel);
 	size_t									GetModel() const { return m_iModel; };
 
-	virtual Vector							GetRenderOrigin() const { return GetOrigin(); };
-	virtual EAngle							GetRenderAngles() const { return GetAngles(); };
+	virtual Matrix4x4						GetRenderTransform() const { return GetGlobalTransform(); };
+	virtual Vector							GetRenderOrigin() const { return GetGlobalOrigin(); };
+	virtual EAngle							GetRenderAngles() const { return GetGlobalAngles(); };
 
-	const Matrix4x4&						GetTransformation() { return m_mTransformation; }
-	void									SetTransformation(const Matrix4x4& m);
+	void									SetMoveParent(CBaseEntity* pParent);
+	CBaseEntity*							GetMoveParent() const { return m_hMoveParent; };
+	bool									HasMoveParent() const { return m_hMoveParent != NULL; };
+	void									InvalidateGlobalTransforms();
 
-	const Quaternion&						GetRotation() { return m_qRotation; }
-	void									SetRotation(const Quaternion& q);
+	const Matrix4x4&						GetGlobalTransform();
+	Matrix4x4								GetGlobalTransform() const;
+	void									SetGlobalTransform(const Matrix4x4& m);
 
-	virtual inline Vector					GetOrigin() const { return m_vecOrigin; };
-	void									SetOrigin(const Vector& vecOrigin);
-	virtual void							OnSetOrigin(const Vector& vecOrigin) {}
+	Matrix4x4								GetGlobalToLocalTransform();
+	Matrix4x4								GetGlobalToLocalTransform() const;
 
-	inline Vector							GetLastOrigin() const { return m_vecLastOrigin; };
-	void									SetLastOrigin(const Vector& vecOrigin) { m_vecLastOrigin = vecOrigin; };
+	virtual Vector							GetGlobalOrigin();
+	virtual EAngle							GetGlobalAngles();
 
-	inline Vector							GetVelocity() const { return m_vecVelocity; };
-	void									SetVelocity(const Vector& vecVelocity) { m_vecVelocity = vecVelocity; };
+	virtual Vector							GetGlobalOrigin() const;
+	virtual EAngle							GetGlobalAngles() const;
 
-	inline EAngle							GetAngles() const { return m_angAngles; };
-	void									SetAngles(const EAngle& angAngles);
+	void									SetGlobalOrigin(const Vector& vecOrigin);
+	void									SetGlobalAngles(const EAngle& angAngles);
 
-	inline Vector							GetGravity() const { return m_vecGravity; };
-	void									SetGravity(Vector vecGravity) { m_vecGravity = vecGravity; };
+	virtual Vector							GetGlobalVelocity();
+	virtual Vector							GetGlobalVelocity() const;
+
+	inline Vector							GetGlobalGravity() const { return m_vecGlobalGravity; };
+	void									SetGlobalGravity(Vector vecGravity) { m_vecGlobalGravity = vecGravity; };
+
+	const Matrix4x4&						GetLocalTransform() const { return m_mLocalTransform; }
+	void									SetLocalTransform(const Matrix4x4& m);
+
+	const Quaternion&						GetLocalRotation() const { return m_qLocalRotation; }
+	void									SetLocalRotation(const Quaternion& q);
+
+	virtual inline Vector					GetLocalOrigin() const { return m_vecLocalOrigin; };
+	void									SetLocalOrigin(const Vector& vecOrigin);
+	virtual void							OnSetLocalOrigin(const Vector& vecOrigin) {}
+
+	inline Vector							GetLastLocalOrigin() const { return m_vecLastLocalOrigin; };
+	void									SetLastLocalOrigin(const Vector& vecOrigin) { m_vecLastLocalOrigin = vecOrigin; };
+
+	inline Vector							GetLocalVelocity() const { return m_vecLocalVelocity; };
+	void									SetLocalVelocity(const Vector& vecVelocity);
+
+	inline EAngle							GetLocalAngles() const { return m_angLocalAngles; };
+	void									SetLocalAngles(const EAngle& angLocalAngles);
 
 	virtual Vector							GetUpVector() { return Vector(0, 1, 0); };
 
@@ -475,13 +500,19 @@ protected:
 	eastl::string							m_sName;
 	tstring									m_sClassName;
 
-	Matrix4x4								m_mTransformation;
-	Quaternion								m_qRotation;
-	CNetworkedVector						m_vecOrigin;
-	Vector									m_vecLastOrigin;
-	CNetworkedEAngle						m_angAngles;
-	CNetworkedVector						m_vecVelocity;
-	CNetworkedVector						m_vecGravity;
+	CNetworkedHandle<CBaseEntity>			m_hMoveParent;
+	CNetworkedSTLVector<CEntityHandle<CBaseEntity>>	m_ahMoveChildren;
+
+	bool									m_bGlobalTransformsDirty;
+	Matrix4x4								m_mGlobalTransform;
+	CNetworkedVector						m_vecGlobalGravity;
+
+	Matrix4x4								m_mLocalTransform;
+	Quaternion								m_qLocalRotation;
+	CNetworkedVector						m_vecLocalOrigin;
+	Vector									m_vecLastLocalOrigin;
+	CNetworkedEAngle						m_angLocalAngles;
+	CNetworkedVector						m_vecLocalVelocity;
 
 	size_t									m_iHandle;
 

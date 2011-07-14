@@ -34,8 +34,8 @@ void CPlanet::Think()
 {
 	BaseClass::Think();
 
-	// Revolve once every hour
-	SetAngles(GetAngles() + EAngle(0, 360, 0)*GameServer()->GetFrameTime()/60/60);
+	int iMinutesToRevolve = 30;
+	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/iMinutesToRevolve));
 }
 
 void CPlanet::ModifyContext(CRenderingContext* pContext, bool bTransparent) const

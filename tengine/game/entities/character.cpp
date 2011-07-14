@@ -43,18 +43,18 @@ void CCharacter::Think()
 
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{
-		Vector vecVelocity = GetVelocity();
+		Vector vecVelocity = GetLocalVelocity();
 
-		Matrix4x4 m = GetTransformation();
+		Matrix4x4 m = GetLocalTransform();
 		m.SetTranslation(Vector(0,0,0));
 
 		Vector vecMove = m_vecMoveVelocity * (GameServer()->GetFrameTime() * CharacterSpeed());
 		vecVelocity = m * vecMove;
 
-		SetVelocity(vecVelocity);
+		SetLocalVelocity(vecVelocity);
 	}
 	else
-		SetVelocity(Vector(0, 0, 0));
+		SetLocalVelocity(Vector(0, 0, 0));
 }
 
 void CCharacter::Move(movetype_t eMoveType)

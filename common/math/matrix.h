@@ -45,7 +45,7 @@ public:
 	Matrix4x4	operator+=(const EAngle& a);
 
 	// Add a transformation
-	Matrix4x4	operator*(const Matrix4x4& t);
+	Matrix4x4	operator*(const Matrix4x4& t) const;
 	Matrix4x4	operator*=(const Matrix4x4& t);
 
 	// Add a transformation

@@ -35,9 +35,9 @@ void CPlayer::MouseMotion(int x, int y)
 	if (m_hCharacter == NULL)
 		return;
 
-	EAngle angDirection = m_hCharacter->GetAngles();
+	EAngle angDirection = m_hCharacter->GetLocalAngles();
 
-	angDirection.y += (x/m_sensitivity.GetFloat());
+	angDirection.y -= (x/m_sensitivity.GetFloat());
 	angDirection.p -= (y/m_sensitivity.GetFloat());
 
 	if (angDirection.p > 89)
@@ -52,7 +52,7 @@ void CPlayer::MouseMotion(int x, int y)
 	while (angDirection.y < -180)
 		angDirection.y += 360;
 
-	m_hCharacter->SetAngles(angDirection);
+	m_hCharacter->SetLocalAngles(angDirection);
 }
 
 void CPlayer::KeyPress(int c)
