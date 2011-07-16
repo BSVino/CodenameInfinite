@@ -14,6 +14,7 @@
 #include "sp_window.h"
 #include "sp_game.h"
 #include "sp_character.h"
+#include "planet.h"
 
 CSPRenderer::CSPRenderer()
 	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
@@ -31,11 +32,8 @@ void CSPRenderer::PreFrame()
 	BaseClass::PreFrame();
 
 	SPGame()->GetLocalPlayerCharacter()->LockViewToPlanet();
-}
 
-void CSPRenderer::PostFrame()
-{
-	BaseClass::PostFrame();
+	m_ahPlanetsToUpdate.clear();
 }
 
 void CSPRenderer::StartRendering()
@@ -43,6 +41,16 @@ void CSPRenderer::StartRendering()
 	TPROF("CSPRenderer::StartRendering");
 
 	BaseClass::StartRendering();
+
+	// Now is the time to have the terrain calculate its junk. The camera and screen/world space stuff are set up.
+	for (size_t i = 0; i < m_ahPlanetsToUpdate.size(); i++)
+	{
+		CPlanet* pPlanet = m_ahPlanetsToUpdate[i];
+		if (!pPlanet)
+			continue;
+
+		pPlanet->RenderUpdate();
+	}
 
 	RenderSkybox();
 }
@@ -56,7 +64,7 @@ void CSPRenderer::RenderSkybox()
 
 	if (true)
 	{
-		glPushAttrib(GL_CURRENT_BIT|GL_ENABLE_BIT);
+		glPushAttrib(GL_CURRENT_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
 		glPushMatrix();
 		glTranslatef(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z);
 
@@ -137,4 +145,8 @@ void CSPRenderer::RenderSkybox()
 		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
 
 	glClear(GL_DEPTH_BUFFER_BIT);
+}
+void CSPRenderer::AddPlanetToUpdate(CPlanet* pPlanet)
+{
+	m_ahPlanetsToUpdate.push_back(pPlanet);
 }

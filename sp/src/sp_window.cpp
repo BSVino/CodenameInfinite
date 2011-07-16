@@ -14,6 +14,7 @@
 #include <glgui/glgui.h>
 #include <renderer/renderer.h>
 #include <tinker/cvar.h>
+#include <game/camera.h>
 
 #include "sp_player.h"
 #include "sp_character.h"

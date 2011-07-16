@@ -484,6 +484,12 @@ void CRenderingContext::BeginRenderQuads()
 	glBegin(GL_QUADS);
 }
 
+void CRenderingContext::BeginRenderDebugLines()
+{
+	glLineWidth( 3.0f );
+	glBegin(GL_LINE_LOOP);
+}
+
 void CRenderingContext::TexCoord(float s, float t)
 {
 	glTexCoord2f(s, t);
@@ -1452,7 +1458,7 @@ void CRenderer::GetCameraVectors(Vector* pvecForward, Vector* pvecRight, Vector*
 		(*pvecForward) = vecForward;
 
 	if (pvecRight || pvecUp)
-		vecRight = vecForward.Cross(Vector(0, 1, 0)).Normalized();
+		vecRight = vecForward.Cross(m_vecCameraUp).Normalized();
 
 	if (pvecRight)
 		(*pvecRight) = vecRight;

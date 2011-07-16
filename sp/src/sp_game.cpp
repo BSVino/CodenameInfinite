@@ -54,3 +54,8 @@ CSPCharacter* CSPGame::GetLocalPlayerCharacter()
 {
 	return static_cast<CSPCharacter*>(GetLocalPlayer()->GetCharacter());
 }
+
+CSPRenderer* CSPGame::GetSPRenderer()
+{
+	return static_cast<CSPRenderer*>(GameServer()->GetRenderer());
+}

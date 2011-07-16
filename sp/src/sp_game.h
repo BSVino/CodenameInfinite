@@ -13,6 +13,7 @@ public:
 	virtual void			Think();
 
 	class CSPCharacter*		GetLocalPlayerCharacter();
+	class CSPRenderer*		GetSPRenderer();
 };
 
 inline class CSPGame* SPGame()

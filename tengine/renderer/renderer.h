@@ -56,6 +56,7 @@ public:
 	void		SetColor(Color c);
 	void		BeginRenderTris();
 	void		BeginRenderQuads();
+	void		BeginRenderDebugLines();
 	void		TexCoord(float s, float t);
 	void		TexCoord(const Vector& v);
 	void		Vertex(const Vector& v);
