@@ -432,8 +432,14 @@ inline Vector2D Vector2D::operator/(float s) const
 class Vector4D
 {
 public:
-			Vector4D();
-			Vector4D(unit_t x, unit_t y, unit_t z, unit_t w);
+				Vector4D();
+				Vector4D(const Vector& v);
+				Vector4D(const class Color& c);
+				Vector4D(unit_t x, unit_t y, unit_t z, unit_t w);
+
+public:
+	Vector4D	operator+(const Vector4D& v) const;
+	Vector4D	operator-(const Vector4D& v) const;
 
 	operator float*()
 	{
@@ -443,14 +449,36 @@ public:
 	unit_t	x, y, z, w;
 };
 
+#include "color.h"
+
 inline Vector4D::Vector4D()
 	: x(0), y(0), z(0), w(0)
+{
+}
+
+inline Vector4D::Vector4D(const Vector& v)
+	: x(v.x), y(v.y), z(v.y), w(0)
+{
+}
+
+inline Vector4D::Vector4D(const Color& c)
+	: x(((float)c.r())/255), y(((float)c.g())/255), z(((float)c.b())/255), w(((float)c.a())/255)
 {
 }
 
 inline Vector4D::Vector4D(unit_t X, unit_t Y, unit_t Z, unit_t W)
 	: x(X), y(Y), z(Z), w(W)
 {
+}
+
+inline Vector4D Vector4D::operator+(const Vector4D& v) const
+{
+	return Vector4D(x+v.x, y+v.y, z+v.z, w+v.w);
+}
+
+inline Vector4D Vector4D::operator-(const Vector4D& v) const
+{
+	return Vector4D(x-v.x, y-v.y, z-v.z, w-v.w);
 }
 
 #endif

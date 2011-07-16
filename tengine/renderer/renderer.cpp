@@ -14,6 +14,7 @@
 #include <tinker/cvar.h>
 #include <tinker/profiler.h>
 #include <game/gameserver.h>
+#include <models/texturelibrary.h>
 
 CRenderingContext::CRenderingContext(CRenderer* pRenderer)
 {
@@ -161,6 +162,17 @@ void CRenderingContext::SetColorSwap(Color clrSwap)
 {
 	m_bColorSwap = true;
 	m_clrSwap = clrSwap;
+}
+
+void CRenderingContext::SetLighting(bool bLighting)
+{
+	if (!m_bAttribs)
+		PushAttribs();
+
+	if (bLighting)
+		glEnable(GL_LIGHTING);
+	else
+		glDisable(GL_LIGHTING);
 }
 
 void CRenderingContext::RenderModel(size_t iModel, CModel* pCompilingModel)
@@ -369,6 +381,7 @@ void CRenderingContext::RenderMeshInstance(CModel* pModel, CConversionScene* pSc
 			CConversionVertex* pVertex = pFace->GetVertex(k);
 
 			glTexCoord2fv(pMesh->GetUV(pVertex->vu));
+			glNormal3fv(pMesh->GetNormal(pVertex->vn));
 			glVertex3fv(pMesh->GetVertex(pVertex->v));
 		}
 
@@ -394,6 +407,29 @@ void CRenderingContext::RenderSphere()
 	}
 
 	glCallList(iSphereCallList);
+}
+
+void CRenderingContext::RenderBillboard(const tstring& sTexture, float flRadius)
+{
+	size_t iTexture = CTextureLibrary::FindTextureID(sTexture);
+
+	Vector vecUp, vecRight;
+	m_pRenderer->GetCameraVectors(NULL, &vecRight, &vecUp);
+
+	vecUp *= flRadius;
+	vecRight *= flRadius;
+
+	BindTexture(iTexture);
+	BeginRenderQuads();
+		TexCoord(0, 1);
+		Vertex(-vecRight + vecUp);
+		TexCoord(0, 0);
+		Vertex(-vecRight - vecUp);
+		TexCoord(1, 0);
+		Vertex(vecRight - vecUp);
+		TexCoord(1, 1);
+		Vertex(vecRight + vecUp);
+	EndRender();
 }
 
 void CRenderingContext::UseFrameBuffer(const CFrameBuffer* pBuffer)
@@ -498,6 +534,11 @@ void CRenderingContext::TexCoord(float s, float t)
 void CRenderingContext::TexCoord(const Vector& v)
 {
 	glTexCoord2fv(v);
+}
+
+void CRenderingContext::Normal(const Vector& v)
+{
+	glNormal3fv(v);
 }
 
 void CRenderingContext::Vertex(const Vector& v)

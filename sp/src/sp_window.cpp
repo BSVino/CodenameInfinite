@@ -20,6 +20,7 @@
 #include "sp_character.h"
 #include "sp_renderer.h"
 #include "planet.h"
+#include "star.h"
 
 CSPWindow::CSPWindow(int argc, char** argv)
 	: CGameWindow(argc, argv)
@@ -64,6 +65,10 @@ void CSPWindow::SetupSP()
 	pPlanet->SetRadius(3397.0f);			// Radius of Mars, 3397 km
 	pPlanet->SetAtmosphereThickness(25);
 	pPlanet->SetMinutesPerRevolution(20);
+
+	CStar* pStar = GameServer()->Create<CStar>("CStar");
+	pStar->SetGlobalOrigin(Vector(-3000, 0, 3000));
+	pStar->SetRadius(200.0f);	
 
 	pCharacter->StandOnNearestPlanet();
 }

@@ -11,6 +11,7 @@
 #include <tinker/application.h>
 #include <tinker/profiler.h>
 #include <network/commands.h>
+#include <models/texturelibrary.h>
 
 #include "game.h"
 
@@ -1150,6 +1151,11 @@ void CBaseEntity::PrecacheParticleSystem(const tstring& sSystem)
 void CBaseEntity::PrecacheSound(const tstring& sSound)
 {
 	CSoundLibrary::Get()->AddSound(sSound);
+}
+
+void CBaseEntity::PrecacheTexture(const tstring& sTexture)
+{
+	CTextureLibrary::AddTexture(sTexture);
 }
 
 eastl::map<tstring, CEntityRegistration>& CBaseEntity::GetEntityRegistration()

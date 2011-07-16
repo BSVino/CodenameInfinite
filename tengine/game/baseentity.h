@@ -476,6 +476,7 @@ public:
 	static void								PrecacheModel(const tstring& sModel, bool bStatic = true);
 	static void								PrecacheParticleSystem(const tstring& sSystem);
 	static void								PrecacheSound(const tstring& sSound);
+	static void								PrecacheTexture(const tstring& sTexture);
 
 public:
 	static void								RegisterEntity(const char* pszClassName, const char* pszParentClass, EntityCreateCallback pfnCreateCallback, EntityRegisterCallback pfnRegisterCallback);

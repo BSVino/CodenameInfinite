@@ -36,6 +36,7 @@ public:
 	void		SetDepthTest(bool bDepthTest);
 	void		SetBackCulling(bool bCull);
 	void		SetColorSwap(Color clrSwap);
+	void		SetLighting(bool bLighting);
 
 	float		GetAlpha() { return m_flAlpha; };
 	blendtype_t	GetBlend() { return m_eBlend; };
@@ -45,6 +46,8 @@ public:
 	void		RenderMeshInstance(class CModel* pModel, class CConversionScene* pScene, class CConversionMeshInstance* pMeshInstance, class CModel* pCompilingModel);
 
 	void		RenderSphere();
+
+	void		RenderBillboard(const tstring& sTexture, float flRadius);
 
 	void		UseFrameBuffer(const class CFrameBuffer* pBuffer);
 	void		UseProgram(size_t iProgram);
@@ -59,6 +62,7 @@ public:
 	void		BeginRenderDebugLines();
 	void		TexCoord(float s, float t);
 	void		TexCoord(const Vector& v);
+	void		Normal(const Vector& v);
 	void		Vertex(const Vector& v);
 	void		RenderCallList(size_t iCallList);
 	void		EndRender();

@@ -15,6 +15,7 @@
 #include "sp_game.h"
 #include "sp_character.h"
 #include "planet.h"
+#include "star.h"
 
 CSPRenderer::CSPRenderer()
 	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
@@ -36,6 +37,10 @@ void CSPRenderer::PreFrame()
 	m_ahPlanetsToUpdate.clear();
 }
 
+CVar r_star_constant_attenuation("r_star_constant_attenuation", "0.1");
+CVar r_star_linear_attenuation("r_star_linear_attenuation", "0.0");
+CVar r_star_quadratic_attenuation("r_star_quadratic_attenuation", "0.0");
+
 void CSPRenderer::StartRendering()
 {
 	TPROF("CSPRenderer::StartRendering");
@@ -53,6 +58,29 @@ void CSPRenderer::StartRendering()
 	}
 
 	RenderSkybox();
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_COLOR_MATERIAL);
+	glShadeModel(GL_SMOOTH);
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vector4D(Color(0, 0, 0)));
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CStar* pStar = dynamic_cast<CStar*>(CBaseEntity::GetEntity(i));
+		if (!pStar)
+			continue;
+
+		glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetGlobalOrigin()) + Vector4D(0,0,0,1));
+		glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(3, 6, 6)));
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
+		glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
+		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, r_star_constant_attenuation.GetFloat());
+		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, r_star_linear_attenuation.GetFloat());
+		glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, r_star_quadratic_attenuation.GetFloat());
+		break;
+	}
 }
 
 void CSPRenderer::RenderSkybox()
@@ -69,6 +97,7 @@ void CSPRenderer::RenderSkybox()
 		glTranslatef(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z);
 
 		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
 
 		if (GLEW_ARB_multitexture || GLEW_VERSION_1_3)
 			glActiveTexture(GL_TEXTURE0);

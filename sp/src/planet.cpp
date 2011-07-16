@@ -203,12 +203,16 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 
 		c->BeginRenderQuads();
 		c->SetColor(Color(20, 100, 00));
+		c->Normal(vec1.Normalized());
 		c->Vertex(vec1);
 		c->SetColor(Color(0, 100, 00));
+		c->Normal(vec2.Normalized());
 		c->Vertex(vec2);
 		c->SetColor(Color(20, 100, 00));
+		c->Normal(vec3.Normalized());
 		c->Vertex(vec3);
 		c->SetColor(Color(0, 100, 00));
+		c->Normal(vec4.Normalized());
 		c->Vertex(vec4);
 		c->EndRender();
 
