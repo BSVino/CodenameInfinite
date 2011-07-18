@@ -1,7 +1,7 @@
 #ifndef SP_PLANET_H
 #define SP_PLANET_H
 
-#include <tengine/game/baseentity.h>
+#include "sp_entity.h"
 #include <quadtree.h>
 
 class CBranchData
@@ -13,13 +13,24 @@ public:
 		bRender = false;
 		flScreenSize = 1;
 		flLastScreenSizeUpdate = -1;
+		bRenderVectorsDirty = true;
 	}
 
 public:
-	float flHeight;
-	bool bRender;
-	float flScreenSize;
-	float flLastScreenSizeUpdate;
+	float	flHeight;
+	bool	bRender;
+	float	flScreenSize;
+	float	flLastScreenSizeUpdate;
+
+	bool	bRenderVectorsDirty;
+	Vector	vec1;
+	Vector	vec2;
+	Vector	vec3;
+	Vector	vec4;
+	Vector	vec1n;
+	Vector	vec2n;
+	Vector	vec3n;
+	Vector	vec4n;
 };
 
 class CPlanetTerrain : public CQuadTree<CBranchData>, public CQuadTreeDataSource<CBranchData>
@@ -43,6 +54,7 @@ public:
 
 	void						UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch);
 	bool						ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch);
+	void						CalcRenderVectors(CQuadTreeBranch<CBranchData>* pBranch);
 
 	virtual Vector2D			WorldToQuadTree(const CQuadTree<CBranchData>* pTree, const Vector& vecWorld) const;
 	virtual Vector				QuadTreeToWorld(const CQuadTree<CBranchData>* pTree, const Vector2D& vecTree) const;
@@ -58,9 +70,9 @@ protected:
 	int							m_iBuildsThisFrame;
 };
 
-class CPlanet : public CBaseEntity
+class CPlanet : public CSPEntity
 {
-	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
+	REGISTER_ENTITY_CLASS(CPlanet, CSPEntity);
 
 public:
 								CPlanet();
@@ -73,24 +85,28 @@ public:
 	virtual void				Think();
 	virtual void				RenderUpdate();
 
-	virtual float				GetRenderRadius() const { return m_flRadius; };
-	virtual bool				ShouldRender() const { return true; };
+	virtual float				GetRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;
 
-	void						SetRadius(float flRadius) { m_flRadius = flRadius; }
-	float						GetRadius() { return m_flRadius; }
+	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
+	const CScalableFloat&		GetRadius() { return m_flRadius; }
 
-	void						SetAtmosphereThickness(float flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
-	float						GetAtmosphereThickness() { return m_flAtmosphereThickness; }
+	void						SetAtmosphereThickness(const CScalableFloat& flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
+	const CScalableFloat&		GetAtmosphereThickness() { return m_flAtmosphereThickness; }
 
-	float						GetCloseOrbit();
+	int							GetMinQuadRenderDepth() { return m_iMinQuadRenderDepth; };
+
+	CScalableFloat				GetCloseOrbit();
 
 	void						SetMinutesPerRevolution(float f) { m_flMinutesPerRevolution = f; }
 
+	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
+
 protected:
-	float						m_flRadius;
-	float						m_flAtmosphereThickness;
+	CScalableFloat				m_flRadius;
+	CScalableFloat				m_flAtmosphereThickness;
 	float						m_flMinutesPerRevolution;
+	int							m_iMinQuadRenderDepth;
 
 	union
 	{

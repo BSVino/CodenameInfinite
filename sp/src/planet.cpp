@@ -15,9 +15,10 @@ NETVAR_TABLE_BEGIN(CPlanet);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CPlanet);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRadius);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flAtmosphereThickness);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableFloat, m_flRadius);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableFloat, m_flAtmosphereThickness);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flMinutesPerRevolution);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iMinQuadRenderDepth);
 	SAVEDATA_OMIT(m_pTerrainFd);
 	SAVEDATA_OMIT(m_pTerrainBk);
 	SAVEDATA_OMIT(m_pTerrainRt);
@@ -61,9 +62,9 @@ void CPlanet::Precache()
 void CPlanet::Spawn()
 {
 	// 1500km, a bit smaller than the moon
-	SetRadius(1500);
+	SetRadius(CScalableFloat(1.5f, SCALE_MEGAMETER));
 	// 20 km thick
-	SetAtmosphereThickness(20);
+	SetAtmosphereThickness(CScalableFloat(20, SCALE_KILOMETER));
 }
 
 void CPlanet::Think()
@@ -71,14 +72,39 @@ void CPlanet::Think()
 	BaseClass::Think();
 
 	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution));
-
-	SPGame()->GetSPRenderer()->AddPlanetToUpdate(this);
 }
 
 void CPlanet::RenderUpdate()
 {
+	Vector vecUp;
+	Vector vecForward;
+	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
+
+	Matrix4x4 mPlanet = GetGlobalTransform();
+
+	Vector vecOrigin = GetGlobalOrigin();
+	Vector vecOutside = vecOrigin + vecUp * GetRenderRadius();
+
+	Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecOrigin);
+	Vector vecTop = GameServer()->GetRenderer()->ScreenPosition(vecOutside);
+
+	float flWidth = (vecTop - vecScreen).Length()*2;
+
+	if (flWidth < 20)
+		m_iMinQuadRenderDepth = 1;
+	else if (flWidth < 50)
+		m_iMinQuadRenderDepth = 2;
+	else
+		m_iMinQuadRenderDepth = 3;
+
 	for (size_t i = 0; i < 6; i++)
 		m_pTerrain[i]->Think();
+}
+
+float CPlanet::GetRenderRadius() const
+{
+	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
+	return m_flRadius.GetUnits(pRenderer->GetRenderingScale());
 }
 
 void CPlanet::PostRender(bool bTransparent) const
@@ -96,10 +122,10 @@ void CPlanet::PostRender(bool bTransparent) const
 		m_pTerrain[i]->Render(&c);
 }
 
-float CPlanet::GetCloseOrbit()
+CScalableFloat CPlanet::GetCloseOrbit()
 {
 	// For Earth values this resolves to about 600km above the ground, or about twice the altitude of the ISS.
-	return GetRadius()/10;
+	return GetRadius()/CScalableFloat(10, m_flRadius.GetScale());
 }
 
 void CPlanetTerrain::Init()
@@ -109,6 +135,7 @@ void CPlanetTerrain::Init()
 	oData.flHeight = 0;
 	oData.flScreenSize = 1;
 	oData.flLastScreenSizeUpdate = -1;
+	oData.bRenderVectorsDirty = true;
 	CQuadTree<CBranchData>::Init(this, oData);
 }
 
@@ -150,8 +177,11 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 
 			for (size_t i = 0; i < 4; i++)
 				ThinkBranch(pBranch->m_pBranches[i]);
+
+			return;
 		}
 
+		CalcRenderVectors(pBranch);
 		return;
 	}
 
@@ -175,6 +205,7 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 		for (size_t i = 0; i < 4; i++)
 			pBranch->m_pBranches[i]->m_oData.bRender = false;
 
+		CalcRenderVectors(pBranch);
 		return;
 	}
 	else
@@ -196,34 +227,29 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 {
 	if (pBranch->m_oData.bRender)
 	{
-		Vector vec1 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMin);
-		Vector vec2 = m_pDataSource->QuadTreeToWorld(this, Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
-		Vector vec3 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMax);
-		Vector vec4 = m_pDataSource->QuadTreeToWorld(this, Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+		TAssert(!pBranch->m_oData.bRenderVectorsDirty);
 
 		c->BeginRenderQuads();
-		c->SetColor(Color(20, 100, 00));
-		c->Normal(vec1.Normalized());
-		c->Vertex(vec1);
 		c->SetColor(Color(0, 100, 00));
-		c->Normal(vec2.Normalized());
-		c->Vertex(vec2);
+		c->Normal(pBranch->m_oData.vec1n);
+		c->Vertex(pBranch->m_oData.vec1);
+		c->Normal(pBranch->m_oData.vec2n);
+		c->Vertex(pBranch->m_oData.vec2);
+		c->Normal(pBranch->m_oData.vec3n);
+		c->Vertex(pBranch->m_oData.vec3);
 		c->SetColor(Color(20, 100, 00));
-		c->Normal(vec3.Normalized());
-		c->Vertex(vec3);
-		c->SetColor(Color(0, 100, 00));
-		c->Normal(vec4.Normalized());
-		c->Vertex(vec4);
+		c->Normal(pBranch->m_oData.vec4n);
+		c->Vertex(pBranch->m_oData.vec4);
 		c->EndRender();
 
 		if (r_showquaddebugoutlines.GetBool())
 		{
 			c->SetColor(Color(255, 255, 255));
 			c->BeginRenderDebugLines();
-			c->Vertex(vec1);
-			c->Vertex(vec2);
-			c->Vertex(vec3);
-			c->Vertex(vec4);
+			c->Vertex(pBranch->m_oData.vec1);
+			c->Vertex(pBranch->m_oData.vec2);
+			c->Vertex(pBranch->m_oData.vec3);
+			c->Vertex(pBranch->m_oData.vec4);
 			c->EndRender();
 		}
 	}
@@ -271,7 +297,8 @@ CVar r_minterrainsize("r_minterrainsize", "100");
 bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
 	Vector vecQuadCenter = pBranch->GetCenter();
-	Vector vecQuadMax = QuadTreeToWorld(this, pBranch->m_vecMax);
+	CalcRenderVectors(pBranch);
+	Vector vecQuadMax = pBranch->m_oData.vec3;
 
 	float flRadius = (vecQuadCenter - vecQuadMax).Length();
 	if (flRadius < r_terrainresolution.GetFloat())
@@ -283,10 +310,28 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 
 	UpdateScreenSize(pBranch);
 
-	if (pBranch->m_oData.flScreenSize < r_minterrainsize.GetFloat())
+	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize < r_minterrainsize.GetFloat())
 		return false;
 
 	return true;
+}
+
+void CPlanetTerrain::CalcRenderVectors(CQuadTreeBranch<CBranchData>* pBranch)
+{
+	if (!pBranch->m_oData.bRenderVectorsDirty)
+		return;
+
+	pBranch->m_oData.vec1 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMin);
+	pBranch->m_oData.vec2 = m_pDataSource->QuadTreeToWorld(this, Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+	pBranch->m_oData.vec3 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMax);
+	pBranch->m_oData.vec4 = m_pDataSource->QuadTreeToWorld(this, Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+
+	pBranch->m_oData.vec1n = pBranch->m_oData.vec1.Normalized();
+	pBranch->m_oData.vec2n = pBranch->m_oData.vec2.Normalized();
+	pBranch->m_oData.vec3n = pBranch->m_oData.vec3.Normalized();
+	pBranch->m_oData.vec4n = pBranch->m_oData.vec4.Normalized();
+
+	pBranch->m_oData.bRenderVectorsDirty = false;
 }
 
 Vector2D CPlanetTerrain::WorldToQuadTree(const CQuadTree<CBranchData>* pTree, const Vector& v) const
@@ -356,7 +401,7 @@ Vector CPlanetTerrain::QuadTreeToWorld(const CQuadTree<CBranchData>* pTree, cons
 	else
 		vecCubePoint = Vector(x, y, vecDirection[2]);
 
-	return vecCubePoint.Normalized() * m_pPlanet->GetRadius();
+	return vecCubePoint.Normalized() * m_pPlanet->GetRenderRadius();
 }
 
 Vector2D CPlanetTerrain::WorldToQuadTree(CQuadTree<CBranchData>* pTree, const Vector& v)

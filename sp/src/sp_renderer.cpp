@@ -16,6 +16,7 @@
 #include "sp_character.h"
 #include "planet.h"
 #include "star.h"
+#include "sp_camera.h"
 
 CSPRenderer::CSPRenderer()
 	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
@@ -26,6 +27,8 @@ CSPRenderer::CSPRenderer()
 	m_iSkyboxRT = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
 	m_iSkyboxDN = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
 	m_iSkyboxUP = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+
+	m_eRenderingScale = SCALE_NONE;
 }
 
 void CSPRenderer::PreFrame()
@@ -33,8 +36,6 @@ void CSPRenderer::PreFrame()
 	BaseClass::PreFrame();
 
 	SPGame()->GetLocalPlayerCharacter()->LockViewToPlanet();
-
-	m_ahPlanetsToUpdate.clear();
 }
 
 CVar r_star_constant_attenuation("r_star_constant_attenuation", "0.1");
@@ -45,20 +46,55 @@ void CSPRenderer::StartRendering()
 {
 	TPROF("CSPRenderer::StartRendering");
 
-	BaseClass::StartRendering();
+	m_hClosestStar = NULL;
+	for (size_t i = SCALE_NONE; i <= SCALE_HIGHEST; i++)
+		m_ahRenderScales[i].clear();
 
-	// Now is the time to have the terrain calculate its junk. The camera and screen/world space stuff are set up.
-	for (size_t i = 0; i < m_ahPlanetsToUpdate.size(); i++)
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
-		CPlanet* pPlanet = m_ahPlanetsToUpdate[i];
-		if (!pPlanet)
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
+		if (pSPEntity)
+		{
+			scale_t eScale = pSPEntity->GetScale();
+			m_ahRenderScales[eScale].push_back(pSPEntity);
+		}
+
+		CStar* pStar = dynamic_cast<CStar*>(pEntity);
+		if (!pStar)
 			continue;
 
-		pPlanet->RenderUpdate();
+		if (m_hClosestStar == NULL)
+		{
+			m_hClosestStar = pStar;
+			continue;
+		}
+
+		if (pStar->GetGlobalOrigin().DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalOrigin().DistanceSqr(m_vecCameraPosition))
+			m_hClosestStar = pStar;
 	}
 
 	RenderSkybox();
 
+	RenderScale(SCALE_LIGHTYEAR);
+	RenderScale(SCALE_AU);
+	RenderScale(SCALE_MEGAMETER);
+	RenderScale(SCALE_KILOMETER);
+
+	m_eRenderingScale = SCALE_METER;
+
+	SetCameraPosition(GameServer()->GetCamera()->GetCameraPosition());
+	SetCameraTarget(GameServer()->GetCamera()->GetCameraTarget());
+	SetCameraUp(GameServer()->GetCamera()->GetCameraUp());
+	SetCameraFOV(GameServer()->GetCamera()->GetCameraFOV());
+	SetCameraNear(GameServer()->GetCamera()->GetCameraNear());
+	SetCameraFar(GameServer()->GetCamera()->GetCameraFar());
+
+	BaseClass::StartRendering();
+}
+
+void CSPRenderer::SetupLighting()
+{
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_COLOR_MATERIAL);
@@ -89,6 +125,42 @@ void CSPRenderer::RenderSkybox()
 		return;
 
 	TPROF("CSPRenderer::RenderSkybox");
+
+	m_eRenderingScale = SCALE_METER;
+
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	SetCameraPosition(Vector(0, 0, 0));
+	SetCameraTarget(Vector(pCharacter->GetGlobalTransform().GetColumn(0)));
+	SetCameraUp(GameServer()->GetCamera()->GetCameraUp());
+	SetCameraFOV(GameServer()->GetCamera()->GetCameraFOV());
+	SetCameraNear(GameServer()->GetCamera()->GetCameraNear());
+	SetCameraFar(GameServer()->GetCamera()->GetCameraFar());
+
+	glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_CURRENT_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+
+	gluPerspective(
+			m_flCameraFOV,
+			(float)m_iWidth/(float)m_iHeight,
+			m_flCameraNear,
+			m_flCameraFar
+		);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	glPushMatrix();
+	glLoadIdentity();
+
+	gluLookAt(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z,
+		m_vecCameraTarget.x, m_vecCameraTarget.y, m_vecCameraTarget.z,
+		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_TEXTURE_2D);
 
 	if (true)
 	{
@@ -157,25 +229,60 @@ void CSPRenderer::RenderSkybox()
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	// Set camera 1/16 to match the scale of the skybox
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(m_vecCameraPosition.x/16, m_vecCameraPosition.y/16, m_vecCameraPosition.z/16,
-		m_vecCameraTarget.x/16, m_vecCameraTarget.y/16, m_vecCameraTarget.z/16,
-		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
+	glPopMatrix();
+	glPopAttrib();
 
-	// Draw skybox shit.
-
-	// Reset the camera
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z,
-		m_vecCameraTarget.x, m_vecCameraTarget.y, m_vecCameraTarget.z,
-		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
-
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
 }
-void CSPRenderer::AddPlanetToUpdate(CPlanet* pPlanet)
+
+void CSPRenderer::FinishRendering()
 {
-	m_ahPlanetsToUpdate.push_back(pPlanet);
+	TPROF("CSPRenderer::FinishRendering");
+
+	BaseClass::FinishRendering();
+
+	m_eRenderingScale = SCALE_NONE;
+}
+
+void CSPRenderer::RenderScale(scale_t eRenderScale)
+{
+	m_eRenderingScale = eRenderScale;
+
+	eastl::vector<CEntityHandle<CSPEntity> >& ahRender = m_ahRenderScales[m_eRenderingScale];
+	size_t iEntities = ahRender.size();
+	if (iEntities == 0)
+		return;
+
+	SetCameraPosition(GameServer()->GetCamera()->GetCameraPosition());
+	SetCameraTarget(GameServer()->GetCamera()->GetCameraTarget());
+	SetCameraUp(GameServer()->GetCamera()->GetCameraUp());
+	SetCameraFOV(GameServer()->GetCamera()->GetCameraFOV());
+	SetCameraNear(GameServer()->GetCamera()->GetCameraNear());
+	SetCameraFar(GameServer()->GetCamera()->GetCameraFar());
+
+	BaseClass::StartRendering();
+
+	SetupLighting();
+
+	bool bFrustumCulling = CVar::GetCVarBool("r_frustumculling");
+
+	// First render all opaque objects
+	for (size_t i = 0; i < iEntities; i++)
+	{
+		CSPEntity* pSPEntity = ahRender[i];
+		if (bFrustumCulling && !IsSphereInFrustum(CScalableVector(pSPEntity->GetRenderOrigin(), pSPEntity->GetScale()).GetUnits(m_eRenderingScale), CScalableFloat(pSPEntity->GetRenderRadius(), pSPEntity->GetScale()).GetUnits(m_eRenderingScale)))
+			continue;
+
+		CPlanet* pPlanet = dynamic_cast<CPlanet*>(ahRender[i].GetPointer());
+		if (pPlanet)
+			pPlanet->RenderUpdate();
+
+		ahRender[i]->Render(false);
+	}
+
+	for (size_t i = 0; i < iEntities; i++)
+		ahRender[i]->Render(true);
+
+	BaseClass::FinishRendering();
 }

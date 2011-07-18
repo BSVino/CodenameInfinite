@@ -69,51 +69,68 @@ CVar::CVar(tstring sName, tstring sValue)
 	: CCommand(sName, ::SetCVar)
 {
 	m_sValue = sValue;
+
+	m_bDirtyValues = true;
 }
 
 void CVar::SetValue(tstring sValue)
 {
 	m_sValue = sValue;
+
+	m_bDirtyValues = true;
 }
 
 void CVar::SetValue(int iValue)
 {
 	m_sValue = sprintf(tstring("%d"), iValue);
+
+	m_bDirtyValues = true;
 }
 
 void CVar::SetValue(float flValue)
 {
 	m_sValue = sprintf(tstring("%f"), flValue);
+
+	m_bDirtyValues = true;
 }
 
 bool CVar::GetBool()
 {
-	if (m_sValue.comparei(_T("yes")) == 0)
-		return true;
+	if (m_bDirtyValues)
+		CalculateValues();
 
-	if (m_sValue.comparei(_T("true")) == 0)
-		return true;
-
-	if (m_sValue.comparei(_T("on")) == 0)
-		return true;
-
-	// Don't want to use _wtoi I don't think it's as portable.
-	if (atoi(convertstring<tchar, char>(m_sValue).c_str()) != 0)
-		return true;
-
-	return false;
+	return m_bValue;
 }
 
 int CVar::GetInt()
 {
-	// Don't want to use _wtoi I don't think it's as portable.
-	return atoi(convertstring<tchar, char>(m_sValue).c_str());
+	if (m_bDirtyValues)
+		CalculateValues();
+
+	return m_iValue;
 }
 
 float CVar::GetFloat()
 {
-	// Don't want to use _wtof I don't think it's as portable.
-	return (float)atof(convertstring<tchar, char>(m_sValue).c_str());
+	if (m_bDirtyValues)
+		CalculateValues();
+
+	return m_flValue;
+}
+
+void CVar::CalculateValues()
+{
+	if (!m_bDirtyValues)
+		return;
+
+	m_flValue = (float)atof(convertstring<tchar, char>(m_sValue).c_str());
+	m_iValue = atoi(convertstring<tchar, char>(m_sValue).c_str());
+	m_bValue = (m_sValue.comparei(_T("yes")) == 0 ||
+		m_sValue.comparei(_T("true")) == 0 ||
+		m_sValue.comparei(_T("on")) == 0 ||
+		atoi(convertstring<tchar, char>(m_sValue).c_str()) != 0);
+
+	m_bDirtyValues = false;
 }
 
 CVar* CVar::FindCVar(tstring sName)

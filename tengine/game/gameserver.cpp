@@ -599,6 +599,7 @@ void CGameServer::Render()
 	CModelDissolver::Render();
 
 	GameWindow()->GetRenderer()->FinishRendering();
+	GameWindow()->GetRenderer()->FinishFrame();
 }
 
 void CGameServer::GenerateSaveCRC(size_t iInput)

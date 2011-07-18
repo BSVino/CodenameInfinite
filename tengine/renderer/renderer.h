@@ -168,6 +168,7 @@ public:
 	virtual void	DrawBackground();
 	virtual void	StartRendering();
 	virtual void	FinishRendering();
+	virtual void	FinishFrame();
 	virtual void	RenderOffscreenBuffers();
 	virtual void	RenderFullscreenBuffers();
 	virtual void	SetupSceneShader() {};

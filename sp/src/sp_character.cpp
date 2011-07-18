@@ -47,8 +47,8 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 	{
 		CPlanet* pNearestPlanet = FindNearestPlanet();
 
-		float flDistance = pNearestPlanet->Distance(GetGlobalOrigin()) - pNearestPlanet->GetRadius();
-		if (flDistance < pNearestPlanet->GetAtmosphereThickness())
+		float flDistance = CScalableFloat(pNearestPlanet->Distance(CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(SCALE_MEGAMETER)) - pNearestPlanet->GetRadius().GetUnits(SCALE_MEGAMETER), pNearestPlanet->GetScale()).GetUnits(SCALE_METER);
+		if (flDistance < pNearestPlanet->GetAtmosphereThickness().GetUnits(SCALE_METER))
 			m_hNearestPlanet = pNearestPlanet;
 		else
 			m_hNearestPlanet = NULL;
@@ -65,8 +65,8 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 		if (eFindPlanet == FINDPLANET_ANY)
 			return pNearestPlanet;
 
-		float flDistance = pNearestPlanet->Distance(GetGlobalOrigin()) - pNearestPlanet->GetRadius();
-		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit())
+		float flDistance = CScalableFloat(pNearestPlanet->Distance(CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(SCALE_MEGAMETER)) - pNearestPlanet->GetRadius().GetUnits(SCALE_MEGAMETER), pNearestPlanet->GetScale()).GetUnits(SCALE_METER);
+		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit().GetUnits(SCALE_METER))
 			return NULL;
 		else
 			return pNearestPlanet;
@@ -86,8 +86,8 @@ CPlanet* CSPCharacter::FindNearestPlanet()
 		if (!pPlanet)
 			continue;
 
-		float flDistance = pPlanet->Distance(GetGlobalOrigin());
-		flDistance -= pPlanet->GetRadius();
+		float flDistance = CScalableFloat(pPlanet->Distance(CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(SCALE_MEGAMETER)), pPlanet->GetScale()).GetUnits(SCALE_METER);
+		flDistance -= pPlanet->GetRadius().GetUnits(SCALE_METER);
 
 		if (pNearestPlanet == NULL)
 		{
@@ -171,10 +171,12 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
-	Vector vecPlanetOrigin = pPlanet->GetGlobalOrigin();
-	Vector vecCharacterDirection = (GetGlobalOrigin() - vecPlanetOrigin).Normalized();
+	CScalableVector vecPlanetOrigin(pPlanet->GetGlobalOrigin(), pPlanet->GetScale());
+	CScalableVector vecCharacterOrigin(GetGlobalOrigin(), SCALE_METER);
+	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
-	SetGlobalOrigin(vecPlanetOrigin + vecCharacterDirection*pPlanet->GetRadius());
+	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * pPlanet->GetRadius();
+	SetGlobalOrigin(vecOrigin.GetUnits(SCALE_METER));
 
 	SetMoveParent(pPlanet);
 }
@@ -182,17 +184,21 @@ void CSPCharacter::StandOnNearestPlanet()
 float CSPCharacter::EyeHeight()
 {
 	// 180 centimeters
-	return 0.00018f;
+	return 0.18f;
 }
 
 float CSPCharacter::CharacterSpeed()
 {
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
 
-	float flSpeed = 80000;
+	float flSpeed = 80000000;
 
 	if (pPlanet)
-		flSpeed = RemapValClamped(pPlanet->Distance(GetGlobalOrigin()), pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness(), pPlanet->GetRadius()+pPlanet->GetCloseOrbit(), 2000.0f, 80000);
+	{
+		CScalableVector vecOrigin(GetGlobalOrigin(), SCALE_METER);
+		CScalableFloat flDistance(pPlanet->Distance(vecOrigin.GetUnits(pPlanet->GetScale())), pPlanet->GetScale());
+		flSpeed = RemapValClamped(flDistance.GetUnits(SCALE_METER), (pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_METER), (pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_METER), 20000.0f, 80000000);
+	}
 
 	return flSpeed;
 }

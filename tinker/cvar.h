@@ -50,10 +50,12 @@ public:
 	void				SetValue(int iValue);
 	void				SetValue(float flValue);
 
-	tstring		GetValue() { return m_sValue; };
+	tstring				GetValue() { return m_sValue; };
 	bool				GetBool();
 	int					GetInt();
 	float				GetFloat();
+
+	void				CalculateValues();
 
 	static CVar*		FindCVar(tstring sName);
 
@@ -61,13 +63,18 @@ public:
 	static void			SetCVar(tstring sName, int iValue);
 	static void			SetCVar(tstring sName, float flValue);
 
-	static tstring GetCVarValue(tstring sName);
+	static tstring		GetCVarValue(tstring sName);
 	static bool			GetCVarBool(tstring sName);
 	static int			GetCVarInt(tstring sName);
 	static float		GetCVarFloat(tstring sName);
 
 protected:
-	tstring		m_sValue;
+	tstring				m_sValue;
+
+	bool				m_bDirtyValues;
+	bool				m_bValue;
+	int					m_iValue;
+	float				m_flValue;
 };
 
 #endif

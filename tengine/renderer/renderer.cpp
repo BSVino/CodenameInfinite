@@ -1191,7 +1191,10 @@ void CRenderer::FinishRendering()
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
+}
 
+void CRenderer::FinishFrame()
+{
 	if (ShouldUseFramebuffers())
 		glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 

@@ -1,11 +1,11 @@
 #ifndef SP_STAR_H
 #define SP_STAR_H
 
-#include <tengine/game/baseentity.h>
+#include "sp_entity.h"
 
-class CStar : public CBaseEntity
+class CStar : public CSPEntity
 {
-	REGISTER_ENTITY_CLASS(CStar, CBaseEntity);
+	REGISTER_ENTITY_CLASS(CStar, CSPEntity);
 
 public:
 	virtual void				Precache();
@@ -13,17 +13,18 @@ public:
 
 	virtual void				Think();
 
-	virtual float				GetRenderRadius() const { return m_flRadius; };
-	virtual bool				ShouldRender() const { return true; };
+	virtual float				GetRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;
 
-	void						SetRadius(float flRadius) { m_flRadius = flRadius; }
-	float						GetRadius() const { return m_flRadius; }
+	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
+	const CScalableFloat&		GetRadius() const { return m_flRadius; }
 
-	float						GetCloseOrbit();
+	CScalableFloat				GetCloseOrbit();
+
+	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
 protected:
-	float						m_flRadius;
+	CScalableFloat				m_flRadius;
 };
 
 #endif

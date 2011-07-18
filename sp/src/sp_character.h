@@ -3,6 +3,8 @@
 
 #include <tengine/game/entities/character.h>
 
+#include "sp_common.h"
+
 class CPlanet;
 
 typedef enum {

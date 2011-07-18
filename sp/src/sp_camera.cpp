@@ -8,6 +8,7 @@
 #include "sp_character.h"
 #include "sp_game.h"
 #include "planet.h"
+#include "sp_renderer.h"
 
 Vector CSPCamera::GetCameraPosition()
 {
@@ -20,7 +21,11 @@ Vector CSPCamera::GetCameraPosition()
 
 	Vector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
-	return pCharacter->GetGlobalOrigin() + vecEyeHeight;
+	Vector vecPosition = pCharacter->GetGlobalOrigin() + vecEyeHeight;
+
+	CScalableVector vecReturn(vecPosition, SCALE_METER);
+
+	return vecReturn.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
 }
 
 Vector CSPCamera::GetCameraTarget()
@@ -33,9 +38,7 @@ Vector CSPCamera::GetCameraTarget()
 	if (!pCharacter)
 		return Vector(0,0,0);
 
-	Vector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
-
-	return pCharacter->GetGlobalOrigin() + vecEyeHeight + Vector(pCharacter->GetGlobalTransform().GetColumn(0));
+	return GetCameraPosition() + Vector(pCharacter->GetGlobalTransform().GetColumn(0));
 }
 
 Vector CSPCamera::GetCameraUp()

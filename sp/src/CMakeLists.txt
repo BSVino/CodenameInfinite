@@ -17,6 +17,8 @@ set (SPINTRO_SOURCES
 
 	planet.cpp
 	star.cpp
+
+	sp_common.cpp
 	sp_character.cpp
 	sp_player.cpp
 
@@ -25,6 +27,7 @@ set (SPINTRO_SOURCES
 	sp_renderer.cpp
 	sp_systems.cpp
 	sp_window.cpp
+	sp_entity.cpp
 )
 add_executable (sp ${SPINTRO_SOURCES})
 target_link_libraries (sp tinker tengine)

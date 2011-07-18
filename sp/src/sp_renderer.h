@@ -8,7 +8,11 @@
 #include <tengine/game/baseentity.h>
 #include <renderer/renderer.h>
 
+#include "sp_common.h"
+#include "sp_entity.h"
+
 class CPlanet;
+class CStar;
 
 class CSPRenderer : public CRenderer
 {
@@ -22,9 +26,12 @@ public:
 
 	virtual void	DrawBackground() {};	// Skybox instead
 	virtual void	StartRendering();
+	virtual void	SetupLighting();
 	virtual void	RenderSkybox();
+	virtual void	FinishRendering();
 
-	void			AddPlanetToUpdate(CPlanet* pPlanet);
+	void			RenderScale(scale_t eRenderScale);
+	scale_t			GetRenderingScale() { return m_eRenderingScale; }
 
 protected:
 	size_t			m_iSkyboxFT;
@@ -34,7 +41,12 @@ protected:
 	size_t			m_iSkyboxDN;
 	size_t			m_iSkyboxUP;
 
-	eastl::vector<CEntityHandle<CPlanet> >	m_ahPlanetsToUpdate;
+	CEntityHandle<CStar>	m_hClosestStar;
+
+	// A list of objects to render at which scales.
+	eastl::map<size_t, eastl::vector<CEntityHandle<CSPEntity> > >	m_ahRenderScales;
+
+	scale_t			m_eRenderingScale;
 };
 
 #endif
