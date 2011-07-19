@@ -73,6 +73,9 @@ void CPlanet::Think()
 	BaseClass::Think();
 
 	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution));
+
+	for (size_t i = 0; i < 6; i++)
+		m_pTerrain[i]->ResetRenderFlags();
 }
 
 void CPlanet::RenderUpdate()
@@ -81,9 +84,9 @@ void CPlanet::RenderUpdate()
 	Vector vecForward;
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
-	Matrix4x4 mPlanet = GetGlobalTransform();
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
-	Vector vecOrigin = GetGlobalOrigin();
+	Vector vecOrigin = CScalableVector::ConvertUnits(GetGlobalOrigin(), GetScale(), eScale);
 	Vector vecOutside = vecOrigin + vecUp * GetRenderRadius();
 
 	Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecOrigin);
@@ -108,6 +111,8 @@ float CPlanet::GetRenderRadius() const
 	return m_flRadius.GetUnits(pRenderer->GetRenderingScale());
 }
 
+CVar r_colorcodescales("r_colorcodescales", "off");
+
 void CPlanet::PostRender(bool bTransparent) const
 {
 	BaseClass::PostRender(bTransparent);
@@ -115,10 +120,31 @@ void CPlanet::PostRender(bool bTransparent) const
 	if (bTransparent)
 		return;
 
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+
 	CRenderingContext c(GameServer()->GetRenderer());
-	c.Transform(GetGlobalTransform());
+
+	Matrix4x4 mGlobalTransform = GetGlobalTransform();
+	CScalableVector vecTranslation = CScalableVector(mGlobalTransform.GetTranslation(), GetScale());
+	mGlobalTransform.SetTranslation(vecTranslation.GetUnits(eScale));
+	c.Transform(mGlobalTransform);
+
 	c.SetBackCulling(false);	// Ideally this would be on but it's not a big deal.
 	c.BindTexture("textures/planet.png");
+
+	if (r_colorcodescales.GetBool())
+	{
+		if (eScale == SCALE_KILOMETER)
+			c.SetColor(Color(0, 0, 255));
+		else if (eScale == SCALE_MEGAMETER)
+			c.SetColor(Color(0, 255, 0));
+		else if (eScale == SCALE_GIGAMETER)
+			c.SetColor(Color(255, 0, 0));
+		else
+			c.SetColor(Color(255, 255, 255));
+	}
+	else
+		c.SetColor(Color(255, 255, 255));
 
 	for (size_t i = 0; i < 6; i++)
 		m_pTerrain[i]->Render(&c);
@@ -134,6 +160,7 @@ void CPlanetTerrain::Init()
 {
 	CBranchData oData;
 	oData.bRender = true;
+	oData.bRendered = false;
 	oData.flHeight = 0;
 	oData.flScreenSize = 1;
 	oData.flLastScreenSizeUpdate = -1;
@@ -141,8 +168,25 @@ void CPlanetTerrain::Init()
 	CQuadTree<CBranchData>::Init(this, oData);
 }
 
+void CPlanetTerrain::ResetRenderFlags(CQuadTreeBranch<CBranchData>* pBranch)
+{
+	if (pBranch)
+	{
+		if (pBranch->m_pBranches[0])
+		{
+			for (size_t i = 0; i < 4; i++)
+				ResetRenderFlags(pBranch->m_pBranches[i]);
+		}
+
+		pBranch->m_oData.bRendered = false;
+	}
+	else
+		ResetRenderFlags(m_pQuadTreeHead);
+}
+
 void CPlanetTerrain::Think()
 {
+	m_apRenderBranches.clear();
 	m_iBuildsThisFrame = 0;
 	ThinkBranch(m_pQuadTreeHead);
 }
@@ -151,6 +195,9 @@ CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
 
 void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
+	if (pBranch->m_oData.bRendered)
+		return;
+
 	if (pBranch->m_oData.bRender)
 	{
 		// If I can render then maybe my kids can too?
@@ -177,13 +224,20 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 			for (size_t i = 0; i < 4; i++)
 				pBranch->m_pBranches[i]->m_oData.bRender = true;
 
+			bool bAllKidsRendered = true;
 			for (size_t i = 0; i < 4; i++)
+			{
 				ThinkBranch(pBranch->m_pBranches[i]);
+				bAllKidsRendered &= pBranch->m_pBranches[i]->m_oData.bRendered;
+			}
+
+			if (bAllKidsRendered)
+				pBranch->m_oData.bRendered = true;
 
 			return;
 		}
 
-		CalcRenderVectors(pBranch);
+		ProcessBranchRendering(pBranch);
 		return;
 	}
 
@@ -207,67 +261,94 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 		for (size_t i = 0; i < 4; i++)
 			pBranch->m_pBranches[i]->m_oData.bRender = false;
 
-		CalcRenderVectors(pBranch);
+		ProcessBranchRendering(pBranch);
 		return;
 	}
 	else
 	{
+		bool bAllKidsRendered = true;
+
 		// My kids should be rendering.
 		for (size_t i = 0; i < 4; i++)
+		{
 			ThinkBranch(pBranch->m_pBranches[i]);
+			bAllKidsRendered &= pBranch->m_pBranches[i]->m_oData.bRendered;
+		}
+
+		if (bAllKidsRendered)
+			pBranch->m_oData.bRendered = true;
 	}
+}
+
+void CPlanetTerrain::ProcessBranchRendering(CQuadTreeBranch<CBranchData>* pBranch)
+{
+	TAssert(pBranch->m_oData.bRender);
+	TAssert(!pBranch->m_oData.bRendered);
+
+	CalcRenderVectors(pBranch);
+
+	scale_t eRendering = SPGame()->GetSPRenderer()->GetRenderingScale();
+
+	Matrix4x4 mPlanet = m_pPlanet->GetGlobalTransform();
+	CScalableVector vecCenter(mPlanet*pBranch->GetCenter(), m_pPlanet->GetScale());
+	CScalableVector vecCorner(mPlanet*QuadTreeToWorld(this, pBranch->m_vecMax), m_pPlanet->GetScale());
+	CScalableVector vecPlayer(GameServer()->GetRenderer()->GetCameraPosition(), eRendering);
+
+	float flDistance = (vecCenter - vecPlayer).Length().GetUnits(eRendering);
+	float flSize = (vecCenter - vecCorner).Length().GetUnits(eRendering);
+
+	if (flDistance < 5 + flSize)
+		return;
+
+	if (flDistance > 5000 + flSize)
+		return;
+
+	m_apRenderBranches.push_back(pBranch);
+	pBranch->m_oData.bRendered = true;
 }
 
 void CPlanetTerrain::Render(class CRenderingContext* c) const
 {
-	RenderBranch(m_pQuadTreeHead, c);
+	for (size_t i = 0; i < m_apRenderBranches.size(); i++)
+		RenderBranch(m_apRenderBranches[i], c);
 }
 
 CVar r_showquaddebugoutlines("r_showquaddebugoutlines", "off");
 
 void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, class CRenderingContext* c) const
 {
-	if (pBranch->m_oData.bRender)
-	{
-		TAssert(!pBranch->m_oData.bRenderVectorsDirty);
+	TAssert(pBranch->m_oData.bRendered);
+	TAssert(!pBranch->m_oData.bRenderVectorsDirty);
 
-		c->SetColor(Color(255, 255, 255));
-		c->BeginRenderQuads();
-		c->TexCoord(pBranch->m_vecMin);
-		c->Normal(pBranch->m_oData.vec1n);
-		c->Vertex(pBranch->m_oData.vec1);
-		c->TexCoord(Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
-		c->Normal(pBranch->m_oData.vec2n);
-		c->Vertex(pBranch->m_oData.vec2);
-		c->TexCoord(pBranch->m_vecMax);
-		c->Normal(pBranch->m_oData.vec3n);
-		c->Vertex(pBranch->m_oData.vec3);
-		c->TexCoord(Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
-		c->Normal(pBranch->m_oData.vec4n);
-		c->Vertex(pBranch->m_oData.vec4);
-		c->EndRender();
+	scale_t ePlanet = m_pPlanet->GetScale();
+	scale_t eRender = SPGame()->GetSPRenderer()->GetRenderingScale();
 
-		if (r_showquaddebugoutlines.GetBool())
-		{
-			CRenderingContext c(GameServer()->GetRenderer());
-			c.BindTexture(0);
-			c.SetColor(Color(255, 255, 255));
-			c.BeginRenderDebugLines();
-			c.Vertex(pBranch->m_oData.vec1);
-			c.Vertex(pBranch->m_oData.vec2);
-			c.Vertex(pBranch->m_oData.vec3);
-			c.Vertex(pBranch->m_oData.vec4);
-			c.EndRender();
-		}
-	}
-	else
+	c->BeginRenderQuads();
+	c->TexCoord(pBranch->m_vecMin);
+	c->Normal(pBranch->m_oData.vec1n);
+	c->Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec1, ePlanet, eRender));
+	c->TexCoord(Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+	c->Normal(pBranch->m_oData.vec2n);
+	c->Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec2, ePlanet, eRender));
+	c->TexCoord(pBranch->m_vecMax);
+	c->Normal(pBranch->m_oData.vec3n);
+	c->Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec3, ePlanet, eRender));
+	c->TexCoord(Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+	c->Normal(pBranch->m_oData.vec4n);
+	c->Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec4, ePlanet, eRender));
+	c->EndRender();
+
+	if (r_showquaddebugoutlines.GetBool())
 	{
-		TAssert(pBranch->m_pBranches[0]);
-		if (pBranch->m_pBranches[0])
-		{
-			for (size_t i = 0; i < 4; i++)
-				RenderBranch(pBranch->m_pBranches[i], c);
-		}
+		CRenderingContext c(GameServer()->GetRenderer());
+		c.BindTexture(0);
+		c.SetColor(Color(255, 255, 255));
+		c.BeginRenderDebugLines();
+		c.Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec1, ePlanet, eRender));
+		c.Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec2, ePlanet, eRender));
+		c.Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec3, ePlanet, eRender));
+		c.Vertex(CScalableVector::ConvertUnits(pBranch->m_oData.vec4, ePlanet, eRender));
+		c.EndRender();
 	}
 }
 
@@ -286,10 +367,12 @@ void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
 		Vector vecQuadCenter = mPlanet * pBranch->GetCenter();
 		Vector vecQuadMax = mPlanet * QuadTreeToWorld(this, pBranch->m_vecMax);
 
-		Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecQuadCenter);
+		scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+
+		Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(CScalableVector::ConvertUnits(vecQuadCenter, m_pPlanet->GetScale(), eRenderScale));
 
 		float flRadius = (vecQuadCenter-vecQuadMax).Length();
-		Vector vecTop = GameServer()->GetRenderer()->ScreenPosition(vecQuadCenter + vecUp*flRadius);
+		Vector vecTop = GameServer()->GetRenderer()->ScreenPosition(CScalableVector::ConvertUnits(vecQuadCenter + vecUp*flRadius, m_pPlanet->GetScale(), eRenderScale));
 
 		float flWidth = (vecTop - vecScreen).Length()*2;
 
@@ -298,7 +381,7 @@ void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
 	}
 }
 
-CVar r_terrainresolution("r_terrainresolution", "0.1");
+CVar r_terrainresolution("r_terrainresolution", "1.0");
 CVar r_minterrainsize("r_minterrainsize", "100");
 
 bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
@@ -308,11 +391,16 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	Vector vecQuadMax = pBranch->m_oData.vec3;
 
 	float flRadius = (vecQuadCenter - vecQuadMax).Length();
-	if (flRadius < r_terrainresolution.GetFloat())
+	if (CScalableFloat::ConvertUnits(flRadius, m_pPlanet->GetScale(), SCALE_METER) < r_terrainresolution.GetFloat())
 		return false;
 
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+
 	Matrix4x4 mPlanet = m_pPlanet->GetGlobalTransform();
-	if (!GameServer()->GetRenderer()->IsSphereInFrustum(mPlanet * vecQuadCenter, flRadius))
+	CScalableVector vecPlanetCenter(mPlanet * vecQuadCenter, m_pPlanet->GetScale());
+	CScalableFloat flPlanetRadius(flRadius, m_pPlanet->GetScale());
+
+	if (!GameServer()->GetRenderer()->IsSphereInFrustum(vecPlanetCenter.GetUnits(eScale), flPlanetRadius.GetUnits(eScale)))
 		return false;
 
 	UpdateScreenSize(pBranch);
@@ -408,7 +496,7 @@ Vector CPlanetTerrain::QuadTreeToWorld(const CQuadTree<CBranchData>* pTree, cons
 	else
 		vecCubePoint = Vector(x, y, vecDirection[2]);
 
-	return vecCubePoint.Normalized() * m_pPlanet->GetRenderRadius();
+	return vecCubePoint.Normalized() * m_pPlanet->GetRadius().GetUnits();
 }
 
 Vector2D CPlanetTerrain::WorldToQuadTree(CQuadTree<CBranchData>* pTree, const Vector& v)

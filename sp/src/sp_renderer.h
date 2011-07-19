@@ -44,7 +44,7 @@ protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 
 	// A list of objects to render at which scales.
-	eastl::map<size_t, eastl::vector<CEntityHandle<CSPEntity> > >	m_ahRenderScales;
+	eastl::vector<CEntityHandle<CSPEntity> >	m_ahRenderList;
 
 	scale_t			m_eRenderingScale;
 };

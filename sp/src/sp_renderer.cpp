@@ -47,18 +47,14 @@ void CSPRenderer::StartRendering()
 	TPROF("CSPRenderer::StartRendering");
 
 	m_hClosestStar = NULL;
-	for (size_t i = SCALE_NONE; i <= SCALE_HIGHEST; i++)
-		m_ahRenderScales[i].clear();
+	m_ahRenderList.clear();
 
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
 		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
 		if (pSPEntity)
-		{
-			scale_t eScale = pSPEntity->GetScale();
-			m_ahRenderScales[eScale].push_back(pSPEntity);
-		}
+			m_ahRenderList.push_back(pSPEntity);
 
 		CStar* pStar = dynamic_cast<CStar*>(pEntity);
 		if (!pStar)
@@ -76,12 +72,13 @@ void CSPRenderer::StartRendering()
 
 	RenderSkybox();
 
-	RenderScale(SCALE_LIGHTYEAR);
 	RenderScale(SCALE_AU);
+	RenderScale(SCALE_GIGAMETER);
 	RenderScale(SCALE_MEGAMETER);
 	RenderScale(SCALE_KILOMETER);
+	RenderScale(SCALE_METER);
 
-	m_eRenderingScale = SCALE_METER;
+	m_eRenderingScale = SCALE_CENTIMETER;
 
 	SetCameraPosition(GameServer()->GetCamera()->GetCameraPosition());
 	SetCameraTarget(GameServer()->GetCamera()->GetCameraTarget());
@@ -245,12 +242,13 @@ void CSPRenderer::FinishRendering()
 	m_eRenderingScale = SCALE_NONE;
 }
 
+CVar r_renderscale("r_renderscale", "0");
+
 void CSPRenderer::RenderScale(scale_t eRenderScale)
 {
 	m_eRenderingScale = eRenderScale;
 
-	eastl::vector<CEntityHandle<CSPEntity> >& ahRender = m_ahRenderScales[m_eRenderingScale];
-	size_t iEntities = ahRender.size();
+	size_t iEntities = m_ahRenderList.size();
 	if (iEntities == 0)
 		return;
 
@@ -263,26 +261,42 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 
 	BaseClass::StartRendering();
 
+	glClear(GL_DEPTH_BUFFER_BIT);
+
 	SetupLighting();
 
 	bool bFrustumCulling = CVar::GetCVarBool("r_frustumculling");
 
+	eastl::vector<CSPEntity*> apRender;
+
 	// First render all opaque objects
 	for (size_t i = 0; i < iEntities; i++)
 	{
-		CSPEntity* pSPEntity = ahRender[i];
+		CSPEntity* pSPEntity = m_ahRenderList[i];
+
+		if (!pSPEntity->ShouldRenderAtScale(m_eRenderingScale))
+			continue;
+
 		if (bFrustumCulling && !IsSphereInFrustum(CScalableVector(pSPEntity->GetRenderOrigin(), pSPEntity->GetScale()).GetUnits(m_eRenderingScale), CScalableFloat(pSPEntity->GetRenderRadius(), pSPEntity->GetScale()).GetUnits(m_eRenderingScale)))
 			continue;
 
-		CPlanet* pPlanet = dynamic_cast<CPlanet*>(ahRender[i].GetPointer());
+		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pSPEntity);
 		if (pPlanet)
 			pPlanet->RenderUpdate();
 
-		ahRender[i]->Render(false);
+		apRender.push_back(pSPEntity);
 	}
 
-	for (size_t i = 0; i < iEntities; i++)
-		ahRender[i]->Render(true);
+	size_t iRenderEntities = apRender.size();
+
+	if (r_renderscale.GetInt() && r_renderscale.GetInt() != eRenderScale)
+		iRenderEntities = 0;
+
+	for (size_t i = 0; i < iRenderEntities; i++)
+		apRender[i]->Render(false);
+
+	for (size_t i = 0; i < iRenderEntities; i++)
+		apRender[i]->Render(true);
 
 	BaseClass::FinishRendering();
 }

@@ -11,6 +11,7 @@ public:
 	{
 		flHeight = 0;
 		bRender = false;
+		bRendered = false;
 		flScreenSize = 1;
 		flLastScreenSizeUpdate = -1;
 		bRenderVectorsDirty = true;
@@ -19,6 +20,7 @@ public:
 public:
 	float	flHeight;
 	bool	bRender;
+	bool	bRendered;
 	float	flScreenSize;
 	float	flLastScreenSizeUpdate;
 
@@ -46,8 +48,11 @@ public:
 public:
 	void						Init();
 
+	void						ResetRenderFlags(CQuadTreeBranch<CBranchData>* pBranch = NULL);
+
 	void						Think();
 	void						ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch);
+	void						ProcessBranchRendering(CQuadTreeBranch<CBranchData>* pBranch);
 
 	void						Render(class CRenderingContext* c) const;
 	void						RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, class CRenderingContext* c) const;
@@ -68,6 +73,7 @@ protected:
 	class CPlanet*				m_pPlanet;
 	Vector						m_vecDirection;
 	int							m_iBuildsThisFrame;
+	eastl::vector<CQuadTreeBranch<CBranchData>*>	m_apRenderBranches;
 };
 
 class CPlanet : public CSPEntity
@@ -84,6 +90,8 @@ public:
 
 	virtual void				Think();
 	virtual void				RenderUpdate();
+
+	virtual bool				ShouldRenderAtScale(scale_t eScale) const { return true; };
 
 	virtual float				GetRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;

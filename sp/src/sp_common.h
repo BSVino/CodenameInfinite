@@ -6,49 +6,57 @@
 typedef enum
 {
 	SCALE_NONE = 0,
-	SCALE_METER,		// 1m
+	SCALE_CENTIMETER,
+	SCALE_METER,		// 100cm
 	SCALE_KILOMETER,	// 1000m
 	SCALE_MEGAMETER,	// 1000km
-	SCALE_AU,			// 150000Mm - Astronomical unit, the distance from the Earth to the Sun
-	SCALE_LIGHTYEAR,	// 63000au - Distance light travels in one year
-	SCALE_HIGHEST = SCALE_LIGHTYEAR,
+	SCALE_GIGAMETER,	// 1000Mm
+	SCALE_AU,			// 150Gm - Astronomical unit, the distance from the Earth to the Sun
+	SCALE_HIGHEST = SCALE_AU,
 } scale_t;
 
 template <class T>
 class CScalableUnit
 {
 public:
-					CScalableUnit();
-					CScalableUnit(T flUnits, scale_t eScale);
+						CScalableUnit();
+						CScalableUnit(T flUnits, scale_t eScale);
 
 public:
-	T				GetUnits(scale_t eScale = SCALE_NONE) const;
+	T					GetUnits(scale_t eScale = SCALE_NONE) const;
 
-	CScalableUnit<T> operator+(const CScalableUnit<T>& u) const;
-	CScalableUnit<T> operator-(const CScalableUnit<T>& u) const;
-	CScalableUnit<T> operator*(const CScalableUnit<T>& u) const;
-	CScalableUnit<T> operator/(const CScalableUnit<T>& u) const;
+	CScalableUnit<T>	operator+(const CScalableUnit<T>& u) const;
+	CScalableUnit<T>	operator-(const CScalableUnit<T>& u) const;
+	CScalableUnit<T>	operator*(const CScalableUnit<T>& u) const;
+	CScalableUnit<T>	operator/(const CScalableUnit<T>& u) const;
 
-	scale_t			GetScale() const { return m_eScale; }
+	CScalableUnit<T>	ConvertUnits(scale_t eScale);
+
+	scale_t				GetScale() const { return m_eScale; }
 
 	// For vectors
-	CScalableUnit<T> Normalized() { return CScalableUnit<T>(m_flUnits.Normalized(), m_eScale); }
+	CScalableUnit<T>	Normalized() { return CScalableUnit<T>(m_flUnits.Normalized(), m_eScale); }
+	CScalableUnit<float> Length() { return CScalableUnit<float>(m_flUnits.Length(), m_eScale); }
+
+	static T			ConvertUnits(T flUnit, scale_t eFrom, scale_t eTo);
 
 protected:
-	static float	s_flScaleConversions[];
-	T				m_flUnits;
-	scale_t			m_eScale;
+	T					m_flUnits;
+	scale_t				m_eScale;
+
+	static float		s_flScaleConversions[];
 };
 
 template <class T>
 float CScalableUnit<T>::s_flScaleConversions[] =
 {
 	0,
-	1,		// meters
-	1000,	// meters in a kilometer
+	1,		// centimeters
+	100,	// cm in a meter
+	1000,	// m in a kilometer
 	1000,	// km in a megameter
-	150000,	// Mm in a lightyear
-	63000,	// ly in an astronomical unit
+	1000,	// Mm in a kilometer
+	150,	// Gm in a lightyear
 };
 
 template <class T>
@@ -148,6 +156,18 @@ inline CScalableUnit<T> CScalableUnit<T>::operator/(const CScalableUnit<T>& u) c
 		return CScalableUnit<T>(GetUnits(u.m_eScale) / u.m_flUnits, u.m_eScale);
 	else
 		return CScalableUnit<T>(m_flUnits / u.GetUnits(m_eScale), m_eScale);
+}
+
+template <class T>
+inline CScalableUnit<T> CScalableUnit<T>::ConvertUnits(scale_t eScale)
+{
+	return CScalableUnit<T>(GetUnits(eScale), eScale);
+}
+
+template <class T>
+inline T CScalableUnit<T>::ConvertUnits(T flUnits, scale_t eFrom, scale_t eTo)
+{
+	return CScalableUnit<T>(flUnits, eFrom).GetUnits(eTo);
 }
 
 typedef CScalableUnit<float> CScalableFloat;
