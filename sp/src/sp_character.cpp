@@ -110,7 +110,7 @@ Vector CSPCharacter::GetUpVector()
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).Normalized();
+		return (CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(pNearestPlanet->GetScale()) - pNearestPlanet->GetGlobalOrigin()).Normalized();
 
 	return Vector(0, 1, 0);
 }

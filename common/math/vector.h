@@ -386,6 +386,11 @@ public:
 		return(&x);
 	}
 
+	operator const float*() const
+	{
+		return(&x);
+	}
+
 	unit_t	x, y;
 };
 

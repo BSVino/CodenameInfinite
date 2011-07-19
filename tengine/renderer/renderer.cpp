@@ -496,8 +496,16 @@ void CRenderingContext::SetUniform(const char* pszName, const Color& clrValue)
 	glUniform3fv(iUniform, 1, Vector(clrValue));
 }
 
+void CRenderingContext::BindTexture(const tstring& sName)
+{
+	BindTexture(CTextureLibrary::GetTextureGLID(sName));
+}
+
 void CRenderingContext::BindTexture(size_t iTexture)
 {
+	if (!m_bAttribs)
+		PushAttribs();
+
 	glBindTexture(GL_TEXTURE_2D, (GLuint)iTexture);
 	m_bBoundTexture = true;
 }
@@ -531,6 +539,11 @@ void CRenderingContext::TexCoord(float s, float t)
 	glTexCoord2f(s, t);
 }
 
+void CRenderingContext::TexCoord(const Vector2D& v)
+{
+	glTexCoord2fv(v);
+}
+
 void CRenderingContext::TexCoord(const Vector& v)
 {
 	glTexCoord2fv(v);
@@ -560,7 +573,7 @@ void CRenderingContext::PushAttribs()
 {
 	m_bAttribs = true;
 	// Push all the attribs we'll ever need. I don't want to have to worry about popping them in order.
-	glPushAttrib(GL_ENABLE_BIT|GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_CURRENT_BIT);
+	glPushAttrib(GL_ENABLE_BIT|GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_CURRENT_BIT|GL_TEXTURE_BIT);
 }
 
 CFrameBuffer::CFrameBuffer()

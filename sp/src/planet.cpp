@@ -57,6 +57,7 @@ CPlanet::~CPlanet()
 
 void CPlanet::Precache()
 {
+	PrecacheTexture("textures/planet.png");
 }
 
 void CPlanet::Spawn()
@@ -117,6 +118,7 @@ void CPlanet::PostRender(bool bTransparent) const
 	CRenderingContext c(GameServer()->GetRenderer());
 	c.Transform(GetGlobalTransform());
 	c.SetBackCulling(false);	// Ideally this would be on but it's not a big deal.
+	c.BindTexture("textures/planet.png");
 
 	for (size_t i = 0; i < 6; i++)
 		m_pTerrain[i]->Render(&c);
@@ -229,28 +231,33 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 	{
 		TAssert(!pBranch->m_oData.bRenderVectorsDirty);
 
+		c->SetColor(Color(255, 255, 255));
 		c->BeginRenderQuads();
-		c->SetColor(Color(0, 100, 00));
+		c->TexCoord(pBranch->m_vecMin);
 		c->Normal(pBranch->m_oData.vec1n);
 		c->Vertex(pBranch->m_oData.vec1);
+		c->TexCoord(Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
 		c->Normal(pBranch->m_oData.vec2n);
 		c->Vertex(pBranch->m_oData.vec2);
+		c->TexCoord(pBranch->m_vecMax);
 		c->Normal(pBranch->m_oData.vec3n);
 		c->Vertex(pBranch->m_oData.vec3);
-		c->SetColor(Color(20, 100, 00));
+		c->TexCoord(Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
 		c->Normal(pBranch->m_oData.vec4n);
 		c->Vertex(pBranch->m_oData.vec4);
 		c->EndRender();
 
 		if (r_showquaddebugoutlines.GetBool())
 		{
-			c->SetColor(Color(255, 255, 255));
-			c->BeginRenderDebugLines();
-			c->Vertex(pBranch->m_oData.vec1);
-			c->Vertex(pBranch->m_oData.vec2);
-			c->Vertex(pBranch->m_oData.vec3);
-			c->Vertex(pBranch->m_oData.vec4);
-			c->EndRender();
+			CRenderingContext c(GameServer()->GetRenderer());
+			c.BindTexture(0);
+			c.SetColor(Color(255, 255, 255));
+			c.BeginRenderDebugLines();
+			c.Vertex(pBranch->m_oData.vec1);
+			c.Vertex(pBranch->m_oData.vec2);
+			c.Vertex(pBranch->m_oData.vec3);
+			c.Vertex(pBranch->m_oData.vec4);
+			c.EndRender();
 		}
 	}
 	else

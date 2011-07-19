@@ -108,8 +108,8 @@ void CSPRenderer::SetupLighting()
 		if (!pStar)
 			continue;
 
-		glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetGlobalOrigin()) + Vector4D(0,0,0,1));
-		glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(3, 6, 6)));
+		glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(CScalableVector(pStar->GetGlobalOrigin(), pStar->GetScale()).GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
+		glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
 		glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
 		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, r_star_constant_attenuation.GetFloat());

@@ -55,12 +55,14 @@ public:
 	void		SetUniform(const char* pszName, float flValue);
 	void		SetUniform(const char* pszName, const Vector& vecValue);
 	void		SetUniform(const char* pszName, const Color& vecValue);
+	void		BindTexture(const tstring& sName);
 	void		BindTexture(size_t iTexture);
 	void		SetColor(Color c);
 	void		BeginRenderTris();
 	void		BeginRenderQuads();
 	void		BeginRenderDebugLines();
 	void		TexCoord(float s, float t);
+	void		TexCoord(const Vector2D& v);
 	void		TexCoord(const Vector& v);
 	void		Normal(const Vector& v);
 	void		Vertex(const Vector& v);
