@@ -4,6 +4,7 @@
 #include <tengine/game/entities/character.h>
 
 #include "sp_common.h"
+#include "sp_entity.h"
 
 class CPlanet;
 
@@ -13,9 +14,9 @@ typedef enum {
 	FINDPLANET_INATMOSPHERE,
 } findplanet_t;
 
-class CSPCharacter : public CCharacter
+class CSPCharacter : public CCharacter, public ISPEntity
 {
-	REGISTER_ENTITY_CLASS(CSPCharacter, CCharacter);
+	REGISTER_ENTITY_CLASS_INTERFACES(CSPCharacter, CCharacter, 1);
 
 public:
 								CSPCharacter();
@@ -31,6 +32,9 @@ public:
 	void						LockViewToPlanet();
 
 	void						StandOnNearestPlanet();
+
+	virtual CScalableFloat		EyeHeightScalable();
+	virtual CScalableFloat		CharacterSpeedScalable();
 
 	virtual float				EyeHeight();
 	virtual float				CharacterSpeed();

@@ -13,7 +13,7 @@ public:
 		bRender = false;
 		bRendered = false;
 		flScreenSize = 1;
-		flLastScreenSizeUpdate = -1;
+		flLastScreenUpdate = -1;
 		bRenderVectorsDirty = true;
 	}
 
@@ -22,7 +22,8 @@ public:
 	bool	bRender;
 	bool	bRendered;
 	float	flScreenSize;
-	float	flLastScreenSizeUpdate;
+	CScalableFloat	flScreenDistance;
+	float	flLastScreenUpdate;
 
 	bool	bRenderVectorsDirty;
 	Vector	vec1;
@@ -93,11 +94,11 @@ public:
 
 	virtual bool				ShouldRenderAtScale(scale_t eScale) const { return true; };
 
-	virtual float				GetRenderRadius() const;
+	virtual CScalableFloat		GetScalableRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;
 
 	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
-	const CScalableFloat&		GetRadius() { return m_flRadius; }
+	CScalableFloat				GetRadius() const { return m_flRadius; }
 
 	void						SetAtmosphereThickness(const CScalableFloat& flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
 	const CScalableFloat&		GetAtmosphereThickness() { return m_flAtmosphereThickness; }

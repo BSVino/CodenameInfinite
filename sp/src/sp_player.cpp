@@ -31,17 +31,17 @@ void CSPPlayer::MouseMotion(int x, int y)
 	angMouse.y = -flYaw;
 	angMouse.r = 0;
 
-	Matrix4x4 mRotate;
-	mRotate.SetRotation(angMouse);
+	CScalableMatrix mRotate;
+	mRotate.SetAngles(angMouse);
 
-	Matrix4x4 mTransform = m_hCharacter->GetLocalTransform();
-	mTransform.SetTranslation(Vector(0,0,0));
+	CScalableMatrix mTransform = GetSPCharacter()->GetLocalScalableTransform();
+	mTransform.SetTranslation(CScalableVector());
 
-	Matrix4x4 mNewTransform = mTransform * mRotate;
+	CScalableMatrix mNewTransform = mTransform * mRotate;
 
-	mNewTransform.SetTranslation(m_hCharacter->GetLocalOrigin());
+	mNewTransform.SetTranslation(GetSPCharacter()->GetLocalScalableOrigin());
 
-	m_hCharacter->SetLocalTransform(mNewTransform);
+	GetSPCharacter()->SetLocalScalableTransform(mNewTransform);
 }
 
 CSPCharacter* CSPPlayer::GetSPCharacter()

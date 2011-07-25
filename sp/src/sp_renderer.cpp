@@ -66,26 +66,27 @@ void CSPRenderer::StartRendering()
 			continue;
 		}
 
-		if (pStar->GetGlobalOrigin().DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalOrigin().DistanceSqr(m_vecCameraPosition))
+		if (pStar->GetGlobalScalableOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalScalableOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition))
 			m_hClosestStar = pStar;
 	}
 
 	RenderSkybox();
 
-	RenderScale(SCALE_AU);
+	RenderScale(SCALE_TERAMETER);
 	RenderScale(SCALE_GIGAMETER);
 	RenderScale(SCALE_MEGAMETER);
 	RenderScale(SCALE_KILOMETER);
-	RenderScale(SCALE_METER);
 
-	m_eRenderingScale = SCALE_CENTIMETER;
+	m_eRenderingScale = SCALE_METER;
 
-	SetCameraPosition(GameServer()->GetCamera()->GetCameraPosition());
-	SetCameraTarget(GameServer()->GetCamera()->GetCameraTarget());
-	SetCameraUp(GameServer()->GetCamera()->GetCameraUp());
-	SetCameraFOV(GameServer()->GetCamera()->GetCameraFOV());
-	SetCameraNear(GameServer()->GetCamera()->GetCameraNear());
-	SetCameraFar(GameServer()->GetCamera()->GetCameraFar());
+	CCamera* pCamera = GameServer()->GetCamera();
+
+	SetCameraPosition(pCamera->GetCameraPosition());
+	SetCameraTarget(pCamera->GetCameraTarget());
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
 
 	BaseClass::StartRendering();
 }
@@ -105,7 +106,7 @@ void CSPRenderer::SetupLighting()
 		if (!pStar)
 			continue;
 
-		glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(CScalableVector(pStar->GetGlobalOrigin(), pStar->GetScale()).GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
+		glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetGlobalScalableOrigin().GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
 		glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
 		glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
@@ -127,12 +128,14 @@ void CSPRenderer::RenderSkybox()
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
+	CCamera* pCamera = GameServer()->GetCamera();
+
 	SetCameraPosition(Vector(0, 0, 0));
-	SetCameraTarget(Vector(pCharacter->GetGlobalTransform().GetColumn(0)));
-	SetCameraUp(GameServer()->GetCamera()->GetCameraUp());
-	SetCameraFOV(GameServer()->GetCamera()->GetCameraFOV());
-	SetCameraNear(GameServer()->GetCamera()->GetCameraNear());
-	SetCameraFar(GameServer()->GetCamera()->GetCameraFar());
+	SetCameraTarget(Vector(pCharacter->GetGlobalScalableTransform().GetColumn(0)));
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
 
 	glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_CURRENT_BIT);
 
@@ -252,12 +255,14 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 	if (iEntities == 0)
 		return;
 
-	SetCameraPosition(GameServer()->GetCamera()->GetCameraPosition());
-	SetCameraTarget(GameServer()->GetCamera()->GetCameraTarget());
-	SetCameraUp(GameServer()->GetCamera()->GetCameraUp());
-	SetCameraFOV(GameServer()->GetCamera()->GetCameraFOV());
-	SetCameraNear(GameServer()->GetCamera()->GetCameraNear());
-	SetCameraFar(GameServer()->GetCamera()->GetCameraFar());
+	CSPCamera* pCamera = SPGame()->GetSPCamera();
+
+	SetCameraPosition(pCamera->GetCameraScalablePosition().GetUnits(m_eRenderingScale));
+	SetCameraTarget(pCamera->GetCameraScalableTarget().GetUnits(m_eRenderingScale));
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
 
 	BaseClass::StartRendering();
 
@@ -277,7 +282,7 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 		if (!pSPEntity->ShouldRenderAtScale(m_eRenderingScale))
 			continue;
 
-		if (bFrustumCulling && !IsSphereInFrustum(CScalableVector(pSPEntity->GetRenderOrigin(), pSPEntity->GetScale()).GetUnits(m_eRenderingScale), CScalableFloat(pSPEntity->GetRenderRadius(), pSPEntity->GetScale()).GetUnits(m_eRenderingScale)))
+		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), pSPEntity->GetScalableRenderRadius().GetUnits(m_eRenderingScale)))
 			continue;
 
 		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pSPEntity);

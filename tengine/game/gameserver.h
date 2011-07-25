@@ -31,7 +31,7 @@ public:
 	void										SetServerPort(int iPort) { m_iPort = iPort; };
 
 	void										SetPlayerNickname(const tstring& sNickname);
-	tstring								GetPlayerNickname() { return m_sNickname; }
+	tstring										GetPlayerNickname() { return m_sNickname; }
 
 	void										Initialize();
 
@@ -89,6 +89,8 @@ public:
 
 	float										GetFrameTime() { return m_flFrameTime; };
 	float										GetGameTime() { return m_flGameTime; };
+	float										GetSimulationTime() { return m_flSimulationTime; };
+	void										AdvanceSimulationTime(float f) { m_flSimulationTime += f; };
 
 	class CRenderer*							GetRenderer();
 	class CCamera*								GetCamera() { return m_pCamera; };

@@ -10,42 +10,56 @@
 #include "planet.h"
 #include "sp_renderer.h"
 
-Vector CSPCamera::GetCameraPosition()
+CScalableVector CSPCamera::GetCameraScalablePosition()
 {
 	if (m_bFreeMode)
-		return BaseClass::GetCameraPosition();
+		return CScalableVector(BaseClass::GetCameraPosition(), SCALE_METER);
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (!pCharacter)
-		return Vector(10,0,0);
+		return CScalableVector(Vector(10,0,0), SCALE_METER);
 
-	Vector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
+	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeightScalable();
 
-	Vector vecPosition = pCharacter->GetGlobalOrigin() + vecEyeHeight;
+	return pCharacter->GetGlobalScalableOrigin() + vecEyeHeight;
+}
 
-	CScalableVector vecReturn(vecPosition, SCALE_METER);
+CScalableVector CSPCamera::GetCameraScalableTarget()
+{
+	if (m_bFreeMode)
+		return CScalableVector(BaseClass::GetCameraTarget(), SCALE_METER);
 
-	return vecReturn.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	if (!pCharacter)
+		return CScalableVector();
+
+	return GetCameraScalablePosition() + CScalableVector(pCharacter->GetGlobalScalableTransform().GetForwardVector(), SPGame()->GetSPRenderer()->GetRenderingScale());
+}
+
+Vector CSPCamera::GetCameraPosition()
+{
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eScale == SCALE_NONE)
+		return Vector(0, 0, 0);
+
+	return GetCameraScalablePosition().GetUnits(eScale);
 }
 
 Vector CSPCamera::GetCameraTarget()
 {
-	if (m_bFreeMode)
-		return BaseClass::GetCameraTarget();
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eScale == SCALE_NONE)
+		return Vector(10, 0, 0);
 
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-
-	if (!pCharacter)
-		return Vector(0,0,0);
-
-	return GetCameraPosition() + Vector(pCharacter->GetGlobalTransform().GetColumn(0));
+	return GetCameraScalableTarget().GetUnits(eScale);
 }
 
 Vector CSPCamera::GetCameraUp()
 {
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter)
-		return Vector(pCharacter->GetGlobalTransform().GetColumn(1));
+		return Vector(pCharacter->GetGlobalScalableTransform().GetUpVector());
 
 	return BaseClass::GetCameraUp();
 }

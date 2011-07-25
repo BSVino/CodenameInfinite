@@ -901,8 +901,8 @@ void CBaseEntity::CheckSaveDataSize(CEntityRegistration* pRegistration)
 	// If you're getting this assert it probably means you forgot to add a savedata entry for some variable that you added to a class.
 	if (iSaveTableSize != iSizeOfThis)
 	{
-		TMsg(sprintf(tstring("Save table for class '%s' doesn't match the class's size.\n"), convertstring<char, tchar>(GetClassName()).c_str()));
-		TAssert(!_T("Save table size doesn't match class size.\n"));
+		TMsg(sprintf(tstring("Save table for class '%s' doesn't match the class's size, %d != %d.\n"), convertstring<char, tchar>(GetClassName()).c_str(), iSaveTableSize, iSizeOfThis));
+		TAssert(!"Save table size doesn't match class size.\n");
 	}
 }
 

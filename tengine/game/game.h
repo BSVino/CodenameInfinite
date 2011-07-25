@@ -20,6 +20,9 @@ public:
 public:
 	virtual void								Spawn();
 
+	virtual void								Simulate() {};
+	virtual bool								ShouldRunSimulation() { return true; };
+
 	virtual void								RegisterNetworkFunctions();
 
 	virtual void								OnClientConnect(int iClient);

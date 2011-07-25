@@ -4,15 +4,20 @@
 #include <game/camera.h>
 #include <common.h>
 
+#include "sp_common.h"
+
 class CSPCamera : public CCamera
 {
 	DECLARE_CLASS(CSPCamera, CCamera);
 
 public:
-	virtual Vector	GetCameraPosition();
-	virtual Vector	GetCameraTarget();
-	virtual Vector	GetCameraUp();
-	virtual float	GetCameraFOV();
+	virtual CScalableVector		GetCameraScalablePosition();
+	virtual CScalableVector		GetCameraScalableTarget();
+
+	virtual Vector				GetCameraPosition();
+	virtual Vector				GetCameraTarget();
+	virtual Vector				GetCameraUp();
+	virtual float				GetCameraFOV();
 };
 
 #endif

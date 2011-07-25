@@ -151,7 +151,8 @@ virtual bool Unserialize(std::istream& i) \
 	return CBaseEntity::Unserialize(i, #entity, this); \
 } \
 
-#define REGISTER_ENTITY_CLASS(entity, base) \
+// Third parameter: how many interfaces does the class have?
+#define REGISTER_ENTITY_CLASS_INTERFACES(entity, base, iface) \
 DECLARE_CLASS(entity, base); \
 public: \
 static void RegisterCallback##entity() \
@@ -169,7 +170,7 @@ virtual void RegisterSaveData(); \
 virtual void RegisterInputData(); \
 virtual size_t SizeOfThis() \
 { \
-	return sizeof(entity) - sizeof(BaseClass); \
+	return sizeof(entity) - sizeof(BaseClass) - iface*4; \
 } \
  \
 virtual void Serialize(std::ostream& o) \
@@ -186,6 +187,9 @@ virtual bool Unserialize(std::istream& i) \
  \
 	return CBaseEntity::Unserialize(i, #entity, this); \
 } \
+
+#define REGISTER_ENTITY_CLASS(entity, base) \
+	REGISTER_ENTITY_CLASS_INTERFACES(entity, base, 0)
 
 #define NETVAR_TABLE_BEGIN(entity) \
 void entity::RegisterNetworkVariables() \

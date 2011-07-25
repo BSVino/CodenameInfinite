@@ -11,6 +11,17 @@ NETVAR_TABLE_BEGIN(CSPCharacter);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSPCharacter);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CBaseEntity>, m_hScalableMoveParent);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CEntityHandle<CBaseEntity>, m_ahScalableMoveChildren);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bGlobalScalableTransformsDirty);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableMatrix, m_mGlobalScalableTransform);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableVector, m_vecGlobalScalableGravity);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableMatrix, m_mLocalScalableTransform);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableVector, m_vecLocalScalableOrigin);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableVector, m_vecLastLocalScalableOrigin);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, EAngle, m_angLocalScalableAngles);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableVector, m_vecLocalScalableVelocity);
+
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlanet>, m_hNearestPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
@@ -28,17 +39,37 @@ CSPCharacter::CSPCharacter()
 
 void CSPCharacter::Think()
 {
-	BaseClass::Think();
+	if (m_vecGoalVelocity.LengthSqr())
+		m_vecGoalVelocity.Normalize();
+
+	m_vecMoveVelocity.x = Approach(m_vecGoalVelocity.x, m_vecMoveVelocity.x, GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
+
+	if (m_vecMoveVelocity.LengthSqr() > 0)
+	{
+		CScalableVector vecVelocity = GetLocalScalableVelocity();
+
+		CScalableMatrix m = GetLocalScalableTransform();
+		m.SetTranslation(CScalableVector());
+
+		CScalableVector vecMove = m_vecMoveVelocity * (CharacterSpeedScalable() * GameServer()->GetFrameTime());
+		vecVelocity = m * vecMove;
+
+		SetLocalScalableVelocity(vecVelocity);
+	}
+	else
+		SetLocalScalableVelocity(CScalableVector());
 
 	CPlanet* pPlanet = GetNearestPlanet();
 
-	if (pPlanet && !HasMoveParent())
+	if (pPlanet && !HasScalableMoveParent())
 	{
 		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
 		m_flRollFromSpace = GetGlobalAngles().r;
 	}
 
-	SetMoveParent(pPlanet);
+	SetScalableMoveParent(pPlanet);
 }
 
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
@@ -47,8 +78,8 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 	{
 		CPlanet* pNearestPlanet = FindNearestPlanet();
 
-		float flDistance = CScalableFloat(pNearestPlanet->Distance(CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(SCALE_MEGAMETER)) - pNearestPlanet->GetRadius().GetUnits(SCALE_MEGAMETER), pNearestPlanet->GetScale()).GetUnits(SCALE_METER);
-		if (flDistance < pNearestPlanet->GetAtmosphereThickness().GetUnits(SCALE_METER))
+		CScalableFloat flDistance = (pNearestPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length() - pNearestPlanet->GetRadius();
+		if (flDistance < pNearestPlanet->GetAtmosphereThickness())
 			m_hNearestPlanet = pNearestPlanet;
 		else
 			m_hNearestPlanet = NULL;
@@ -65,8 +96,8 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 		if (eFindPlanet == FINDPLANET_ANY)
 			return pNearestPlanet;
 
-		float flDistance = CScalableFloat(pNearestPlanet->Distance(CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(SCALE_MEGAMETER)) - pNearestPlanet->GetRadius().GetUnits(SCALE_MEGAMETER), pNearestPlanet->GetScale()).GetUnits(SCALE_METER);
-		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit().GetUnits(SCALE_METER))
+		CScalableFloat flDistance = (pNearestPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length() - pNearestPlanet->GetRadius();
+		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit())
 			return NULL;
 		else
 			return pNearestPlanet;
@@ -78,7 +109,7 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 CPlanet* CSPCharacter::FindNearestPlanet()
 {
 	CPlanet* pNearestPlanet = NULL;
-	float flNearestDistance;
+	CScalableFloat flNearestDistance;
 
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
@@ -86,8 +117,8 @@ CPlanet* CSPCharacter::FindNearestPlanet()
 		if (!pPlanet)
 			continue;
 
-		float flDistance = CScalableFloat(pPlanet->Distance(CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(SCALE_MEGAMETER)), pPlanet->GetScale()).GetUnits(SCALE_METER);
-		flDistance -= pPlanet->GetRadius().GetUnits(SCALE_METER);
+		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
+		flDistance -= pPlanet->GetRadius();
 
 		if (pNearestPlanet == NULL)
 		{
@@ -110,7 +141,7 @@ Vector CSPCharacter::GetUpVector()
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return (CScalableVector(GetGlobalOrigin(), SCALE_METER).GetUnits(pNearestPlanet->GetScale()) - pNearestPlanet->GetGlobalOrigin()).Normalized();
+		return (GetGlobalScalableOrigin() - pNearestPlanet->GetGlobalScalableOrigin()).Normalized().GetUnits(SCALE_METER);
 
 	return Vector(0, 1, 0);
 }
@@ -122,8 +153,8 @@ void CSPCharacter::LockViewToPlanet()
 	if (!pNearestPlanet)
 		return;
 
-	Matrix4x4 mRotation = GetGlobalTransform();
-	mRotation.SetTranslation(Vector(0,0,0));
+	CScalableMatrix mRotation = GetGlobalScalableTransform();
+	mRotation.SetTranslation(CScalableVector());
 
 	// Construct a "local space" for the planet
 	Vector vecPlanetUp = GetUpVector();
@@ -131,12 +162,12 @@ void CSPCharacter::LockViewToPlanet()
 	Vector vecPlanetRight = vecPlanetForward.Cross(vecPlanetUp).Normalized();
 	vecPlanetForward = vecPlanetUp.Cross(vecPlanetRight).Normalized();
 
-	Matrix4x4 mPlanet(vecPlanetForward, vecPlanetUp, vecPlanetRight);
-	Matrix4x4 mPlanetInverse = mPlanet;
+	CScalableMatrix mPlanet(vecPlanetForward, vecPlanetUp, vecPlanetRight);
+	CScalableMatrix mPlanetInverse = mPlanet;
 	mPlanetInverse.InvertTR();
 
 	// Bring our current view angles into that local space
-	Matrix4x4 mLocalRotation = mPlanetInverse * mRotation;
+	CScalableMatrix mLocalRotation = mPlanetInverse * mRotation;
 	EAngle angLocalRotation = mLocalRotation.GetAngles();
 
 	// Lock them so that the roll is 0
@@ -145,14 +176,14 @@ void CSPCharacter::LockViewToPlanet()
 		return;
 
 	angLocalRotation.r = 0;
-	Matrix4x4 mLockedLocalRotation;
-	mLockedLocalRotation.SetRotation(angLocalRotation);
+	CScalableMatrix mLockedLocalRotation;
+	mLockedLocalRotation.SetAngles(angLocalRotation);
 
 	// Bring it back out to global space
-	Matrix4x4 mLockedRotation = mPlanet * mLockedLocalRotation;
+	CScalableMatrix mLockedRotation = mPlanet * mLockedLocalRotation;
 
 	// Only use the changed r value to avoid floating point crap
-	EAngle angNewLockedRotation = GetGlobalAngles();
+	EAngle angNewLockedRotation = GetGlobalScalableAngles();
 	EAngle angOverloadRotation = mLockedRotation.GetAngles();
 
 	// Lerp our way there
@@ -162,7 +193,7 @@ void CSPCharacter::LockViewToPlanet()
 	else
 		angNewLockedRotation.r = RemapValClamped(SLerp(GameServer()->GetGameTime() - m_flLastEnteredAtmosphere, 0.3f), 0, flTimeToLocked, m_flRollFromSpace, angOverloadRotation.r);
 
-	SetGlobalAngles(angNewLockedRotation);
+	SetGlobalScalableAngles(angNewLockedRotation);
 }
 
 void CSPCharacter::StandOnNearestPlanet()
@@ -171,14 +202,45 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
-	CScalableVector vecPlanetOrigin(pPlanet->GetGlobalOrigin(), pPlanet->GetScale());
-	CScalableVector vecCharacterOrigin(GetGlobalOrigin(), SCALE_METER);
+	CScalableVector vecPlanetOrigin = pPlanet->GetGlobalScalableOrigin();
+	CScalableVector vecCharacterOrigin = GetGlobalScalableOrigin();
 	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
 	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * pPlanet->GetRadius();
-	SetGlobalOrigin(vecOrigin.GetUnits(SCALE_METER));
+	SetGlobalScalableOrigin(vecOrigin);
 
 	SetMoveParent(pPlanet);
+}
+
+CScalableFloat CSPCharacter::EyeHeightScalable()
+{
+	// 180 centimeters
+	return CScalableFloat(0.18f, SCALE_METER);
+}
+
+CScalableFloat CSPCharacter::CharacterSpeedScalable()
+{
+	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
+
+	CScalableFloat flMinSpeed = CScalableFloat(200, SCALE_KILOMETER);
+	CScalableFloat flMaxSpeed = CScalableFloat(8, SCALE_MEGAMETER);
+
+	if (pPlanet)
+	{
+		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
+		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
+		CScalableFloat flOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
+
+		if (flDistance < flAtmosphere)
+			return flMinSpeed;
+
+		if (flDistance < flOrbit)
+			return flMaxSpeed;
+
+		return (((flDistance-flAtmosphere) / (flOrbit-flAtmosphere)) * (flMaxSpeed-flMinSpeed)) + flMinSpeed;
+	}
+
+	return flMaxSpeed;
 }
 
 float CSPCharacter::EyeHeight()
@@ -191,13 +253,17 @@ float CSPCharacter::CharacterSpeed()
 {
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
 
-	float flSpeed = 80000000;
+	float flSpeed = 80000;
 
 	if (pPlanet)
 	{
-		CScalableVector vecOrigin(GetGlobalOrigin(), SCALE_METER);
-		CScalableFloat flDistance(pPlanet->Distance(vecOrigin.GetUnits(pPlanet->GetScale())), pPlanet->GetScale());
-		flSpeed = RemapValClamped(flDistance.GetUnits(SCALE_METER), (pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_METER), (pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_METER), 200000.0f, 80000000);
+		CScalableVector vecOrigin = GetGlobalScalableOrigin();
+		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - vecOrigin).Length();
+		flSpeed = RemapValClamped(
+			flDistance.GetUnits(SCALE_KILOMETER),
+			(pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_KILOMETER),
+			(pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_KILOMETER),
+			200.0f, 80000);
 	}
 
 	return flSpeed;

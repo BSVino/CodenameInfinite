@@ -13,11 +13,11 @@ public:
 
 	virtual void				Think();
 
-	virtual float				GetRenderRadius() const;
+	virtual CScalableFloat		GetRenderScalableRadius() const { return m_flRadius; };
 	virtual void				PostRender(bool bTransparent) const;
 
 	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
-	const CScalableFloat&		GetRadius() const { return m_flRadius; }
+	CScalableFloat				GetRadius() const { return m_flRadius; }
 
 	CScalableFloat				GetCloseOrbit();
 

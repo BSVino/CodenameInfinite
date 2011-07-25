@@ -50,24 +50,24 @@ void CSPWindow::SetupSP()
 	Game()->AddPlayer(pPlayer);
 
 	CSPCharacter* pCharacter = GameServer()->Create<CSPCharacter>("CSPCharacter");
-	pCharacter->SetGlobalOrigin(Vector(0, 0, 0));
-	pCharacter->SetGlobalAngles(EAngle(10, 80, 90));
+	pCharacter->SetGlobalScalableOrigin(CScalableVector());
+	pCharacter->SetGlobalScalableAngles(EAngle(10, 80, 90));
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetGlobalOrigin(Vector(7, 0, 7));
+	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(7, 0, 7), SCALE_MEGAMETER));
 	pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(50, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 	pPlanet->SetMinutesPerRevolution(30);
 
 	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetGlobalOrigin(Vector(-5, 0, -5));
+	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(-5, 0, -5), SCALE_MEGAMETER));
 	pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(25, SCALE_KILOMETER));
 	pPlanet->SetMinutesPerRevolution(20);
 
 	CStar* pStar = GameServer()->Create<CStar>("CStar");
-	pStar->SetGlobalOrigin(Vector(-3000, 0, 3000));
+	pStar->SetGlobalScalableOrigin(CScalableVector(Vector(-3000, 0, 3000), SCALE_MEGAMETER));
 	pStar->SetRadius(CScalableFloat(695.5f, SCALE_MEGAMETER));				// Radius of the sun, 695500km
 
 	//pCharacter->StandOnNearestPlanet();

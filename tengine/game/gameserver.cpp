@@ -451,6 +451,11 @@ void CGameServer::Think(float flHostTime)
 
 void CGameServer::Simulate()
 {
+	Game()->Simulate();
+
+	if (!Game()->ShouldRunSimulation())
+		return;
+
 	float flSimulationFrameTime = 0.01f;
 
 	m_apSimulateList.reserve(CBaseEntity::GetNumEntities());
