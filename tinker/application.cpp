@@ -290,6 +290,11 @@ void CApplication::Close()
 	m_bIsOpen = false;
 }
 
+bool CApplication::HasFocus()
+{
+	return glfwGetWindowParam(GLFW_ACTIVE) == GL_TRUE;
+}
+
 void CApplication::Render()
 {
 }

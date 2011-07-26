@@ -154,6 +154,9 @@ void CGameWindow::KeyRelease(int c)
 
 void CGameWindow::MouseMotion(int x, int y)
 {
+	if (!HasFocus())
+		return;
+
 	BaseClass::MouseMotion(x, y);
 
 	if (GameServer() && GameServer()->GetCamera())

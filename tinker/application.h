@@ -31,6 +31,8 @@ public:
 	bool						IsOpen();
 	void						Close();
 
+	bool						HasFocus();
+
 	static void					RenderCallback() { Get()->Render(); };
 	virtual void				Render();
 
