@@ -11,7 +11,7 @@ public:
 								CSPWindow(int argc, char** argv);
 
 public:
-	virtual eastl::string		WindowTitle() { return "Space Prototype!"; }
+	virtual eastl::string		WindowTitle() { return "Codename: Infinite"; }
 	virtual tstring				AppDirectory() { return _T("SP"); }
 
 	void						SetScreenshot(size_t iScreenshot) { m_iScreenshot = iScreenshot; };
