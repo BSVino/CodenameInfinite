@@ -223,7 +223,7 @@ CScalableFloat CSPCharacter::CharacterSpeedScalable()
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
 
 	CScalableFloat flMinSpeed = CScalableFloat(200, SCALE_KILOMETER);
-	CScalableFloat flMaxSpeed = CScalableFloat(8, SCALE_MEGAMETER);
+	CScalableFloat flMaxSpeed = CScalableFloat(10, SCALE_MEGAMETER);
 
 	if (pPlanet)
 	{

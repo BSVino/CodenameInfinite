@@ -22,7 +22,8 @@ public:
 	bool	bRender;
 	bool	bRendered;
 	float	flScreenSize;
-	CScalableFloat	flScreenDistance;
+	CScalableFloat	flQuadDistance;
+	CScalableFloat	flQuadRadius;
 	float	flLastScreenUpdate;
 
 	bool	bRenderVectorsDirty;

@@ -286,8 +286,8 @@ void CPlanetTerrain::ProcessBranchRendering(CQuadTreeBranch<CBranchData>* pBranc
 	CalcRenderVectors(pBranch);
 	UpdateScreenSize(pBranch);
 
-	float flDistance = pBranch->m_oData.flScreenDistance.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
-	float flSize = pBranch->m_oData.flScreenSize;
+	float flDistance = pBranch->m_oData.flQuadDistance.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
+	float flSize = pBranch->m_oData.flQuadRadius.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
 
 	if (flDistance < 5 + flSize)
 		return;
@@ -372,7 +372,8 @@ void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
 		CScalableFloat flDistance = (vecQuadCenter - vecPlayer).Length();
 
 		pBranch->m_oData.flScreenSize = flWidth;
-		pBranch->m_oData.flScreenDistance = flDistance;
+		pBranch->m_oData.flQuadDistance = flDistance;
+		pBranch->m_oData.flQuadRadius = flRadius;
 		pBranch->m_oData.flLastScreenUpdate = GameServer()->GetGameTime();
 	}
 }
