@@ -306,6 +306,7 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 }
 
 CVar r_showquaddebugoutlines("r_showquaddebugoutlines", "off");
+CVar r_showquadnormals("r_showquadnormals", "off");
 
 void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, class CRenderingContext* c) const
 {
@@ -340,6 +341,18 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 		c.Vertex(CScalableVector(pBranch->m_oData.vec2, ePlanet).GetUnits(eRender));
 		c.Vertex(CScalableVector(pBranch->m_oData.vec3, ePlanet).GetUnits(eRender));
 		c.Vertex(CScalableVector(pBranch->m_oData.vec4, ePlanet).GetUnits(eRender));
+		c.EndRender();
+	}
+
+	if (r_showquadnormals.GetBool())
+	{
+		CRenderingContext c(GameServer()->GetRenderer());
+		c.BindTexture(0);
+		c.SetColor(Color(255, 255, 255));
+		c.BeginRenderDebugLines();
+		Vector vecPoint = CScalableVector(pBranch->m_oData.vec1, ePlanet).GetUnits(eRender);
+		c.Vertex(vecPoint);
+		c.Vertex(vecPoint + pBranch->m_oData.vec1n);
 		c.EndRender();
 	}
 }

@@ -100,21 +100,18 @@ void CSPRenderer::SetupLighting()
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vector4D(Color(0, 0, 0)));
 
-	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
-	{
-		CStar* pStar = dynamic_cast<CStar*>(CBaseEntity::GetEntity(i));
-		if (!pStar)
-			continue;
+	if (m_hClosestStar == NULL)
+		return;
 
-		glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetGlobalScalableOrigin().GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
-		glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
-		glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
-		glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, r_star_constant_attenuation.GetFloat());
-		glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, r_star_linear_attenuation.GetFloat());
-		glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, r_star_quadratic_attenuation.GetFloat());
-		break;
-	}
+	CStar* pStar = m_hClosestStar;
+
+	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetGlobalScalableOrigin().GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
+	glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
+	glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
+	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, r_star_constant_attenuation.GetFloat());
+	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, r_star_linear_attenuation.GetFloat());
+	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, r_star_quadratic_attenuation.GetFloat());
 }
 
 void CSPRenderer::RenderSkybox()
