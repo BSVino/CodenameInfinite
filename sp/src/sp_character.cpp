@@ -66,7 +66,7 @@ void CSPCharacter::Think()
 	if (pPlanet && !HasScalableMoveParent())
 	{
 		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
-		m_flRollFromSpace = GetGlobalAngles().r;
+		m_flRollFromSpace = GetGlobalScalableAngles().r;
 	}
 
 	SetScalableMoveParent(pPlanet);
@@ -234,7 +234,7 @@ CScalableFloat CSPCharacter::CharacterSpeedScalable()
 		if (flDistance < flAtmosphere)
 			return flMinSpeed;
 
-		if (flDistance < flOrbit)
+		if (flDistance > flOrbit)
 			return flMaxSpeed;
 
 		return (((flDistance-flAtmosphere) / (flOrbit-flAtmosphere)) * (flMaxSpeed-flMinSpeed)) + flMinSpeed;
