@@ -371,7 +371,46 @@ CScalableFloat CScalableVector::Length() const
 {
 	CScalableFloat f = x*x + y*y + z*z;
 	CScalableFloat r(sqrt(f.GetUnits(SCALE_METER)), SCALE_METER);
-	r.NormalizeScaleStack();
+
+	// Instead of calling ::NormalizeScaleStack() do this instead. It's faster because it doesn't normalize each level in groups of 1000.
+	TAssert(SCALESTACK_SIZE == SCALE_TERAMETER);
+
+	while (r.m_aflScaleStack[0] > 1200000000000)
+	{
+		r.m_aflScaleStack[0] -= 1000000000000;
+		r.m_aflScaleStack[4] += 1;
+	}
+
+	while (r.m_aflScaleStack[0] > 1200000000)
+	{
+		r.m_aflScaleStack[0] -= 1000000000;
+		r.m_aflScaleStack[3] += 1;
+	}
+
+	while (r.m_aflScaleStack[0] > 1200000)
+	{
+		r.m_aflScaleStack[0] -= 1000000;
+		r.m_aflScaleStack[2] += 1;
+	}
+
+	while (r.m_aflScaleStack[0] > 120000)
+	{
+		r.m_aflScaleStack[0] -= 100000;
+		r.m_aflScaleStack[1] += 100;
+	}
+
+	while (r.m_aflScaleStack[0] > 12000)
+	{
+		r.m_aflScaleStack[0] -= 10000;
+		r.m_aflScaleStack[1] += 10;
+	}
+
+	while (r.m_aflScaleStack[0] > 1200)
+	{
+		r.m_aflScaleStack[0] -= 1000;
+		r.m_aflScaleStack[1] += 1;
+	}
+
 	return r;
 }
 
