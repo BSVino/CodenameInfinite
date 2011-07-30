@@ -9,6 +9,8 @@ class CSPPlayer : public CPlayer
 
 public:
 	virtual void					MouseMotion(int x, int y);
+	virtual void					KeyPress(int c);
+	virtual void					KeyRelease(int c);
 
 	class CSPCharacter*				GetSPCharacter();
 };

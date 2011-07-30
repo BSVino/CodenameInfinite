@@ -28,6 +28,8 @@ set (SPINTRO_SOURCES
 	sp_systems.cpp
 	sp_window.cpp
 	sp_entity.cpp
+
+	ui/hud.cpp
 )
 add_executable (sp ${SPINTRO_SOURCES})
 target_link_libraries (sp tinker tengine)

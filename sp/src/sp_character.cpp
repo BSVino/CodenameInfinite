@@ -26,6 +26,7 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
@@ -35,6 +36,7 @@ CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
+	m_bHyperdrive = false;
 }
 
 void CSPCharacter::Think()
@@ -45,6 +47,9 @@ void CSPCharacter::Think()
 	m_vecMoveVelocity.x = Approach(m_vecGoalVelocity.x, m_vecMoveVelocity.x, GameServer()->GetFrameTime()*4);
 	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
 	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
+
+	if (m_bHyperdrive)
+		m_vecMoveVelocity.y = m_vecMoveVelocity.z = 0;
 
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{
@@ -222,11 +227,12 @@ CScalableFloat CSPCharacter::CharacterSpeedScalable()
 {
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
 
-	CScalableFloat flMinSpeed = CScalableFloat(200, SCALE_KILOMETER);
-	CScalableFloat flMaxSpeed = CScalableFloat(100, SCALE_MEGAMETER);
+	CScalableFloat flMaxSpeed = CScalableFloat(10, SCALE_MEGAMETER);
 
 	if (pPlanet)
 	{
+		CScalableFloat flMinSpeed = CScalableFloat(200, SCALE_KILOMETER);
+
 		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
 		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
 		CScalableFloat flOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
@@ -240,7 +246,10 @@ CScalableFloat CSPCharacter::CharacterSpeedScalable()
 		return (((flDistance-flAtmosphere) / (flOrbit-flAtmosphere)) * (flMaxSpeed-flMinSpeed)) + flMinSpeed;
 	}
 
-	return flMaxSpeed;
+	if (m_bHyperdrive)
+		return CScalableFloat(1, SCALE_GIGAMETER);
+	else
+		return flMaxSpeed;
 }
 
 float CSPCharacter::EyeHeight()

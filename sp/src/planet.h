@@ -104,6 +104,9 @@ public:
 	void						SetAtmosphereThickness(const CScalableFloat& flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
 	const CScalableFloat&		GetAtmosphereThickness() { return m_flAtmosphereThickness; }
 
+	void						SetPlanetName(const tstring& sName) { m_sPlanetName = sName; }
+	tstring						GetPlanetName() const { return m_sPlanetName; }
+
 	int							GetMinQuadRenderDepth() { return m_iMinQuadRenderDepth; };
 
 	CScalableFloat				GetCloseOrbit();
@@ -119,6 +122,8 @@ protected:
 	int							m_iMinQuadRenderDepth;
 
 	bool						m_bOneSurface;
+
+	tstring						m_sPlanetName;
 
 	union
 	{

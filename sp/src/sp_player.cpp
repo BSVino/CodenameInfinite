@@ -3,6 +3,7 @@
 #include <tengine/game/entities/character.h>
 #include <tinker/cvar.h>
 #include <tinker/application.h>
+#include <tinker/keys.h>
 
 #include "sp_character.h"
 
@@ -42,6 +43,28 @@ void CSPPlayer::MouseMotion(int x, int y)
 	mNewTransform.SetTranslation(GetSPCharacter()->GetLocalScalableOrigin());
 
 	GetSPCharacter()->SetLocalScalableTransform(mNewTransform);
+}
+
+void CSPPlayer::KeyPress(int c)
+{
+	BaseClass::KeyPress(c);
+
+	if (GetSPCharacter() == NULL)
+		return;
+
+	if (c == TINKER_KEY_LSHIFT)
+		GetSPCharacter()->EngageHyperdrive();
+}
+
+void CSPPlayer::KeyRelease(int c)
+{
+	BaseClass::KeyRelease(c);
+
+	if (GetSPCharacter() == NULL)
+		return;
+
+	if (c == TINKER_KEY_LSHIFT)
+		GetSPCharacter()->DisengageHyperdrive();
 }
 
 CSPCharacter* CSPPlayer::GetSPCharacter()

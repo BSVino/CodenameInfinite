@@ -22,6 +22,7 @@ SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flMinutesPerRevolution);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iMinQuadRenderDepth);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bOneSurface);
+	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sPlanetName);
 	SAVEDATA_OMIT(m_pTerrainFd);
 	SAVEDATA_OMIT(m_pTerrainBk);
 	SAVEDATA_OMIT(m_pTerrainRt);

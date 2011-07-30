@@ -27,6 +27,9 @@ public:
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
 	CPlanet*					FindNearestPlanet();
 
+	void						EngageHyperdrive() { m_bHyperdrive = true; };
+	void						DisengageHyperdrive() { m_bHyperdrive = false; };
+
 	virtual Vector				GetUpVector();
 
 	void						LockViewToPlanet();
@@ -45,6 +48,8 @@ protected:
 
 	float						m_flLastEnteredAtmosphere;
 	float						m_flRollFromSpace;
+
+	bool						m_bHyperdrive;
 };
 
 #endif

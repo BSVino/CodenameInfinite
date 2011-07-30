@@ -21,7 +21,7 @@ public:
 
 	CScalableFloat				GetCloseOrbit();
 
-	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
+	virtual scale_t				GetScale() const { return SCALE_GIGAMETER; }
 
 protected:
 	CScalableFloat				m_flRadius;

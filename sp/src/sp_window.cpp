@@ -21,11 +21,11 @@
 #include "sp_renderer.h"
 #include "planet.h"
 #include "star.h"
+#include "ui/hud.h"
 
 CSPWindow::CSPWindow(int argc, char** argv)
 	: CGameWindow(argc, argv)
 {
-	m_pGeneralWindow = NULL;
 }
 
 void CSPWindow::SetupEngine()
@@ -33,6 +33,8 @@ void CSPWindow::SetupEngine()
 	mtsrand((size_t)time(NULL));
 
 	GameServer()->Initialize();
+
+	glgui::CRootPanel::Get()->AddControl(m_pSPHUD = new CSPHUD());
 
 	glgui::CRootPanel::Get()->SetLighting(false);
 	glgui::CRootPanel::Get()->Layout();
@@ -55,20 +57,22 @@ void CSPWindow::SetupSP()
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+	pPlanet->SetPlanetName("Earth");
 	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(7, 0, 7), SCALE_MEGAMETER));
 	pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(50, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 	pPlanet->SetMinutesPerRevolution(30);
 
 	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
-	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(-5, 0, -5), SCALE_MEGAMETER));
+	pPlanet->SetPlanetName("Mars");
+	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(100, 0, 100), SCALE_MEGAMETER));	// 200Mm, the average distance to Mars
 	pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(25, SCALE_KILOMETER));
 	pPlanet->SetMinutesPerRevolution(20);
 
 	CStar* pStar = GameServer()->Create<CStar>("CStar");
-	pStar->SetGlobalScalableOrigin(CScalableVector(Vector(-3000, 0, 3000), SCALE_MEGAMETER));
-	pStar->SetRadius(CScalableFloat(695.5f, SCALE_MEGAMETER));				// Radius of the sun, 695500km
+	pStar->SetGlobalScalableOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
+	pStar->SetRadius(CScalableFloat(10, SCALE_GIGAMETER));
 
 	//pCharacter->StandOnNearestPlanet();
 }

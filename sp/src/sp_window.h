@@ -22,14 +22,13 @@ public:
 
 	virtual void				DoKeyPress(int c);
 
-	class CGeneralWindow*		GetGeneralWindow() { return m_pGeneralWindow; }
-
 	class CSPRenderer*			GetRenderer();
+	class CSPHUD*				GetHUD() { return m_pSPHUD; };
 
 protected:
 	size_t						m_iScreenshot;
 
-	class CGeneralWindow*		m_pGeneralWindow;
+	class CSPHUD*				m_pSPHUD;
 };
 
 inline CSPWindow* SPWindow()
