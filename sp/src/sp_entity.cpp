@@ -1,9 +1,11 @@
 #include "sp_entity.h"
 
 #include <tinker/application.h>
+#include <tinker/profiler.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"
+#include "sp_character.h"
 
 REGISTER_ENTITY(CSPEntity);
 
@@ -280,6 +282,39 @@ void ISPEntity::SetLocalScalableAngles(const EAngle& angAngles)
 	m_mLocalScalableTransform.SetAngles(angAngles);
 
 	InvalidateGlobalScalableTransforms();
+}
+
+CScalableMatrix ISPEntity::GetScalableRenderTransform() const
+{
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+
+	CScalableMatrix mTransform = GetGlobalScalableTransform();
+	mTransform.SetTranslation(mTransform.GetTranslation() - vecCharacterOrigin);
+
+	return mTransform;
+}
+
+CScalableVector ISPEntity::GetScalableRenderOrigin() const
+{
+	return GetScalableRenderTransform().GetTranslation();
+}
+
+Matrix4x4 ISPEntity::GetRenderTransform() const
+{
+	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
+	return GetScalableRenderTransform().GetUnits(pRenderer->GetRenderingScale());
+}
+
+Vector ISPEntity::GetRenderOrigin() const
+{
+	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
+	return GetScalableRenderTransform().GetTranslation().GetUnits(pRenderer->GetRenderingScale());
+}
+
+EAngle ISPEntity::GetRenderAngles() const
+{
+	return GetScalableRenderTransform().GetAngles();
 }
 
 bool ISPEntity::IsTouching(ISPEntity* pOther, CScalableVector& vecPoint)

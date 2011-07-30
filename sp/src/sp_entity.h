@@ -56,9 +56,13 @@ public:
 
 	virtual CScalableFloat			GetRadius() const { return CScalableFloat(); };
 	virtual CScalableFloat			GetScalableRenderRadius() const { return GetRadius(); };
-	virtual CScalableMatrix			GetScalableRenderTransform() const { return GetGlobalScalableTransform(); };
-	virtual CScalableVector			GetScalableRenderOrigin() const { return GetGlobalScalableOrigin(); };
+	virtual CScalableMatrix			GetScalableRenderTransform() const;
+	virtual CScalableVector			GetScalableRenderOrigin() const;
 	virtual EAngle					GetScalableRenderAngles() const { return GetGlobalScalableAngles(); };
+
+	virtual Matrix4x4				GetRenderTransform() const;
+	virtual Vector					GetRenderOrigin() const;
+	virtual EAngle					GetRenderAngles() const;
 
 	virtual bool					ShouldTouch(ISPEntity* pOther) { return true; };
 	virtual bool					IsTouching(ISPEntity* pOther, CScalableVector& vecPoint);

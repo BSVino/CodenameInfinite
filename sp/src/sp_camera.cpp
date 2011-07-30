@@ -21,7 +21,7 @@ CScalableVector CSPCamera::GetCameraScalablePosition()
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeightScalable();
 
-	return pCharacter->GetGlobalScalableOrigin() + vecEyeHeight;
+	return vecEyeHeight;
 }
 
 CScalableVector CSPCamera::GetCameraScalableTarget()

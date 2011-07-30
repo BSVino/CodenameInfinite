@@ -76,6 +76,7 @@ void CSPRenderer::StartRendering()
 	RenderScale(SCALE_GIGAMETER);
 	RenderScale(SCALE_MEGAMETER);
 	RenderScale(SCALE_KILOMETER);
+	RenderScale(SCALE_METER);
 
 	m_eRenderingScale = SCALE_METER;
 

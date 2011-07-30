@@ -118,6 +118,8 @@ protected:
 	float						m_flMinutesPerRevolution;
 	int							m_iMinQuadRenderDepth;
 
+	bool						m_bOneSurface;
+
 	union
 	{
 		struct
