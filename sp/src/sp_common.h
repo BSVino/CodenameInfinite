@@ -128,6 +128,8 @@ public:
 	// Transform a vector
 	CScalableVector			operator*(const CScalableVector& v) const;
 
+	CScalableVector			TransformNoTranslate(const CScalableVector& v) const;
+
 	void					InvertTR();
 
 	void					SetColumn(int i, const Vector& vecColumn);

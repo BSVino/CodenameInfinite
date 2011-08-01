@@ -173,20 +173,25 @@ void CPlanetTerrain::Init()
 	CQuadTree<CBranchData>::Init(this, oData);
 }
 
+CVar r_terrain_onequad("r_terrain_onequad", "off");
+
 void CPlanetTerrain::ResetRenderFlags(CQuadTreeBranch<CBranchData>* pBranch)
 {
 	if (pBranch)
 	{
 		if (pBranch->m_pBranches[0])
 		{
-			for (size_t i = 0; i < 4; i++)
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 				ResetRenderFlags(pBranch->m_pBranches[i]);
 		}
 
 		pBranch->m_oData.bRendered = false;
 	}
 	else
+	{
+		m_bOneQuad = r_terrain_onequad.GetBool();
 		ResetRenderFlags(m_pQuadTreeHead);
+	}
 }
 
 void CPlanetTerrain::Think()
@@ -213,7 +218,7 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 		bool bCanRenderKids = true;
 		if (pBranch->m_pBranches[0])
 		{
-			for (size_t i = 0; i < 4; i++)
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			{
 				bCanRenderKids &= ShouldRenderBranch(pBranch->m_pBranches[i]);
 				if (!bCanRenderKids)
@@ -226,11 +231,11 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 		if (bCanRenderKids)
 		{
 			pBranch->m_oData.bRender = false;
-			for (size_t i = 0; i < 4; i++)
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 				pBranch->m_pBranches[i]->m_oData.bRender = true;
 
 			bool bAllKidsRendered = true;
-			for (size_t i = 0; i < 4; i++)
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			{
 				ThinkBranch(pBranch->m_pBranches[i]);
 				bAllKidsRendered &= pBranch->m_pBranches[i]->m_oData.bRendered;
@@ -252,7 +257,7 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	bool bAreKidsRenderingAndShouldnt = true;
 	if (pBranch->m_pBranches[0])
 	{
-		for (size_t i = 0; i < 4; i++)
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 		{
 			bAreKidsRenderingAndShouldnt &= (pBranch->m_pBranches[i]->m_oData.bRender && !ShouldRenderBranch(pBranch->m_pBranches[i]));
 			if (!bAreKidsRenderingAndShouldnt)
@@ -263,7 +268,7 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (bAreKidsRenderingAndShouldnt)
 	{
 		pBranch->m_oData.bRender = true;
-		for (size_t i = 0; i < 4; i++)
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			pBranch->m_pBranches[i]->m_oData.bRender = false;
 
 		ProcessBranchRendering(pBranch);
@@ -274,7 +279,7 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 		bool bAllKidsRendered = true;
 
 		// My kids should be rendering.
-		for (size_t i = 0; i < 4; i++)
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 		{
 			ThinkBranch(pBranch->m_pBranches[i]);
 			bAllKidsRendered &= pBranch->m_pBranches[i]->m_oData.bRendered;
@@ -319,18 +324,35 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 {
 	TAssert(pBranch->m_oData.bRendered);
 	TAssert(!pBranch->m_oData.bRenderVectorsDirty);
-	TAssert(pBranch->m_iDepth < 19);
 
 	scale_t ePlanet = m_pPlanet->GetScale();
 	scale_t eRender = SPGame()->GetSPRenderer()->GetRenderingScale();
 	CScalableMatrix mPlanetTransform = m_pPlanet->GetGlobalScalableTransform();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
 
-	CScalableVector svec1 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin;
-	CScalableVector svec2 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin;
-	CScalableVector svec3 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin;
-	CScalableVector svec4 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin;
+	CScalableVector svec1;
+	CScalableVector svec2;
+	CScalableVector svec3;
+	CScalableVector svec4;
+
+	if (pCharacter->GetScalableMoveParent() == m_pPlanet)
+	{
+		CScalableVector vecCharacterOrigin = pCharacter->GetLocalScalableOrigin();
+
+		svec1 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin);
+		svec2 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin);
+		svec3 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin);
+		svec4 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin);
+	}
+	else
+	{
+		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+
+		svec1 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin;
+		svec2 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin;
+		svec3 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin;
+		svec4 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin;
+	}
 
 	Vector vec1 = svec1.GetUnits(eRender);
 	Vector vec2 = svec2.GetUnits(eRender);

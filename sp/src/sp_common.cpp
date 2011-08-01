@@ -481,10 +481,7 @@ CScalableVector CScalableVector::operator/( float f ) const
 {
 	CScalableVector vecReturn;
 	for (size_t i = 0; i < 3; i++)
-	{
 		vecReturn[i] = Index(i) / f;
-		vecReturn[i].NormalizeScaleStack();
-	}
 
 	return vecReturn;
 }
@@ -599,10 +596,6 @@ CScalableMatrix CScalableMatrix::operator*(const CScalableMatrix& t) const
 	r.mt[1] = t.mt[0]*m[1][0] + t.mt[1]*m[1][1] + t.mt[2]*m[1][2] + mt[1];
 	r.mt[2] = t.mt[0]*m[2][0] + t.mt[1]*m[2][1] + t.mt[2]*m[2][2] + mt[2];
 
-	r.mt[0].NormalizeScaleStack();
-	r.mt[1].NormalizeScaleStack();
-	r.mt[2].NormalizeScaleStack();
-
 	return r;
 }
 
@@ -613,9 +606,15 @@ CScalableVector CScalableMatrix::operator*(const CScalableVector& v) const
 	vecResult.y = v.x * m[1][0] + v.y * m[1][1] + v.z * m[1][2] + mt[1];
 	vecResult.z = v.x * m[2][0] + v.y * m[2][1] + v.z * m[2][2] + mt[2];
 
-	vecResult.x.NormalizeScaleStack();
-	vecResult.y.NormalizeScaleStack();
-	vecResult.z.NormalizeScaleStack();
+	return vecResult;
+}
+
+CScalableVector CScalableMatrix::TransformNoTranslate(const CScalableVector& v) const
+{
+	CScalableVector vecResult;
+	vecResult.x = v.x * m[0][0] + v.y * m[0][1] + v.z * m[0][2];
+	vecResult.y = v.x * m[1][0] + v.y * m[1][1] + v.z * m[1][2];
+	vecResult.z = v.x * m[2][0] + v.y * m[2][1] + v.z * m[2][2];
 
 	return vecResult;
 }

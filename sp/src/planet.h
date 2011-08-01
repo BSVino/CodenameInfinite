@@ -76,6 +76,7 @@ protected:
 	Vector						m_vecDirection;
 	int							m_iBuildsThisFrame;
 	eastl::vector<CQuadTreeBranch<CBranchData>*>	m_apRenderBranches;
+	bool						m_bOneQuad;
 };
 
 class CPlanet : public CSPEntity
