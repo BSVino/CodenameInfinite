@@ -177,9 +177,6 @@ void CSPCharacter::LockViewToPlanet()
 
 	// Lock them so that the roll is 0
 	// I'm sure there's a way to do this without converting to euler but at this point I don't care.
-	if (fabs(angLocalRotation.r) < 0.01f)
-		return;
-
 	angLocalRotation.r = 0;
 	CScalableMatrix mLockedLocalRotation;
 	mLockedLocalRotation.SetAngles(angLocalRotation);
