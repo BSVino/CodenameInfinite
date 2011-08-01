@@ -58,7 +58,7 @@ void CSPWindow::SetupSP()
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 	pPlanet->SetPlanetName("Earth");
-	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(7, 0, 7), SCALE_MEGAMETER));
+	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
 	pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(50, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 	pPlanet->SetMinutesPerRevolution(30);
