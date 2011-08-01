@@ -106,7 +106,7 @@ void CSPRenderer::SetupLighting()
 
 	CStar* pStar = m_hClosestStar;
 
-	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetGlobalScalableOrigin().GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
+	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetScalableRenderOrigin().GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
 	glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
 	glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
