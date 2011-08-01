@@ -64,6 +64,11 @@ protected:
 	float					m_aflScaleStack[SCALESTACK_SIZE];
 };
 
+inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)
+{
+	return (((flInput-flInLo) / (flInHi-flInLo)) * (flOutHi-flOutLo)) + flOutLo;
+}
+
 class CScalableVector
 {
 	friend class CScalableMatrix;

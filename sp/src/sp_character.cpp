@@ -225,29 +225,34 @@ CScalableFloat CSPCharacter::EyeHeightScalable()
 
 CScalableFloat CSPCharacter::CharacterSpeedScalable()
 {
-	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
+	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_ANY);
 
 	CScalableFloat flMaxSpeed = CScalableFloat(10, SCALE_MEGAMETER);
 
-	if (pPlanet)
+	CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
+	CScalableFloat flCloseOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
+
+	if (flDistance < flCloseOrbit)
 	{
 		CScalableFloat flMinSpeed = CScalableFloat(200, SCALE_KILOMETER);
 
-		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
 		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
-		CScalableFloat flOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
 
 		if (flDistance < flAtmosphere)
 			return flMinSpeed;
 
-		if (flDistance > flOrbit)
+		if (flDistance > flCloseOrbit)
 			return flMaxSpeed;
 
-		return (((flDistance-flAtmosphere) / (flOrbit-flAtmosphere)) * (flMaxSpeed-flMinSpeed)) + flMinSpeed;
+		return RemapVal(flDistance, flAtmosphere, flCloseOrbit, flMinSpeed, flMaxSpeed);
 	}
 
 	if (m_bHyperdrive)
-		return CScalableFloat(1, SCALE_GIGAMETER);
+	{
+		CScalableFloat flMinSpeed = flMaxSpeed;
+		flMaxSpeed = CScalableFloat(50, SCALE_GIGAMETER);
+		return RemapVal(flDistance, flCloseOrbit, CScalableFloat(1, SCALE_GIGAMETER), flMinSpeed, flMaxSpeed);
+	}
 	else
 		return flMaxSpeed;
 }

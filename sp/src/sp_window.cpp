@@ -65,7 +65,7 @@ void CSPWindow::SetupSP()
 
 	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 	pPlanet->SetPlanetName("Mars");
-	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(100, 0, 100), SCALE_MEGAMETER));	// 200Mm, the average distance to Mars
+	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
 	pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(25, SCALE_KILOMETER));
 	pPlanet->SetMinutesPerRevolution(20);
