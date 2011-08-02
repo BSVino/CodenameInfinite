@@ -74,7 +74,7 @@ void CSPWindow::SetupSP()
 	pStar->SetGlobalScalableOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
 	pStar->SetRadius(CScalableFloat(10, SCALE_GIGAMETER));
 
-	//pCharacter->StandOnNearestPlanet();
+	pCharacter->StandOnNearestPlanet();
 }
 
 void CSPWindow::RenderLoading()
