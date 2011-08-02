@@ -227,6 +227,18 @@ void CScalableFloat::NormalizeScaleStack()
 		{
 			if (i < SCALESTACK_SIZE-1)
 			{
+				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
+				{
+					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
+					m_aflScaleStack[i+1] = 0;
+				}
+
+				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
+				{
+					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
+					m_aflScaleStack[i+1] = 0;
+				}
+
 				while (m_aflScaleStack[i] < -0.2f && m_aflScaleStack[i+1] > 1)
 				{
 					m_aflScaleStack[i] += 1000;
@@ -237,12 +249,6 @@ void CScalableFloat::NormalizeScaleStack()
 				{
 					m_aflScaleStack[i] -= 1000;
 					m_aflScaleStack[i+1] += 1;
-				}
-
-				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
-				{
-					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
-					m_aflScaleStack[i+1] = 0;
 				}
 			}
 
@@ -259,6 +265,18 @@ void CScalableFloat::NormalizeScaleStack()
 		{
 			if (i < SCALESTACK_SIZE-1)
 			{
+				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
+				{
+					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
+					m_aflScaleStack[i+1] = 0;
+				}
+
+				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
+				{
+					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
+					m_aflScaleStack[i+1] = 0;
+				}
+
 				while (m_aflScaleStack[i] > 0.2f && m_aflScaleStack[i+1] < -1)
 				{
 					m_aflScaleStack[i] -= 1000;
@@ -269,12 +287,6 @@ void CScalableFloat::NormalizeScaleStack()
 				{
 					m_aflScaleStack[i] += 1000;
 					m_aflScaleStack[i+1] -= 1;
-				}
-
-				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
-				{
-					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
-					m_aflScaleStack[i+1] = 0;
 				}
 			}
 

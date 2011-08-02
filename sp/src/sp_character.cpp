@@ -231,17 +231,20 @@ CScalableFloat CSPCharacter::CharacterSpeedScalable()
 
 	if (flDistance < flCloseOrbit)
 	{
-		CScalableFloat flMinSpeed = CScalableFloat(200, SCALE_KILOMETER);
+		CScalableFloat flAtmosphereSpeed = CScalableFloat(500, SCALE_KILOMETER);
 
 		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
 
 		if (flDistance < flAtmosphere)
-			return flMinSpeed;
+		{
+			CScalableFloat flGroundSpeed = CScalableFloat(1, SCALE_KILOMETER);
+			return RemapVal(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed);
+		}
 
 		if (flDistance > flCloseOrbit)
 			return flMaxSpeed;
 
-		return RemapVal(flDistance, flAtmosphere, flCloseOrbit, flMinSpeed, flMaxSpeed);
+		return RemapVal(flDistance, flAtmosphere, flCloseOrbit, flAtmosphereSpeed, flMaxSpeed);
 	}
 
 	if (m_bHyperdrive)
