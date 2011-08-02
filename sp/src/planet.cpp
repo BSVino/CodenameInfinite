@@ -209,22 +209,9 @@ void CPlanetTerrain::Think()
 }
 
 CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
-CVar r_terraincullbackfaces("r_terraincullbackfaces", "on");
 
 void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
-	if (r_terraincullbackfaces.GetBool())
-	{
-		CalcRenderVectors(pBranch);
-		Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
-		float flDot = SPGame()->GetSPRenderer()->GetCameraVector().Dot(vecNormal);
-		if (flDot >= 0.4f)
-		{
-			pBranch->m_oData.bRendered = true;
-			return;
-		}
-	}
-
 	if (pBranch->m_oData.bRendered)
 		return;
 
@@ -460,8 +447,17 @@ void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
 CVar r_terrainresolution("r_terrainresolution", "1.0");
 CVar r_minterrainsize("r_minterrainsize", "100");
 
+CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");
+CVar r_terrainperspectivescale("r_terrainperspectivescale", "on");
+
 bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
+	CalcRenderVectors(pBranch);
+	Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
+	float flDot = SPGame()->GetSPRenderer()->GetCameraVector().Dot(vecNormal);
+	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
+		return false;
+
 	CScalableVector vecQuadCenter(pBranch->GetCenter(), m_pPlanet->GetScale());
 	CalcRenderVectors(pBranch);
 	CScalableVector vecQuadMax(pBranch->m_oData.vec3, m_pPlanet->GetScale());
@@ -483,7 +479,14 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 
 	UpdateScreenSize(pBranch);
 
-	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize < r_minterrainsize.GetFloat())
+	float flScale = -flDot;
+	if (flScale < 0)
+		flScale = 0;
+
+	if (!r_terrainperspectivescale.GetBool())
+		flScale = 1;
+
+	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize*flScale < r_minterrainsize.GetFloat())
 		return false;
 
 	return true;
