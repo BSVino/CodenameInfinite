@@ -5,6 +5,7 @@
 #include <tengine/renderer/renderer.h>
 #include <tinker/cvar.h>
 #include <tinker/application.h>
+#include <tinker/profiler.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"
@@ -76,6 +77,8 @@ CVar r_planet_onesurface("r_planet_onesurface", "off");
 
 void CPlanet::Think()
 {
+	TPROF("CPlanet::Think");
+
 	BaseClass::Think();
 
 	SetLocalScalableAngles(GetLocalScalableAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution));
@@ -88,6 +91,8 @@ void CPlanet::Think()
 
 void CPlanet::RenderUpdate()
 {
+	TPROF("CPlanet::RenderUpdate");
+
 	Vector vecUp;
 	Vector vecForward;
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
@@ -129,6 +134,8 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	if (bTransparent)
 		return;
+
+	TPROF("CPlanet::PostRender");
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
@@ -215,13 +222,13 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 			pBranch->BuildBranch(false);
 
 		// See if we can push the render surface down to the next level.
-		bool bCanRenderKids = true;
+		bool bCanRenderKids = false;
 		if (pBranch->m_pBranches[0])
 		{
 			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			{
-				bCanRenderKids &= ShouldRenderBranch(pBranch->m_pBranches[i]);
-				if (!bCanRenderKids)
+				bCanRenderKids |= ShouldRenderBranch(pBranch->m_pBranches[i]);
+				if (bCanRenderKids)
 					break;
 			}
 		}
@@ -298,8 +305,10 @@ void CPlanetTerrain::ProcessBranchRendering(CQuadTreeBranch<CBranchData>* pBranc
 	CalcRenderVectors(pBranch);
 	UpdateScreenSize(pBranch);
 
-	float flDistance = pBranch->m_oData.flQuadDistance.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
-	float flSize = pBranch->m_oData.flQuadRadius.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+
+	float flDistance = pBranch->m_oData.flQuadDistance.GetUnits(eScale);
+	float flSize = pBranch->m_oData.flQuadRadius.GetUnits(eScale);
 
 	if (flDistance < 5 + flSize)
 		return;
