@@ -209,9 +209,22 @@ void CPlanetTerrain::Think()
 }
 
 CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
+CVar r_terraincullbackfaces("r_terraincullbackfaces", "on");
 
 void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
+	if (r_terraincullbackfaces.GetBool())
+	{
+		CalcRenderVectors(pBranch);
+		Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
+		float flDot = SPGame()->GetSPRenderer()->GetCameraVector().Dot(vecNormal);
+		if (flDot >= 0.4f)
+		{
+			pBranch->m_oData.bRendered = true;
+			return;
+		}
+	}
+
 	if (pBranch->m_oData.bRendered)
 		return;
 
