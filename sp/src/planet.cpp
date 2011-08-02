@@ -472,6 +472,18 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (flRadius.GetUnits(SCALE_METER) < r_terrainresolution.GetFloat())
 		return false;
 
+	UpdateScreenSize(pBranch);
+
+	float flScale = -flDot;
+	if (flScale < 0)
+		flScale = 0;
+
+	if (!r_terrainperspectivescale.GetBool())
+		flScale = 1;
+
+	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize*flScale < r_minterrainsize.GetFloat())
+		return false;
+
 	if (r_terrainfrustumcull.GetBool())
 	{
 		scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
@@ -485,18 +497,6 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 		if (!GameServer()->GetRenderer()->IsSphereInFrustum(vecPlanetCenter.GetUnits(eScale), flRadius.GetUnits(eScale)))
 			return false;
 	}
-
-	UpdateScreenSize(pBranch);
-
-	float flScale = -flDot;
-	if (flScale < 0)
-		flScale = 0;
-
-	if (!r_terrainperspectivescale.GetBool())
-		flScale = 1;
-
-	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize*flScale < r_minterrainsize.GetFloat())
-		return false;
 
 	return true;
 }
