@@ -218,8 +218,13 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (pBranch->m_oData.bRender)
 	{
 		// If I can render then maybe my kids can too?
-		if (!pBranch->m_pBranches[0] && m_iBuildsThisFrame++ < r_terrainbuildsperframe.GetInt())
+		if (!pBranch->m_pBranches[0] && m_iBuildsThisFrame < r_terrainbuildsperframe.GetInt())
+		{
 			pBranch->BuildBranch(false);
+
+			if (pBranch->m_pBranches[0])
+				m_iBuildsThisFrame++;
+		}
 
 		// See if we can push the render surface down to the next level.
 		bool bCanRenderKids = false;
@@ -449,6 +454,7 @@ CVar r_minterrainsize("r_minterrainsize", "100");
 
 CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");
 CVar r_terrainperspectivescale("r_terrainperspectivescale", "on");
+CVar r_terrainfrustumcull("r_terrainfrustumcull", "on");
 
 bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
@@ -466,16 +472,19 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (flRadius.GetUnits(SCALE_METER) < r_terrainresolution.GetFloat())
 		return false;
 
-	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (r_terrainfrustumcull.GetBool())
+	{
+		scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
-	CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
+		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+		CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
 
-	CScalableVector vecPlanetCenter = mPlanet * vecQuadCenter - vecCharacterOrigin;
+		CScalableVector vecPlanetCenter = mPlanet * vecQuadCenter - vecCharacterOrigin;
 
-	if (!GameServer()->GetRenderer()->IsSphereInFrustum(vecPlanetCenter.GetUnits(eScale), flRadius.GetUnits(eScale)))
-		return false;
+		if (!GameServer()->GetRenderer()->IsSphereInFrustum(vecPlanetCenter.GetUnits(eScale), flRadius.GetUnits(eScale)))
+			return false;
+	}
 
 	UpdateScreenSize(pBranch);
 
