@@ -5,7 +5,7 @@
 
 #include <raytracer/raytracer.h>
 #include <models/models.h>
-#include <renderer/renderer.h>
+#include <renderer/renderingcontext.h>
 #include <renderer/particles.h>
 #include <sound/sound.h>
 #include <tinker/application.h>

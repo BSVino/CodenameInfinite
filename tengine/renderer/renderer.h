@@ -1,5 +1,5 @@
-#ifndef DT_RENDERER_H
-#define DT_RENDERER_H
+#ifndef TINKER_RENDERER_H
+#define TINKER_RENDERER_H
 
 #include <EASTL/map.h>
 #include <EASTL/vector.h>
@@ -10,118 +10,7 @@
 #include <matrix.h>
 #include <color.h>
 
-typedef enum
-{
-	BLEND_NONE = 0,
-	BLEND_ALPHA,
-	BLEND_ADDITIVE,
-} blendtype_t;
-
-class CRenderingContext
-{
-public:
-				CRenderingContext(class CRenderer* pRenderer);
-				~CRenderingContext();
-
-public:
-	void		Transform(const Matrix4x4& m);
-	void		Translate(Vector vecTranslate);
-	void		Rotate(float flAngle, Vector vecAxis);
-	void		Scale(float flX, float flY, float flZ);
-	void		ResetTransformations();
-
-	void		SetBlend(blendtype_t eBlend);
-	void		SetAlpha(float flAlpha) { m_flAlpha = flAlpha; };
-	void		SetDepthMask(bool bDepthMask);
-	void		SetDepthTest(bool bDepthTest);
-	void		SetBackCulling(bool bCull);
-	void		SetColorSwap(Color clrSwap);
-	void		SetLighting(bool bLighting);
-
-	float		GetAlpha() { return m_flAlpha; };
-	blendtype_t	GetBlend() { return m_eBlend; };
-
-	void		RenderModel(size_t iModel, class CModel* pCompilingModel = NULL);
-	void		RenderSceneNode(class CModel* pModel, class CConversionScene* pScene, class CConversionSceneNode* pNode, class CModel* pCompilingModel);
-	void		RenderMeshInstance(class CModel* pModel, class CConversionScene* pScene, class CConversionMeshInstance* pMeshInstance, class CModel* pCompilingModel);
-
-	void		RenderSphere();
-
-	void		RenderBillboard(const tstring& sTexture, float flRadius);
-
-	void		UseFrameBuffer(const class CFrameBuffer* pBuffer);
-	void		UseProgram(size_t iProgram);
-	void		SetUniform(const char* pszName, int iValue);
-	void		SetUniform(const char* pszName, float flValue);
-	void		SetUniform(const char* pszName, const Vector& vecValue);
-	void		SetUniform(const char* pszName, const Color& vecValue);
-	void		BindTexture(const tstring& sName);
-	void		BindTexture(size_t iTexture);
-	void		SetColor(Color c);
-	void		BeginRenderTris();
-	void		BeginRenderQuads();
-	void		BeginRenderDebugLines();
-	void		TexCoord(float s, float t);
-	void		TexCoord(const Vector2D& v);
-	void		TexCoord(const Vector& v);
-	void		Normal(const Vector& v);
-	void		Vertex(const Vector& v);
-	void		RenderCallList(size_t iCallList);
-	void		EndRender();
-
-protected:
-	void		PushAttribs();
-
-public:
-	CRenderer*	m_pRenderer;
-
-	bool		m_bMatrixTransformations;
-	bool		m_bBoundTexture;
-	bool		m_bFBO;
-	size_t		m_iProgram;
-	bool		m_bAttribs;
-
-	bool		m_bColorSwap;
-	Color		m_clrSwap;
-
-	blendtype_t	m_eBlend;
-	float		m_flAlpha;
-};
-
-class CRopeRenderer
-{
-public:
-						CRopeRenderer(class CRenderer* pRenderer, size_t iTexture, Vector vecStart, float flWidth);
-
-public:
-	void				AddLink(Vector vecLink);
-	void				FinishSegment(Vector vecLink, Vector vecNextSegmentStart, float flNextSegmentWidth);
-	void				Finish(Vector vecLink);
-
-	void				SetWidth(float flWidth) { m_flWidth = flWidth; };
-	void				SetColor(Color c) { m_clrRope = c; };
-	void				SetTextureScale(float flTextureScale) { m_flTextureScale = flTextureScale; };
-	void				SetTextureOffset(float flTextureOffset) { m_flTextureOffset = flTextureOffset; };
-
-	void				SetForward(Vector vecForward);
-
-protected:
-	CRenderer*			m_pRenderer;
-	CRenderingContext	m_oContext;
-
-	size_t				m_iTexture;
-	Vector				m_vecLastLink;
-	float				m_flLastLinkWidth;
-	bool				m_bFirstLink;
-
-	float				m_flWidth;
-	Color				m_clrRope;
-	float				m_flTextureScale;
-	float				m_flTextureOffset;
-
-	bool				m_bUseForward;
-	Vector				m_vecForward;
-};
+#include "render_common.h"
 
 class CFrameBuffer
 {

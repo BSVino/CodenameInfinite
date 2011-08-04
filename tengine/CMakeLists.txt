@@ -47,6 +47,8 @@ set (TENGINE_SOURCES
 	renderer/dissolver.cpp
 	renderer/particles.cpp
 	renderer/renderer.cpp
+	renderer/renderingcontext.cpp
+	renderer/roperenderer.cpp
 
 	shaders/blur.cpp
 	shaders/explosion.cpp

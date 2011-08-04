@@ -1,6 +1,6 @@
 #include "star.h"
 
-#include <tengine/renderer/renderer.h>
+#include <renderer/renderingcontext.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"

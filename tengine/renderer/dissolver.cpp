@@ -9,6 +9,7 @@
 #include <game/game.h>
 
 #include "renderer.h"
+#include "renderingcontext.h"
 
 CModelDissolver* CModelDissolver::s_pModelDissolver = NULL;
 static CModelDissolver g_pModelDissolver = CModelDissolver();
