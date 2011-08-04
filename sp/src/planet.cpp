@@ -459,10 +459,6 @@ CVar r_terrainfrustumcull("r_terrainfrustumcull", "on");
 bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 {
 	CalcRenderVectors(pBranch);
-	Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
-	float flDot = SPGame()->GetSPRenderer()->GetCameraVector().Dot(vecNormal);
-	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
-		return false;
 
 	CScalableVector vecQuadCenter(pBranch->GetCenter(), m_pPlanet->GetScale());
 	CalcRenderVectors(pBranch);
@@ -474,9 +470,18 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 
 	UpdateScreenSize(pBranch);
 
-	float flScale = -flDot;
-	if (flScale < 0)
-		flScale = 0;
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+	CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
+	CScalableVector vecGlobalQuadCenter = mPlanet * vecQuadCenter;
+	Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
+
+	float flDot = (vecGlobalQuadCenter-vecCharacterOrigin).GetUnits(SCALE_METER).Normalized().Dot(vecNormal);
+
+	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
+		return false;
+
+	float flScale = RemapValClamped(flDot, -1, 1, 0.1f, 1);
 
 	if (!r_terrainperspectivescale.GetBool())
 		flScale = 1;
@@ -488,11 +493,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	{
 		scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
-		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
-		CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
-
-		CScalableVector vecPlanetCenter = mPlanet * vecQuadCenter - vecCharacterOrigin;
+		CScalableVector vecPlanetCenter = vecGlobalQuadCenter - vecCharacterOrigin;
 
 		if (!GameServer()->GetRenderer()->IsSphereInFrustum(vecPlanetCenter.GetUnits(eScale), flRadius.GetUnits(eScale)))
 			return false;
