@@ -155,7 +155,10 @@ void CGameWindow::KeyRelease(int c)
 void CGameWindow::MouseMotion(int x, int y)
 {
 	if (!HasFocus())
+	{
+		m_bHaveLastMouse = false;
 		return;
+	}
 
 	BaseClass::MouseMotion(x, y);
 

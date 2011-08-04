@@ -273,9 +273,9 @@ void ISPEntity::SetLocalScalableAngles(const EAngle& angAngles)
 //	if (!m_angLocalScalableAngles.IsInitialized())
 //		m_angLocalScalableAngles = angAngles;
 
-//	EAngle angDifference = angAngles - m_angLocalScalableAngles;
-//	if (fabs(angDifference.p) < 0.001f && fabs(angDifference.y) < 0.001f && fabs(angDifference.r) < 0.001f)
-//		return;
+	EAngle angDifference = angAngles - m_angLocalScalableAngles;
+	if (fabs(angDifference.p) < 0.001f && fabs(angDifference.y) < 0.001f && fabs(angDifference.r) < 0.001f)
+		return;
 
 	m_angLocalScalableAngles = angAngles;
 
