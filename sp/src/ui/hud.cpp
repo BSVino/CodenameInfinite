@@ -11,6 +11,27 @@ CSPHUD::CSPHUD()
 {
 }
 
+tstring GetStringDistance(const CScalableFloat& v)
+{
+	float flDistance = v.GetUnits(SCALE_KILOMETER);
+	if (flDistance > 10000000)
+	{
+		flDistance /= 149598000;		// Km in an AU
+		if (flDistance > 30000)
+		{
+			flDistance /= 63239.6717f;	// AU in a LY
+			return sprintf("%.2fly", flDistance);
+		}
+
+		if (flDistance < 1)
+			return sprintf("%.4fau", flDistance);
+		else
+			return sprintf("%.2fau", flDistance);
+	}
+
+	return sprintf("%.2fkm", flDistance);
+}
+
 void CSPHUD::Paint(int x, int y, int w, int h)
 {
 	Vector vecUp;
@@ -39,7 +60,7 @@ void CSPHUD::Paint(int x, int y, int w, int h)
 
 			Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
 
-			tstring sLabel = pPlanet->GetPlanetName() + " - " + sprintf("%.2fkm", flDistance.GetUnits(SCALE_KILOMETER));
+			tstring sLabel = pPlanet->GetPlanetName() + " - " + GetStringDistance(flDistance);
 
 			glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
 		}
