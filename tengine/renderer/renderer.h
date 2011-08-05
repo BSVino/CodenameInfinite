@@ -57,12 +57,16 @@ public:
 
 	virtual void	SetupFrame();
 	virtual void	DrawBackground();
+	virtual void	DrawSkybox();
 	virtual void	StartRendering();
 	virtual void	FinishRendering();
 	virtual void	FinishFrame();
 	virtual void	RenderOffscreenBuffers();
 	virtual void	RenderFullscreenBuffers();
 	virtual void	SetupSceneShader() {};
+
+	void			SetSkybox(size_t ft, size_t bk, size_t lf, size_t rt, size_t up, size_t dn);
+	void			DisableSkybox();
 
 	void			RenderBloomPass(CFrameBuffer* apSources, CFrameBuffer* apTargets, bool bHorizontal);
 
@@ -149,6 +153,21 @@ protected:
 	int				m_aiViewport[4];
 
 	Plane			m_aoFrustum[6];
+
+	size_t			m_iSkyboxFT;
+	size_t			m_iSkyboxLF;
+	size_t			m_iSkyboxBK;
+	size_t			m_iSkyboxRT;
+	size_t			m_iSkyboxDN;
+	size_t			m_iSkyboxUP;
+
+	Vector2D		m_avecSkyboxTexCoords[4];
+	Vector			m_avecSkyboxFT[4];
+	Vector			m_avecSkyboxBK[4];
+	Vector			m_avecSkyboxLF[4];
+	Vector			m_avecSkyboxRT[4];
+	Vector			m_avecSkyboxUP[4];
+	Vector			m_avecSkyboxDN[4];
 
 	bool			m_bBatchThisFrame;
 	bool			m_bBatching;

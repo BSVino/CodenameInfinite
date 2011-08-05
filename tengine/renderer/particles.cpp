@@ -10,6 +10,7 @@
 #include <models/texturelibrary.h>
 
 #include "renderer.h"
+#include "renderingcontext.h"
 
 CParticleSystemLibrary* CParticleSystemLibrary::s_pParticleSystemLibrary = NULL;
 static CParticleSystemLibrary g_pParticleSystemLibrary = CParticleSystemLibrary();

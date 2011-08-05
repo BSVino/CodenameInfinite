@@ -24,23 +24,15 @@ public:
 public:
 	virtual void	PreFrame();
 
-	virtual void	DrawBackground() {};	// Skybox instead
 	virtual void	StartRendering();
 	virtual void	SetupLighting();
-	virtual void	RenderSkybox();
+	virtual void	DrawSkybox();
 	virtual void	FinishRendering();
 
 	void			RenderScale(scale_t eRenderScale);
 	scale_t			GetRenderingScale() { return m_eRenderingScale; }
 
 protected:
-	size_t			m_iSkyboxFT;
-	size_t			m_iSkyboxLF;
-	size_t			m_iSkyboxBK;
-	size_t			m_iSkyboxRT;
-	size_t			m_iSkyboxDN;
-	size_t			m_iSkyboxUP;
-
 	CEntityHandle<CStar>	m_hClosestStar;
 
 	// A list of objects to render at which scales.

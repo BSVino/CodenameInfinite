@@ -563,7 +563,6 @@ void CGameServer::Render()
 	GameWindow()->GetRenderer()->SetCameraFar(m_pCamera->GetCameraFar());
 
 	GameWindow()->GetRenderer()->SetupFrame();
-	GameWindow()->GetRenderer()->DrawBackground();
 	GameWindow()->GetRenderer()->StartRendering();
 
 	m_apRenderList.reserve(CBaseEntity::GetNumEntities());

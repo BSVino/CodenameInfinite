@@ -21,12 +21,8 @@
 CSPRenderer::CSPRenderer()
 	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
 {
-	m_iSkyboxFT = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
-	m_iSkyboxLF = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
-	m_iSkyboxBK = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
-	m_iSkyboxRT = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
-	m_iSkyboxDN = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
-	m_iSkyboxUP = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	size_t iSkybox = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
+	SetSkybox(iSkybox, iSkybox, iSkybox, iSkybox, iSkybox, iSkybox);
 
 	m_eRenderingScale = SCALE_NONE;
 }
@@ -69,8 +65,6 @@ void CSPRenderer::StartRendering()
 		if (pStar->GetGlobalScalableOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalScalableOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition))
 			m_hClosestStar = pStar;
 	}
-
-	RenderSkybox();
 
 	RenderScale(SCALE_TERAMETER);
 	RenderScale(SCALE_GIGAMETER);
@@ -115,123 +109,11 @@ void CSPRenderer::SetupLighting()
 	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, r_star_quadratic_attenuation.GetFloat());
 }
 
-void CSPRenderer::RenderSkybox()
+void CSPRenderer::DrawSkybox()
 {
-	if (!SPGame())
-		return;
-
-	TPROF("CSPRenderer::RenderSkybox");
-
 	m_eRenderingScale = SCALE_METER;
-
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-
-	CCamera* pCamera = GameServer()->GetCamera();
-
-	SetCameraPosition(Vector(0, 0, 0));
-	SetCameraTarget(Vector(pCharacter->GetGlobalScalableTransform().GetColumn(0)));
-	SetCameraUp(pCamera->GetCameraUp());
-	SetCameraFOV(pCamera->GetCameraFOV());
-	SetCameraNear(pCamera->GetCameraNear());
-	SetCameraFar(pCamera->GetCameraFar());
-
-	glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_CURRENT_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-
-	gluPerspective(
-			m_flCameraFOV,
-			(float)m_iWidth/(float)m_iHeight,
-			m_flCameraNear,
-			m_flCameraFar
-		);
-
-	glMatrixMode(GL_MODELVIEW);
-
-	glPushMatrix();
-	glLoadIdentity();
-
-	gluLookAt(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z,
-		m_vecCameraTarget.x, m_vecCameraTarget.y, m_vecCameraTarget.z,
-		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
-
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_TEXTURE_2D);
-
-	if (true)
-	{
-		glPushAttrib(GL_CURRENT_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
-		glPushMatrix();
-		glTranslatef(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z);
-
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_LIGHTING);
-
-		if (GLEW_ARB_multitexture || GLEW_VERSION_1_3)
-			glActiveTexture(GL_TEXTURE0);
-		glEnable(GL_TEXTURE_2D);
-
-		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxFT);
-		glBegin(GL_QUADS);
-			glTexCoord2i(0, 1); glVertex3f(100, 100, -100);
-			glTexCoord2i(0, 0); glVertex3f(100, -100, -100);
-			glTexCoord2i(1, 0); glVertex3f(100, -100, 100);
-			glTexCoord2i(1, 1); glVertex3f(100, 100, 100);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxLF);
-		glBegin(GL_QUADS);
-			glTexCoord2i(0, 1); glVertex3f(-100, 100, -100);
-			glTexCoord2i(0, 0); glVertex3f(-100, -100, -100);
-			glTexCoord2i(1, 0); glVertex3f(100, -100, -100);
-			glTexCoord2i(1, 1); glVertex3f(100, 100, -100);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxBK);
-		glBegin(GL_QUADS);
-			glTexCoord2i(0, 1); glVertex3f(-100, 100, 100);
-			glTexCoord2i(0, 0); glVertex3f(-100, -100, 100);
-			glTexCoord2i(1, 0); glVertex3f(-100, -100, -100);
-			glTexCoord2i(1, 1); glVertex3f(-100, 100, -100);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxRT);
-		glBegin(GL_QUADS);
-			glTexCoord2i(0, 1); glVertex3f(100, 100, 100);
-			glTexCoord2i(0, 0); glVertex3f(100, -100, 100);
-			glTexCoord2i(1, 0); glVertex3f(-100, -100, 100);
-			glTexCoord2i(1, 1); glVertex3f(-100, 100, 100);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxUP);
-		glBegin(GL_QUADS);
-			glTexCoord2i(0, 1); glVertex3f(-100, 100, -100);
-			glTexCoord2i(0, 0); glVertex3f(100, 100, -100);
-			glTexCoord2i(1, 0); glVertex3f(100, 100, 100);
-			glTexCoord2i(1, 1); glVertex3f(-100, 100, 100);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxDN);
-		glBegin(GL_QUADS);
-			glTexCoord2i(0, 1); glVertex3f(100, -100, -100);
-			glTexCoord2i(0, 0); glVertex3f(-100, -100, -100);
-			glTexCoord2i(1, 0); glVertex3f(-100, -100, 100);
-			glTexCoord2i(1, 1); glVertex3f(100, -100, 100);
-		glEnd();
-
-		glPopMatrix();
-		glPopAttrib();
-	}
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glPopMatrix();
-	glPopAttrib();
-
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
+	BaseClass::DrawSkybox();
+	m_eRenderingScale = SCALE_NONE;
 }
 
 void CSPRenderer::FinishRendering()

@@ -15,6 +15,7 @@
 #include <tinker/profiler.h>
 #include <game/gameserver.h>
 #include <models/texturelibrary.h>
+#include <game/camera.h>
 
 #include "renderingcontext.h"
 
@@ -72,6 +73,8 @@ CRenderer::CRenderer(size_t iWidth, size_t iHeight)
 	m_bBatching = false;
 
 	m_bBatchThisFrame = r_batch.GetBool();
+
+	DisableSkybox();
 }
 
 void CRenderer::Initialize()
@@ -265,11 +268,15 @@ void CRenderer::SetupFrame()
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	glColor4f(1, 1, 1, 1);
+
+	if (m_iSkyboxFT == ~0)
+		DrawBackground();
+	else
+		DrawSkybox();
 }
 
 void CRenderer::DrawBackground()
 {
-	// First draw a nice faded gray background.
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
@@ -304,6 +311,108 @@ void CRenderer::DrawBackground()
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+}
+
+void CRenderer::DrawSkybox()
+{
+	TPROF("CRenderer::RenderSkybox");
+
+	CCamera* pCamera = GameServer()->GetCamera();
+
+	SetCameraPosition(pCamera->GetCameraPosition());
+	SetCameraTarget(pCamera->GetCameraTarget());
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
+
+	glPushAttrib(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_CURRENT_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+
+	gluPerspective(
+			m_flCameraFOV,
+			(float)m_iWidth/(float)m_iHeight,
+			m_flCameraNear,
+			m_flCameraFar
+		);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	glPushMatrix();
+	glLoadIdentity();
+
+	gluLookAt(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z,
+		m_vecCameraTarget.x, m_vecCameraTarget.y, m_vecCameraTarget.z,
+		m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_TEXTURE_2D);
+
+	if (true)
+	{
+		glPushAttrib(GL_CURRENT_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
+		glPushMatrix();
+		glTranslatef(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z);
+
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
+
+		if (GLEW_ARB_multitexture || GLEW_VERSION_1_3)
+			glActiveTexture(GL_TEXTURE0);
+		glEnable(GL_TEXTURE_2D);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+
+		glClientActiveTexture(GL_TEXTURE0);
+		glTexCoordPointer(2, GL_FLOAT, 0, m_avecSkyboxTexCoords);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		glActiveTexture(GL_TEXTURE0);
+		glEnable(GL_TEXTURE_2D);
+
+		glVertexPointer(3, GL_FLOAT, 0, m_avecSkyboxFT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxFT);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glVertexPointer(3, GL_FLOAT, 0, m_avecSkyboxBK);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxBK);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glVertexPointer(3, GL_FLOAT, 0, m_avecSkyboxLF);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxLF);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glVertexPointer(3, GL_FLOAT, 0, m_avecSkyboxRT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxRT);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glVertexPointer(3, GL_FLOAT, 0, m_avecSkyboxUP);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxUP);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glVertexPointer(3, GL_FLOAT, 0, m_avecSkyboxDN);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxDN);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glActiveTexture(GL_TEXTURE0);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		glPopMatrix();
+		glPopAttrib();
+	}
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glPopMatrix();
+	glPopAttrib();
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
@@ -563,6 +672,56 @@ void CRenderer::RenderFullscreenBuffers()
 	}
 
 	glDisable(GL_BLEND);
+}
+
+void CRenderer::SetSkybox(size_t ft, size_t bk, size_t lf, size_t rt, size_t up, size_t dn)
+{
+	m_iSkyboxFT = ft;
+	m_iSkyboxLF = lf;
+	m_iSkyboxBK = bk;
+	m_iSkyboxRT = rt;
+	m_iSkyboxDN = dn;
+	m_iSkyboxUP = up;
+
+	m_avecSkyboxTexCoords[0] = Vector2D(0, 1);
+	m_avecSkyboxTexCoords[1] = Vector2D(0, 0);
+	m_avecSkyboxTexCoords[2] = Vector2D(1, 0);
+	m_avecSkyboxTexCoords[3] = Vector2D(1, 1);
+
+	m_avecSkyboxFT[0] = Vector(100, 100, -100);
+	m_avecSkyboxFT[1] = Vector(100, -100, -100);
+	m_avecSkyboxFT[2] = Vector(100, -100, 100);
+	m_avecSkyboxFT[3] = Vector(100, 100, 100);
+
+	m_avecSkyboxBK[0] = Vector(-100, 100, 100);
+	m_avecSkyboxBK[1] = Vector(-100, -100, 100);
+	m_avecSkyboxBK[2] = Vector(-100, -100, -100);
+	m_avecSkyboxBK[3] = Vector(-100, 100, -100);
+
+	m_avecSkyboxLF[0] = Vector(-100, 100, -100);
+	m_avecSkyboxLF[1] = Vector(-100, -100, -100);
+	m_avecSkyboxLF[2] = Vector(100, -100, -100);
+	m_avecSkyboxLF[3] = Vector(100, 100, -100);
+
+	m_avecSkyboxRT[0] = Vector(100, 100, 100);
+	m_avecSkyboxRT[1] = Vector(100, -100, 100);
+	m_avecSkyboxRT[2] = Vector(-100, -100, 100);
+	m_avecSkyboxRT[3] = Vector(-100, 100, 100);
+
+	m_avecSkyboxUP[0] = Vector(-100, 100, -100);
+	m_avecSkyboxUP[1] = Vector(100, 100, -100);
+	m_avecSkyboxUP[2] = Vector(100, 100, 100);
+	m_avecSkyboxUP[3] = Vector(-100, 100, 100);
+
+	m_avecSkyboxDN[0] = Vector(100, -100, -100);
+	m_avecSkyboxDN[1] = Vector(-100, -100, -100);
+	m_avecSkyboxDN[2] = Vector(-100, -100, 100);
+	m_avecSkyboxDN[3] = Vector(100, -100, 100);
+}
+
+void CRenderer::DisableSkybox()
+{
+	m_iSkyboxFT = ~0;
 }
 
 #define KERNEL_SIZE   3
