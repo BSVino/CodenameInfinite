@@ -78,6 +78,15 @@ public:
 
 	blendtype_t	m_eBlend;
 	float		m_flAlpha;
+
+	int			m_iDrawMode;
+	bool		m_bTexCoord;
+	bool		m_bNormal;
+	Vector2D	m_vecTexCoord;
+	Vector		m_vecNormal;
+	eastl::vector<Vector2D>		m_avecTexCoords;
+	eastl::vector<Vector>		m_avecNormals;
+	eastl::vector<Vector>		m_avecVertices;
 };
 
 #endif

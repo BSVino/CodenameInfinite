@@ -521,53 +521,102 @@ void CRenderingContext::SetColor(Color c)
 
 void CRenderingContext::BeginRenderTris()
 {
-	glBegin(GL_TRIANGLES);
+	m_avecTexCoords.clear();
+	m_avecNormals.clear();
+	m_avecVertices.clear();
+
+	m_bTexCoord = false;
+	m_bNormal = false;
+
+	m_iDrawMode = GL_TRIANGLES;
 }
 
 void CRenderingContext::BeginRenderQuads()
 {
-	glBegin(GL_QUADS);
+	m_avecTexCoords.clear();
+	m_avecNormals.clear();
+	m_avecVertices.clear();
+
+	m_bTexCoord = false;
+	m_bNormal = false;
+
+	m_iDrawMode = GL_QUADS;
 }
 
 void CRenderingContext::BeginRenderDebugLines()
 {
+	m_avecTexCoords.clear();
+	m_avecNormals.clear();
+	m_avecVertices.clear();
+
+	m_bTexCoord = false;
+	m_bNormal = false;
+
 	glLineWidth( 3.0f );
-	glBegin(GL_LINE_LOOP);
+	m_iDrawMode = GL_LINE_LOOP;
 }
 
 void CRenderingContext::TexCoord(float s, float t)
 {
-	glTexCoord2f(s, t);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	m_vecTexCoord = Vector2D(s, t);
+	m_bTexCoord = true;
 }
 
 void CRenderingContext::TexCoord(const Vector2D& v)
 {
-	glTexCoord2fv(v);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	m_vecTexCoord = v;
+	m_bTexCoord = true;
 }
 
 void CRenderingContext::TexCoord(const Vector& v)
 {
-	glTexCoord2fv(v);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	m_vecTexCoord = v;
+	m_bTexCoord = true;
 }
 
 void CRenderingContext::Normal(const Vector& v)
 {
-	glNormal3fv(v);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	m_vecNormal = v;
+	m_bNormal = true;
 }
 
 void CRenderingContext::Vertex(const Vector& v)
 {
-	glVertex3fv(v);
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	if (m_bTexCoord)
+		m_avecTexCoords.push_back(m_vecTexCoord);
+
+	if (m_bNormal)
+		m_avecNormals.push_back(m_vecNormal);
+
+	m_avecVertices.push_back(v);
 }
 
 void CRenderingContext::RenderCallList(size_t iCallList)
 {
+	glBegin(GL_TRIANGLES);
 	glCallList((GLuint)iCallList);
+	glEnd();
 }
 
 void CRenderingContext::EndRender()
 {
-	glEnd();
+	glClientActiveTexture(GL_TEXTURE0);
+	if (m_bTexCoord)
+		glTexCoordPointer(2, GL_FLOAT, 0, m_avecTexCoords.data());
+	if (m_bNormal)
+		glNormalPointer(GL_FLOAT, 0, m_avecNormals.data());
+	glVertexPointer(3, GL_FLOAT, 0, m_avecVertices.data());
+	glDrawArrays(m_iDrawMode, 0, m_avecVertices.size());
+
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void CRenderingContext::PushAttribs()
