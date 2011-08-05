@@ -219,21 +219,62 @@ CScalableFloat CScalableFloat::operator/(float f) const
 	return flReturn;
 }
 
+CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScalableFloat& g) const
+{
+	CScalableFloat flReturn;
+
+	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] + f.m_aflScaleStack[i] + g.m_aflScaleStack[i];
+
+	if (m_bPositive && f.m_bPositive && g.m_bPositive)
+		flReturn.m_bPositive = true;
+	else if (!m_bPositive && !f.m_bPositive && !g.m_bPositive)
+		flReturn.m_bPositive = false;
+	else
+		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
+
+	flReturn.NormalizeScaleStack();
+
+	return flReturn;
+}
+
+CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScalableFloat& g, const CScalableFloat& h) const
+{
+	CScalableFloat flReturn;
+
+	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] + f.m_aflScaleStack[i] + g.m_aflScaleStack[i] + h.m_aflScaleStack[i];
+
+	if (m_bPositive && f.m_bPositive && g.m_bPositive && h.m_bPositive)
+		flReturn.m_bPositive = true;
+	else if (!m_bPositive && !f.m_bPositive && !g.m_bPositive && !h.m_bPositive)
+		flReturn.m_bPositive = false;
+	else
+		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
+
+	flReturn.NormalizeScaleStack();
+
+	return flReturn;
+}
+
 void CScalableFloat::NormalizeScaleStack()
 {
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
+		if (m_aflScaleStack[i] == 0)
+			continue;
+
 		if (m_bPositive)
 		{
 			if (i < SCALESTACK_SIZE-1)
 			{
-				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
+				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
 				{
 					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
 					m_aflScaleStack[i+1] = 0;
 				}
 
-				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
+				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
 				{
 					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
 					m_aflScaleStack[i+1] = 0;
@@ -265,13 +306,13 @@ void CScalableFloat::NormalizeScaleStack()
 		{
 			if (i < SCALESTACK_SIZE-1)
 			{
-				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
+				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
 				{
 					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
 					m_aflScaleStack[i+1] = 0;
 				}
 
-				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
+				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
 				{
 					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
 					m_aflScaleStack[i+1] = 0;
@@ -326,10 +367,26 @@ bool CScalableFloat::operator>(const CScalableFloat& u) const
 	return flDifference.m_bPositive;
 }
 
+static float g_aflConversions[9] = 
+{
+	0.000000000001f,
+	0.000000001f,
+	0.000001f,
+	0.001f,
+	1.0f,
+	1000.0f,
+	1000000.0f,
+	1000000000.0f,
+	1000000000000.0f,
+};
+
 float CScalableFloat::ConvertUnits(float flUnits, scale_t eFrom, scale_t eTo)
 {
 	if (eFrom == eTo)
 		return flUnits;
+
+	if (flUnits == 0)
+		return 0;
 
 	TAssert( eTo >= SCALE_METER && eTo <= SCALE_HIGHEST );
 	if (eTo == SCALE_NONE)
@@ -341,24 +398,8 @@ float CScalableFloat::ConvertUnits(float flUnits, scale_t eFrom, scale_t eTo)
 	if (eTo > SCALE_HIGHEST)
 		return 0;
 
-	if (eTo < eFrom)
-	{
-		while (eTo < eFrom)
-		{
-			flUnits *= 1000;
-			eTo = (scale_t)(eTo+1);
-		}
-		return flUnits;
-	}
-	else
-	{
-		while (eTo > eFrom)
-		{
-			flUnits /= 1000;
-			eTo = (scale_t)(eTo-1);
-		}
-		return flUnits;
-	}
+	TAssert( SCALE_HIGHEST+4 <= 9 );
+	return flUnits * g_aflConversions[eFrom-eTo+4];
 }
 
 CScalableVector::CScalableVector(const CScalableFloat& X, const CScalableFloat& Y, const CScalableFloat& Z)
@@ -626,9 +667,9 @@ CScalableMatrix CScalableMatrix::operator*(const CScalableMatrix& t) const
 CScalableVector CScalableMatrix::operator*(const CScalableVector& v) const
 {
 	CScalableVector vecResult;
-	vecResult.x = v.x * m[0][0] + v.y * m[0][1] + v.z * m[0][2] + mt[0];
-	vecResult.y = v.x * m[1][0] + v.y * m[1][1] + v.z * m[1][2] + mt[1];
-	vecResult.z = v.x * m[2][0] + v.y * m[2][1] + v.z * m[2][2] + mt[2];
+	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[0][1], v.z * m[0][2], mt[0]);
+	vecResult.y = (v.x * m[1][0]).AddMultiple(v.y * m[1][1], v.z * m[1][2], mt[1]);
+	vecResult.z = (v.x * m[2][0]).AddMultiple(v.y * m[2][1], v.z * m[2][2], mt[2]);
 
 	return vecResult;
 }
@@ -636,9 +677,9 @@ CScalableVector CScalableMatrix::operator*(const CScalableVector& v) const
 CScalableVector CScalableMatrix::TransformNoTranslate(const CScalableVector& v) const
 {
 	CScalableVector vecResult;
-	vecResult.x = v.x * m[0][0] + v.y * m[0][1] + v.z * m[0][2];
-	vecResult.y = v.x * m[1][0] + v.y * m[1][1] + v.z * m[1][2];
-	vecResult.z = v.x * m[2][0] + v.y * m[2][1] + v.z * m[2][2];
+	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[0][1], v.z * m[0][2]);
+	vecResult.y = (v.x * m[1][0]).AddMultiple(v.y * m[1][1], v.z * m[1][2]);
+	vecResult.z = (v.x * m[2][0]).AddMultiple(v.y * m[2][1], v.z * m[2][2]);
 
 	return vecResult;
 }

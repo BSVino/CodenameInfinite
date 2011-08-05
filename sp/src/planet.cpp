@@ -89,6 +89,8 @@ void CPlanet::Think()
 		m_pTerrain[i]->ResetRenderFlags();
 }
 
+static Vector g_vecCharacterLocalOrigin;
+
 void CPlanet::RenderUpdate()
 {
 	TPROF("CPlanet::RenderUpdate");
@@ -101,6 +103,12 @@ void CPlanet::RenderUpdate()
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+
+	// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
+	// Instead, transform the player to the planet's local once and do the math in local space.
+	CScalableMatrix mPlanetGlobalToLocal = GetGlobalScalableTransform();
+	mPlanetGlobalToLocal.InvertTR();
+	g_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
 
 	Vector vecOrigin = (GetGlobalScalableOrigin() - vecCharacterOrigin).GetUnits(eScale);
 	Vector vecOutside = vecOrigin + vecUp * GetScalableRenderRadius().GetUnits(eScale);
@@ -419,6 +427,8 @@ void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
 {
 	if (pBranch->m_oData.flLastScreenUpdate < 0 || GameServer()->GetGameTime() - pBranch->m_oData.flLastScreenUpdate > r_terrainupdateinterval.GetFloat())
 	{
+		CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
+
 		Vector vecUp;
 		Vector vecForward;
 		GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
@@ -430,12 +440,12 @@ void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
 		CScalableVector vecQuadCenter = mPlanet * CScalableVector(pBranch->GetCenter(), m_pPlanet->GetScale()) - vecCharacterOrigin;
 		CScalableVector vecQuadMax = mPlanet * CScalableVector(QuadTreeToWorld(this, pBranch->m_vecMax), m_pPlanet->GetScale()) - vecCharacterOrigin;
 
-		scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+		scale_t eRenderScale = pRenderer->GetRenderingScale();
 
-		Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecQuadCenter.GetUnits(eRenderScale));
+		Vector vecScreen = pRenderer->ScreenPosition(vecQuadCenter.GetUnits(eRenderScale));
 
 		CScalableFloat flRadius = (vecQuadCenter-vecQuadMax).Length();
-		Vector vecTop = GameServer()->GetRenderer()->ScreenPosition((vecQuadCenter + vecUp*flRadius).GetUnits(eRenderScale));
+		Vector vecTop = pRenderer->ScreenPosition((vecQuadCenter + vecUp*flRadius).GetUnits(eRenderScale));
 
 		CScalableVector vecPlayer = SPGame()->GetSPCamera()->GetCameraScalablePosition();
 
@@ -468,15 +478,9 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (flRadius.GetUnits(SCALE_METER) < r_terrainresolution.GetFloat())
 		return false;
 
-	UpdateScreenSize(pBranch);
-
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
-	CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
-	CScalableVector vecGlobalQuadCenter = mPlanet * vecQuadCenter;
 	Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
 
-	float flDot = (vecGlobalQuadCenter-vecCharacterOrigin).GetUnits(SCALE_METER).Normalized().Dot(vecNormal);
+	float flDot = (pBranch->GetCenter()-g_vecCharacterLocalOrigin).Normalized().Dot(vecNormal);
 
 	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
 		return false;
@@ -486,6 +490,8 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (!r_terrainperspectivescale.GetBool())
 		flScale = 1;
 
+	UpdateScreenSize(pBranch);
+
 	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize*flScale < r_minterrainsize.GetFloat())
 		return false;
 
@@ -493,7 +499,9 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	{
 		scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
-		CScalableVector vecPlanetCenter = vecGlobalQuadCenter - vecCharacterOrigin;
+		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+		CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
+		CScalableVector vecPlanetCenter = mPlanet * vecQuadCenter - pCharacter->GetGlobalScalableOrigin();
 
 		if (!GameServer()->GetRenderer()->IsSphereInFrustum(vecPlanetCenter.GetUnits(eScale), flRadius.GetUnits(eScale)))
 			return false;

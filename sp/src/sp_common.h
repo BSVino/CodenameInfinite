@@ -52,6 +52,9 @@ public:
 	CScalableFloat			operator*(float f) const;
 	CScalableFloat			operator/(float f) const;
 
+	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g) const;
+	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g, const CScalableFloat& h) const;
+
 	void					NormalizeScaleStack();
 
 	bool					operator<(const CScalableFloat& u) const;
