@@ -66,8 +66,7 @@ CRenderer::CRenderer(size_t iWidth, size_t iHeight)
 	if (m_bUseFramebuffers)
 		TMsg(_T("* Using framebuffers\n"));
 
-	m_iWidth = iWidth;
-	m_iHeight = iHeight;
+	SetSize(iWidth, iHeight);
 
 	m_bFrustumOverride = false;
 	m_bBatching = false;
@@ -770,12 +769,23 @@ void CRenderer::RenderMapFullscreen(size_t iMap)
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glViewport(0, 0, (GLsizei)m_iWidth, (GLsizei)m_iHeight);
 
-	glBegin(GL_QUADS);
-		glTexCoord2i(0, 1); glVertex2d(0, 0);
-		glTexCoord2i(0, 0); glVertex2d(0, m_iHeight);
-		glTexCoord2i(1, 0); glVertex2d(m_iWidth, m_iHeight);
-		glTexCoord2i(1, 1); glVertex2d(m_iWidth, 0);
-	glEnd();
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glClientActiveTexture(GL_TEXTURE0);
+	glTexCoordPointer(2, GL_FLOAT, 0, m_vecFullscreenTexCoords);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+
+	glVertexPointer(2, GL_FLOAT, 0, m_vecFullscreenVertices);
+	glBindTexture(GL_TEXTURE_2D, (GLuint)iMap);
+	glDrawArrays(GL_QUADS, 0, 4);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+	glActiveTexture(GL_TEXTURE0);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
 void CRenderer::RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer)
@@ -974,6 +984,16 @@ void CRenderer::SetSize(int w, int h)
 {
 	m_iWidth = w;
 	m_iHeight = h;
+
+	m_vecFullscreenTexCoords[0] = Vector2D(0, 1);
+	m_vecFullscreenTexCoords[1] = Vector2D(0, 0);
+	m_vecFullscreenTexCoords[2] = Vector2D(1, 0);
+	m_vecFullscreenTexCoords[3] = Vector2D(1, 1);
+
+	m_vecFullscreenVertices[0] = Vector2D(0, 0);
+	m_vecFullscreenVertices[1] = Vector2D(0, (float)m_iHeight);
+	m_vecFullscreenVertices[2] = Vector2D((float)m_iWidth, (float)m_iHeight);
+	m_vecFullscreenVertices[3] = Vector2D((float)m_iWidth, 0);
 }
 
 void CRenderer::ClearProgram()

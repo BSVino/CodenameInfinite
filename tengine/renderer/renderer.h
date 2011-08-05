@@ -155,6 +155,9 @@ protected:
 
 	Plane			m_aoFrustum[6];
 
+	Vector2D		m_vecFullscreenTexCoords[4];
+	Vector2D		m_vecFullscreenVertices[4];
+
 	size_t			m_iSkyboxFT;
 	size_t			m_iSkyboxLF;
 	size_t			m_iSkyboxBK;
