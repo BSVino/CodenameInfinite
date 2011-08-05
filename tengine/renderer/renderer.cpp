@@ -164,15 +164,15 @@ CFrameBuffer CRenderer::CreateFrameBuffer(size_t iWidth, size_t iHeight, bool bD
 	oBuffer.m_iWidth = iWidth;
 	oBuffer.m_iHeight = iHeight;
 
-	oBuffer.m_iCallList = glGenLists(1);
-	glNewList(oBuffer.m_iCallList, GL_COMPILE);
-	glBegin(GL_QUADS);
-		glTexCoord2i(0, 1); glVertex2i(0, 0);
-		glTexCoord2i(0, 0); glVertex2i(0, (GLint)iHeight);
-		glTexCoord2i(1, 0); glVertex2i((GLint)iWidth, (GLint)iHeight);
-		glTexCoord2i(1, 1); glVertex2i((GLint)iWidth, 0);
-	glEnd();
-	glEndList();
+	oBuffer.m_vecTexCoords[0] = Vector2D(0, 1);
+	oBuffer.m_vecTexCoords[1] = Vector2D(0, 0);
+	oBuffer.m_vecTexCoords[2] = Vector2D(1, 0);
+	oBuffer.m_vecTexCoords[3] = Vector2D(1, 1);
+
+	oBuffer.m_vecVertices[0] = Vector2D(0, 0);
+	oBuffer.m_vecVertices[1] = Vector2D(0, (float)iHeight);
+	oBuffer.m_vecVertices[2] = Vector2D((float)iWidth, (float)iHeight);
+	oBuffer.m_vecVertices[3] = Vector2D((float)iWidth, 0);
 
 	return oBuffer;
 }
@@ -791,14 +791,26 @@ void CRenderer::RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer)
 	glPushMatrix();
 	glLoadIdentity();
 
-	glActiveTexture(GL_TEXTURE0);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, (GLuint)iMap);
-
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, (GLuint)pBuffer->m_iFB);
 	glViewport(0, 0, (GLsizei)pBuffer->m_iWidth, (GLsizei)pBuffer->m_iHeight);
 
-	glCallList(pBuffer->m_iCallList);
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glClientActiveTexture(GL_TEXTURE0);
+	glTexCoordPointer(2, GL_FLOAT, 0, pBuffer->m_vecTexCoords);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+
+	glVertexPointer(2, GL_FLOAT, 0, pBuffer->m_vecVertices);
+	glBindTexture(GL_TEXTURE_2D, (GLuint)iMap);
+	glDrawArrays(GL_QUADS, 0, 4);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+	glActiveTexture(GL_TEXTURE0);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 

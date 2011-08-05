@@ -25,7 +25,8 @@ public:
 	size_t		m_iDepth;
 	size_t		m_iFB;
 
-	size_t		m_iCallList;
+	Vector2D	m_vecTexCoords[4];
+	Vector2D	m_vecVertices[4];
 };
 
 class CRenderBatch
