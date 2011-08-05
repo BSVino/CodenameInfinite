@@ -366,6 +366,8 @@ void CRenderer::DrawSkybox()
 			glActiveTexture(GL_TEXTURE0);
 		glEnable(GL_TEXTURE_2D);
 
+		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
 		glEnableClientState(GL_VERTEX_ARRAY);
 
 		glClientActiveTexture(GL_TEXTURE0);
@@ -399,10 +401,7 @@ void CRenderer::DrawSkybox()
 		glBindTexture(GL_TEXTURE_2D, (GLuint)m_iSkyboxDN);
 		glDrawArrays(GL_QUADS, 0, 4);
 
-		glDisableClientState(GL_VERTEX_ARRAY);
-
-		glActiveTexture(GL_TEXTURE0);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glPopClientAttrib();
 
 		glPopMatrix();
 		glPopAttrib();
@@ -769,6 +768,8 @@ void CRenderer::RenderMapFullscreen(size_t iMap)
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glViewport(0, 0, (GLsizei)m_iWidth, (GLsizei)m_iHeight);
 
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
 	glEnableClientState(GL_VERTEX_ARRAY);
 
 	glClientActiveTexture(GL_TEXTURE0);
@@ -782,10 +783,7 @@ void CRenderer::RenderMapFullscreen(size_t iMap)
 	glBindTexture(GL_TEXTURE_2D, (GLuint)iMap);
 	glDrawArrays(GL_QUADS, 0, 4);
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-
-	glActiveTexture(GL_TEXTURE0);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glPopClientAttrib();
 }
 
 void CRenderer::RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer)
@@ -804,6 +802,8 @@ void CRenderer::RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer)
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, (GLuint)pBuffer->m_iFB);
 	glViewport(0, 0, (GLsizei)pBuffer->m_iWidth, (GLsizei)pBuffer->m_iHeight);
 
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
 	glEnableClientState(GL_VERTEX_ARRAY);
 
 	glClientActiveTexture(GL_TEXTURE0);
@@ -817,10 +817,7 @@ void CRenderer::RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer)
 	glBindTexture(GL_TEXTURE_2D, (GLuint)iMap);
 	glDrawArrays(GL_QUADS, 0, 4);
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-
-	glActiveTexture(GL_TEXTURE0);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glPopClientAttrib();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 

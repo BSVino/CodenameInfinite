@@ -521,6 +521,8 @@ void CRenderingContext::SetColor(Color c)
 
 void CRenderingContext::BeginRenderTris()
 {
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
 	m_avecTexCoords.clear();
 	m_avecNormals.clear();
 	m_avecVertices.clear();
@@ -533,6 +535,8 @@ void CRenderingContext::BeginRenderTris()
 
 void CRenderingContext::BeginRenderQuads()
 {
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
 	m_avecTexCoords.clear();
 	m_avecNormals.clear();
 	m_avecVertices.clear();
@@ -545,6 +549,8 @@ void CRenderingContext::BeginRenderQuads()
 
 void CRenderingContext::BeginRenderDebugLines()
 {
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
 	m_avecTexCoords.clear();
 	m_avecNormals.clear();
 	m_avecVertices.clear();
@@ -614,9 +620,7 @@ void CRenderingContext::EndRender()
 	glVertexPointer(3, GL_FLOAT, 0, m_avecVertices.data());
 	glDrawArrays(m_iDrawMode, 0, m_avecVertices.size());
 
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
-	glDisableClientState(GL_VERTEX_ARRAY);
+	glPopClientAttrib();
 }
 
 void CRenderingContext::PushAttribs()
