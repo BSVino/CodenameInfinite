@@ -24,6 +24,7 @@ public:
 public:
 	virtual void	PreFrame();
 
+	virtual void	BuildScaleFrustums();
 	virtual void	StartRendering();
 	virtual void	SetupLighting();
 	virtual void	DrawSkybox();
@@ -32,6 +33,11 @@ public:
 	void			RenderScale(scale_t eRenderScale);
 	scale_t			GetRenderingScale() { return m_eRenderingScale; }
 
+	bool			IsInFrustumAtScale(scale_t eRenderScale, const Vector& vecCenter, float flRadius);
+	bool			IsInFrustumAtScaleSidesOnly(scale_t eRenderScale, const Vector& vecCenter, float flRadius);
+	Vector			ScreenPositionAtScale(scale_t eRenderScale, const Vector& vecWorld);
+	Vector			WorldPositionAtScale(scale_t eRenderScale, const Vector& vecScreen);
+
 protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 
@@ -39,6 +45,10 @@ protected:
 	eastl::vector<CEntityHandle<CSPEntity> >	m_ahRenderList;
 
 	scale_t			m_eRenderingScale;
+	Frustum			m_aoScaleFrustums[SCALESTACK_SIZE];
+	double			m_aiScaleModelViews[SCALESTACK_SIZE][16];
+	double			m_aiScaleProjections[SCALESTACK_SIZE][16];
+	int				m_aiScaleViewports[SCALESTACK_SIZE][4];
 };
 
 #endif

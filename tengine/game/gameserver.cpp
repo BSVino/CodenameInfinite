@@ -56,6 +56,7 @@ CGameServer::CGameServer(IWorkListener* pWorkListener)
 	m_flSimulationTime = 0;
 	m_flFrameTime = 0;
 	m_flNextClientInfoUpdate = 0;
+	m_iFrame = 0;
 
 	size_t iPostSeed = mtrand();
 
@@ -365,6 +366,7 @@ void CGameServer::Think(float flHostTime)
 {
 	TPROF("CGameServer::Think");
 
+	m_iFrame++;
 	m_flFrameTime = flHostTime - m_flHostTime;
 
 	// If the framerate drops, don't let too much happen without the player seeing

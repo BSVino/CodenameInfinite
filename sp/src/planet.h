@@ -11,34 +11,38 @@ public:
 	{
 		flHeight = 0;
 		bRender = false;
-		bRendered = false;
 		flScreenSize = 1;
 		flLastScreenUpdate = -1;
-		bRenderVectorsDirty = true;
+		iShouldRenderLastFrame = ~0;
+		iRenderVectorsLastFrame = ~0;
 	}
 
 public:
-	float	flHeight;
-	bool	bRender;
-	bool	bRendered;
-	float	flScreenSize;
-	CScalableFloat	flQuadDistance;
-	CScalableFloat	flQuadRadius;
-	float	flLastScreenUpdate;
+	float				flHeight;
+	bool				bRender;
+	float				flScreenSize;
+	CScalableFloat		flQuadDistance;
+	CScalableFloat		flQuadRadius;
+	float				flLastScreenUpdate;
+	size_t				iShouldRenderLastFrame;
+	bool				bShouldRender;
 
-	bool	bRenderVectorsDirty;
-	Vector	vec1;
-	Vector	vec2;
-	Vector	vec3;
-	Vector	vec4;
-	Vector	vec1n;
-	Vector	vec2n;
-	Vector	vec3n;
-	Vector	vec4n;
+	size_t				iRenderVectorsLastFrame;
+	CScalableVector		vecGlobalQuadCenter;
+	Vector				vec1;
+	Vector				vec2;
+	Vector				vec3;
+	Vector				vec4;
+	Vector				vec1n;
+	Vector				vec2n;
+	Vector				vec3n;
+	Vector				vec4n;
 };
 
 class CPlanetTerrain : public CQuadTree<CBranchData>, public CQuadTreeDataSource<CBranchData>
 {
+	friend class CPlanet;
+
 public:
 	CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 		: CQuadTree<CBranchData>()
@@ -49,8 +53,6 @@ public:
 
 public:
 	void						Init();
-
-	void						ResetRenderFlags(CQuadTreeBranch<CBranchData>* pBranch = NULL);
 
 	void						Think();
 	void						ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch);
@@ -75,7 +77,7 @@ protected:
 	class CPlanet*				m_pPlanet;
 	Vector						m_vecDirection;
 	int							m_iBuildsThisFrame;
-	eastl::vector<CQuadTreeBranch<CBranchData>*>	m_apRenderBranches;
+	eastl::map<scale_t, eastl::vector<CQuadTreeBranch<CBranchData>*> >	m_apRenderBranches;
 	bool						m_bOneQuad;
 };
 
@@ -94,7 +96,7 @@ public:
 	virtual void				Think();
 	virtual void				RenderUpdate();
 
-	virtual bool				ShouldRenderAtScale(scale_t eScale) const { return true; };
+	virtual bool				ShouldRenderAtScale(scale_t eScale) const;
 
 	virtual CScalableFloat		GetScalableRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;

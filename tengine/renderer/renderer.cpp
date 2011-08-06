@@ -416,13 +416,6 @@ void CRenderer::DrawSkybox()
 	glPopMatrix();
 }
 
-#define FRUSTUM_NEAR	0
-#define FRUSTUM_FAR		1
-#define FRUSTUM_LEFT	2
-#define FRUSTUM_RIGHT	3
-#define FRUSTUM_UP		4
-#define FRUSTUM_DOWN	5
-
 void CRenderer::StartRendering()
 {
 	TPROF("CRenderer::StartRendering");
@@ -488,46 +481,7 @@ void CRenderer::StartRendering()
 		glPopMatrix();
 	}
 
-	Matrix4x4 mFrustum = mModelView * mProjection;
-
-	float* pflFrustum = mFrustum;
-
-	m_aoFrustum[FRUSTUM_RIGHT].n.x = mFrustum.m[0][3] - mFrustum.m[0][0];
-	m_aoFrustum[FRUSTUM_RIGHT].n.y = mFrustum.m[1][3] - mFrustum.m[1][0];
-	m_aoFrustum[FRUSTUM_RIGHT].n.z = mFrustum.m[2][3] - mFrustum.m[2][0];
-	m_aoFrustum[FRUSTUM_RIGHT].d = mFrustum.m[3][3] - mFrustum.m[3][0];
-
-	m_aoFrustum[FRUSTUM_LEFT].n.x = mFrustum.m[0][3] + mFrustum.m[0][0];
-	m_aoFrustum[FRUSTUM_LEFT].n.y = mFrustum.m[1][3] + mFrustum.m[1][0];
-	m_aoFrustum[FRUSTUM_LEFT].n.z = mFrustum.m[2][3] + mFrustum.m[2][0];
-	m_aoFrustum[FRUSTUM_LEFT].d = mFrustum.m[3][3] + mFrustum.m[3][0];
-
-	m_aoFrustum[FRUSTUM_DOWN].n.x = mFrustum.m[0][3] + mFrustum.m[0][1];
-	m_aoFrustum[FRUSTUM_DOWN].n.y = mFrustum.m[1][3] + mFrustum.m[1][1];
-	m_aoFrustum[FRUSTUM_DOWN].n.z = mFrustum.m[2][3] + mFrustum.m[2][1];
-	m_aoFrustum[FRUSTUM_DOWN].d = mFrustum.m[3][3] + mFrustum.m[3][1];
-
-	m_aoFrustum[FRUSTUM_UP].n.x = mFrustum.m[0][3] - mFrustum.m[0][1];
-	m_aoFrustum[FRUSTUM_UP].n.y = mFrustum.m[1][3] - mFrustum.m[1][1];
-	m_aoFrustum[FRUSTUM_UP].n.z = mFrustum.m[2][3] - mFrustum.m[2][1];
-	m_aoFrustum[FRUSTUM_UP].d = mFrustum.m[3][3] - mFrustum.m[3][1];
-
-	m_aoFrustum[FRUSTUM_FAR].n.x = mFrustum.m[0][3] - mFrustum.m[0][2];
-	m_aoFrustum[FRUSTUM_FAR].n.y = mFrustum.m[1][3] - mFrustum.m[1][2];
-	m_aoFrustum[FRUSTUM_FAR].n.z = mFrustum.m[2][3] - mFrustum.m[2][2];
-	m_aoFrustum[FRUSTUM_FAR].d = mFrustum.m[3][3] - mFrustum.m[3][2];
-
-	m_aoFrustum[FRUSTUM_NEAR].n.x = mFrustum.m[0][3] + mFrustum.m[0][2];
-	m_aoFrustum[FRUSTUM_NEAR].n.y = mFrustum.m[1][3] + mFrustum.m[1][2];
-	m_aoFrustum[FRUSTUM_NEAR].n.z = mFrustum.m[2][3] + mFrustum.m[2][2];
-	m_aoFrustum[FRUSTUM_NEAR].d = mFrustum.m[3][3] + mFrustum.m[3][2];
-
-	// Normalize all plane normals
-	for(int i = 0; i < 6; i++)
-	{
-		m_aoFrustum[i].d = -m_aoFrustum[i].d; // Why? I don't know.
-		m_aoFrustum[i].Normalize();
-	}
+	m_oFrustum.CreateFrom(mModelView * mProjection);
 
 	// Momentarily return the viewport to the window size. This is because if the scene buffer is not the same as the window size,
 	// the viewport here will be the scene buffer size, but we need it to be the window size so we can do world/screen transformations.
@@ -550,10 +504,10 @@ void CRenderer::FinishRendering()
 	{
 		for (size_t i = 0; i < 6; i++)
 		{
-			Vector vecForward = m_aoFrustum[i].n;
+			Vector vecForward = m_oFrustum.p[i].n;
 			Vector vecRight = vecForward.Cross(Vector(0, 1, 0)).Normalized();
 			Vector vecUp = vecRight.Cross(vecForward).Normalized();
-			Vector vecCenter = vecForward * m_aoFrustum[i].d;
+			Vector vecCenter = vecForward * m_oFrustum.p[i].d;
 
 			vecForward *= 100;
 			vecRight *= 100;
@@ -964,17 +918,9 @@ void CRenderer::GetCameraVectors(Vector* pvecForward, Vector* pvecRight, Vector*
 		(*pvecUp) = vecRight.Cross(vecForward).Normalized();
 }
 
-bool CRenderer::IsSphereInFrustum(Vector vecCenter, float flRadius)
+bool CRenderer::IsSphereInFrustum(const Vector& vecCenter, float flRadius)
 {
-	for (size_t i = 0; i < 6; i++)
-	{
-		// Why does it subtract d and not add like it should be? Don't know, don't care, it works.
-		float flDistance = m_aoFrustum[i].n.x*vecCenter.x + m_aoFrustum[i].n.y*vecCenter.y + m_aoFrustum[i].n.z*vecCenter.z - m_aoFrustum[i].d;
-		if (flDistance + flRadius < 0)
-			return false;
-	}
-
-	return true;
+	return m_oFrustum.TouchesSphere(vecCenter, flRadius);
 }
 
 void CRenderer::SetSize(int w, int h)

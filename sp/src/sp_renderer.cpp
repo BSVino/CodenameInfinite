@@ -34,9 +34,70 @@ void CSPRenderer::PreFrame()
 	SPGame()->GetLocalPlayerCharacter()->LockViewToPlanet();
 }
 
-CVar r_star_constant_attenuation("r_star_constant_attenuation", "0.1");
-CVar r_star_linear_attenuation("r_star_linear_attenuation", "0.0");
-CVar r_star_quadratic_attenuation("r_star_quadratic_attenuation", "0.0");
+void CSPRenderer::BuildScaleFrustums()
+{
+	CSPCamera* pCamera = SPGame()->GetSPCamera();
+
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+
+	// Build frustums for each render scale.
+	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+	{
+		scale_t eScale = (scale_t)(i+1);
+		m_eRenderingScale = eScale;
+
+		SetCameraPosition(pCamera->GetCameraScalablePosition().GetUnits(eScale));
+		SetCameraTarget(pCamera->GetCameraScalableTarget().GetUnits(eScale));
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+
+		gluPerspective(
+				m_flCameraFOV,
+				(float)m_iWidth/(float)m_iHeight,
+				m_flCameraNear,
+				m_flCameraFar
+			);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+
+		gluLookAt(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z,
+			m_vecCameraTarget.x, m_vecCameraTarget.y, m_vecCameraTarget.z,
+			m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
+
+		glGetDoublev( GL_MODELVIEW_MATRIX, m_aiScaleModelViews[i] );
+		glGetDoublev( GL_PROJECTION_MATRIX, m_aiScaleProjections[i] );
+
+		Matrix4x4 mModelView, mProjection;
+		glGetFloatv( GL_MODELVIEW_MATRIX, mModelView );
+		glGetFloatv( GL_PROJECTION_MATRIX, mProjection );
+
+		m_aoScaleFrustums[i].CreateFrom(mModelView * mProjection);
+
+		// Momentarily return the viewport to the window size. This is because if the scene buffer is not the same as the window size,
+		// the viewport here will be the scene buffer size, but we need it to be the window size so we can do world/screen transformations.
+		glPushAttrib(GL_VIEWPORT_BIT);
+		glViewport(0, 0, (GLsizei)m_iWidth, (GLsizei)m_iHeight);
+		glGetIntegerv( GL_VIEWPORT, m_aiScaleViewports[i] );
+		glPopAttrib();
+	}
+
+	m_eRenderingScale = SCALE_NONE;
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+}
 
 void CSPRenderer::StartRendering()
 {
@@ -45,12 +106,18 @@ void CSPRenderer::StartRendering()
 	m_hClosestStar = NULL;
 	m_ahRenderList.clear();
 
+	BuildScaleFrustums();
+
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
 		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
 		if (pSPEntity)
 			m_ahRenderList.push_back(pSPEntity);
+
+		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pSPEntity);
+		if (pPlanet)
+			pPlanet->RenderUpdate();
 
 		CStar* pStar = dynamic_cast<CStar*>(pEntity);
 		if (!pStar)
@@ -85,6 +152,10 @@ void CSPRenderer::StartRendering()
 
 	BaseClass::StartRendering();
 }
+
+CVar r_star_constant_attenuation("r_star_constant_attenuation", "0.1");
+CVar r_star_linear_attenuation("r_star_linear_attenuation", "0.0");
+CVar r_star_quadratic_attenuation("r_star_quadratic_attenuation", "0.0");
 
 void CSPRenderer::SetupLighting()
 {
@@ -165,10 +236,6 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), pSPEntity->GetScalableRenderRadius().GetUnits(m_eRenderingScale)))
 			continue;
 
-		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pSPEntity);
-		if (pPlanet)
-			pPlanet->RenderUpdate();
-
 		apRender.push_back(pSPEntity);
 	}
 
@@ -184,4 +251,34 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 		apRender[i]->Render(true);
 
 	BaseClass::FinishRendering();
+}
+
+bool CSPRenderer::IsInFrustumAtScale(scale_t eRenderScale, const Vector& vecCenter, float flRadius)
+{
+	return m_aoScaleFrustums[eRenderScale-1].TouchesSphere(vecCenter, flRadius);
+}
+
+bool CSPRenderer::IsInFrustumAtScaleSidesOnly(scale_t eRenderScale, const Vector& vecCenter, float flRadius)
+{
+	return m_aoScaleFrustums[eRenderScale-1].TouchesSphereSidesOnly(vecCenter, flRadius);
+}
+
+Vector CSPRenderer::ScreenPositionAtScale(scale_t eRenderScale, const Vector& vecWorld)
+{
+	GLdouble x, y, z;
+	gluProject(
+		vecWorld.x, vecWorld.y, vecWorld.z,
+		(GLdouble*)m_aiScaleModelViews[eRenderScale], (GLdouble*)m_aiScaleProjections[eRenderScale], (GLint*)m_aiScaleViewports[eRenderScale],
+		&x, &y, &z);
+	return Vector((float)x, (float)m_iHeight - (float)y, (float)z);
+}
+
+Vector CSPRenderer::WorldPositionAtScale(scale_t eRenderScale, const Vector& vecScreen)
+{
+	GLdouble x, y, z;
+	gluUnProject(
+		vecScreen.x, (float)m_iHeight - vecScreen.y, vecScreen.z,
+		(GLdouble*)m_aiScaleModelViews[eRenderScale], (GLdouble*)m_aiScaleProjections[eRenderScale], (GLint*)m_aiScaleViewports[eRenderScale],
+		&x, &y, &z);
+	return Vector((float)x, (float)y, (float)z);
 }

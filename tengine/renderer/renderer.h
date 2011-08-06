@@ -6,9 +6,9 @@
 
 #include <tstring.h>
 #include <vector.h>
-#include <plane.h>
 #include <matrix.h>
 #include <color.h>
+#include <frustum.h>
 
 #include "render_common.h"
 
@@ -99,7 +99,7 @@ public:
 	Vector			GetCameraVector();
 	void			GetCameraVectors(Vector* pvecForward, Vector* pvecRight, Vector* pvecUp);
 
-	bool			IsSphereInFrustum(Vector vecCenter, float flRadius);
+	bool			IsSphereInFrustum(const Vector& vecCenter, float flRadius);
 
 	void			SetSize(int w, int h);
 
@@ -153,7 +153,7 @@ protected:
 	double			m_aiProjection[16];
 	int				m_aiViewport[4];
 
-	Plane			m_aoFrustum[6];
+	Frustum			m_oFrustum;
 
 	Vector2D		m_vecFullscreenTexCoords[4];
 	Vector2D		m_vecFullscreenVertices[4];

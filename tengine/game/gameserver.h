@@ -91,6 +91,7 @@ public:
 	float										GetGameTime() { return m_flGameTime; };
 	float										GetSimulationTime() { return m_flSimulationTime; };
 	void										AdvanceSimulationTime(float f) { m_flSimulationTime += f; };
+	size_t										GetFrame() { return m_iFrame; }
 
 	class CRenderer*							GetRenderer();
 	class CCamera*								GetCamera() { return m_pCamera; };
@@ -122,6 +123,7 @@ protected:
 	float										m_flSimulationTime;	// This is a higher resolution of game time for physics
 	float										m_flFrameTime;		// This is the delta of each frame of game time
 	float										m_flHostTime;		// This is the current time for the computer
+	size_t										m_iFrame;
 
 	eastl::vector<CEntityHandle<CBaseEntity> >	m_apSimulateList;
 	eastl::vector<CBaseEntity*>					m_apRenderList;
