@@ -1,9 +1,10 @@
 #ifndef LW_QUATERNION_H
 #define LW_QUATERNION_H
 
+#include "vector.h"
+
 class Matrix4x4;
 class EAngle;
-class Vector;
 
 class Quaternion
 {

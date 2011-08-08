@@ -55,6 +55,7 @@ public:
 	void		BeginRenderDebugLines();
 	void		TexCoord(float s, float t);
 	void		TexCoord(const Vector2D& v);
+	void		TexCoord(const DoubleVector2D& v);
 	void		TexCoord(const Vector& v);
 	void		Normal(const Vector& v);
 	void		Vertex(const Vector& v);

@@ -576,6 +576,13 @@ void CRenderingContext::TexCoord(const Vector2D& v)
 	m_bTexCoord = true;
 }
 
+void CRenderingContext::TexCoord(const DoubleVector2D& v)
+{
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	m_vecTexCoord = Vector2D(v);
+	m_bTexCoord = true;
+}
+
 void CRenderingContext::TexCoord(const Vector& v)
 {
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);

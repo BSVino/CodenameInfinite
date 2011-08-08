@@ -209,7 +209,7 @@ void CSPCharacter::StandOnNearestPlanet()
 	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
 	// Right now it puts us one kilometer above ground. We'll fix that later.
-	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * (pPlanet->GetRadius() + CScalableFloat(1, SCALE_KILOMETER));
+	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * (pPlanet->GetRadius() + CScalableFloat(1.0f, SCALE_KILOMETER));
 	SetGlobalScalableOrigin(vecOrigin);
 
 	SetScalableMoveParent(pPlanet);
@@ -223,36 +223,42 @@ CScalableFloat CSPCharacter::EyeHeightScalable()
 
 CScalableFloat CSPCharacter::CharacterSpeedScalable()
 {
+	float flDebugBonus = 1;
+#ifdef _DEBUG
+	if (m_bHyperdrive)
+		flDebugBonus = 10;
+#endif
+
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_ANY);
 
-	CScalableFloat flMaxSpeed = CScalableFloat(10, SCALE_MEGAMETER);
+	CScalableFloat flMaxSpeed = CScalableFloat(10.0f, SCALE_MEGAMETER);
 
 	CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
 	CScalableFloat flCloseOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
 
 	if (flDistance < flCloseOrbit)
 	{
-		CScalableFloat flAtmosphereSpeed = CScalableFloat(500, SCALE_KILOMETER);
+		CScalableFloat flAtmosphereSpeed = CScalableFloat(500.0f, SCALE_KILOMETER);
 
 		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
 
 		if (flDistance < flAtmosphere)
 		{
-			CScalableFloat flGroundSpeed = CScalableFloat(1, SCALE_KILOMETER);
-			return RemapVal(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed);
+			CScalableFloat flGroundSpeed = CScalableFloat(1.0f, SCALE_KILOMETER);
+			return RemapVal(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
 		if (flDistance > flCloseOrbit)
-			return flMaxSpeed;
+			return flMaxSpeed * flDebugBonus;
 
-		return RemapVal(flDistance, flAtmosphere, flCloseOrbit, flAtmosphereSpeed, flMaxSpeed);
+		return RemapVal(flDistance, flAtmosphere, flCloseOrbit, flAtmosphereSpeed, flMaxSpeed) * flDebugBonus;
 	}
 
 	if (m_bHyperdrive)
 	{
 		CScalableFloat flMinSpeed = flMaxSpeed;
-		flMaxSpeed = CScalableFloat(50, SCALE_GIGAMETER);
-		return RemapVal(flDistance, flCloseOrbit, CScalableFloat(1, SCALE_GIGAMETER), flMinSpeed, flMaxSpeed);
+		flMaxSpeed = CScalableFloat(50.0f, SCALE_GIGAMETER);
+		return RemapVal(flDistance, flCloseOrbit, CScalableFloat(1.0f, SCALE_GIGAMETER), flMinSpeed, flMaxSpeed);
 	}
 	else
 		return flMaxSpeed;

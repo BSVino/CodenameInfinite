@@ -1,6 +1,7 @@
 #include "sp_common.h"
 
 #include <matrix.h>
+#include <tstring.h>
 
 CScalableFloat::CScalableFloat()
 {
@@ -13,6 +14,195 @@ CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 
 	int i = SCALESTACK_INDEX(eScale);
 	m_aflScaleStack[i] = flUnits;
+	m_bPositive = (flUnits > 0);
+}
+
+static float g_aflValueExponents[] = 
+{
+	1000.0f,
+	1000000.0f,
+	1000000000.0f,
+	1000000000000.0f,
+	1000000000000000.0f,
+};
+
+static float g_aflPowNeg2Exponents[] = 
+{
+	1.0f,
+	0.5f,
+	0.25f,
+	0.125f,
+	0.0625f,
+	0.03125f,
+	0.015625f,
+	0.0078125f,
+	0.00390625f,
+	0.001953125f,
+	0.0009765625f,
+	0.00048828125f,
+	0.000244140625f,
+	0.0001220703125f,
+	6.103515625E-5f,
+	3.0517578125E-5f,
+	1.52587890625E-5f,
+	7.62939453125E-6f,
+	3.814697265625E-6f,
+	1.9073486328125E-6f,
+	9.5367431640625E-7f,
+	4.7683715820312E-7f,
+	2.3841857910156E-7f,
+	1.1920928955078E-7f,
+	5.9604644775391E-8f,
+	2.9802322387695E-8f,
+	1.4901161193848E-8f,
+	7.4505805969238E-9f,
+	3.7252902984619E-9f,
+	1.862645149231E-9f,
+	9.3132257461548E-10f,
+	4.6566128730774E-10f,
+	2.3283064365387E-10f,
+	1.1641532182693E-10f,
+	5.8207660913467E-11f,
+	2.9103830456734E-11f,
+	1.4551915228367E-11f,
+	7.2759576141834E-12f,
+	3.6379788070917E-12f,
+	1.8189894035459E-12f,
+	9.0949470177293E-13f,
+	4.5474735088646E-13f,
+	2.2737367544323E-13f,
+	1.1368683772162E-13f,
+	5.6843418860808E-14f,
+	2.8421709430404E-14f,
+	1.4210854715202E-14f,
+	7.105427357601E-15f,
+	3.5527136788005E-15f,
+	1.7763568394003E-15f,
+	8.8817841970013E-16f,
+	4.4408920985006E-16f,
+	2.2204460492503E-16f,
+};
+
+typedef unsigned long long tlong;
+CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
+{
+	memset(&m_aflScaleStack[0], 0, SCALESTACK_SIZE*sizeof(float));
+
+	tlong l = *(tlong*)((double*)&flUnits);
+
+	if (flUnits == 0)
+		return;
+
+	// We need to preserve the precision of the double, so we need to split it up.
+	// If we have a double like 1.234567890123456Gm then we need to make it into
+	// 1.234Gm 5.678Mm 9.012Km and 3.456m. The best way to do that is to break into
+	// the IEEE double precision floating point standard, parse the data there, and
+	// split it up into different scales for our scalable float. Since the floats
+	// are stored in binary we won't quite get those perfect 4-digit number splits
+	// but in the end it should all add back up to the original number.
+
+	TAssert(sizeof(double) == 8);
+
+#ifdef _DEBUG
+	// Test to make sure we're dealing with IEEE 64 bit doubles
+	tlong iTest = 0x3FF0000000000000;
+	TAssert(*(double*)(&iTest) == 1.0);
+
+	iTest = 0x4000000000000000;
+	TAssert(*(double*)(&iTest) == 2.0);
+
+	iTest = 0xc000000000000000;
+	TAssert(*(double*)(&iTest) == -2.0);
+#endif
+
+	// IEEE double layout is 1 sign bit, 11 exponent bits, and 52 fraction bits. One for each card in the deck.
+	// value = -sign * 1.fraction * 2^(exponent-1023)
+	// The fraction is in base 2.
+	const int iFB = 52;
+
+	bool bSign = !!(l & ((tlong)1<<63));
+	int iExponent = ((tlong)(l & ((tlong)0x7ff << iFB)) >> iFB) - 1023;
+	tlong iFraction = (tlong)(l & ((tlong)0xfffffffffffff)); // The last 52 bits.
+
+	TAssert( iExponent <= 1023 && iExponent >= -1022 );
+
+	float flExponent;
+	if (iExponent > 0)
+		flExponent = (float)((tlong)1<<iExponent);
+	else if (-iExponent <= sizeof(g_aflPowNeg2Exponents)/sizeof(g_aflPowNeg2Exponents[0]))
+		flExponent = g_aflPowNeg2Exponents[-iExponent];
+	else
+		flExponent = pow(2.0f, iExponent);
+
+	// If exponent is 0 and the value isn't 0 then we have a subnormal float which is not allowed.
+	TAssert(((tlong)(l & ((tlong)0x7ff << iFB)) >> iFB) != 0);
+
+	// If exponent is 0x7ff (all 1's) we have infinity or NaN and we don't allow either.
+	TAssert(((tlong)(l & ((tlong)0x7ff << iFB)) >> iFB) != 0x7ff);
+
+	TAssert(iFB <= sizeof(g_aflPowNeg2Exponents)/sizeof(g_aflPowNeg2Exponents[0]));
+
+	int iSign = bSign?-1:1;
+	int iDigits = 7;
+	int iRemaining = iFB - iDigits;
+
+	// Add the 1 for the first part since it's 1.fraction but cut off all other digits that won't fit in a 32 bit floating point.
+	long iFirst = (long)((iFraction + ((tlong)1 << iFB)) >> iRemaining) * iSign;
+	// value = iFirst * 2^exponent * 2^-(52-remaining)
+	float flFirst = ((float)iFirst) * flExponent * g_aflPowNeg2Exponents[iFB-iRemaining];
+
+	int iScale = SCALESTACK_INDEX(eScale);
+
+	while (flFirst < 1 && flFirst > 0 && iScale > 0)
+	{
+		iScale--;
+		flFirst *= 1000;
+		flExponent *= 1000;
+	}
+
+	while (flFirst > -1 && flFirst < 0 && iScale > 0)
+	{
+		iScale--;
+		flFirst *= 1000;
+		flExponent *= 1000;
+	}
+
+	m_aflScaleStack[iScale--] = flFirst;
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		if (iScale < 0)
+			break;
+
+		// Take the next few digits.
+		if (iScale == 0 || i == 3)
+		{
+			iDigits = iRemaining;
+			if (iDigits >= sizeof(long)*8)
+				iDigits = sizeof(long)*8-1;
+		}
+		else
+			iDigits = (i%2)?11:10;
+
+		if (iDigits > iRemaining)
+			iDigits = iRemaining;
+
+		tlong iMask = ((tlong)1<<iDigits)-1;
+		iRemaining -= iDigits;
+
+		TAssert(iDigits <= sizeof(long)*8);
+
+		long iValue = (long)((iFraction & (iMask << iRemaining)) >> iRemaining) * iSign;
+		float flValue = ((float)iValue) * flExponent * g_aflPowNeg2Exponents[iFB-iRemaining];
+
+		m_aflScaleStack[iScale--] = flValue * g_aflValueExponents[i];
+
+		if (iScale < 0)
+			break;
+		if (iRemaining <= 0)
+			break;
+	}
+
 	m_bPositive = (flUnits > 0);
 }
 
@@ -410,6 +600,13 @@ CScalableVector::CScalableVector(const CScalableFloat& X, const CScalableFloat& 
 }
 
 CScalableVector::CScalableVector(Vector vecUnits, scale_t eScale)
+{
+	x = CScalableFloat(vecUnits.x, eScale);
+	y = CScalableFloat(vecUnits.y, eScale);
+	z = CScalableFloat(vecUnits.z, eScale);
+}
+
+CScalableVector::CScalableVector(DoubleVector vecUnits, scale_t eScale)
 {
 	x = CScalableFloat(vecUnits.x, eScale);
 	y = CScalableFloat(vecUnits.y, eScale);

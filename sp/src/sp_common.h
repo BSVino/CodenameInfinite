@@ -31,6 +31,7 @@ class CScalableFloat
 public:
 							CScalableFloat();
 							CScalableFloat(float flUnits, scale_t eScale);
+							CScalableFloat(double flUnits, scale_t eScale);
 
 public:
 	float					GetUnits(scale_t eScale) const;
@@ -80,6 +81,7 @@ public:
 							CScalableVector() {};
 							CScalableVector(const CScalableFloat& x, const CScalableFloat& y, const CScalableFloat& z);
 							CScalableVector(Vector vecUnits, scale_t eScale);
+							CScalableVector(DoubleVector vecUnits, scale_t eScale);
 
 public:
 	Vector					GetUnits(scale_t eScale) const;

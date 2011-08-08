@@ -18,6 +18,8 @@ public:
 	virtual Vector				GetCameraTarget();
 	virtual Vector				GetCameraUp();
 	virtual float				GetCameraFOV();
+
+	virtual float				GetCameraFar() { return 1200.0f; };
 };
 
 #endif

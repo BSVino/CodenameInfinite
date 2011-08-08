@@ -3,11 +3,14 @@
 
 #include "maths.h"
 
+template <class unit_t>
+class TVector;
+
 class Color
 {
 public:
 	inline			Color();
-	inline			Color(class Vector v);
+	inline			Color(class TVector<float> v);
 	inline			Color(int _r, int _g, int _b);
 	inline			Color(int _r, int _g, int _b, int _a);
 	inline			Color(float _r, float _g, float _b);

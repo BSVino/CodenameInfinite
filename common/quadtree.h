@@ -5,31 +5,31 @@
 
 #include <vector.h>
 
-template <class T> class CQuadTree;
-template <class T> class CQuadTreeBranch;
+template <class T, typename F> class CQuadTree;
+template <class T, typename F> class CQuadTreeBranch;
 
-template <class T>
+template <class T, typename F=float>
 class CQuadTreeDataSource
 {
 public:
 	// Quad trees aren't always flat, they're curvy and wonky sometimes. This function should translate a 3d coordinate to a quadtree coordinate
 	// The output should be ([0, 1], [0, 1])
 	// If the point is not in the quad tree then return a value less than 0 or greater than 1 for x or y
-	virtual Vector2D			WorldToQuadTree(const CQuadTree<T>* pTree, const Vector& vecWorld) const=0;
+	virtual TVector2D<F>		WorldToQuadTree(const CQuadTree<T, F>* pTree, const TVector<F>& vecWorld) const=0;
 	// This is the opposite conversion from the above.
-	virtual Vector				QuadTreeToWorld(const CQuadTree<T>* pTree, const Vector2D& vecTree) const=0;
+	virtual TVector<F>				QuadTreeToWorld(const CQuadTree<T, F>* pTree, const TVector2D<F>& vecTree) const=0;
 
-	virtual Vector2D			WorldToQuadTree(CQuadTree<T>* pTree, const Vector& vecWorld)=0;
-	virtual Vector				QuadTreeToWorld(CQuadTree<T>* pTree, const Vector2D& vecTree)=0;
+	virtual TVector2D<F>		WorldToQuadTree(CQuadTree<T, F>* pTree, const TVector<F>& vecWorld)=0;
+	virtual TVector<F>				QuadTreeToWorld(CQuadTree<T, F>* pTree, const TVector2D<F>& vecTree)=0;
 
-	virtual bool				ShouldBuildBranch(CQuadTreeBranch<T>* pBranch, bool& bDelete)=0;
+	virtual bool				ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
 };
 
-template <class T>
+template <class T, typename F=float>
 class CQuadTreeBranch
 {
 public:
-	CQuadTreeBranch(CQuadTreeDataSource<T>* pSource, CQuadTreeBranch<T>* pParent, CQuadTree<T>* pTree, Vector2D vecMin, Vector2D vecMax, unsigned short iDepth, const T& oData = T())
+	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TVector2D<F> vecMin, TVector2D<F> vecMax, unsigned short iDepth, const T& oData = T())
 	{
 		m_pDataSource = pSource;
 		m_pParent = pParent;
@@ -54,22 +54,22 @@ public:
 	void						BuildBranch(bool bAndChildren = true);
 
 	void						InitPathfinding();
-	void						FindNeighbors(const CQuadTreeBranch* pLeaf, eastl::vector<CQuadTreeBranch*>& apNeighbors);
-	CQuadTreeBranch<T>*			FindLeaf(const Vector& vecPoint);
+	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors);
+	CQuadTreeBranch<T, F>*		FindLeaf(const TVector<F>& vecPoint);
 	void						SetGScore(float flGScore);
 	float						GetFScore();
-	Vector						GetCenter();
-	Vector						GetCenter() const;
+	TVector<F>					GetCenter();
+	TVector<F>					GetCenter() const;
 
 	void						DebugRender();
 
 public:
-	CQuadTreeDataSource<T>*		m_pDataSource;
-	CQuadTreeBranch<T>*			m_pParent;
-	CQuadTree<T>*				m_pTree;
+	CQuadTreeDataSource<T, F>*	m_pDataSource;
+	CQuadTreeBranch<T, F>*		m_pParent;
+	CQuadTree<T, F>*			m_pTree;
 
-	Vector2D					m_vecMin;
-	Vector2D					m_vecMax;
+	TVector2D<F>				m_vecMin;
+	TVector2D<F>				m_vecMax;
 
 	unsigned short				m_iDepth;
 
@@ -77,12 +77,12 @@ public:
 	{
 		struct
 		{
-			CQuadTreeBranch<T>*	m_pBranchxy;
-			CQuadTreeBranch<T>*	m_pBranchxY;
-			CQuadTreeBranch<T>*	m_pBranchXy;
-			CQuadTreeBranch<T>*	m_pBranchXY;
+			CQuadTreeBranch<T, F>*	m_pBranchxy;
+			CQuadTreeBranch<T, F>*	m_pBranchxY;
+			CQuadTreeBranch<T, F>*	m_pBranchXy;
+			CQuadTreeBranch<T, F>*	m_pBranchXY;
 		};
-		CQuadTreeBranch<T>*		m_pBranches[4];
+		CQuadTreeBranch<T, F>*		m_pBranches[4];
 	};
 
 	T							m_oData;
@@ -96,12 +96,12 @@ public:
 	float						m_flHScore;
 	float						m_flFScore;
 	bool						m_bCenterCalculated;
-	Vector						m_vecCenter;
+	TVector<F>					m_vecCenter;
 
-	CQuadTreeBranch<T>*			m_pPathParent;
+	CQuadTreeBranch<T, F>*		m_pPathParent;
 };
 
-template <class T>
+template <class T, typename F=float>
 class CQuadTree
 {
 public:
@@ -111,7 +111,7 @@ public:
 		m_pQuadTreeHead = NULL;
 	};
 	
-	CQuadTree(CQuadTreeDataSource<T>* pSource, const T& oData)
+	CQuadTree(CQuadTreeDataSource<T, F>* pSource, const T& oData)
 	{
 		Init(pSource, oData);
 	};
@@ -120,38 +120,38 @@ public:
 	// NOTE: There's no pathfinding code because this code was ripped from a previous project and the next project didn't need pathfinding
 	// If you want pathfinding code you'll need to port it from terrain.cpp in the digitanks project
 
-	void						Init(CQuadTreeDataSource<T>* pSource, const T& oData);
+	void						Init(CQuadTreeDataSource<T, F>* pSource, const T& oData);
 
-	class CQuadTreeBranch<T>*	FindLeaf(const Vector& vecPoint);
-	void						FindNeighbors(const CQuadTreeBranch<T>* pLeaf, eastl::vector<CQuadTreeBranch<T>*>& apNeighbors);
+	class CQuadTreeBranch<T, F>*FindLeaf(const TVector<F>& vecPoint);
+	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors);
 
 protected:
-	CQuadTreeDataSource<T>*		m_pDataSource;
-	class CQuadTreeBranch<T>*	m_pQuadTreeHead;
+	CQuadTreeDataSource<T, F>*	m_pDataSource;
+	class CQuadTreeBranch<T, F>*m_pQuadTreeHead;
 };
 
 #include <EASTL/list.h>
 #include <EASTL/heap.h>
 
-template <class T>
+template <class T, typename F=float>
 class LowestF
 {
 public:
-	bool operator() (const CQuadTreeBranch<T>* pLeft, const CQuadTreeBranch<T>* pRight)
+	bool operator() (const CQuadTreeBranch<T, F>* pLeft, const CQuadTreeBranch<T, F>* pRight)
 	{
-		return const_cast<CQuadTreeBranch<T>*>(pLeft)->GetFScore() > const_cast<CQuadTreeBranch<T>*>(pRight)->GetFScore();
+		return const_cast<CQuadTreeBranch<T, F>*>(pLeft)->GetFScore() > const_cast<CQuadTreeBranch<T, F>*>(pRight)->GetFScore();
 	}
 };
 
-template <class T>
-void CQuadTree<T>::Init(CQuadTreeDataSource<T>* pSource, const T& oData)
+template <class T, typename F>
+void CQuadTree<T, F>::Init(CQuadTreeDataSource<T, F>* pSource, const T& oData)
 {
 	m_pDataSource = pSource;
-	m_pQuadTreeHead = new CQuadTreeBranch<T>(pSource, NULL, this, Vector2D(0, 0), Vector2D(1, 1), 0, oData);
+	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TVector2D<F>(0, 0), TVector2D<F>(1, 1), 0, oData);
 }
 
-template <class T>
-CQuadTreeBranch<T>* CQuadTree<T>::FindLeaf(const Vector& vecPoint)
+template <class T, typename F>
+CQuadTreeBranch<T, F>* CQuadTree<T, F>::FindLeaf(const TVector<F>& vecPoint)
 {
 	if (!m_pQuadTreeHead)
 		return NULL;
@@ -159,7 +159,7 @@ CQuadTreeBranch<T>* CQuadTree<T>::FindLeaf(const Vector& vecPoint)
 	if (!m_pDataSource)
 		return NULL;
 
-	Vector2D vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
+	TVector2D<F> vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
 
 	if (vecQuadTreePoint.x < 0)
 		return NULL;
@@ -173,7 +173,7 @@ CQuadTreeBranch<T>* CQuadTree<T>::FindLeaf(const Vector& vecPoint)
 	if (vecQuadTreePoint.y > 1)
 		return NULL;
 
-	CQuadTreeBranch<T>* pCurrent = m_pQuadTreeHead;
+	CQuadTreeBranch<T, F>* pCurrent = m_pQuadTreeHead;
 	while (pCurrent->m_pBranches[0])
 	{
 		for (size_t i = 0; i < 4; i++)
@@ -198,8 +198,8 @@ CQuadTreeBranch<T>* CQuadTree<T>::FindLeaf(const Vector& vecPoint)
 	return pCurrent;
 }
 
-template <class T>
-void CQuadTree<T>::FindNeighbors(const CQuadTreeBranch<T>* pLeaf, eastl::vector<CQuadTreeBranch<T>*>& apNeighbors)
+template <class T, typename F>
+void CQuadTree<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors)
 {
 	if (!pLeaf)
 		return;
@@ -208,8 +208,8 @@ void CQuadTree<T>::FindNeighbors(const CQuadTreeBranch<T>* pLeaf, eastl::vector<
 	m_pQuadTreeHead->FindNeighbors(pLeaf, apNeighbors);
 }
 
-template <class T>
-void CQuadTreeBranch<T>::BuildBranch(bool bAndChildren)
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren)
 {
 	bool bDelete;
 	bool bBuildBranch = m_pDataSource->ShouldBuildBranch(this, bDelete);
@@ -218,11 +218,11 @@ void CQuadTreeBranch<T>::BuildBranch(bool bAndChildren)
 	{
 		if (!m_pBranches[0])
 		{
-			float flSize = (m_vecMax.x - m_vecMin.x)/2;
-			m_pBranchxy = new CQuadTreeBranch<T>(m_pDataSource, this, m_pTree, m_vecMin + Vector2D(0, 0), m_vecMin + Vector2D(flSize, flSize), m_iDepth+1);
-			m_pBranchxY = new CQuadTreeBranch<T>(m_pDataSource, this, m_pTree, m_vecMin + Vector2D(0, flSize), m_vecMin + Vector2D(flSize, flSize+flSize), m_iDepth+1);
-			m_pBranchXy = new CQuadTreeBranch<T>(m_pDataSource, this, m_pTree, m_vecMin + Vector2D(flSize, 0), m_vecMin + Vector2D(flSize+flSize, flSize), m_iDepth+1);
-			m_pBranchXY = new CQuadTreeBranch<T>(m_pDataSource, this, m_pTree, m_vecMin + Vector2D(flSize, flSize), m_vecMin + Vector2D(flSize+flSize, flSize+flSize), m_iDepth+1);
+			F flSize = (m_vecMax.x - m_vecMin.x)/2;
+			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(0, 0), m_vecMin + TVector2D<F>(flSize, flSize), m_iDepth+1);
+			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(0, flSize), m_vecMin + TVector2D<F>(flSize, flSize+flSize), m_iDepth+1);
+			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(flSize, 0), m_vecMin + TVector2D<F>(flSize+flSize, flSize), m_iDepth+1);
+			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(flSize, flSize), m_vecMin + TVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1);
 		}
 
 		if (bAndChildren)
@@ -244,8 +244,8 @@ void CQuadTreeBranch<T>::BuildBranch(bool bAndChildren)
 	}
 }
 
-template <class T>
-void CQuadTreeBranch<T>::InitPathfinding()
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::InitPathfinding()
 {
 	if (m_pBranches[0])
 	{
@@ -264,8 +264,8 @@ void CQuadTreeBranch<T>::InitPathfinding()
 	}
 }
 
-template <class T>
-void CQuadTreeBranch<T>::FindNeighbors(const CQuadTreeBranch<T>* pLeaf, eastl::vector<CQuadTreeBranch<T>*>& apNeighbors)
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors)
 {
 	if (!pLeaf)
 		return;
@@ -307,10 +307,10 @@ void CQuadTreeBranch<T>::FindNeighbors(const CQuadTreeBranch<T>* pLeaf, eastl::v
 	}
 }
 
-template <class T>
-CQuadTreeBranch<T>* CQuadTreeBranch<T>::FindLeaf(const Vector& vecPoint)
+template <class T, typename F>
+CQuadTreeBranch<T, F>* CQuadTreeBranch<T, F>::FindLeaf(const TVector<F>& vecPoint)
 {
-	Vector2D vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
+	TVector2D<F> vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
 
 	if (vecQuadTreePoint.x < m_vecMin.x)
 		return NULL;
@@ -329,7 +329,7 @@ CQuadTreeBranch<T>* CQuadTreeBranch<T>::FindLeaf(const Vector& vecPoint)
 
 	for (size_t i = 0; i < 4; i++)
 	{
-		CQuadTreeBranch<T>* pResult = m_pBranches[i]->FindLeaf(vecPoint);
+		CQuadTreeBranch<T, F>* pResult = m_pBranches[i]->FindLeaf(vecPoint);
 		if (pResult)
 			return pResult;
 	}
@@ -338,15 +338,15 @@ CQuadTreeBranch<T>* CQuadTreeBranch<T>::FindLeaf(const Vector& vecPoint)
 	return NULL;
 }
 
-template <class T>
-void CQuadTreeBranch<T>::SetGScore(float flGScore)
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::SetGScore(float flGScore)
 {
 	m_bFValid = false;
 	m_flGScore = flGScore;
 }
 
-template <class T>
-float CQuadTreeBranch<T>::GetFScore()
+template <class T, typename F>
+float CQuadTreeBranch<T, F>::GetFScore()
 {
 	if (m_bFValid)
 		return m_flFScore;
@@ -363,8 +363,8 @@ float CQuadTreeBranch<T>::GetFScore()
 	return m_flFScore;
 }
 
-template <class T>
-Vector CQuadTreeBranch<T>::GetCenter()
+template <class T, typename F>
+TVector<F> CQuadTreeBranch<T, F>::GetCenter()
 {
 	if (!m_bCenterCalculated)
 	{
@@ -375,8 +375,8 @@ Vector CQuadTreeBranch<T>::GetCenter()
 	return m_vecCenter;
 }
 
-template <class T>
-Vector CQuadTreeBranch<T>::GetCenter() const
+template <class T, typename F>
+TVector<F> CQuadTreeBranch<T, F>::GetCenter() const
 {
 	TAssert(m_bCenterCalculated);
 
@@ -386,8 +386,8 @@ Vector CQuadTreeBranch<T>::GetCenter() const
 	return m_vecCenter;
 }
 
-template <class T>
-void CQuadTreeBranch<T>::DebugRender()
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::DebugRender()
 {
 	if (m_pBranches[0])
 	{

@@ -70,7 +70,7 @@ void CPlanet::Spawn()
 	// 1500km, a bit smaller than the moon
 	SetRadius(CScalableFloat(1.5f, SCALE_MEGAMETER));
 	// 20 km thick
-	SetAtmosphereThickness(CScalableFloat(20, SCALE_KILOMETER));
+	SetAtmosphereThickness(CScalableFloat(20.0f, SCALE_KILOMETER));
 }
 
 CVar r_planet_onesurface("r_planet_onesurface", "off");
@@ -86,7 +86,7 @@ void CPlanet::Think()
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
 
-static Vector g_vecCharacterLocalOrigin;
+static DoubleVector g_vecCharacterLocalOrigin;
 
 void CPlanet::RenderUpdate()
 {
@@ -103,7 +103,7 @@ void CPlanet::RenderUpdate()
 	// Instead, transform the player to the planet's local once and do the math in local space.
 	CScalableMatrix mPlanetGlobalToLocal = GetGlobalScalableTransform();
 	mPlanetGlobalToLocal.InvertTR();
-	g_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
+	g_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
 
 	Vector vecOrigin = (GetGlobalScalableOrigin() - vecCharacterOrigin).GetUnits(GetScale());
 	Vector vecOutside = vecOrigin + vecUp * GetScalableRenderRadius().GetUnits(GetScale());
@@ -189,7 +189,7 @@ void CPlanetTerrain::Init()
 	oData.flLastScreenUpdate = -1;
 	oData.iRenderVectorsLastFrame = ~0;
 	oData.iShouldRenderLastFrame = ~0;
-	CQuadTree<CBranchData>::Init(this, oData);
+	CTerrainQuadTree::Init(this, oData);
 }
 
 CVar r_terrain_onequad("r_terrain_onequad", "off");
@@ -204,7 +204,7 @@ void CPlanetTerrain::Think()
 
 CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
 
-void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
+void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 {
 	if (pBranch->m_oData.bRender)
 	{
@@ -278,7 +278,7 @@ void CPlanetTerrain::ThinkBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	}
 }
 
-void CPlanetTerrain::ProcessBranchRendering(CQuadTreeBranch<CBranchData>* pBranch)
+void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 {
 	TAssert(pBranch->m_oData.bRender);
 
@@ -310,11 +310,11 @@ void CPlanetTerrain::ProcessBranchRendering(CQuadTreeBranch<CBranchData>* pBranc
 
 void CPlanetTerrain::Render(class CRenderingContext* c) const
 {
-	eastl::map<scale_t, eastl::vector<CQuadTreeBranch<CBranchData>*> >::const_iterator it = m_apRenderBranches.find(SPGame()->GetSPRenderer()->GetRenderingScale());
+	eastl::map<scale_t, eastl::vector<CTerrainQuadTreeBranch*> >::const_iterator it = m_apRenderBranches.find(SPGame()->GetSPRenderer()->GetRenderingScale());
 	if (it == m_apRenderBranches.end())
 		return;
 
-	const eastl::vector<CQuadTreeBranch<CBranchData>*>& aRenderBranches = it->second;
+	const eastl::vector<CTerrainQuadTreeBranch*>& aRenderBranches = it->second;
 
 	for (size_t i = 0; i < aRenderBranches.size(); i++)
 		RenderBranch(aRenderBranches[i], c);
@@ -323,7 +323,7 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 CVar r_showquaddebugoutlines("r_showquaddebugoutlines", "off");
 CVar r_showquadnormals("r_showquadnormals", "off");
 
-void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, class CRenderingContext* c) const
+void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class CRenderingContext* c) const
 {
 	TAssert(pBranch->m_oData.iRenderVectorsLastFrame == GameServer()->GetFrame());
 
@@ -365,13 +365,13 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 	c->TexCoord(pBranch->m_vecMin);
 	c->Normal(pBranch->m_oData.vec1n);
 	c->Vertex(vec1);
-	c->TexCoord(Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+	c->TexCoord(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
 	c->Normal(pBranch->m_oData.vec2n);
 	c->Vertex(vec2);
 	c->TexCoord(pBranch->m_vecMax);
 	c->Normal(pBranch->m_oData.vec3n);
 	c->Vertex(vec3);
-	c->TexCoord(Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+	c->TexCoord(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
 	c->Normal(pBranch->m_oData.vec4n);
 	c->Vertex(vec4);
 	c->EndRender();
@@ -403,7 +403,7 @@ void CPlanetTerrain::RenderBranch(const CQuadTreeBranch<CBranchData>* pBranch, c
 
 CVar r_terrainupdateinterval("r_terrainupdateinterval", "1");
 
-void CPlanetTerrain::UpdateScreenSize(CQuadTreeBranch<CBranchData>* pBranch)
+void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 {
 	if (pBranch->m_oData.flLastScreenUpdate < 0 || GameServer()->GetGameTime() - pBranch->m_oData.flLastScreenUpdate > r_terrainupdateinterval.GetFloat())
 	{
@@ -446,7 +446,7 @@ CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");
 CVar r_terrainperspectivescale("r_terrainperspectivescale", "on");
 CVar r_terrainfrustumcull("r_terrainfrustumcull", "on");
 
-bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
+bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 {
 	if (pBranch->m_oData.iShouldRenderLastFrame == GameServer()->GetFrame())
 		return pBranch->m_oData.bShouldRender;
@@ -464,9 +464,9 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	if (flRadius.GetUnits(SCALE_METER) < r_terrainresolution.GetFloat())
 		return false;
 
-	Vector vecNormal = (pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
+	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
 
-	float flDot = (pBranch->GetCenter()-g_vecCharacterLocalOrigin).Normalized().Dot(vecNormal);
+	float flDot = (float)(pBranch->GetCenter()-g_vecCharacterLocalOrigin).Normalized().Dot(vecNormal);
 
 	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
 		return false;
@@ -498,38 +498,38 @@ bool CPlanetTerrain::ShouldRenderBranch(CQuadTreeBranch<CBranchData>* pBranch)
 	return true;
 }
 
-void CPlanetTerrain::CalcRenderVectors(CQuadTreeBranch<CBranchData>* pBranch)
+void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
 {
 	if (pBranch->m_oData.iRenderVectorsLastFrame == GameServer()->GetFrame())
 		return;
 
 	pBranch->m_oData.vec1 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMin);
-	pBranch->m_oData.vec2 = m_pDataSource->QuadTreeToWorld(this, Vector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+	pBranch->m_oData.vec2 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
 	pBranch->m_oData.vec3 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMax);
-	pBranch->m_oData.vec4 = m_pDataSource->QuadTreeToWorld(this, Vector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+	pBranch->m_oData.vec4 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
 
-	pBranch->m_oData.vec1n = pBranch->m_oData.vec1.Normalized();
-	pBranch->m_oData.vec2n = pBranch->m_oData.vec2.Normalized();
-	pBranch->m_oData.vec3n = pBranch->m_oData.vec3.Normalized();
-	pBranch->m_oData.vec4n = pBranch->m_oData.vec4.Normalized();
+	pBranch->m_oData.vec1n = Vector(pBranch->m_oData.vec1).Normalized();
+	pBranch->m_oData.vec2n = Vector(pBranch->m_oData.vec2).Normalized();
+	pBranch->m_oData.vec3n = Vector(pBranch->m_oData.vec3).Normalized();
+	pBranch->m_oData.vec4n = Vector(pBranch->m_oData.vec4).Normalized();
 
 	pBranch->m_oData.iRenderVectorsLastFrame = GameServer()->GetFrame();
 
 	pBranch->m_oData.vecGlobalQuadCenter = m_pPlanet->GetGlobalScalableTransform() * CScalableVector(pBranch->GetCenter(), m_pPlanet->GetScale());
 }
 
-Vector2D CPlanetTerrain::WorldToQuadTree(const CQuadTree<CBranchData>* pTree, const Vector& v) const
+DoubleVector2D CPlanetTerrain::WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& v) const
 {
-	TAssert(pTree == (CQuadTree<CBranchData>*)this);
+	TAssert(pTree == (CTerrainQuadTree*)this);
 
 	// Find the spot on the planet's surface that this point is closest to.
-	Vector vecPlanetOrigin = m_pPlanet->GetGlobalOrigin();
-	Vector vecPointDirection = (v - vecPlanetOrigin).Normalized();
+	DoubleVector vecPlanetOrigin = m_pPlanet->GetGlobalOrigin();
+	DoubleVector vecPointDirection = (v - vecPlanetOrigin).Normalized();
 
-	Vector vecDirection = GetDirection();
+	DoubleVector vecDirection = GetDirection();
 
 	if (vecPointDirection.Dot(vecDirection) <= 0)
-		return Vector2D(-1, -1);
+		return DoubleVector2D(-1, -1);
 
 	int iBig;
 	int iX;
@@ -559,46 +559,46 @@ Vector2D CPlanetTerrain::WorldToQuadTree(const CQuadTree<CBranchData>* pTree, co
 	// (x,y,1) = r*(a,b,c), so 1 = r*c and r = 1/c
 	// Then we can figure x and y with x = a*r and y = b*r
 
-	float r = 1/vecPointDirection[iBig];
+	double r = 1/vecPointDirection[iBig];
 
-	float x = RemapVal(vecPointDirection[iX]*r, -1, 1, 0, 1);
-	float y = RemapVal(vecPointDirection[iY]*r, -1, 1, 0, 1);
+	double x = RemapVal(vecPointDirection[iX]*r, -1, 1, 0, 1);
+	double y = RemapVal(vecPointDirection[iY]*r, -1, 1, 0, 1);
 
-	return Vector2D(x, y);
+	return DoubleVector2D(x, y);
 }
 
-Vector CPlanetTerrain::QuadTreeToWorld(const CQuadTree<CBranchData>* pTree, const Vector2D& v) const
+DoubleVector CPlanetTerrain::QuadTreeToWorld(const CTerrainQuadTree* pTree, const DoubleVector2D& v) const
 {
-	TAssert(pTree == (CQuadTree<CBranchData>*)this);
+	TAssert(pTree == (CTerrainQuadTree*)this);
 
-	Vector vecDirection = GetDirection();
+	DoubleVector vecDirection = GetDirection();
 
-	Vector vecCubePoint;
+	DoubleVector vecCubePoint;
 
-	float x = RemapVal(v.x, 0, 1, -1, 1);
-	float y = RemapVal(v.y, 0, 1, -1, 1);
+	double x = RemapVal(v.x, 0, 1, -1, 1);
+	double y = RemapVal(v.y, 0, 1, -1, 1);
 
 	if (vecDirection[0] != 0)
-		vecCubePoint = Vector(vecDirection[0], x, y);
+		vecCubePoint = DoubleVector(vecDirection[0], x, y);
 	else if (vecDirection[1] != 0)
-		vecCubePoint = Vector(x, vecDirection[1], y);
+		vecCubePoint = DoubleVector(x, vecDirection[1], y);
 	else
-		vecCubePoint = Vector(x, y, vecDirection[2]);
+		vecCubePoint = DoubleVector(x, y, vecDirection[2]);
 
 	return vecCubePoint.Normalized() * m_pPlanet->GetRadius().GetUnits(m_pPlanet->GetScale());
 }
 
-Vector2D CPlanetTerrain::WorldToQuadTree(CQuadTree<CBranchData>* pTree, const Vector& v)
+DoubleVector2D CPlanetTerrain::WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& v)
 {
-	return WorldToQuadTree((const CQuadTree<CBranchData>*)pTree, v);
+	return WorldToQuadTree((const CTerrainQuadTree*)pTree, v);
 }
 
-Vector CPlanetTerrain::QuadTreeToWorld(CQuadTree<CBranchData>* pTree, const Vector2D& v)
+DoubleVector CPlanetTerrain::QuadTreeToWorld(CTerrainQuadTree* pTree, const DoubleVector2D& v)
 {
-	return QuadTreeToWorld((const CQuadTree<CBranchData>*)pTree, v);
+	return QuadTreeToWorld((const CTerrainQuadTree*)pTree, v);
 }
 
-bool CPlanetTerrain::ShouldBuildBranch(CQuadTreeBranch<CBranchData>* pBranch, bool& bDelete)
+bool CPlanetTerrain::ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete)
 {
 	bDelete = false;
 
