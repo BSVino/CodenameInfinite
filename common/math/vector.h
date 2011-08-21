@@ -536,7 +536,7 @@ inline Vector4D::Vector4D()
 }
 
 inline Vector4D::Vector4D(const Vector& v)
-	: x(v.x), y(v.y), z(v.y), w(0)
+	: x(v.x), y(v.y), z(v.z), w(0)
 {
 }
 
