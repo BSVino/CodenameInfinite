@@ -38,6 +38,7 @@ public:
 	bool					IsPositive() const { return m_bPositive; };
 	bool					IsNegative() const { return !m_bPositive; };
 	bool					IsZero() const;
+	bool					IsZero();
 
 	CScalableFloat			operator-(void) const;
 
@@ -65,6 +66,7 @@ public:
 
 protected:
 	bool					m_bPositive;
+	bool					m_bZero;
 	float					m_aflScaleStack[SCALESTACK_SIZE];
 };
 
@@ -87,6 +89,7 @@ public:
 	Vector					GetUnits(scale_t eScale) const;
 
 	bool					IsZero() const;
+	bool					IsZero();
 
 	CScalableVector			Normalized() const { return CScalableVector(GetUnits(SCALE_METER).Normalized(), SCALE_METER); }
 	CScalableFloat			Length() const;

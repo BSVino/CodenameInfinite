@@ -6,6 +6,7 @@
 CScalableFloat::CScalableFloat()
 {
 	memset(&m_aflScaleStack[0], 0, SCALESTACK_SIZE*sizeof(float));
+	m_bZero = false;
 }
 
 CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
@@ -15,6 +16,7 @@ CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 	int i = SCALESTACK_INDEX(eScale);
 	m_aflScaleStack[i] = flUnits;
 	m_bPositive = (flUnits > 0);
+	m_bZero = (flUnits == 0);
 }
 
 static float g_aflValueExponents[] = 
@@ -91,7 +93,12 @@ CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 	tlong l = *(tlong*)((double*)&flUnits);
 
 	if (flUnits == 0)
+	{
+		m_bZero = true;
 		return;
+	}
+
+	m_bZero = false;
 
 	// We need to preserve the precision of the double, so we need to split it up.
 	// If we have a double like 1.234567890123456Gm then we need to make it into
@@ -208,6 +215,9 @@ CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 
 float CScalableFloat::GetUnits(scale_t eScale) const
 {
+	if (m_bZero)
+		return 0;
+
 	float flResult = 0;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 		flResult += ConvertUnits(m_aflScaleStack[i], (scale_t)(i+1), eScale);
@@ -217,12 +227,30 @@ float CScalableFloat::GetUnits(scale_t eScale) const
 
 bool CScalableFloat::IsZero() const
 {
+	if (m_bZero)
+		return true;
+
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
 		if (m_aflScaleStack[i] != 0)
 			return false;
 	}
 
+	return true;
+}
+
+bool CScalableFloat::IsZero()
+{
+	if (m_bZero)
+		return true;
+
+	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+	{
+		if (m_aflScaleStack[i] != 0)
+			return false;
+	}
+
+	m_bZero = true;
 	return true;
 }
 
@@ -234,6 +262,7 @@ CScalableFloat CScalableFloat::operator-() const
 		f.m_aflScaleStack[i] = -m_aflScaleStack[i];
 
 	f.m_bPositive = !m_bPositive;
+	f.m_bZero = false;
 
 	return f;
 }
@@ -252,6 +281,7 @@ CScalableFloat CScalableFloat::operator+(const CScalableFloat& u) const
 	else
 		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
 
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -259,6 +289,12 @@ CScalableFloat CScalableFloat::operator+(const CScalableFloat& u) const
 
 CScalableFloat CScalableFloat::operator-(const CScalableFloat& u) const
 {
+	if (m_bZero)
+		return -u;
+
+	if (u.m_bZero)
+		return *this;
+
 	CScalableFloat flReturn;
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
@@ -271,6 +307,7 @@ CScalableFloat CScalableFloat::operator-(const CScalableFloat& u) const
 	else
 		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
 
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -288,6 +325,7 @@ void CScalableFloat::operator+=(const CScalableFloat& u)
 	else
 		m_bPositive = (GetUnits(SCALE_KILOMETER) > 0);
 
+	m_bZero = false;
 	NormalizeScaleStack();
 }
 
@@ -303,6 +341,7 @@ void CScalableFloat::operator-=(const CScalableFloat& u)
 	else
 		m_bPositive = (GetUnits(SCALE_KILOMETER) > 0);
 
+	m_bZero = false;
 	NormalizeScaleStack();
 }
 
@@ -332,6 +371,7 @@ CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
 	flReturn.m_aflScaleStack[4] += fl8*1000000000000;
 
 	flReturn.m_bPositive = f.m_bPositive?m_bPositive:!m_bPositive;
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -341,10 +381,6 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 {
 	// I don't like doing this but there's really no way to do a proper division.
 	float flDivide = f.GetUnits(SCALE_METER);
-
-	TAssert(flDivide != 0);
-	if (flDivide == 0)
-		return CScalableFloat();
 
 	CScalableFloat flReturn;
 
@@ -378,6 +414,7 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 		flReturn.m_aflScaleStack[j] += flResult;
 	}
 
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -385,12 +422,22 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 
 CScalableFloat CScalableFloat::operator*(float f) const
 {
+	if (f == 0)
+		return CScalableFloat();
+
+	if (m_bZero)
+		return CScalableFloat();
+
+	if (f == 1)
+		return *this;
+
 	CScalableFloat flReturn;
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] * f;
 
 	flReturn.m_bPositive = (f > 0)?m_bPositive:!m_bPositive;
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -398,12 +445,20 @@ CScalableFloat CScalableFloat::operator*(float f) const
 
 CScalableFloat CScalableFloat::operator/(float f) const
 {
+	TAssert(f != 0);
+	if (f == 0)
+		return CScalableFloat();
+
+	if (m_bZero)
+		return CScalableFloat();
+
 	CScalableFloat flReturn;
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] / f;
 
 	flReturn.m_bPositive = (f > 0)?m_bPositive:!m_bPositive;
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -411,6 +466,39 @@ CScalableFloat CScalableFloat::operator/(float f) const
 
 CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScalableFloat& g) const
 {
+	if (m_bZero)
+	{
+		if (f.m_bZero)
+			return g;
+
+		if (g.m_bZero)
+			return f;
+
+		return f + g;
+	}
+
+	if (f.m_bZero)
+	{
+		if (m_bZero)
+			return g;
+
+		if (g.m_bZero)
+			return *this;
+
+		return *this + g;
+	}
+
+	if (g.m_bZero)
+	{
+		if (m_bZero)
+			return f;
+
+		if (f.m_bZero)
+			return *this;
+
+		return *this + f;
+	}
+
 	CScalableFloat flReturn;
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
@@ -423,6 +511,7 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	else
 		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
 
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -442,6 +531,7 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	else
 		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
 
+	flReturn.m_bZero = false;
 	flReturn.NormalizeScaleStack();
 
 	return flReturn;
@@ -625,6 +715,11 @@ Vector CScalableVector::GetUnits(scale_t eScale) const
 }
 
 bool CScalableVector::IsZero() const
+{
+	return x.IsZero() && y.IsZero() && z.IsZero();
+}
+
+bool CScalableVector::IsZero()
 {
 	return x.IsZero() && y.IsZero() && z.IsZero();
 }
