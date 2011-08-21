@@ -286,13 +286,16 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 	UpdateScreenSize(pBranch);
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
+
+	CScalableVector vecDistanceToQuad = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
 
 	int iPushes = 0;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
 		scale_t eScale = (scale_t)(i+1);
 
-		if (SPGame()->GetSPRenderer()->IsInFrustumAtScale(eScale, (pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin()).GetUnits(eScale), pBranch->m_oData.flGlobalRadius.GetUnits(eScale)))
+		if (pRenderer->IsInFrustumAtScale(eScale, vecDistanceToQuad.GetUnits(eScale), pBranch->m_oData.flGlobalRadius.GetUnits(eScale)))
 		{
 			m_apRenderBranches[eScale].push_back(pBranch);
 
