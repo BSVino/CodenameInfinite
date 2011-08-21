@@ -23,7 +23,7 @@ public:
 	void						DumpGLInfo();
 
 	virtual eastl::string		WindowTitle() { return "Tinker"; }
-	virtual tstring		AppDirectory() { return _T("Tinker"); }
+	virtual tstring				AppDirectory() { return _T("Tinker"); }
 
 	void						SwapBuffers();
 	float						GetTime();

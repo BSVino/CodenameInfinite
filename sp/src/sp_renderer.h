@@ -22,6 +22,8 @@ public:
 					CSPRenderer();
 
 public:
+	virtual void	LoadShaders();
+
 	virtual void	PreFrame();
 
 	virtual void	BuildScaleFrustums();

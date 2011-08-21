@@ -9,7 +9,7 @@
 
 #include <modelconverter/convmesh.h>
 #include <models/models.h>
-#include <shaders/shaders.h>
+#include <renderer/shaders.h>
 #include <tinker/application.h>
 #include <tinker/cvar.h>
 #include <tinker/profiler.h>
@@ -203,7 +203,7 @@ void CRenderingContext::RenderModel(size_t iModel, CModel* pCompilingModel)
 
 			if (m_pRenderer->ShouldUseShaders())
 			{
-				GLuint iProgram = (GLuint)CShaderLibrary::GetModelProgram();
+				GLuint iProgram = (GLuint)CShaderLibrary::GetProgram("model");
 				glUseProgram(iProgram);
 
 				GLuint bDiffuse = glGetUniformLocation(iProgram, "bDiffuse");
@@ -344,7 +344,7 @@ void CRenderingContext::RenderMeshInstance(CModel* pModel, CConversionScene* pSc
 
 			if (m_pRenderer->ShouldUseShaders())
 			{
-				GLuint iProgram = (GLuint)CShaderLibrary::GetModelProgram();
+				GLuint iProgram = (GLuint)CShaderLibrary::GetProgram("model");
 				glUseProgram(iProgram);
 
 				GLuint bDiffuse = glGetUniformLocation(iProgram, "bDiffuse");

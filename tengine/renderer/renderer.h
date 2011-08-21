@@ -46,7 +46,8 @@ public:
 					CRenderer(size_t iWidth, size_t iHeight);
 
 public:
-	virtual void	Initialize();
+	void			Initialize();
+	virtual void	LoadShaders() {};
 
 	CFrameBuffer	CreateFrameBuffer(size_t iWidth, size_t iHeight, bool bDepth, bool bLinear);
 

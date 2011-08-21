@@ -3,7 +3,7 @@
 #include <maths.h>
 #include <mtrand.h>
 #include <game/game.h>
-#include <shaders/shaders.h>
+#include <renderer/shaders.h>
 #include <tinker/cvar.h>
 #include <tinker/profiler.h>
 #include <models/models.h>
@@ -104,7 +104,7 @@ void CParticleSystemLibrary::Render()
 		CRenderingContext c(GameServer()->GetRenderer());
 		if (GameServer()->GetRenderer()->ShouldUseShaders())
 		{
-			c.UseProgram(CShaderLibrary::GetModelProgram());
+			c.UseProgram(CShaderLibrary::GetProgram("model"));
 			c.SetUniform("bDiffuse", true);
 			c.SetUniform("iDiffuse", 0);
 			c.SetUniform("bColorSwapInAlpha", false);
@@ -123,7 +123,7 @@ void CParticleSystemLibrary::Render()
 		CRenderingContext c(GameServer()->GetRenderer());
 		if (GameServer()->GetRenderer()->ShouldUseShaders())
 		{
-			c.UseProgram(CShaderLibrary::GetModelProgram());
+			c.UseProgram(CShaderLibrary::GetProgram("model"));
 			c.SetUniform("bDiffuse", true);
 			c.SetUniform("iDiffuse", 0);
 			c.SetUniform("bColorSwapInAlpha", false);

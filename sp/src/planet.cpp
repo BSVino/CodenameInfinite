@@ -6,6 +6,7 @@
 #include <tinker/cvar.h>
 #include <tinker/application.h>
 #include <tinker/profiler.h>
+#include <renderer/shaders.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"
@@ -364,6 +365,8 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	Vector vec3 = svec3.GetUnits(eRender);
 	Vector vec4 = svec4.GetUnits(eRender);
 
+	c->UseProgram(CShaderLibrary::GetProgram("planet"));
+	c->SetUniform("iDiffuse", 0);
 	c->BeginRenderQuads();
 	c->TexCoord(pBranch->m_vecMin);
 	c->Normal(pBranch->m_oData.vec1n);

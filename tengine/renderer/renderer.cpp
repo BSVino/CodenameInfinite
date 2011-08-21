@@ -9,7 +9,7 @@
 
 #include <modelconverter/convmesh.h>
 #include <models/models.h>
-#include <shaders/shaders.h>
+#include <renderer/shaders.h>
 #include <tinker/application.h>
 #include <tinker/cvar.h>
 #include <tinker/profiler.h>
@@ -54,17 +54,7 @@ CRenderer::CRenderer(size_t iWidth, size_t iHeight)
 
 	if (!HardwareSupportsShaders())
 		m_bUseShaders = false;
-	else
-		CShaderLibrary::CompileShaders();
-
-	if (!CShaderLibrary::IsCompiled())
-		m_bUseShaders = false;
 #endif
-
-	if (m_bUseShaders)
-		TMsg(_T("* Using shaders\n"));
-	if (m_bUseFramebuffers)
-		TMsg(_T("* Using framebuffers\n"));
 
 	SetSize(iWidth, iHeight);
 
@@ -78,6 +68,12 @@ CRenderer::CRenderer(size_t iWidth, size_t iHeight)
 
 void CRenderer::Initialize()
 {
+	if (ShouldUseShaders())
+	{
+		LoadShaders();
+		CShaderLibrary::CompileShaders();
+	}
+
 	if (ShouldUseFramebuffers())
 	{
 		m_oSceneBuffer = CreateFrameBuffer(m_iWidth, m_iHeight, true, true);
@@ -102,6 +98,14 @@ void CRenderer::Initialize()
 
 		CreateNoise();
 	}
+
+	if (!CShaderLibrary::IsCompiled())
+		m_bUseShaders = false;
+
+	if (m_bUseShaders)
+		TMsg(_T("* Using shaders\n"));
+	if (m_bUseFramebuffers)
+		TMsg(_T("* Using framebuffers\n"));
 }
 
 CFrameBuffer CRenderer::CreateFrameBuffer(size_t iWidth, size_t iHeight, bool bDepth, bool bLinear)
@@ -583,7 +587,7 @@ void CRenderer::RenderOffscreenBuffers()
 		TPROF("Bloom");
 
 		// Use a bright-pass filter to catch only the bright areas of the image
-		GLuint iBrightPass = (GLuint)CShaderLibrary::GetBrightPassProgram();
+		GLuint iBrightPass = (GLuint)CShaderLibrary::GetProgram("brightpass");
 		UseProgram(iBrightPass);
 
 		GLint iSource = glGetUniformLocation(iBrightPass, "iSource");
@@ -682,7 +686,7 @@ float aflKernel[KERNEL_SIZE] = { 0.3125f, 0.375f, 0.3125f };
 
 void CRenderer::RenderBloomPass(CFrameBuffer* apSources, CFrameBuffer* apTargets, bool bHorizontal)
 {
-	GLuint iBlur = (GLuint)CShaderLibrary::GetBlurProgram();
+	GLuint iBlur = (GLuint)CShaderLibrary::GetProgram("blur");
 	UseProgram(iBlur);
 
 	GLint iSource = glGetUniformLocation(iBlur, "iSource");
@@ -840,7 +844,7 @@ void CRenderer::RenderBatches()
 	GLuint iProgram = 0;
 	if (ShouldUseShaders())
 	{
-		iProgram = (GLuint)CShaderLibrary::GetModelProgram();
+		iProgram = (GLuint)CShaderLibrary::GetProgram("model");
 		glUseProgram(iProgram);
 
 		GLuint bDiffuse = glGetUniformLocation(iProgram, "bDiffuse");

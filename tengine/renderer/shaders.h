@@ -3,15 +3,23 @@
 
 #include <EASTL/vector.h>
 #include <EASTL/string.h>
+#include <EASTL/map.h>
+
+#include <tstring.h>
 
 class CShader
 {
 public:
-							CShader(const char* pszVS, const char* pszFS);
+							CShader(const tstring& sName, const tstring& sVertexFile, const tstring& sFragmentFile);
 
 public:
-	eastl::string			m_sVS;
-	eastl::string			m_sFS;
+	bool					Compile();
+	void					Destroy();
+
+public:
+	eastl::string			m_sName;
+	eastl::string			m_sVertexFile;
+	eastl::string			m_sFragmentFile;
 	size_t					m_iVShader;
 	size_t					m_iFShader;
 	size_t					m_iProgram;
@@ -19,6 +27,8 @@ public:
 
 class CShaderLibrary
 {
+	friend class CShader;
+
 public:
 							CShaderLibrary();
 							~CShaderLibrary();
@@ -26,48 +36,16 @@ public:
 public:
 	size_t					GetNumShaders() { return m_aShaders.size(); };
 
-	void					AddShaders();
-	size_t					AddShader(const char* pszVS, const char* pszFS);
+	CShader*				GetShader(const tstring& sName);
 	CShader*				GetShader(size_t i);
 
 public:
+	static void				AddShader(const tstring& sName, const tstring& sVertex, const tstring& sFragment);
+
+	static size_t			GetProgram(const tstring& sName);
 	static size_t			GetProgram(size_t iProgram);
 
 	static const char*		GetVSPassShader();
-
-	static const char*		GetVSTerrainShader();
-	static const char*		GetFSTerrainShader();
-	static size_t			GetTerrainProgram() { return GetProgram(Get()->m_iTerrain); };
-
-	static const char*		GetVSModelShader();
-	static const char*		GetFSModelShader();
-	static size_t			GetModelProgram() { return GetProgram(Get()->m_iModel); };
-
-	static const char*		GetVSPropShader();
-	static const char*		GetFSPropShader();
-	static size_t			GetPropProgram() { return GetProgram(Get()->m_iProp); };
-
-	static const char*		GetVSScrollingTextureShader();
-	static const char*		GetFSScrollingTextureShader();
-	static size_t			GetScrollingTextureProgram() { return GetProgram(Get()->m_iScrollingTexture); };
-
-	static const char*		GetFSExplosionShader();
-	static size_t			GetExplosionProgram() { return GetProgram(Get()->m_iExplosion); };
-
-	static const char*		GetFSBlurShader();
-	static size_t			GetBlurProgram() { return GetProgram(Get()->m_iBlur); };
-
-	static const char*		GetFSBrightPassShader();
-	static size_t			GetBrightPassProgram() { return GetProgram(Get()->m_iBrightPass); };
-
-	static const char*		GetFSDarkenShader();
-	static size_t			GetDarkenProgram() { return GetProgram(Get()->m_iDarken); };
-
-	static const char*		GetFSStencilShader();
-	static size_t			GetStencilProgram() { return GetProgram(Get()->m_iStencil); };
-
-	static const char*		GetFSCameraGuidedShader();
-	static size_t			GetCameraGuidedProgram() { return GetProgram(Get()->m_iCameraGuided); };
 
 	static void				CompileShaders();
 	static void				DestroyShaders();
@@ -77,13 +55,11 @@ public:
 	static CShaderLibrary*	Get() { return s_pShaderLibrary; };
 
 protected:
-	bool					CompileShader(size_t iShader);
-	void					DestroyShader(size_t iShader);
-
 	void					ClearLog();
 	void					WriteLog(const char* pszLog, const char* pszShaderText);
 
 protected:
+	eastl::map<tstring, size_t>	m_aShaderNames;
 	eastl::vector<CShader>	m_aShaders;
 	bool					m_bCompiled;
 

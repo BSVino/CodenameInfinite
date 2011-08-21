@@ -8,7 +8,7 @@
 #include <tinker/cvar.h>
 #include <models/texturelibrary.h>
 #include <game/gameserver.h>
-#include <shaders/shaders.h>
+#include <renderer/shaders.h>
 #include <tinker/profiler.h>
 
 #include "sp_window.h"
@@ -25,6 +25,14 @@ CSPRenderer::CSPRenderer()
 	SetSkybox(iSkybox, iSkybox, iSkybox, iSkybox, iSkybox, iSkybox);
 
 	m_eRenderingScale = SCALE_NONE;
+}
+
+void CSPRenderer::LoadShaders()
+{
+	CShaderLibrary::AddShader("planet", "planet", "planet");
+	CShaderLibrary::AddShader("brightpass", "pass", "brightpass");
+	CShaderLibrary::AddShader("model", "pass", "model");
+	CShaderLibrary::AddShader("blur", "pass", "blur");
 }
 
 void CSPRenderer::PreFrame()

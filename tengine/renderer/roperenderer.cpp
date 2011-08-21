@@ -9,7 +9,7 @@
 
 #include <modelconverter/convmesh.h>
 #include <models/models.h>
-#include <shaders/shaders.h>
+#include <renderer/shaders.h>
 #include <tinker/application.h>
 #include <tinker/cvar.h>
 #include <tinker/profiler.h>

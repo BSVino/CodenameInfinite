@@ -5,7 +5,7 @@
 
 #include <game/baseentity.h>
 #include <models/models.h>
-#include <shaders/shaders.h>
+#include <renderer/shaders.h>
 #include <game/game.h>
 
 #include "renderer.h"
@@ -202,7 +202,7 @@ void CModelDissolver::Render()
 	c.SetColor(Color(255, 255, 255, 255));
 	if (pRenderer->ShouldUseShaders())
 	{
-		c.UseProgram(CShaderLibrary::GetModelProgram());
+		c.UseProgram(CShaderLibrary::GetProgram("model"));
 		c.SetUniform("bDiffuse", true);
 		c.SetUniform("iDiffuse", 0);
 	}
