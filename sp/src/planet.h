@@ -15,14 +15,15 @@ public:
 		flLastScreenUpdate = -1;
 		iShouldRenderLastFrame = ~0;
 		iRenderVectorsLastFrame = ~0;
+		flRadiusMeters = 0;
 	}
 
 public:
 	float				flHeight;
 	bool				bRender;
 	float				flScreenSize;
-	CScalableFloat		flQuadDistance;
-	CScalableFloat		flQuadRadius;
+	CScalableFloat		flGlobalRadius;
+	float				flRadiusMeters;
 	float				flLastScreenUpdate;
 	size_t				iShouldRenderLastFrame;
 	bool				bShouldRender;

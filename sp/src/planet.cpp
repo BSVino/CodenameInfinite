@@ -292,7 +292,7 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 	{
 		scale_t eScale = (scale_t)(i+1);
 
-		if (SPGame()->GetSPRenderer()->IsInFrustumAtScale(eScale, (pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin()).GetUnits(eScale), pBranch->m_oData.flQuadRadius.GetUnits(eScale)))
+		if (SPGame()->GetSPRenderer()->IsInFrustumAtScale(eScale, (pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin()).GetUnits(eScale), pBranch->m_oData.flGlobalRadius.GetUnits(eScale)))
 		{
 			m_apRenderBranches[eScale].push_back(pBranch);
 
@@ -421,20 +421,14 @@ void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 
 		CScalableVector vecQuadCenter = pBranch->m_oData.vecGlobalQuadCenter - vecCharacterOrigin;
 		CScalableVector vecQuadMax = mPlanet * CScalableVector(QuadTreeToWorld(this, pBranch->m_vecMax), m_pPlanet->GetScale()) - vecCharacterOrigin;
+		CScalableFloat flRadius = (vecQuadCenter-vecQuadMax).Length();
 
 		Vector vecScreen = pRenderer->ScreenPositionAtScale(m_pPlanet->GetScale(), vecQuadCenter.GetUnits(m_pPlanet->GetScale()));
-
-		CScalableFloat flRadius = (vecQuadCenter-vecQuadMax).Length();
 		Vector vecTop = pRenderer->ScreenPositionAtScale(m_pPlanet->GetScale(), (vecQuadCenter + vecUp*flRadius).GetUnits(m_pPlanet->GetScale()));
-
-		CScalableVector vecPlayer = SPGame()->GetSPCamera()->GetCameraScalablePosition();
-
 		float flWidth = (vecTop - vecScreen).Length()*2;
-		CScalableFloat flDistance = (vecQuadCenter - vecPlayer).Length();
 
 		pBranch->m_oData.flScreenSize = flWidth;
-		pBranch->m_oData.flQuadDistance = flDistance;
-		pBranch->m_oData.flQuadRadius = flRadius;
+		pBranch->m_oData.flGlobalRadius = flRadius;
 		pBranch->m_oData.flLastScreenUpdate = GameServer()->GetGameTime();
 	}
 }
@@ -456,12 +450,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 
 	CalcRenderVectors(pBranch);
 
-	CScalableVector vecQuadCenter(pBranch->GetCenter(), m_pPlanet->GetScale());
-	CalcRenderVectors(pBranch);
-	CScalableVector vecQuadMax(pBranch->m_oData.vec3, m_pPlanet->GetScale());
-
-	CScalableFloat flRadius = (vecQuadCenter - vecQuadMax).Length();
-	if (flRadius.GetUnits(SCALE_METER) < r_terrainresolution.GetFloat())
+	if (pBranch->m_oData.flRadiusMeters < r_terrainresolution.GetFloat())
 		return false;
 
 	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
@@ -488,7 +477,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 		CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
 
 		Vector vecPlanetCenterUnscaled = vecPlanetCenter.GetUnits(m_pPlanet->GetScale());
-		float flRadiusUnscaled = flRadius.GetUnits(m_pPlanet->GetScale());
+		float flRadiusUnscaled = CScalableFloat(pBranch->m_oData.flRadiusMeters, SCALE_METER).GetUnits(m_pPlanet->GetScale());
 
 		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(m_pPlanet->GetScale(), vecPlanetCenterUnscaled, flRadiusUnscaled))
 			return false;
@@ -500,18 +489,27 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 
 void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
 {
+	if (pBranch->m_oData.flRadiusMeters == 0)
+	{
+		pBranch->m_oData.vec1 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMin);
+		pBranch->m_oData.vec2 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+		pBranch->m_oData.vec3 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMax);
+		pBranch->m_oData.vec4 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+
+		pBranch->m_oData.vec1n = Vector(pBranch->m_oData.vec1).Normalized();
+		pBranch->m_oData.vec2n = Vector(pBranch->m_oData.vec2).Normalized();
+		pBranch->m_oData.vec3n = Vector(pBranch->m_oData.vec3).Normalized();
+		pBranch->m_oData.vec4n = Vector(pBranch->m_oData.vec4).Normalized();
+
+		CScalableVector vecQuadCenter(pBranch->GetCenter(), m_pPlanet->GetScale());
+		CScalableVector vecQuadMax(pBranch->m_oData.vec3, m_pPlanet->GetScale());
+
+		CScalableFloat flRadius = (vecQuadCenter - vecQuadMax).Length();
+		pBranch->m_oData.flRadiusMeters = flRadius.GetUnits(SCALE_METER);
+	}
+
 	if (pBranch->m_oData.iRenderVectorsLastFrame == GameServer()->GetFrame())
 		return;
-
-	pBranch->m_oData.vec1 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMin);
-	pBranch->m_oData.vec2 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
-	pBranch->m_oData.vec3 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMax);
-	pBranch->m_oData.vec4 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
-
-	pBranch->m_oData.vec1n = Vector(pBranch->m_oData.vec1).Normalized();
-	pBranch->m_oData.vec2n = Vector(pBranch->m_oData.vec2).Normalized();
-	pBranch->m_oData.vec3n = Vector(pBranch->m_oData.vec3).Normalized();
-	pBranch->m_oData.vec4n = Vector(pBranch->m_oData.vec4).Normalized();
 
 	pBranch->m_oData.iRenderVectorsLastFrame = GameServer()->GetFrame();
 
