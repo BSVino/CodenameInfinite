@@ -178,8 +178,9 @@ void CSPRenderer::SetupLighting()
 		return;
 
 	CStar* pStar = m_hClosestStar;
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
-	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(pStar->GetScalableRenderOrigin().GetUnits(m_eRenderingScale)) + Vector4D(0,0,0,1));
+	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(0, 0, 0, 1));
 	glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
 	glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
@@ -289,4 +290,9 @@ Vector CSPRenderer::WorldPositionAtScale(scale_t eRenderScale, const Vector& vec
 		(GLdouble*)m_aiScaleModelViews[eRenderScale], (GLdouble*)m_aiScaleProjections[eRenderScale], (GLint*)m_aiScaleViewports[eRenderScale],
 		&x, &y, &z);
 	return Vector((float)x, (float)y, (float)z);
+}
+
+CStar* CSPRenderer::GetClosestStar() const
+{
+	return m_hClosestStar;
 }

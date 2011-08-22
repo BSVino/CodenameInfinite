@@ -513,6 +513,7 @@ class Vector4D
 public:
 				Vector4D();
 				Vector4D(const Vector& v);
+				Vector4D(const Vector& v, float w);
 				Vector4D(const class Color& c);
 				Vector4D(float x, float y, float z, float w);
 
@@ -537,6 +538,11 @@ inline Vector4D::Vector4D()
 
 inline Vector4D::Vector4D(const Vector& v)
 	: x(v.x), y(v.y), z(v.z), w(0)
+{
+}
+
+inline Vector4D::Vector4D(const Vector& v, float W)
+	: x(v.x), y(v.y), z(v.z), w(W)
 {
 }
 

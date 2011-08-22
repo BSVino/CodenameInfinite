@@ -48,8 +48,10 @@ void CSPCharacter::Think()
 	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
 	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
 
+#ifndef _DEBUG
 	if (m_bHyperdrive)
 		m_vecMoveVelocity.y = m_vecMoveVelocity.z = 0;
+#endif
 
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{

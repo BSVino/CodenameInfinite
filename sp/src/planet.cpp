@@ -12,6 +12,7 @@
 #include "sp_renderer.h"
 #include "sp_camera.h"
 #include "sp_character.h"
+#include "star.h"
 
 REGISTER_ENTITY(CPlanet);
 
@@ -152,10 +153,21 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
+	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableMatrix mPlanetToLocal = GetGlobalScalableTransform();
+	mPlanetToLocal.InvertTR();
+
+	Vector vecStarLightPosition = (mPlanetToLocal.TransformNoTranslate(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
+
 	CRenderingContext c(GameServer()->GetRenderer());
 
 	c.SetBackCulling(false);	// Ideally this would be on but it's not a big deal.
 	c.BindTexture("textures/planet.png");
+
+	c.UseProgram(CShaderLibrary::GetProgram("planet"));
+	c.SetUniform("iDiffuse", 0);
+	c.SetUniform("vecStarLightPosition", vecStarLightPosition);
 
 	if (r_colorcodescales.GetBool())
 	{
@@ -365,8 +377,6 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	Vector vec3 = svec3.GetUnits(eRender);
 	Vector vec4 = svec4.GetUnits(eRender);
 
-	c->UseProgram(CShaderLibrary::GetProgram("planet"));
-	c->SetUniform("iDiffuse", 0);
 	c->BeginRenderQuads();
 	c->TexCoord(pBranch->m_vecMin);
 	c->Normal(pBranch->m_oData.vec1n);

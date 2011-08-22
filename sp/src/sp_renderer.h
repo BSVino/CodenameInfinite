@@ -40,6 +40,8 @@ public:
 	Vector			ScreenPositionAtScale(scale_t eRenderScale, const Vector& vecWorld);
 	Vector			WorldPositionAtScale(scale_t eRenderScale, const Vector& vecScreen);
 
+	class CStar*	GetClosestStar() const;
+
 protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 
