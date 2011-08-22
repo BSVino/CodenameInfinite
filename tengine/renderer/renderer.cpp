@@ -580,9 +580,11 @@ void CRenderer::FinishFrame()
 	glPopAttrib();
 }
 
+CVar r_bloom("r_bloom", "1");
+
 void CRenderer::RenderOffscreenBuffers()
 {
-	if (ShouldUseFramebuffers() && ShouldUseShaders())
+	if (ShouldUseFramebuffers() && ShouldUseShaders() && r_bloom.GetBool())
 	{
 		TPROF("Bloom");
 
@@ -620,7 +622,7 @@ void CRenderer::RenderFullscreenBuffers()
 
 	glEnable(GL_BLEND);
 
-	if (ShouldUseFramebuffers())
+	if (ShouldUseFramebuffers() && r_bloom.GetBool())
 	{
 		glBlendFunc(GL_ONE, GL_ONE);
 		for (size_t i = 0; i < BLOOM_FILTERS; i++)
