@@ -60,6 +60,7 @@ public:
 	virtual void	SetupFrame();
 	virtual void	DrawBackground();
 	virtual void	DrawSkybox();
+	virtual void	ModifySkyboxContext(class CRenderingContext* c) {};
 	virtual void	StartRendering();
 	virtual void	FinishRendering();
 	virtual void	FinishFrame();

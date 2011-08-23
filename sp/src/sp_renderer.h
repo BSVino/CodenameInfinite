@@ -30,6 +30,7 @@ public:
 	virtual void	StartRendering();
 	virtual void	SetupLighting();
 	virtual void	DrawSkybox();
+	virtual void	ModifySkyboxContext(class CRenderingContext* c);
 	virtual void	FinishRendering();
 
 	void			RenderScale(scale_t eRenderScale);

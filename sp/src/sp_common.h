@@ -75,6 +75,12 @@ inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFlo
 	return (((flInput-flInLo) / (flInHi-flInLo)) * (flOutHi-flOutLo)) + flOutLo;
 }
 
+inline float RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, float flOutLo, float flOutHi)
+{
+	CScalableFloat f = ((flInput-flInLo) / (flInHi-flInLo));
+	return (f.GetUnits(SCALE_METER) * (flOutHi-flOutLo)) + flOutLo;
+}
+
 class CScalableVector
 {
 	friend class CScalableMatrix;

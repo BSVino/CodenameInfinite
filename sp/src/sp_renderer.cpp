@@ -9,6 +9,7 @@
 #include <models/texturelibrary.h>
 #include <game/gameserver.h>
 #include <renderer/shaders.h>
+#include <renderer/renderingcontext.h>
 #include <tinker/profiler.h>
 
 #include "sp_window.h"
@@ -30,6 +31,7 @@ CSPRenderer::CSPRenderer()
 void CSPRenderer::LoadShaders()
 {
 	CShaderLibrary::AddShader("planet", "planet", "planet");
+	CShaderLibrary::AddShader("skybox", "skybox", "skybox");
 	CShaderLibrary::AddShader("brightpass", "pass", "brightpass");
 	CShaderLibrary::AddShader("model", "pass", "model");
 	CShaderLibrary::AddShader("blur", "pass", "blur");
@@ -182,7 +184,7 @@ void CSPRenderer::SetupLighting()
 
 	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(0, 0, 0, 1));
 	glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(Color(255, 242, 143)));
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(pStar->GetLightColor()));
 	glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
 	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, r_star_constant_attenuation.GetFloat());
 	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, r_star_linear_attenuation.GetFloat());
@@ -194,6 +196,34 @@ void CSPRenderer::DrawSkybox()
 	m_eRenderingScale = SCALE_METER;
 	BaseClass::DrawSkybox();
 	m_eRenderingScale = SCALE_NONE;
+}
+
+void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
+{
+	c->UseProgram("skybox");
+
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	if (!pCharacter)
+		c->SetUniform("flAtmosphere", 0.0f);
+	else
+	{
+		CPlanet* pPlanet = pCharacter->GetNearestPlanet();
+		if (pPlanet)
+		{
+			CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - pCharacter->GetGlobalScalableOrigin()).Length() - pPlanet->GetRadius();
+			float flAtmosphere = RemapVal(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1, 0);
+			c->SetUniform("flAtmosphere", flAtmosphere);
+			c->SetUniform("vecUp", pCharacter->GetUpVector());
+			c->SetUniform("clrSky", pPlanet->GetAtmosphereColor());
+			if (GetClosestStar())
+			{
+				c->SetUniform("vecStar", GetClosestStar()->GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
+				c->SetUniform("clrStar", GetClosestStar()->GetLightColor());
+			}
+		}
+		else
+			c->SetUniform("flAtmosphere", 0.0f);
+	}
 }
 
 void CSPRenderer::FinishRendering()

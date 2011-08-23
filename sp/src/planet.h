@@ -115,6 +115,9 @@ public:
 	void						SetPlanetName(const tstring& sName) { m_sPlanetName = sName; }
 	tstring						GetPlanetName() const { return m_sPlanetName; }
 
+	void						SetAtmosphereColor(const Color& clrAtmosphere) { m_clrAtmosphere = clrAtmosphere; }
+	Color						GetAtmosphereColor() const { return m_clrAtmosphere; }
+
 	int							GetMinQuadRenderDepth() { return m_iMinQuadRenderDepth; };
 
 	CScalableFloat				GetCloseOrbit();
@@ -132,6 +135,7 @@ protected:
 	bool						m_bOneSurface;
 
 	tstring						m_sPlanetName;
+	Color						m_clrAtmosphere;
 
 	union
 	{

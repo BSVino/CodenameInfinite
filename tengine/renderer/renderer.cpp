@@ -359,6 +359,8 @@ void CRenderer::DrawSkybox()
 
 	if (true)
 	{
+		CRenderingContext c(this);
+
 		glPushAttrib(GL_CURRENT_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
 		glPushMatrix();
 		glTranslatef(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z);
@@ -369,6 +371,8 @@ void CRenderer::DrawSkybox()
 		if (GLEW_ARB_multitexture || GLEW_VERSION_1_3)
 			glActiveTexture(GL_TEXTURE0);
 		glEnable(GL_TEXTURE_2D);
+
+		ModifySkyboxContext(&c);
 
 		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 

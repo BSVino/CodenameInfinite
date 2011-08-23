@@ -453,6 +453,17 @@ void CRenderingContext::UseProgram(size_t iProgram)
 	glUseProgram((GLuint)iProgram);
 }
 
+void CRenderingContext::UseProgram(const tstring& sProgram)
+{
+	TAssert(m_pRenderer->ShouldUseShaders());
+
+	if (!m_pRenderer->ShouldUseShaders())
+		return;
+
+	m_iProgram = CShaderLibrary::GetProgram(sProgram);
+	glUseProgram((GLuint)m_iProgram);
+}
+
 void CRenderingContext::SetUniform(const char* pszName, int iValue)
 {
 	TAssert(m_pRenderer->ShouldUseShaders());

@@ -43,6 +43,7 @@ public:
 
 	void		UseFrameBuffer(const class CFrameBuffer* pBuffer);
 	void		UseProgram(size_t iProgram);
+	void		UseProgram(const tstring& sProgram);
 	void		SetUniform(const char* pszName, int iValue);
 	void		SetUniform(const char* pszName, float flValue);
 	void		SetUniform(const char* pszName, const Vector& vecValue);

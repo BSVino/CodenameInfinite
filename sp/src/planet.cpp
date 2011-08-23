@@ -26,6 +26,7 @@ SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iMinQuadRenderDepth);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bOneSurface);
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sPlanetName);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Color, m_clrAtmosphere);
 	SAVEDATA_OMIT(m_pTerrainFd);
 	SAVEDATA_OMIT(m_pTerrainBk);
 	SAVEDATA_OMIT(m_pTerrainRt);
@@ -77,13 +78,15 @@ void CPlanet::Spawn()
 
 CVar r_planet_onesurface("r_planet_onesurface", "off");
 
+CVar planet_rotscale("planet_rotscale", "1");
+
 void CPlanet::Think()
 {
 	TPROF("CPlanet::Think");
 
 	BaseClass::Think();
 
-	SetLocalScalableAngles(GetLocalScalableAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution));
+	SetLocalScalableAngles(GetLocalScalableAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
 
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
