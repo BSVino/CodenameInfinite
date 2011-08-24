@@ -283,10 +283,10 @@ float CSPCharacter::CharacterSpeed()
 		CScalableVector vecOrigin = GetGlobalScalableOrigin();
 		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - vecOrigin).Length();
 		flSpeed = RemapValClamped(
-			flDistance.GetUnits(SCALE_KILOMETER),
-			(pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_KILOMETER),
-			(pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_KILOMETER),
-			200.0f, 80000);
+			(float)flDistance.GetUnits(SCALE_KILOMETER),
+			(float)(pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_KILOMETER),
+			(float)(pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_KILOMETER),
+			200.0f, 80000.0f);
 	}
 
 	return flSpeed;

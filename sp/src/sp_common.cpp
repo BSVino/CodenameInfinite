@@ -3,94 +3,25 @@
 #include <matrix.h>
 #include <tstring.h>
 
+#ifdef _DEBUG
+#define SANITY_CHECK 1
+#endif
+
+#if SANITY_CHECK == 1
+#define CHECKSANITY(f) (f).CheckSanity();
+#else
+#define CHECKSANITY(f)
+#endif
+
 CScalableFloat::CScalableFloat()
 {
-	memset(&m_aflScaleStack[0], 0, SCALESTACK_SIZE*sizeof(float));
-	m_bZero = false;
+	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
+	m_bZero = true;
 }
 
 CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 {
-	memset(&m_aflScaleStack[0], 0, SCALESTACK_SIZE*sizeof(float));
-
-	int i = SCALESTACK_INDEX(eScale);
-	m_aflScaleStack[i] = flUnits;
-	m_bPositive = (flUnits > 0);
-	m_bZero = (flUnits == 0);
-}
-
-static float g_aflValueExponents[] = 
-{
-	1000.0f,
-	1000000.0f,
-	1000000000.0f,
-	1000000000000.0f,
-	1000000000000000.0f,
-};
-
-static float g_aflPowNeg2Exponents[] = 
-{
-	1.0f,
-	0.5f,
-	0.25f,
-	0.125f,
-	0.0625f,
-	0.03125f,
-	0.015625f,
-	0.0078125f,
-	0.00390625f,
-	0.001953125f,
-	0.0009765625f,
-	0.00048828125f,
-	0.000244140625f,
-	0.0001220703125f,
-	6.103515625E-5f,
-	3.0517578125E-5f,
-	1.52587890625E-5f,
-	7.62939453125E-6f,
-	3.814697265625E-6f,
-	1.9073486328125E-6f,
-	9.5367431640625E-7f,
-	4.7683715820312E-7f,
-	2.3841857910156E-7f,
-	1.1920928955078E-7f,
-	5.9604644775391E-8f,
-	2.9802322387695E-8f,
-	1.4901161193848E-8f,
-	7.4505805969238E-9f,
-	3.7252902984619E-9f,
-	1.862645149231E-9f,
-	9.3132257461548E-10f,
-	4.6566128730774E-10f,
-	2.3283064365387E-10f,
-	1.1641532182693E-10f,
-	5.8207660913467E-11f,
-	2.9103830456734E-11f,
-	1.4551915228367E-11f,
-	7.2759576141834E-12f,
-	3.6379788070917E-12f,
-	1.8189894035459E-12f,
-	9.0949470177293E-13f,
-	4.5474735088646E-13f,
-	2.2737367544323E-13f,
-	1.1368683772162E-13f,
-	5.6843418860808E-14f,
-	2.8421709430404E-14f,
-	1.4210854715202E-14f,
-	7.105427357601E-15f,
-	3.5527136788005E-15f,
-	1.7763568394003E-15f,
-	8.8817841970013E-16f,
-	4.4408920985006E-16f,
-	2.2204460492503E-16f,
-};
-
-typedef unsigned long long tlong;
-CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
-{
-	memset(&m_aflScaleStack[0], 0, SCALESTACK_SIZE*sizeof(float));
-
-	tlong l = *(tlong*)((double*)&flUnits);
+	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
 
 	if (flUnits == 0)
 	{
@@ -100,127 +31,128 @@ CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 
 	m_bZero = false;
 
-	// We need to preserve the precision of the double, so we need to split it up.
-	// If we have a double like 1.234567890123456Gm then we need to make it into
-	// 1.234Gm 5.678Mm 9.012Km and 3.456m. The best way to do that is to break into
-	// the IEEE double precision floating point standard, parse the data there, and
-	// split it up into different scales for our scalable float. Since the floats
-	// are stored in binary we won't quite get those perfect 4-digit number splits
-	// but in the end it should all add back up to the original number.
-
-	TAssert(sizeof(double) == 8);
-
-#ifdef _DEBUG
-	// Test to make sure we're dealing with IEEE 64 bit doubles
-	tlong iTest = 0x3FF0000000000000;
-	TAssert(*(double*)(&iTest) == 1.0);
-
-	iTest = 0x4000000000000000;
-	TAssert(*(double*)(&iTest) == 2.0);
-
-	iTest = 0xc000000000000000;
-	TAssert(*(double*)(&iTest) == -2.0);
-#endif
-
-	// IEEE double layout is 1 sign bit, 11 exponent bits, and 52 fraction bits. One for each card in the deck.
-	// value = -sign * 1.fraction * 2^(exponent-1023)
-	// The fraction is in base 2.
-	const int iFB = 52;
-
-	bool bSign = !!(l & ((tlong)1<<63));
-	int iExponent = ((tlong)(l & ((tlong)0x7ff << iFB)) >> iFB) - 1023;
-	tlong iFraction = (tlong)(l & ((tlong)0xfffffffffffff)); // The last 52 bits.
-
-	TAssert( iExponent <= 1023 && iExponent >= -1022 );
-
-	float flExponent;
-	if (iExponent > 0)
-		flExponent = (float)((tlong)1<<iExponent);
-	else if (-iExponent <= sizeof(g_aflPowNeg2Exponents)/sizeof(g_aflPowNeg2Exponents[0]))
-		flExponent = g_aflPowNeg2Exponents[-iExponent];
-	else
-		flExponent = pow(2.0f, iExponent);
-
-	// If exponent is 0 and the value isn't 0 then we have a subnormal float which is not allowed.
-	TAssert(((tlong)(l & ((tlong)0x7ff << iFB)) >> iFB) != 0);
-
-	// If exponent is 0x7ff (all 1's) we have infinity or NaN and we don't allow either.
-	TAssert(((tlong)(l & ((tlong)0x7ff << iFB)) >> iFB) != 0x7ff);
-
-	TAssert(iFB <= sizeof(g_aflPowNeg2Exponents)/sizeof(g_aflPowNeg2Exponents[0]));
-
-	int iSign = bSign?-1:1;
-	int iDigits = 7;
-	int iRemaining = iFB - iDigits;
-
-	// Add the 1 for the first part since it's 1.fraction but cut off all other digits that won't fit in a 32 bit floating point.
-	long iFirst = (long)((iFraction + ((tlong)1 << iFB)) >> iRemaining) * iSign;
-	// value = iFirst * 2^exponent * 2^-(52-remaining)
-	float flFirst = ((float)iFirst) * flExponent * g_aflPowNeg2Exponents[iFB-iRemaining];
-
-	int iScale = SCALESTACK_INDEX(eScale);
-
-	while (flFirst < 1 && flFirst > 0 && iScale > 0)
-	{
-		iScale--;
-		flFirst *= 1000;
-		flExponent *= 1000;
-	}
-
-	while (flFirst > -1 && flFirst < 0 && iScale > 0)
-	{
-		iScale--;
-		flFirst *= 1000;
-		flExponent *= 1000;
-	}
-
-	m_aflScaleStack[iScale--] = flFirst;
-
-	for (size_t i = 0; i < 4; i++)
-	{
-		if (iScale < 0)
-			break;
-
-		// Take the next few digits.
-		if (iScale == 0 || i == 3)
-		{
-			iDigits = iRemaining;
-			if (iDigits >= sizeof(long)*8)
-				iDigits = sizeof(long)*8-1;
-		}
-		else
-			iDigits = (i%2)?11:10;
-
-		if (iDigits > iRemaining)
-			iDigits = iRemaining;
-
-		tlong iMask = ((tlong)1<<iDigits)-1;
-		iRemaining -= iDigits;
-
-		TAssert(iDigits <= sizeof(long)*8);
-
-		long iValue = (long)((iFraction & (iMask << iRemaining)) >> iRemaining) * iSign;
-		float flValue = ((float)iValue) * flExponent * g_aflPowNeg2Exponents[iFB-iRemaining];
-
-		m_aflScaleStack[iScale--] = flValue * g_aflValueExponents[i];
-
-		if (iScale < 0)
-			break;
-		if (iRemaining <= 0)
-			break;
-	}
-
+	int i = SCALESTACK_INDEX(eScale);
 	m_bPositive = (flUnits > 0);
+
+	if (m_bPositive)
+	{
+		while (flUnits < 1)
+		{
+			flUnits *= 1000;
+			i--;
+		}
+
+		while (flUnits > 1000)
+		{
+			flUnits /= 1000;
+			i++;
+		}
+
+		while (flUnits > 0 && i >= 0)
+		{
+			m_aiScaleStack[i] = (short)flUnits;
+			flUnits -= m_aiScaleStack[i];
+			flUnits *= 1000;
+			i--;
+		}
+	}
+	else
+	{
+		while (flUnits > -1)
+		{
+			flUnits *= 1000;
+			i--;
+		}
+
+		while (flUnits < -1000)
+		{
+			flUnits /= 1000;
+			i++;
+		}
+
+		while (flUnits < 0 && i >= 0)
+		{
+			m_aiScaleStack[i] = (short)flUnits;
+			flUnits -= m_aiScaleStack[i];
+			flUnits *= 1000;
+			i--;
+		}
+	}
+
+	CHECKSANITY(*this);
 }
 
-float CScalableFloat::GetUnits(scale_t eScale) const
+CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
+{
+	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
+
+	if (flUnits == 0)
+	{
+		m_bZero = true;
+		return;
+	}
+
+	m_bZero = false;
+
+	int i = SCALESTACK_INDEX(eScale);
+	m_bPositive = (flUnits > 0);
+
+	if (m_bPositive)
+	{
+		while (flUnits < 1)
+		{
+			flUnits *= 1000;
+			i--;
+		}
+
+		while (flUnits > 1000)
+		{
+			flUnits /= 1000;
+			i++;
+		}
+
+		while (flUnits > 0 && i >= 0)
+		{
+			m_aiScaleStack[i] = (short)flUnits;
+			flUnits -= m_aiScaleStack[i];
+			flUnits *= 1000;
+			i--;
+		}
+	}
+	else
+	{
+		while (flUnits > -1)
+		{
+			flUnits *= 1000;
+			i--;
+		}
+
+		while (flUnits < -1000)
+		{
+			flUnits /= 1000;
+			i++;
+		}
+
+		while (flUnits < 0 && i >= 0)
+		{
+			m_aiScaleStack[i] = (short)flUnits;
+			flUnits -= m_aiScaleStack[i];
+			flUnits *= 1000;
+			i--;
+		}
+	}
+
+	CHECKSANITY(*this);
+}
+
+double CScalableFloat::GetUnits(scale_t eScale) const
 {
 	if (m_bZero)
 		return 0;
 
-	float flResult = 0;
+	double flResult = 0;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flResult += ConvertUnits(m_aflScaleStack[i], (scale_t)(i+1), eScale);
+		flResult += ConvertUnits(m_aiScaleStack[i], (scale_t)(i+1), eScale);
 
 	return flResult;
 }
@@ -232,7 +164,7 @@ bool CScalableFloat::IsZero() const
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
-		if (m_aflScaleStack[i] != 0)
+		if (m_aiScaleStack[i] != 0)
 			return false;
 	}
 
@@ -246,7 +178,7 @@ bool CScalableFloat::IsZero()
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
-		if (m_aflScaleStack[i] != 0)
+		if (m_aiScaleStack[i] != 0)
 			return false;
 	}
 
@@ -259,32 +191,109 @@ CScalableFloat CScalableFloat::operator-() const
 	CScalableFloat f;
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		f.m_aflScaleStack[i] = -m_aflScaleStack[i];
+		f.m_aiScaleStack[i] = -m_aiScaleStack[i];
 
 	f.m_bPositive = !m_bPositive;
-	f.m_bZero = false;
+	f.m_bZero = m_bZero;
+
+	CHECKSANITY(f);
 
 	return f;
 }
 
-CScalableFloat CScalableFloat::operator+(const CScalableFloat& u) const
+CScalableFloat CScalableFloat::AddSimilar(const CScalableFloat& u) const
 {
+	TAssert(m_bPositive == u.m_bPositive);
+
 	CScalableFloat flReturn;
-
+	flReturn.m_bPositive = m_bPositive;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] + u.m_aflScaleStack[i];
+	{
+		flReturn.m_aiScaleStack[i] += m_aiScaleStack[i] + u.m_aiScaleStack[i];
+		flReturn.NormalizeStackPosition(i);
+	}
 
-	if (m_bPositive && u.m_bPositive)
-		flReturn.m_bPositive = true;
-	else if (!m_bPositive && !u.m_bPositive)
-		flReturn.m_bPositive = false;
-	else
-		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
+	flReturn.m_bZero = m_bZero && u.m_bZero;
 
-	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
+	CHECKSANITY(flReturn);
 
 	return flReturn;
+}
+
+CScalableFloat CScalableFloat::AddDifferent(const CScalableFloat& u) const
+{
+	TAssert(m_bPositive != u.m_bPositive);
+
+	CScalableFloat flReturn;
+	flReturn.m_bPositive = m_bPositive;
+
+	bool bHighest = true;
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		short iResult = m_aiScaleStack[i] + u.m_aiScaleStack[i];
+		if (iResult)
+		{
+			if (bHighest)
+			{
+				flReturn.m_bPositive = iResult > 0;
+				flReturn.m_aiScaleStack[i] = iResult;
+				bHighest = false;
+			}
+			else
+			{
+				flReturn.m_aiScaleStack[i] = iResult;
+
+				if (flReturn.m_bPositive)
+				{
+					int j = i;
+					while (flReturn.m_aiScaleStack[j] < 0)
+					{
+						while (j < SCALESTACK_SIZE-1 && flReturn.m_aiScaleStack[j+1] == 0)
+						{
+							TAssert(j+1 < SCALESTACK_SIZE-1);
+							flReturn.m_aiScaleStack[j+1] += 999;
+							j++;
+						}
+
+						flReturn.m_aiScaleStack[j+1]--;
+						flReturn.m_aiScaleStack[i] += 1000;
+					}
+				}
+				else if (!flReturn.m_bPositive)
+				{
+					int j = i;
+					while (flReturn.m_aiScaleStack[i] > 0)
+					{
+						while (j < SCALESTACK_SIZE-1 && flReturn.m_aiScaleStack[j+1] == 0)
+						{
+							TAssert(j+1 < SCALESTACK_SIZE-1);
+							flReturn.m_aiScaleStack[j+1] -= 999;
+							j++;
+						}
+
+						flReturn.m_aiScaleStack[j+1]++;
+						flReturn.m_aiScaleStack[i] -= 1000;
+					}
+				}
+			}
+		}
+		else
+			flReturn.m_aiScaleStack[i] = 0;
+	}
+
+	flReturn.m_bZero = m_bZero && u.m_bZero;
+	
+	CHECKSANITY(flReturn);
+
+	return flReturn;
+}
+
+CScalableFloat CScalableFloat::operator+(const CScalableFloat& u) const
+{
+	if (m_bPositive == u.m_bPositive)
+		return AddSimilar(u);
+	else
+		return AddDifferent(u);
 }
 
 CScalableFloat CScalableFloat::operator-(const CScalableFloat& u) const
@@ -295,54 +304,26 @@ CScalableFloat CScalableFloat::operator-(const CScalableFloat& u) const
 	if (u.m_bZero)
 		return *this;
 
-	CScalableFloat flReturn;
-
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] - u.m_aflScaleStack[i];
-
-	if (m_bPositive && !u.m_bPositive)
-		flReturn.m_bPositive = true;
-	else if (!m_bPositive && u.m_bPositive)
-		flReturn.m_bPositive = false;
+	if (m_bPositive == u.m_bPositive)
+		return AddDifferent(-u);
 	else
-		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
-
-	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
-
-	return flReturn;
+		return AddSimilar(-u);
 }
 
 void CScalableFloat::operator+=(const CScalableFloat& u)
 {
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		m_aflScaleStack[i] = m_aflScaleStack[i] + u.m_aflScaleStack[i];
-
-	if (m_bPositive && u.m_bPositive)
-		m_bPositive = true;
-	else if (!m_bPositive && !u.m_bPositive)
-		m_bPositive = false;
+	if (m_bPositive == u.m_bPositive)
+		*this = AddSimilar(u);
 	else
-		m_bPositive = (GetUnits(SCALE_KILOMETER) > 0);
-
-	m_bZero = false;
-	NormalizeScaleStack();
+		*this = AddDifferent(u);
 }
 
 void CScalableFloat::operator-=(const CScalableFloat& u)
 {
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		m_aflScaleStack[i] = m_aflScaleStack[i] - u.m_aflScaleStack[i];
-
-	if (m_bPositive && !u.m_bPositive)
-		m_bPositive = true;
-	else if (!m_bPositive && u.m_bPositive)
-		m_bPositive = false;
+	if (m_bPositive == u.m_bPositive)
+		*this = AddDifferent(-u);
 	else
-		m_bPositive = (GetUnits(SCALE_KILOMETER) > 0);
-
-	m_bZero = false;
-	NormalizeScaleStack();
+		*this = AddSimilar(-u);
 }
 
 CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
@@ -350,37 +331,117 @@ CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
 	// Since I hard-coded the code below, this would have to be updated if I add a scale.
 	TAssert(SCALESTACK_SIZE == SCALE_TERAMETER);
 
+	float fll0 = m_aiScaleStack[0];
+	float fll1 = m_aiScaleStack[1];
+	float fll2 = m_aiScaleStack[2];
+	float fll3 = m_aiScaleStack[3];
+	float fll4 = m_aiScaleStack[4];
+	float fll5 = m_aiScaleStack[5];
+
+	float flr0 = f.m_aiScaleStack[0];
+	float flr1 = f.m_aiScaleStack[1];
+	float flr2 = f.m_aiScaleStack[2];
+	float flr3 = f.m_aiScaleStack[3];
+	float flr4 = f.m_aiScaleStack[4];
+	float flr5 = f.m_aiScaleStack[5];
+
+	float aflResults[11];
+	aflResults[0] = fll0 * flr0;
+	aflResults[1] = fll1 * flr0 + fll0 * flr1;
+	aflResults[2] = fll2 * flr0 + fll1 * flr1 + fll0 * flr2;
+	aflResults[3] = fll3 * flr0 + fll2 * flr1 + fll1 * flr2 + fll0 * flr3;
+	aflResults[4] = fll4 * flr0 + fll3 * flr1 + fll2 * flr2 + fll1 * flr3 + fll0 * flr4;
+	aflResults[5] = fll5 * flr0 + fll4 * flr1 + fll3 * flr2 + fll2 * flr3 + fll1 * flr4 + fll0 * flr5;
+	aflResults[6] = fll5 * flr1 + fll4 * flr2 + fll3 * flr3 + fll2 * flr4 + fll1 * flr5;
+	aflResults[7] = fll5 * flr2 + fll4 * flr3 + fll3 * flr4 + fll2 * flr5;
+	aflResults[8] = fll5 * flr3 + fll4 * flr4 + fll3 * flr5;
+	aflResults[9] = fll5 * flr4 + fll4 * flr5;
+	aflResults[10] = fll5 * flr5;
+
 	CScalableFloat flReturn;
-
-	flReturn.m_aflScaleStack[0] = m_aflScaleStack[0] * f.m_aflScaleStack[0];
-	flReturn.m_aflScaleStack[1] = m_aflScaleStack[1] * f.m_aflScaleStack[0] + m_aflScaleStack[0] * f.m_aflScaleStack[1];
-	flReturn.m_aflScaleStack[2] = m_aflScaleStack[2] * f.m_aflScaleStack[0] + m_aflScaleStack[1] * f.m_aflScaleStack[1] + m_aflScaleStack[0] * f.m_aflScaleStack[2];
-	flReturn.m_aflScaleStack[3] = m_aflScaleStack[3] * f.m_aflScaleStack[0] + m_aflScaleStack[2] * f.m_aflScaleStack[1]
-		+ m_aflScaleStack[1] * f.m_aflScaleStack[2] + m_aflScaleStack[0] * f.m_aflScaleStack[3];
-	flReturn.m_aflScaleStack[4] = m_aflScaleStack[4] * f.m_aflScaleStack[0] + m_aflScaleStack[3] * f.m_aflScaleStack[1]
-		+ m_aflScaleStack[2] * f.m_aflScaleStack[2] + m_aflScaleStack[1] * f.m_aflScaleStack[3] + m_aflScaleStack[0] * f.m_aflScaleStack[4];
-	float fl5 = m_aflScaleStack[4] * f.m_aflScaleStack[1] + m_aflScaleStack[3] * f.m_aflScaleStack[2]
-		+ m_aflScaleStack[2] * f.m_aflScaleStack[3] + m_aflScaleStack[1] * f.m_aflScaleStack[4];
-	float fl6 = m_aflScaleStack[4] * f.m_aflScaleStack[2] + m_aflScaleStack[3] * f.m_aflScaleStack[3] + m_aflScaleStack[2] * f.m_aflScaleStack[4];
-	float fl7 = m_aflScaleStack[4] * f.m_aflScaleStack[3] + m_aflScaleStack[3] * f.m_aflScaleStack[4];
-	float fl8 = m_aflScaleStack[4] * f.m_aflScaleStack[4];
-
-	flReturn.m_aflScaleStack[4] += fl5*1000;
-	flReturn.m_aflScaleStack[4] += fl6*1000000;
-	flReturn.m_aflScaleStack[4] += fl7*1000000000;
-	flReturn.m_aflScaleStack[4] += fl8*1000000000000;
-
 	flReturn.m_bPositive = f.m_bPositive?m_bPositive:!m_bPositive;
-	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
+	flReturn.m_bZero = true;
+
+	for (size_t i = 0; i < 11; i++)
+	{
+		int j = i;
+		float flValue = aflResults[j];
+
+		if (flValue == 0)
+			continue;
+
+		// Subtract 1 for every scale below meters to keep the decimal in the right place.
+		j -= (SCALE_METER-1);
+
+		flReturn.m_bZero = false;
+
+		if (m_bPositive)
+		{
+			while (flValue < 1)
+			{
+				flValue *= 1000;
+				j--;
+			}
+
+			while (flValue > 1000)
+			{
+				flValue /= 1000;
+				j++;
+			}
+
+			TAssert(j < SCALESTACK_SIZE);
+
+			while (flValue > 0 && j >= 0)
+			{
+				flReturn.m_aiScaleStack[j] += (short)flValue;
+				flValue -= (short)flValue;
+				flValue *= 1000;
+				flReturn.NormalizeStackPosition(j);
+				j--;
+			}
+		}
+		else
+		{
+			while (flValue > -1)
+			{
+				flValue *= 1000;
+				j--;
+			}
+
+			while (flValue < -1000)
+			{
+				flValue /= 1000;
+				j++;
+			}
+
+			TAssert(j < SCALESTACK_SIZE);
+
+			while (flValue < 0 && j >= 0)
+			{
+				flReturn.m_aiScaleStack[j] += (short)flValue;
+				flValue -= (short)flValue;
+				flValue *= 1000;
+				flReturn.NormalizeStackPosition(j);
+				j--;
+			}
+		}
+	}
+	
+	CHECKSANITY(flReturn);
 
 	return flReturn;
 }
 
 CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 {
+	if (f.m_bZero)
+		return CScalableFloat();
+
 	// I don't like doing this but there's really no way to do a proper division.
 	float flDivide = f.GetUnits(SCALE_METER);
+
+	if (flDivide == 0)
+		return CScalableFloat();
 
 	CScalableFloat flReturn;
 
@@ -388,16 +449,25 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
-		if (m_aflScaleStack[i] == 0)
+		if (m_aiScaleStack[i] == 0)
 			continue;
 
-		float flResult = m_aflScaleStack[i]/flDivide;
+		float flResult = m_aiScaleStack[i]/flDivide;
 		int j = i;
 
 		if (flReturn.m_bPositive)
 		{
 			while (flResult > 0 && flResult < 0.001f && j >= 0)
 			{
+				flResult *= 1000;
+				j--;
+			}
+
+			while (flResult > 0 && j >= 0)
+			{
+				flReturn.m_aiScaleStack[j] += (short)flResult;
+				flReturn.NormalizeStackPosition(j);
+				flResult -= (short)flResult;
 				flResult *= 1000;
 				j--;
 			}
@@ -409,13 +479,21 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 				flResult *= 1000;
 				j--;
 			}
-		}
 
-		flReturn.m_aflScaleStack[j] += flResult;
+			while (flResult < 0 && j >= 0)
+			{
+				flReturn.m_aiScaleStack[j] = (short)flResult;
+				flReturn.NormalizeStackPosition(j);
+				flResult -= (short)flResult;
+				flResult *= 1000;
+				j--;
+			}
+		}
 	}
 
-	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
+	flReturn.m_bZero = m_bZero;
+	
+	CHECKSANITY(flReturn);
 
 	return flReturn;
 }
@@ -426,19 +504,44 @@ CScalableFloat CScalableFloat::operator*(float f) const
 		return CScalableFloat();
 
 	if (m_bZero)
-		return CScalableFloat();
+		return *this;
 
 	if (f == 1)
 		return *this;
 
 	CScalableFloat flReturn;
 
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] * f;
-
 	flReturn.m_bPositive = (f > 0)?m_bPositive:!m_bPositive;
+
+	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+	{
+		float flValue = m_aiScaleStack[i] * f;
+
+		if (flValue == 0)
+			continue;
+
+		int j = i;
+
+		while (flValue < -1000 || flValue > 1000)
+		{
+			flValue /= 1000;
+			j++;
+		}
+
+		while (((flReturn.m_bPositive && flValue > 0) || (!flReturn.m_bPositive && flValue < 0)) && j >= 0)
+		{
+			flReturn.m_aiScaleStack[j] += (short)flValue;
+			while (flReturn.m_aiScaleStack[j] <= -1000 || flReturn.m_aiScaleStack[j] >= 1000)
+				flReturn.NormalizeStackPosition(j);
+			flValue -= (short)flValue;
+			flValue *= 1000;
+			j--;
+		}
+	}
+
 	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
+	
+	CHECKSANITY(flReturn);
 
 	return flReturn;
 }
@@ -453,13 +556,26 @@ CScalableFloat CScalableFloat::operator/(float f) const
 		return CScalableFloat();
 
 	CScalableFloat flReturn;
+	flReturn.m_bPositive = (f > 0)?m_bPositive:!m_bPositive;
 
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] / f;
+	{
+		float flValue = m_aiScaleStack[i] / f;
 
-	flReturn.m_bPositive = (f > 0)?m_bPositive:!m_bPositive;
+		int j = i;
+		while (fabs(flValue) > 0 && j >= 0)
+		{
+			flReturn.m_aiScaleStack[j] += (short)flValue;
+			flReturn.NormalizeStackPosition(j);
+			flValue -= (short)flValue;
+			flValue *= 1000;
+			j--;
+		}
+	}
+
 	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
+
+	CHECKSANITY(flReturn);
 
 	return flReturn;
 }
@@ -501,18 +617,61 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 	CScalableFloat flReturn;
 
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] + f.m_aflScaleStack[i] + g.m_aflScaleStack[i];
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		flReturn.m_aiScaleStack[i] = m_aiScaleStack[i] + f.m_aiScaleStack[i] + g.m_aiScaleStack[i];
 
-	if (m_bPositive && f.m_bPositive && g.m_bPositive)
-		flReturn.m_bPositive = true;
-	else if (!m_bPositive && !f.m_bPositive && !g.m_bPositive)
-		flReturn.m_bPositive = false;
-	else
-		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
+		int j = i;
+		while ((flReturn.m_aiScaleStack[j] <= -1000 || flReturn.m_aiScaleStack[j] >= 1000) && j < SCALESTACK_SIZE-2)
+		{
+			while (flReturn.m_aiScaleStack[j] >= 1000)
+			{
+				flReturn.m_aiScaleStack[j] -= 1000;
+				flReturn.m_aiScaleStack[j+1] += 1;
+			}
 
-	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
+			while (flReturn.m_aiScaleStack[j] <= -1000)
+			{
+				flReturn.m_aiScaleStack[j] += 1000;
+				flReturn.m_aiScaleStack[j+1] -= 1;
+			}
+
+			j++;
+		}
+	}
+
+	bool bLargest = true;
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		if (bLargest)
+		{
+			if (flReturn.m_aiScaleStack[i])
+			{
+				flReturn.m_bPositive = flReturn.m_aiScaleStack[i] > 0;
+				bLargest = false;
+			}
+		}
+		else
+		{
+			if (flReturn.m_bPositive && flReturn.m_aiScaleStack[i] < 0)
+			{
+				flReturn.m_aiScaleStack[i] += 1000;
+				flReturn.m_aiScaleStack[i+1] -= 1;
+			}
+			else if (!flReturn.m_bPositive && flReturn.m_aiScaleStack[i] > 0)
+			{
+				flReturn.m_aiScaleStack[i] -= 1000;
+				flReturn.m_aiScaleStack[i+1] += 1;
+			}
+		}
+
+		while (flReturn.m_aiScaleStack[i] > 1000 || flReturn.m_aiScaleStack[i] < -1000)
+			flReturn.NormalizeStackPosition(i);
+	}
+
+	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero;
+
+	CHECKSANITY(flReturn);
 
 	return flReturn;
 }
@@ -521,103 +680,140 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 {
 	CScalableFloat flReturn;
 
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
-		flReturn.m_aflScaleStack[i] = m_aflScaleStack[i] + f.m_aflScaleStack[i] + g.m_aflScaleStack[i] + h.m_aflScaleStack[i];
-
-	if (m_bPositive && f.m_bPositive && g.m_bPositive && h.m_bPositive)
-		flReturn.m_bPositive = true;
-	else if (!m_bPositive && !f.m_bPositive && !g.m_bPositive && !h.m_bPositive)
-		flReturn.m_bPositive = false;
-	else
-		flReturn.m_bPositive = (flReturn.GetUnits(SCALE_KILOMETER) > 0);
-
-	flReturn.m_bZero = false;
-	flReturn.NormalizeScaleStack();
-
-	return flReturn;
-}
-
-void CScalableFloat::NormalizeScaleStack()
-{
-	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
 	{
-		if (m_aflScaleStack[i] == 0)
-			continue;
+		flReturn.m_aiScaleStack[i] = m_aiScaleStack[i] + f.m_aiScaleStack[i] + g.m_aiScaleStack[i] + h.m_aiScaleStack[i];
 
-		if (m_bPositive)
+		int j = i;
+		while ((flReturn.m_aiScaleStack[j] <= -1000 || flReturn.m_aiScaleStack[j] >= 1000) && j < SCALESTACK_SIZE-2)
 		{
-			if (i < SCALESTACK_SIZE-1)
+			while (flReturn.m_aiScaleStack[j] >= 1000)
 			{
-				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
-				{
-					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
-					m_aflScaleStack[i+1] = 0;
-				}
-
-				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
-				{
-					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
-					m_aflScaleStack[i+1] = 0;
-				}
-
-				while (m_aflScaleStack[i] < -0.2f && m_aflScaleStack[i+1] > 1)
-				{
-					m_aflScaleStack[i] += 1000;
-					m_aflScaleStack[i+1] -= 1;
-				}
-
-				while (m_aflScaleStack[i] > 1200)
-				{
-					m_aflScaleStack[i] -= 1000;
-					m_aflScaleStack[i+1] += 1;
-				}
+				flReturn.m_aiScaleStack[j] -= 1000;
+				flReturn.m_aiScaleStack[j+1] += 1;
 			}
 
-			if (i > 0)
+			while (flReturn.m_aiScaleStack[j] <= -1000)
 			{
-				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i] < 0.001f)
-				{
-					m_aflScaleStack[i-1] += m_aflScaleStack[i]*1000;
-					m_aflScaleStack[i] = 0;
-				}
+				flReturn.m_aiScaleStack[j] += 1000;
+				flReturn.m_aiScaleStack[j+1] -= 1;
+			}
+
+			j++;
+		}
+	}
+
+	bool bLargest = true;
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		if (bLargest)
+		{
+			if (flReturn.m_aiScaleStack[i])
+			{
+				flReturn.m_bPositive = flReturn.m_aiScaleStack[i] > 0;
+				bLargest = false;
 			}
 		}
 		else
 		{
-			if (i < SCALESTACK_SIZE-1)
+			if (flReturn.m_bPositive && flReturn.m_aiScaleStack[i] < 0)
 			{
-				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i+1] > 0 && m_aflScaleStack[i+1] < 1)
+				while (flReturn.m_aiScaleStack[i] < 0)
 				{
-					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
-					m_aflScaleStack[i+1] = 0;
-				}
+					int j = i;
+					while (j < SCALESTACK_SIZE-1 && flReturn.m_aiScaleStack[j+1] == 0)
+					{
+						TAssert(j+1 < SCALESTACK_SIZE-1);
+						flReturn.m_aiScaleStack[j+1] += 999;
+						j++;
+					}
 
-				if (m_aflScaleStack[i] > 0 && m_aflScaleStack[i+1] < 0 && m_aflScaleStack[i+1] > -1)
-				{
-					m_aflScaleStack[i] += m_aflScaleStack[i+1]*1000;
-					m_aflScaleStack[i+1] = 0;
-				}
-
-				while (m_aflScaleStack[i] > 0.2f && m_aflScaleStack[i+1] < -1)
-				{
-					m_aflScaleStack[i] -= 1000;
-					m_aflScaleStack[i+1] += 1;
-				}
-
-				while (m_aflScaleStack[i] < -1200)
-				{
-					m_aflScaleStack[i] += 1000;
-					m_aflScaleStack[i+1] -= 1;
+					flReturn.m_aiScaleStack[i] += 1000;
+					flReturn.m_aiScaleStack[j+1] -= 1;
 				}
 			}
-
-			if (i > 0)
+			else if (!flReturn.m_bPositive && flReturn.m_aiScaleStack[i] > 0)
 			{
-				if (m_aflScaleStack[i] < 0 && m_aflScaleStack[i] > -0.001f)
+				while (flReturn.m_aiScaleStack[i] > 0)
 				{
-					m_aflScaleStack[i-1] += m_aflScaleStack[i]*1000;
-					m_aflScaleStack[i] = 0;
+					int j = i;
+					while (j < SCALESTACK_SIZE-1 && flReturn.m_aiScaleStack[j+1] == 0)
+					{
+						TAssert(j+1 < SCALESTACK_SIZE-1);
+						flReturn.m_aiScaleStack[j+1] -= 999;
+						j++;
+					}
+
+					flReturn.m_aiScaleStack[i] -= 1000;
+					flReturn.m_aiScaleStack[j+1] += 1;
 				}
+			}
+		}
+
+		while (flReturn.m_aiScaleStack[i] >= 1000 || flReturn.m_aiScaleStack[i] <= -1000)
+			flReturn.NormalizeStackPosition(i);
+	}
+
+	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero && h.m_bZero;
+
+	CHECKSANITY(flReturn);
+
+	return flReturn;
+}
+
+void CScalableFloat::NormalizeStackPosition( int i )
+{
+	if (m_bPositive)
+	{
+		for (int j = i; j < SCALESTACK_SIZE-1; j++)
+		{
+			if (m_aiScaleStack[j] >= 1000)
+			{
+				m_aiScaleStack[j] -= 1000;
+				m_aiScaleStack[j+1] += 1;
+			}
+			else
+				break;
+		}
+
+		TAssert(m_aiScaleStack[SCALESTACK_SIZE-1] < 1000);
+	}
+	else
+	{
+		for (int j = i; j < SCALESTACK_SIZE-1; j++)
+		{
+			if (m_aiScaleStack[j] <= -1000)
+			{
+				m_aiScaleStack[j] += 1000;
+				m_aiScaleStack[j+1] -= 1;
+			}
+			else
+				break;
+		}
+
+		TAssert(m_aiScaleStack[SCALESTACK_SIZE-1] > -1000);
+	}
+}
+
+void CScalableFloat::CheckSanity()
+{
+	for (int i = 0; i < SCALESTACK_SIZE; i++)
+	{
+		if (m_bZero)
+		{
+			TAssert(m_aiScaleStack[i] == 0);
+		}
+		else
+		{
+			if (m_bPositive)
+			{
+				TAssert(m_aiScaleStack[i] >= 0);
+				TAssert(m_aiScaleStack[i] < 1000);
+			}
+			else
+			{
+				TAssert(m_aiScaleStack[i] <= 0);
+				TAssert(m_aiScaleStack[i] > -1000);
 			}
 		}
 	}
@@ -625,30 +821,33 @@ void CScalableFloat::NormalizeScaleStack()
 
 bool CScalableFloat::operator<(const CScalableFloat& u) const
 {
-	if (m_bPositive && !u.m_bPositive)
-		return false;
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		if (m_aiScaleStack[i] - u.m_aiScaleStack[i] == 0)
+			continue;
 
-	if (!m_bPositive && u.m_bPositive)
-		return true;
+		return m_aiScaleStack[i] < u.m_aiScaleStack[i];
+	}
 
-	CScalableFloat flDifference = u - *this;
-	return flDifference.m_bPositive;
+	return false;
 }
 
 bool CScalableFloat::operator>(const CScalableFloat& u) const
 {
-	if (m_bPositive && !u.m_bPositive)
-		return true;
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		if (m_aiScaleStack[i] - u.m_aiScaleStack[i] == 0)
+			continue;
 
-	if (!m_bPositive && u.m_bPositive)
-		return false;
+		return m_aiScaleStack[i] > u.m_aiScaleStack[i];
+	}
 
-	CScalableFloat flDifference = *this - u;
-	return flDifference.m_bPositive;
+	return false;
 }
 
-static float g_aflConversions[9] = 
+static float g_aflConversions[11] = 
 {
+	0.000000000000001f,
 	0.000000000001f,
 	0.000000001f,
 	0.000001f,
@@ -658,9 +857,10 @@ static float g_aflConversions[9] =
 	1000000.0f,
 	1000000000.0f,
 	1000000000000.0f,
+	1000000000000000.0f,
 };
 
-float CScalableFloat::ConvertUnits(float flUnits, scale_t eFrom, scale_t eTo)
+double CScalableFloat::ConvertUnits(double flUnits, scale_t eFrom, scale_t eTo)
 {
 	if (eFrom == eTo)
 		return flUnits;
@@ -668,7 +868,7 @@ float CScalableFloat::ConvertUnits(float flUnits, scale_t eFrom, scale_t eTo)
 	if (flUnits == 0)
 		return 0;
 
-	TAssert( eTo >= SCALE_METER && eTo <= SCALE_HIGHEST );
+	TAssert( eTo >= SCALE_MILLIMETER && eTo <= SCALE_HIGHEST );
 	if (eTo == SCALE_NONE)
 		return 0;
 
@@ -678,8 +878,8 @@ float CScalableFloat::ConvertUnits(float flUnits, scale_t eFrom, scale_t eTo)
 	if (eTo > SCALE_HIGHEST)
 		return 0;
 
-	TAssert( SCALE_HIGHEST+4 <= 9 );
-	return flUnits * g_aflConversions[eFrom-eTo+4];
+	TAssert( SCALE_HIGHEST+5 <= 11 );
+	return flUnits * g_aflConversions[eFrom-eTo+5];
 }
 
 CScalableVector::CScalableVector(const CScalableFloat& X, const CScalableFloat& Y, const CScalableFloat& Z)
@@ -703,9 +903,9 @@ CScalableVector::CScalableVector(DoubleVector vecUnits, scale_t eScale)
 	z = CScalableFloat(vecUnits.z, eScale);
 }
 
-Vector CScalableVector::GetUnits(scale_t eScale) const
+DoubleVector CScalableVector::GetUnits(scale_t eScale) const
 {
-	Vector vecResult = Vector(0,0,0);
+	DoubleVector vecResult = Vector(0,0,0);
 
 	vecResult.x = x.GetUnits(eScale);
 	vecResult.y = y.GetUnits(eScale);
@@ -726,47 +926,11 @@ bool CScalableVector::IsZero()
 
 CScalableFloat CScalableVector::Length() const
 {
-	CScalableFloat f = x*x + y*y + z*z;
-	CScalableFloat r(sqrt(f.GetUnits(SCALE_METER)), SCALE_METER);
-
-	// Instead of calling ::NormalizeScaleStack() do this instead. It's faster because it doesn't normalize each level in groups of 1000.
-	TAssert(SCALESTACK_SIZE == SCALE_TERAMETER);
-
-	while (r.m_aflScaleStack[0] > 1200000000000)
-	{
-		r.m_aflScaleStack[0] -= 1000000000000;
-		r.m_aflScaleStack[4] += 1;
-	}
-
-	while (r.m_aflScaleStack[0] > 1200000000)
-	{
-		r.m_aflScaleStack[0] -= 1000000000;
-		r.m_aflScaleStack[3] += 1;
-	}
-
-	while (r.m_aflScaleStack[0] > 1200000)
-	{
-		r.m_aflScaleStack[0] -= 1000000;
-		r.m_aflScaleStack[2] += 1;
-	}
-
-	while (r.m_aflScaleStack[0] > 120000)
-	{
-		r.m_aflScaleStack[0] -= 100000;
-		r.m_aflScaleStack[1] += 100;
-	}
-
-	while (r.m_aflScaleStack[0] > 12000)
-	{
-		r.m_aflScaleStack[0] -= 10000;
-		r.m_aflScaleStack[1] += 10;
-	}
-
-	while (r.m_aflScaleStack[0] > 1200)
-	{
-		r.m_aflScaleStack[0] -= 1000;
-		r.m_aflScaleStack[1] += 1;
-	}
+	float flX = x.GetUnits(SCALE_METER);
+	float flY = y.GetUnits(SCALE_METER);
+	float flZ = z.GetUnits(SCALE_METER);
+	float f = flX*flX + flY*flY + flZ*flZ;
+	CScalableFloat r(sqrt(f), SCALE_METER);
 
 	return r;
 }

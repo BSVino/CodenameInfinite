@@ -148,6 +148,7 @@ void CSPRenderer::StartRendering()
 	RenderScale(SCALE_MEGAMETER);
 	RenderScale(SCALE_KILOMETER);
 	RenderScale(SCALE_METER);
+	RenderScale(SCALE_MILLIMETER);
 
 	m_eRenderingScale = SCALE_METER;
 

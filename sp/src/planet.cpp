@@ -102,16 +102,23 @@ void CPlanet::RenderUpdate()
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+	if (pCharacter->GetScalableMoveParent() == this)
+	{
+		g_vecCharacterLocalOrigin = DoubleVector(pCharacter->GetLocalScalableOrigin().GetUnits(GetScale()));
+	}
+	else
+	{
+		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
 
-	// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
-	// Instead, transform the player to the planet's local once and do the math in local space.
-	CScalableMatrix mPlanetGlobalToLocal = GetGlobalScalableTransform();
-	mPlanetGlobalToLocal.InvertTR();
-	g_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
+		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
+		// Instead, transform the player to the planet's local once and do the math in local space.
+		CScalableMatrix mPlanetGlobalToLocal = GetGlobalScalableTransform();
+		mPlanetGlobalToLocal.InvertTR();
+		g_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
+	}
 
-	Vector vecOrigin = (GetGlobalScalableOrigin() - vecCharacterOrigin).GetUnits(GetScale());
-	Vector vecOutside = vecOrigin + vecUp * GetScalableRenderRadius().GetUnits(GetScale());
+	Vector vecOrigin = (GetGlobalScalableOrigin() - pCharacter->GetGlobalScalableOrigin()).GetUnits(GetScale());
+	Vector vecOutside = vecOrigin + vecUp * (float)GetScalableRenderRadius().GetUnits(GetScale());
 
 	Vector vecScreen = SPGame()->GetSPRenderer()->ScreenPositionAtScale(GetScale(), vecOrigin);
 	Vector vecTop = SPGame()->GetSPRenderer()->ScreenPositionAtScale(GetScale(), vecOutside);
@@ -180,8 +187,10 @@ void CPlanet::PostRender(bool bTransparent) const
 			c.SetColor(Color(0, 255, 0));
 		else if (eScale == SCALE_GIGAMETER)
 			c.SetColor(Color(255, 0, 0));
+		else if (eScale == SCALE_METER)
+			c.SetColor(Color(255, 255, 0));
 		else
-			c.SetColor(Color(255, 255, 255));
+			c.SetColor(Color(255, 0, 255));
 	}
 	else
 		c.SetColor(Color(255, 255, 255));
@@ -311,7 +320,11 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 	{
 		scale_t eScale = (scale_t)(i+1);
 
-		if (pRenderer->IsInFrustumAtScale(eScale, vecDistanceToQuad.GetUnits(eScale), pBranch->m_oData.flGlobalRadius.GetUnits(eScale)))
+		float flGlobalRadius = (float)pBranch->m_oData.flGlobalRadius.GetUnits(eScale);
+		if (flGlobalRadius > 10000)
+			continue;
+
+		if (pRenderer->IsInFrustumAtScale(eScale, vecDistanceToQuad.GetUnits(eScale), flGlobalRadius))
 		{
 			m_apRenderBranches[eScale].push_back(pBranch);
 
@@ -496,7 +509,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 		CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
 
 		Vector vecPlanetCenterUnscaled = vecPlanetCenter.GetUnits(m_pPlanet->GetScale());
-		float flRadiusUnscaled = CScalableFloat(pBranch->m_oData.flRadiusMeters, SCALE_METER).GetUnits(m_pPlanet->GetScale());
+		float flRadiusUnscaled = (float)CScalableFloat(pBranch->m_oData.flRadiusMeters, SCALE_METER).GetUnits(m_pPlanet->GetScale());
 
 		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(m_pPlanet->GetScale(), vecPlanetCenterUnscaled, flRadiusUnscaled))
 			return false;
@@ -524,7 +537,7 @@ void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
 		CScalableVector vecQuadMax(pBranch->m_oData.vec3, m_pPlanet->GetScale());
 
 		CScalableFloat flRadius = (vecQuadCenter - vecQuadMax).Length();
-		pBranch->m_oData.flRadiusMeters = flRadius.GetUnits(SCALE_METER);
+		pBranch->m_oData.flRadiusMeters = (float)flRadius.GetUnits(SCALE_METER);
 	}
 
 	if (pBranch->m_oData.iRenderVectorsLastFrame == GameServer()->GetFrame())

@@ -97,12 +97,12 @@ void CSPGame::Simulate()
 		for (float flCurrentSimulationTime = GameServer()->GetSimulationTime(); flCurrentSimulationTime < GameServer()->GetGameTime(); flCurrentSimulationTime += flSimulationFrameTime)
 		{
 			CScalableVector vecVelocity = pEntity->GetLocalScalableVelocity();
-			if (vecVelocity.LengthSqr().IsZero())
+			if (vecVelocity.IsZero())
 				continue;
 
 			CScalableVector vecGlobalGravity = pEntity->GetGlobalScalableGravity();
 			CScalableVector vecLocalGravity;
-			if (!vecGlobalGravity.LengthSqr().IsZero())
+			if (!vecGlobalGravity.IsZero())
 			{
 				CScalableFloat flLength = vecGlobalGravity.Length();
 				vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;

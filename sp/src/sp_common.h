@@ -9,6 +9,7 @@
 typedef enum
 {
 	SCALE_NONE = 0,
+	SCALE_MILLIMETER,
 	SCALE_METER,
 	SCALE_KILOMETER,	// 1000m
 	SCALE_MEGAMETER,	// 1000km
@@ -34,13 +35,16 @@ public:
 							CScalableFloat(double flUnits, scale_t eScale);
 
 public:
-	float					GetUnits(scale_t eScale) const;
+	double					GetUnits(scale_t eScale) const;
 	bool					IsPositive() const { return m_bPositive; };
 	bool					IsNegative() const { return !m_bPositive; };
 	bool					IsZero() const;
 	bool					IsZero();
 
 	CScalableFloat			operator-(void) const;
+
+	CScalableFloat			AddSimilar(const CScalableFloat& u) const;
+	CScalableFloat			AddDifferent(const CScalableFloat& u) const;
 
 	CScalableFloat			operator+(const CScalableFloat& u) const;
 	CScalableFloat			operator-(const CScalableFloat& u) const;
@@ -57,17 +61,20 @@ public:
 	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g) const;
 	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g, const CScalableFloat& h) const;
 
-	void					NormalizeScaleStack();
+	void					NormalizeStackPosition(int i);
+
+	void					CheckSanity();
 
 	bool					operator<(const CScalableFloat& u) const;
 	bool					operator>(const CScalableFloat& u) const;
 
-	static float			ConvertUnits(float flUnit, scale_t eFrom, scale_t eTo);
+	static double			ConvertUnits(double flUnit, scale_t eFrom, scale_t eTo);
 
 protected:
 	bool					m_bPositive;
 	bool					m_bZero;
-	float					m_aflScaleStack[SCALESTACK_SIZE];
+	short					m_aiScaleStack[SCALESTACK_SIZE];
+	short					m_iPad;	// Pads it out to an even 16 bytes. Remove if another scale size is added.
 };
 
 inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)
@@ -75,7 +82,7 @@ inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFlo
 	return (((flInput-flInLo) / (flInHi-flInLo)) * (flOutHi-flOutLo)) + flOutLo;
 }
 
-inline float RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, float flOutLo, float flOutHi)
+inline double RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, double flOutLo, double flOutHi)
 {
 	CScalableFloat f = ((flInput-flInLo) / (flInHi-flInLo));
 	return (f.GetUnits(SCALE_METER) * (flOutHi-flOutLo)) + flOutLo;
@@ -92,7 +99,7 @@ public:
 							CScalableVector(DoubleVector vecUnits, scale_t eScale);
 
 public:
-	Vector					GetUnits(scale_t eScale) const;
+	DoubleVector			GetUnits(scale_t eScale) const;
 
 	bool					IsZero() const;
 	bool					IsZero();
