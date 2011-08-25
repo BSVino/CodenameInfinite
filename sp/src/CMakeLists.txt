@@ -16,6 +16,7 @@ set (SPINTRO_SOURCES
 	main.cpp
 
 	planet.cpp
+	planet_terrain.cpp
 	star.cpp
 
 	sp_common.cpp
