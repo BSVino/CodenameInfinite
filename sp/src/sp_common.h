@@ -62,6 +62,7 @@ public:
 	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g, const CScalableFloat& h) const;
 
 	void					NormalizeStackPosition(int i);
+	void					NormalizeRemainder();
 
 	void					CheckSanity();
 
@@ -74,7 +75,7 @@ protected:
 	bool					m_bPositive;
 	bool					m_bZero;
 	short					m_aiScaleStack[SCALESTACK_SIZE];
-	short					m_iPad;	// Pads it out to an even 16 bytes. Remove if another scale size is added.
+	double					m_flRemainder;
 };
 
 inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)

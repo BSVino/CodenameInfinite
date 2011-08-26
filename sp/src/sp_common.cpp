@@ -17,11 +17,14 @@ CScalableFloat::CScalableFloat()
 {
 	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
 	m_bZero = true;
+	m_flRemainder = 0;
 }
 
 CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 {
 	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
+
+	m_flRemainder = 0;
 
 	if (flUnits == 0)
 	{
@@ -55,6 +58,8 @@ CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 			flUnits *= 1000;
 			i--;
 		}
+
+		m_flRemainder = flUnits/1000;
 	}
 	else
 	{
@@ -77,6 +82,8 @@ CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 			flUnits *= 1000;
 			i--;
 		}
+
+		m_flRemainder = flUnits/1000;
 	}
 
 	CHECKSANITY(*this);
@@ -86,6 +93,8 @@ CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 {
 	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
 
+	m_flRemainder = 0;
+
 	if (flUnits == 0)
 	{
 		m_bZero = true;
@@ -118,6 +127,8 @@ CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 			flUnits *= 1000;
 			i--;
 		}
+
+		m_flRemainder = flUnits/1000;
 	}
 	else
 	{
@@ -140,6 +151,8 @@ CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 			flUnits *= 1000;
 			i--;
 		}
+
+		m_flRemainder = flUnits/1000;
 	}
 
 	CHECKSANITY(*this);
@@ -153,6 +166,8 @@ double CScalableFloat::GetUnits(scale_t eScale) const
 	double flResult = 0;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 		flResult += ConvertUnits(m_aiScaleStack[i], (scale_t)(i+1), eScale);
+
+	flResult += ConvertUnits(m_flRemainder, (scale_t)(SCALE_NONE+1), eScale);
 
 	return flResult;
 }
@@ -193,6 +208,7 @@ CScalableFloat CScalableFloat::operator-() const
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 		f.m_aiScaleStack[i] = -m_aiScaleStack[i];
 
+	f.m_flRemainder = -f.m_flRemainder;
 	f.m_bPositive = !m_bPositive;
 	f.m_bZero = m_bZero;
 
@@ -214,6 +230,9 @@ CScalableFloat CScalableFloat::AddSimilar(const CScalableFloat& u) const
 	}
 
 	flReturn.m_bZero = m_bZero && u.m_bZero;
+
+	flReturn.m_flRemainder = m_flRemainder + u.m_flRemainder;
+	flReturn.NormalizeRemainder();
 
 	CHECKSANITY(flReturn);
 
@@ -283,6 +302,22 @@ CScalableFloat CScalableFloat::AddDifferent(const CScalableFloat& u) const
 
 	flReturn.m_bZero = m_bZero && u.m_bZero;
 	
+	flReturn.m_flRemainder = m_flRemainder + u.m_flRemainder;
+
+	// It's all zero
+	if (bHighest)
+	{
+		if (flReturn.m_flRemainder == 0)
+			flReturn.m_bZero = true;
+		else
+		{
+			flReturn.m_bZero = false;
+			flReturn.m_bPositive = flReturn.m_flRemainder > 0;
+		}
+	}
+
+	flReturn.NormalizeRemainder();
+
 	CHECKSANITY(flReturn);
 
 	return flReturn;
@@ -438,7 +473,7 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 		return CScalableFloat();
 
 	// I don't like doing this but there's really no way to do a proper division.
-	float flDivide = f.GetUnits(SCALE_METER);
+	double flDivide = (double)f.GetUnits(SCALE_METER);
 
 	if (flDivide == 0)
 		return CScalableFloat();
@@ -452,7 +487,7 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 		if (m_aiScaleStack[i] == 0)
 			continue;
 
-		float flResult = m_aiScaleStack[i]/flDivide;
+		double flResult = m_aiScaleStack[i]/flDivide;
 		int j = i;
 
 		if (flReturn.m_bPositive)
@@ -537,10 +572,15 @@ CScalableFloat CScalableFloat::operator*(float f) const
 			flValue *= 1000;
 			j--;
 		}
+
+		flReturn.m_flRemainder += flValue/1000;
 	}
 
 	flReturn.m_bZero = false;
 	
+	flReturn.m_flRemainder += m_flRemainder * f;
+	flReturn.NormalizeRemainder();
+
 	CHECKSANITY(flReturn);
 
 	return flReturn;
@@ -671,6 +711,9 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero;
 
+	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder;
+	flReturn.NormalizeRemainder();
+
 	CHECKSANITY(flReturn);
 
 	return flReturn;
@@ -795,6 +838,55 @@ void CScalableFloat::NormalizeStackPosition( int i )
 	}
 }
 
+void CScalableFloat::NormalizeRemainder()
+{
+	if (m_flRemainder >= 1 || m_flRemainder <= -1)
+	{
+		m_aiScaleStack[0] += (short)m_flRemainder;
+		NormalizeStackPosition(0);
+		m_flRemainder -= (short)m_flRemainder;
+	}
+
+	if (!m_bZero && m_bPositive && m_flRemainder < 0)
+	{
+		m_flRemainder += 1;
+		m_aiScaleStack[0] -= 1;
+
+		int j = 0;
+		while (m_aiScaleStack[j] < 0)
+		{
+			while (j < SCALESTACK_SIZE-1 && m_aiScaleStack[j+1] == 0)
+			{
+				TAssert(j+1 < SCALESTACK_SIZE-1);
+				m_aiScaleStack[j+1] += 999;
+				j++;
+			}
+
+			m_aiScaleStack[j+1]--;
+			m_aiScaleStack[0] += 1000;
+		}
+	}
+	else if (!m_bZero && !m_bPositive && m_flRemainder > 0)
+	{
+		m_flRemainder -= 1;
+		m_aiScaleStack[0] += 1;
+
+		int j = 0;
+		while (m_aiScaleStack[0] > 0)
+		{
+			while (j < SCALESTACK_SIZE-1 && m_aiScaleStack[j+1] == 0)
+			{
+				TAssert(j+1 < SCALESTACK_SIZE-1);
+				m_aiScaleStack[j+1] -= 999;
+				j++;
+			}
+
+			m_aiScaleStack[j+1]++;
+			m_aiScaleStack[0] -= 1000;
+		}
+	}
+}
+
 void CScalableFloat::CheckSanity()
 {
 	for (int i = 0; i < SCALESTACK_SIZE; i++)
@@ -816,6 +908,21 @@ void CScalableFloat::CheckSanity()
 				TAssert(m_aiScaleStack[i] > -1000);
 			}
 		}
+	}
+
+	if (m_bZero)
+	{
+		TAssert(m_flRemainder == 0);
+	}
+	else if (m_bPositive)
+	{
+		TAssert(m_flRemainder >= 0);
+		TAssert(m_flRemainder < 1);
+	}
+	else
+	{
+		TAssert(m_flRemainder <= 0);
+		TAssert(m_flRemainder > -1);
 	}
 }
 
@@ -926,10 +1033,10 @@ bool CScalableVector::IsZero()
 
 CScalableFloat CScalableVector::Length() const
 {
-	float flX = x.GetUnits(SCALE_METER);
-	float flY = y.GetUnits(SCALE_METER);
-	float flZ = z.GetUnits(SCALE_METER);
-	float f = flX*flX + flY*flY + flZ*flZ;
+	double flX = x.GetUnits(SCALE_METER);
+	double flY = y.GetUnits(SCALE_METER);
+	double flZ = z.GetUnits(SCALE_METER);
+	double f = flX*flX + flY*flY + flZ*flZ;
 	CScalableFloat r(sqrt(f), SCALE_METER);
 
 	return r;

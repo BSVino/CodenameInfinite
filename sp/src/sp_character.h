@@ -46,10 +46,10 @@ protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 	float						m_flNextPlanetCheck;
 
+	bool						m_bHyperdrive;
+
 	float						m_flLastEnteredAtmosphere;
 	float						m_flRollFromSpace;
-
-	bool						m_bHyperdrive;
 };
 
 #endif
