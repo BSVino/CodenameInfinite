@@ -887,7 +887,7 @@ void CBaseEntity::CheckSaveDataSize(CEntityRegistration* pRegistration)
 
 		// This can help you find where missing stuff is, if all of the save data is in order.
 		// On GCC there's also a problem where a boolean at the end of a parent class can make the beginning address of any child classes be not a multiple of 4, which can cause this to trip. Solution: Keep your booleans near the center of your class definitions. (Really should rewrite this function but meh.)
-		TAssert(pData->m_iOffset - iFirstOffset == iSaveTableSize);
+//		TAssert(pData->m_iOffset - iFirstOffset == iSaveTableSize);
 
 		iSaveTableSize += pData->m_iSizeOfVariable;
 	}
@@ -902,7 +902,7 @@ void CBaseEntity::CheckSaveDataSize(CEntityRegistration* pRegistration)
 	if (iSaveTableSize != iSizeOfThis)
 	{
 		TMsg(sprintf(tstring("Save table for class '%s' doesn't match the class's size, %d != %d.\n"), convertstring<char, tchar>(GetClassName()).c_str(), iSaveTableSize, iSizeOfThis));
-		TAssert(!"Save table size doesn't match class size.\n");
+//		TAssert(!"Save table size doesn't match class size.\n");
 	}
 }
 
