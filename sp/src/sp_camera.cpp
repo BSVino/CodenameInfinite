@@ -34,7 +34,13 @@ CScalableVector CSPCamera::GetCameraScalableTarget()
 	if (!pCharacter)
 		return CScalableVector();
 
-	return GetCameraScalablePosition() + CScalableVector(pCharacter->GetGlobalScalableTransform().GetForwardVector(), SPGame()->GetSPRenderer()->GetRenderingScale());
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+
+	// Make sure we don't lose data when working in millimeters
+	if (eScale < SCALE_METER)
+		eScale = SCALE_METER;
+
+	return GetCameraScalablePosition() + CScalableVector(pCharacter->GetGlobalScalableTransform().GetForwardVector(), eScale);
 }
 
 Vector CSPCamera::GetCameraPosition()

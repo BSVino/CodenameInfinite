@@ -24,9 +24,9 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlanet>, m_hNearestPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
@@ -283,10 +283,10 @@ float CSPCharacter::CharacterSpeed()
 		CScalableVector vecOrigin = GetGlobalScalableOrigin();
 		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - vecOrigin).Length();
 		flSpeed = RemapValClamped(
-			flDistance.GetUnits(SCALE_KILOMETER),
-			(pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_KILOMETER),
-			(pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_KILOMETER),
-			200.0f, 80000);
+			(float)flDistance.GetUnits(SCALE_KILOMETER),
+			(float)(pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_KILOMETER),
+			(float)(pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_KILOMETER),
+			200.0f, 80000.0f);
 	}
 
 	return flSpeed;

@@ -13,7 +13,7 @@ CSPHUD::CSPHUD()
 
 tstring GetStringDistance(const CScalableFloat& v)
 {
-	float flDistance = v.GetUnits(SCALE_KILOMETER);
+	float flDistance = (float)v.GetUnits(SCALE_KILOMETER);
 	if (flDistance > 10000000)
 	{
 		flDistance /= 149598000;		// Km in an AU

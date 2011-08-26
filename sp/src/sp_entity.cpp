@@ -213,7 +213,7 @@ CScalableVector ISPEntity::GetGlobalScalableVelocity()
 	mGlobalToLocalRotation.SetTranslation(CScalableVector());
 
 	CScalableFloat flLength = m_vecLocalScalableVelocity.Length();
-	if (flLength.IsPositive())
+	if (!flLength.IsZero())
 		return (mGlobalToLocalRotation * (m_vecLocalScalableVelocity/flLength))*flLength;
 	else
 		return CScalableVector(CScalableVector());
@@ -225,7 +225,7 @@ CScalableVector ISPEntity::GetGlobalScalableVelocity() const
 	mGlobalToLocalRotation.SetTranslation(CScalableVector(CScalableVector()));
 
 	CScalableFloat flLength = m_vecLocalScalableVelocity.Length();
-	if (flLength.IsPositive())
+	if (!flLength.IsZero())
 		return (mGlobalToLocalRotation * (m_vecLocalScalableVelocity/flLength))*flLength;
 	else
 		return CScalableVector();
@@ -323,7 +323,7 @@ bool ISPEntity::IsTouching(ISPEntity* pOther, CScalableVector& vecPoint)
 
 	CScalableFloat flRadius = pOther->GetRadius();
 
-	if ((pOther->GetGlobalScalableOrigin() - vecPoint).LengthSqr() < flRadius*flRadius)
+	if ((pOther->GetGlobalScalableOrigin() - vecPoint).Length() < flRadius)
 		return true;
 
 	return false;

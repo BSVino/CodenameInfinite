@@ -148,6 +148,7 @@ void CSPRenderer::StartRendering()
 	RenderScale(SCALE_MEGAMETER);
 	RenderScale(SCALE_KILOMETER);
 	RenderScale(SCALE_METER);
+	RenderScale(SCALE_MILLIMETER);
 
 	m_eRenderingScale = SCALE_METER;
 
@@ -211,7 +212,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 		if (pPlanet)
 		{
 			CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - pCharacter->GetGlobalScalableOrigin()).Length() - pPlanet->GetRadius();
-			float flAtmosphere = RemapVal(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1, 0);
+			float flAtmosphere = (float)RemapVal(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1, 0);
 			c->SetUniform("flAtmosphere", flAtmosphere);
 			c->SetUniform("vecUp", pCharacter->GetUpVector());
 			c->SetUniform("clrSky", pPlanet->GetAtmosphereColor());
@@ -272,7 +273,7 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 		if (!pSPEntity->ShouldRenderAtScale(m_eRenderingScale))
 			continue;
 
-		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), pSPEntity->GetScalableRenderRadius().GetUnits(m_eRenderingScale)))
+		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), (float)pSPEntity->GetScalableRenderRadius().GetUnits(m_eRenderingScale)))
 			continue;
 
 		apRender.push_back(pSPEntity);
