@@ -444,5 +444,11 @@ bool CPlanetTerrain::ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bD
 {
 	bDelete = false;
 
+	InitRenderVectors(pBranch);
+
+	// If it'll be below the allowed resolution, don't build it.
+	if (pBranch->m_oData.flRadiusMeters/2 < r_terrainresolution.GetFloat())
+		return false;
+
 	return ShouldRenderBranch(pBranch);
 }
