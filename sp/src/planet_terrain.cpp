@@ -287,7 +287,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 	pBranch->m_oData.iShouldRenderLastFrame = GameServer()->GetFrame();
 	pBranch->m_oData.bShouldRender = false;
 
-	CalcRenderVectors(pBranch);
+	InitRenderVectors(pBranch);
 
 	if (pBranch->m_oData.flRadiusMeters < r_terrainresolution.GetFloat())
 		return false;
@@ -311,6 +311,8 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 
 	if (r_terrainfrustumcull.GetBool())
 	{
+		CalcRenderVectors(pBranch);
+
 		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 		CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
 		CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
@@ -326,7 +328,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 	return true;
 }
 
-void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
+void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 {
 	if (pBranch->m_oData.flRadiusMeters == 0)
 	{
@@ -346,7 +348,10 @@ void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
 		CScalableFloat flRadius = (vecQuadCenter - vecQuadMax).Length();
 		pBranch->m_oData.flRadiusMeters = (float)flRadius.GetUnits(SCALE_METER);
 	}
+}
 
+void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
+{
 	if (pBranch->m_oData.iRenderVectorsLastFrame == GameServer()->GetFrame())
 		return;
 

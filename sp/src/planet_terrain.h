@@ -71,6 +71,7 @@ public:
 
 	void						UpdateScreenSize(CTerrainQuadTreeBranch* pBranch);
 	bool						ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch);
+	void						InitRenderVectors(CTerrainQuadTreeBranch* pBranch);
 	void						CalcRenderVectors(CTerrainQuadTreeBranch* pBranch);
 
 	virtual TVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;

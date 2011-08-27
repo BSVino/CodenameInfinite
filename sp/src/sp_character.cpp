@@ -211,7 +211,7 @@ void CSPCharacter::StandOnNearestPlanet()
 	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
 	// Right now it puts us one kilometer above ground. We'll fix that later.
-	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * (pPlanet->GetRadius() + CScalableFloat(1.0f, SCALE_KILOMETER));
+	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * (pPlanet->GetRadius() + CScalableFloat(969.0f, SCALE_METER));
 	SetGlobalScalableOrigin(vecOrigin);
 
 	SetScalableMoveParent(pPlanet);
