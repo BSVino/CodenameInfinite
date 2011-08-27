@@ -30,6 +30,7 @@ public:
 	float				flLastScreenUpdate;
 	size_t				iShouldRenderLastFrame;
 	bool				bShouldRender;
+	float				flLocalCharacterDot;
 
 	size_t				iRenderVectorsLastFrame;
 	CScalableVector		vecGlobalQuadCenter;

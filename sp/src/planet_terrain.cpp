@@ -110,9 +110,14 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 	}
 }
 
+CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");
+
 void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 {
 	TAssert(pBranch->m_oData.bRender);
+
+	if (r_terrainbackfacecull.GetBool() && pBranch->m_oData.flLocalCharacterDot >= 0.1f)
+		return;
 
 	CalcRenderVectors(pBranch);
 	UpdateScreenSize(pBranch);
@@ -275,7 +280,6 @@ void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 CVar r_terrainresolution("r_terrainresolution", "1.0");
 CVar r_minterrainsize("r_minterrainsize", "100");
 
-CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");
 CVar r_terrainperspectivescale("r_terrainperspectivescale", "on");
 CVar r_terrainfrustumcull("r_terrainfrustumcull", "on");
 
@@ -294,7 +298,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 
 	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
 
-	float flDot = (float)(pBranch->GetCenter()-m_pPlanet->GetCharacterLocalOrigin()).Normalized().Dot(vecNormal);
+	float flDot = pBranch->m_oData.flLocalCharacterDot = (float)(pBranch->GetCenter()-m_pPlanet->GetCharacterLocalOrigin()).Normalized().Dot(vecNormal);
 
 	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
 		return false;
