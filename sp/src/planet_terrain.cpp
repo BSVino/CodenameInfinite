@@ -303,15 +303,18 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
 		return false;
 
-	float flScale = RemapValClamped(flDot, -1, 1, 0.1f, 1);
+	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth())
+	{
+		float flScale = RemapValClamped(flDot, -1, 1, 0.1f, 1);
 
-	if (!r_terrainperspectivescale.GetBool())
-		flScale = 1;
+		if (!r_terrainperspectivescale.GetBool())
+			flScale = 1;
 
-	UpdateScreenSize(pBranch);
+		UpdateScreenSize(pBranch);
 
-	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth() && pBranch->m_oData.flScreenSize*flScale < r_minterrainsize.GetFloat())
-		return false;
+		if (pBranch->m_oData.flScreenSize*flScale < r_minterrainsize.GetFloat())
+			return false;
+	}
 
 	if (r_terrainfrustumcull.GetBool())
 	{
