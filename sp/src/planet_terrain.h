@@ -19,6 +19,7 @@ public:
 		iShouldRenderLastFrame = ~0;
 		iRenderVectorsLastFrame = ~0;
 		flRadiusMeters = 0;
+		bCompletelyInsideFrustum = false;
 	}
 
 public:
@@ -31,6 +32,7 @@ public:
 	size_t				iShouldRenderLastFrame;
 	bool				bShouldRender;
 	float				flLocalCharacterDot;
+	bool				bCompletelyInsideFrustum;
 
 	size_t				iRenderVectorsLastFrame;
 	CScalableVector		vecGlobalQuadCenter;

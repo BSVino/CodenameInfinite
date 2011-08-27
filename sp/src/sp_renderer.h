@@ -38,6 +38,7 @@ public:
 
 	bool			IsInFrustumAtScale(scale_t eRenderScale, const Vector& vecCenter, float flRadius);
 	bool			IsInFrustumAtScaleSidesOnly(scale_t eRenderScale, const Vector& vecCenter, float flRadius);
+	bool			FrustumContainsAtScaleSidesOnly(scale_t eRenderScale, const Vector& vecCenter, float flRadius);
 	Vector			ScreenPositionAtScale(scale_t eRenderScale, const Vector& vecWorld);
 	Vector			WorldPositionAtScale(scale_t eRenderScale, const Vector& vecScreen);
 

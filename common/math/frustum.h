@@ -18,6 +18,7 @@ public:
 	void		CreateFrom(const Matrix4x4& m);
 	bool		TouchesSphere(const Vector& vecCenter, float flRadius);
 	bool		TouchesSphereSidesOnly(const Vector& vecCenter, float flRadius);
+	bool		ContainsSphereSidesOnly(const Vector& vecCenter, float flRadius);
 
 public:
 	Plane		p[6];

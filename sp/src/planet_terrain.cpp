@@ -21,6 +21,7 @@ void CPlanetTerrain::Init()
 	oData.flLastScreenUpdate = -1;
 	oData.iRenderVectorsLastFrame = ~0;
 	oData.iShouldRenderLastFrame = ~0;
+	oData.bCompletelyInsideFrustum = false;
 	CTerrainQuadTree::Init(this, oData);
 }
 
@@ -31,6 +32,7 @@ void CPlanetTerrain::Think()
 	m_bOneQuad = r_terrain_onequad.GetBool();
 	m_apRenderBranches.clear();
 	m_iBuildsThisFrame = 0;
+	m_pQuadTreeHead->m_oData.bCompletelyInsideFrustum = false;
 	ThinkBranch(m_pQuadTreeHead);
 }
 
@@ -38,6 +40,12 @@ CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
 
 void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 {
+	if (pBranch->m_pBranches[0] && pBranch->m_oData.bCompletelyInsideFrustum)
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			pBranch->m_pBranches[i]->m_oData.bCompletelyInsideFrustum = pBranch->m_oData.bCompletelyInsideFrustum;
+	}
+
 	if (pBranch->m_oData.bRender)
 	{
 		// If I can render then maybe my kids can too?
@@ -46,7 +54,15 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 			pBranch->BuildBranch(false);
 
 			if (pBranch->m_pBranches[0])
+			{
+				if (pBranch->m_oData.bCompletelyInsideFrustum)
+				{
+					for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+						pBranch->m_pBranches[i]->m_oData.bCompletelyInsideFrustum = pBranch->m_oData.bCompletelyInsideFrustum;
+				}
+
 				m_iBuildsThisFrame++;
+			}
 		}
 
 		// See if we can push the render surface down to the next level.
@@ -318,17 +334,23 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 
 	if (r_terrainfrustumcull.GetBool())
 	{
-		CalcRenderVectors(pBranch);
+		if (!pBranch->m_oData.bCompletelyInsideFrustum)
+		{
+			CalcRenderVectors(pBranch);
 
-		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-		CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
-		CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
+			CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+			CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
+			CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
 
-		Vector vecPlanetCenterUnscaled = vecPlanetCenter.GetUnits(m_pPlanet->GetScale());
-		float flRadiusUnscaled = (float)CScalableFloat(pBranch->m_oData.flRadiusMeters, SCALE_METER).GetUnits(m_pPlanet->GetScale());
+			Vector vecPlanetCenterUnscaled = vecPlanetCenter.GetUnits(m_pPlanet->GetScale());
+			float flRadiusUnscaled = (float)CScalableFloat(pBranch->m_oData.flRadiusMeters, SCALE_METER).GetUnits(m_pPlanet->GetScale());
 
-		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(m_pPlanet->GetScale(), vecPlanetCenterUnscaled, flRadiusUnscaled))
-			return false;
+			if (!SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(m_pPlanet->GetScale(), vecPlanetCenterUnscaled, flRadiusUnscaled))
+				return false;
+
+			if (SPGame()->GetSPRenderer()->FrustumContainsAtScaleSidesOnly(m_pPlanet->GetScale(), vecPlanetCenterUnscaled, flRadiusUnscaled))
+				pBranch->m_oData.bCompletelyInsideFrustum = true;
+		}
 	}
 
 	pBranch->m_oData.bShouldRender = true;

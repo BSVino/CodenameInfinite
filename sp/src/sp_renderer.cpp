@@ -303,6 +303,11 @@ bool CSPRenderer::IsInFrustumAtScaleSidesOnly(scale_t eRenderScale, const Vector
 	return m_aoScaleFrustums[eRenderScale-1].TouchesSphereSidesOnly(vecCenter, flRadius);
 }
 
+bool CSPRenderer::FrustumContainsAtScaleSidesOnly(scale_t eRenderScale, const Vector& vecCenter, float flRadius)
+{
+	return m_aoScaleFrustums[eRenderScale-1].ContainsSphereSidesOnly(vecCenter, flRadius);
+}
+
 Vector CSPRenderer::ScreenPositionAtScale(scale_t eRenderScale, const Vector& vecWorld)
 {
 	GLdouble x, y, z;
