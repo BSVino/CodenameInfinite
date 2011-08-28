@@ -18,6 +18,7 @@ public:
 		flLastScreenUpdate = -1;
 		flLastPushPull = -1;
 		iShouldRenderLastFrame = ~0;
+		iLocalCharacterDotLastFrame = ~0;
 		iRenderVectorsLastFrame = ~0;
 		flRadiusMeters = 0;
 		bCompletelyInsideFrustum = false;
@@ -33,6 +34,7 @@ public:
 	float				flLastPushPull;
 	size_t				iShouldRenderLastFrame;
 	bool				bShouldRender;
+	size_t				iLocalCharacterDotLastFrame;
 	float				flLocalCharacterDot;
 	bool				bCompletelyInsideFrustum;
 
@@ -80,6 +82,7 @@ public:
 	bool						ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch);
 	void						InitRenderVectors(CTerrainQuadTreeBranch* pBranch);
 	void						CalcRenderVectors(CTerrainQuadTreeBranch* pBranch);
+	float						GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch);
 
 	virtual TVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
 	virtual DoubleVector		QuadTreeToWorld(const CTerrainQuadTree* pTree, const TVector2D<double>& vecTree) const;

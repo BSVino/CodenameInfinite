@@ -22,6 +22,7 @@ void CPlanetTerrain::Init()
 	oData.flLastScreenUpdate = -1;
 	oData.flLastPushPull = -1;
 	oData.iRenderVectorsLastFrame = ~0;
+	oData.iLocalCharacterDotLastFrame = ~0;
 	oData.iShouldRenderLastFrame = ~0;
 	oData.bCompletelyInsideFrustum = false;
 	CTerrainQuadTree::Init(this, oData);
@@ -161,7 +162,7 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 {
 	TAssert(pBranch->m_oData.bRender);
 
-	if (r_terrainbackfacecull.GetBool() && pBranch->m_oData.flLocalCharacterDot >= 0.1f)
+	if (r_terrainbackfacecull.GetBool() && GetLocalCharacterDot(pBranch) >= 0.1f)
 		return;
 
 	CalcRenderVectors(pBranch);
@@ -341,9 +342,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 	if (pBranch->m_oData.flRadiusMeters < r_terrainresolution.GetFloat())
 		return false;
 
-	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
-
-	float flDot = pBranch->m_oData.flLocalCharacterDot = (float)(pBranch->GetCenter()-m_pPlanet->GetCharacterLocalOrigin()).Normalized().Dot(vecNormal);
+	float flDot = GetLocalCharacterDot(pBranch);
 
 	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
 		return false;
@@ -416,6 +415,18 @@ void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
 	pBranch->m_oData.iRenderVectorsLastFrame = GameServer()->GetFrame();
 
 	pBranch->m_oData.vecGlobalQuadCenter = m_pPlanet->GetGlobalScalableTransform() * CScalableVector(pBranch->GetCenter(), m_pPlanet->GetScale());
+}
+
+float CPlanetTerrain::GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch)
+{
+	if (pBranch->m_oData.iLocalCharacterDotLastFrame == GameServer()->GetFrame())
+		return pBranch->m_oData.flLocalCharacterDot;
+
+	pBranch->m_oData.iLocalCharacterDotLastFrame = GameServer()->GetFrame();
+
+	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
+
+	return pBranch->m_oData.flLocalCharacterDot = (float)(pBranch->GetCenter()-m_pPlanet->GetCharacterLocalOrigin()).Normalized().Dot(vecNormal);
 }
 
 DoubleVector2D CPlanetTerrain::WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& v) const
