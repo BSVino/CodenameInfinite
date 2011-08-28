@@ -133,9 +133,11 @@ bool CPlanetTerrain::ShouldPush(CTerrainQuadTreeBranch* pBranch)
 	return false;
 }
 
+CVar r_terrainpullinterval("r_terrainpullinterval", "0.1");
+
 bool CPlanetTerrain::ShouldPull(CTerrainQuadTreeBranch* pBranch)
 {
-	if (pBranch->m_oData.flLastPushPull >= 0 && GameServer()->GetGameTime() - pBranch->m_oData.flLastPushPull < r_terrainpushinterval.GetFloat())
+	if (pBranch->m_oData.flLastPushPull >= 0 && GameServer()->GetGameTime() - pBranch->m_oData.flLastPushPull < r_terrainpullinterval.GetFloat())
 		return false;
 
 	pBranch->m_oData.flLastPushPull = GameServer()->GetGameTime();
