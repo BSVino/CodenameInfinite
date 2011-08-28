@@ -1,6 +1,7 @@
 #include "planet_terrain.h"
 
 #include <geometry.h>
+#include <mtrand.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -19,6 +20,7 @@ void CPlanetTerrain::Init()
 	oData.flHeight = 0;
 	oData.flScreenSize = 1;
 	oData.flLastScreenUpdate = -1;
+	oData.flLastPushPull = -1;
 	oData.iRenderVectorsLastFrame = ~0;
 	oData.iShouldRenderLastFrame = ~0;
 	oData.bCompletelyInsideFrustum = false;
@@ -40,7 +42,7 @@ CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
 
 void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 {
-	if (pBranch->m_pBranches[0] && pBranch->m_oData.bCompletelyInsideFrustum)
+	if (pBranch->m_pBranches[0])
 	{
 		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			pBranch->m_pBranches[i]->m_oData.bCompletelyInsideFrustum = pBranch->m_oData.bCompletelyInsideFrustum;
@@ -63,60 +65,39 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 
 				m_iBuildsThisFrame++;
 			}
+
+			// If I create branches this frame, be sure to test right away if we should push them.
+			pBranch->m_oData.flLastPushPull = -1;
 		}
 
-		// See if we can push the render surface down to the next level.
-		bool bCanRenderKids = false;
-		if (pBranch->m_pBranches[0])
-		{
-			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-			{
-				bCanRenderKids |= ShouldRenderBranch(pBranch->m_pBranches[i]);
-				if (bCanRenderKids)
-					break;
-			}
-		}
-		else
-			bCanRenderKids = false;
+		bool bPush = ShouldPush(pBranch);
 
-		if (bCanRenderKids)
+		if (bPush)
 		{
 			pBranch->m_oData.bRender = false;
 			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			{
 				pBranch->m_pBranches[i]->m_oData.bRender = true;
-
-			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 				ThinkBranch(pBranch->m_pBranches[i]);
-
-			return;
+			}
 		}
+		else
+			ProcessBranchRendering(pBranch);
 
-		ProcessBranchRendering(pBranch);
 		return;
 	}
 
 	TAssert(pBranch->m_pBranches[0]);
 
-	// See if we can pull the render surface up from our kids.
-	bool bAreKidsRenderingAndShouldnt = true;
-	if (pBranch->m_pBranches[0])
-	{
-		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-		{
-			bAreKidsRenderingAndShouldnt &= (pBranch->m_pBranches[i]->m_oData.bRender && !ShouldRenderBranch(pBranch->m_pBranches[i]));
-			if (!bAreKidsRenderingAndShouldnt)
-				break;
-		}
-	}
+	bool bPull = ShouldPull(pBranch);
 
-	if (bAreKidsRenderingAndShouldnt)
+	if (bPull)
 	{
 		pBranch->m_oData.bRender = true;
 		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			pBranch->m_pBranches[i]->m_oData.bRender = false;
 
 		ProcessBranchRendering(pBranch);
-		return;
 	}
 	else
 	{
@@ -124,6 +105,54 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			ThinkBranch(pBranch->m_pBranches[i]);
 	}
+}
+
+CVar r_terrainpushinterval("r_terrainpushinterval", "0.3");
+
+bool CPlanetTerrain::ShouldPush(CTerrainQuadTreeBranch* pBranch)
+{
+	if (pBranch->m_oData.flLastPushPull >= 0 && GameServer()->GetGameTime() - pBranch->m_oData.flLastPushPull < r_terrainpushinterval.GetFloat())
+		return false;
+
+	if (pBranch->m_oData.flLastPushPull < 0)
+		pBranch->m_oData.flLastPushPull = GameServer()->GetGameTime() + RandomFloat(0, 1);
+	else
+		pBranch->m_oData.flLastPushPull = GameServer()->GetGameTime();
+
+	if (!pBranch->m_pBranches[0])
+		return false;
+
+	// See if we can push the render surface down to the next level.
+	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+	{
+		if (ShouldRenderBranch(pBranch->m_pBranches[i]))
+			return true;
+	}
+
+	return false;
+}
+
+bool CPlanetTerrain::ShouldPull(CTerrainQuadTreeBranch* pBranch)
+{
+	if (pBranch->m_oData.flLastPushPull >= 0 && GameServer()->GetGameTime() - pBranch->m_oData.flLastPushPull < r_terrainpushinterval.GetFloat())
+		return false;
+
+	pBranch->m_oData.flLastPushPull = GameServer()->GetGameTime();
+
+	if (!pBranch->m_pBranches[0])
+		return false;
+
+	// See if we can pull the render surface up from our kids.
+	bool bAreKidsRenderingAndShouldnt = true;
+
+	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+	{
+		bAreKidsRenderingAndShouldnt &= (pBranch->m_pBranches[i]->m_oData.bRender && !ShouldRenderBranch(pBranch->m_pBranches[i]));
+		if (!bAreKidsRenderingAndShouldnt)
+			break;
+	}
+
+	return bAreKidsRenderingAndShouldnt;
 }
 
 CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");

@@ -16,6 +16,7 @@ public:
 		bRender = false;
 		flScreenSize = 1;
 		flLastScreenUpdate = -1;
+		flLastPushPull = -1;
 		iShouldRenderLastFrame = ~0;
 		iRenderVectorsLastFrame = ~0;
 		flRadiusMeters = 0;
@@ -29,6 +30,7 @@ public:
 	CScalableFloat		flGlobalRadius;
 	float				flRadiusMeters;
 	float				flLastScreenUpdate;
+	float				flLastPushPull;
 	size_t				iShouldRenderLastFrame;
 	bool				bShouldRender;
 	float				flLocalCharacterDot;
@@ -67,6 +69,8 @@ public:
 
 	void						Think();
 	void						ThinkBranch(CTerrainQuadTreeBranch* pBranch);
+	bool						ShouldPush(CTerrainQuadTreeBranch* pBranch);
+	bool						ShouldPull(CTerrainQuadTreeBranch* pBranch);
 	void						ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch);
 
 	void						Render(class CRenderingContext* c) const;

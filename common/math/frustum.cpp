@@ -66,7 +66,10 @@ bool Frustum::ContainsSphereSidesOnly(const Vector& vecCenter, float flRadius)
 	for (size_t i = 2; i < 6; i++)
 	{
 		float flDistance = p[i].n.x*vecCenter.x + p[i].n.y*vecCenter.y + p[i].n.z*vecCenter.z + p[i].d;
-		if (flRadius > flDistance)
+		if (flDistance + flRadius < 0)
+			return false;
+
+		if (flDistance < flRadius || -flDistance < flRadius)
 			return false;
 	}
 
