@@ -455,7 +455,9 @@ inline bool LineSegmentIntersectsSphere(const Vector& v1, const Vector& v2, cons
 
 	float flA = vecLine.LengthSqr();
 	float flB = 2 * vecSphere.Dot(vecLine);
-	float flC = vecSphere.LengthSqr() - flRadius*flRadius;
+	float flC1 = s.LengthSqr() + v1.LengthSqr();
+	float flC2 = (s.Dot(v1)*2);
+	float flC = flC1 - flC2 - flRadius*flRadius;
 
 	float flBB4AC = flB*flB - 4*flA*flC;
 	if (flBB4AC < 0)
@@ -464,6 +466,11 @@ inline bool LineSegmentIntersectsSphere(const Vector& v1, const Vector& v2, cons
 	float flSqrt = sqrt(flBB4AC);
 	float flPlus = (-flB + flSqrt)/(2*flA);
 	float flMinus = (-flB - flSqrt)/(2*flA);
+
+	return false;
+	// Unimplemented: Doesn't clip the intersection to the segment only.
+	// Also probably buggy and fully of bugs.
+	// See sp_common.cpp for a better implementation that's actually used.
 
 	float flDistance = vecLine.Length();
 

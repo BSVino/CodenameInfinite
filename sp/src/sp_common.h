@@ -66,6 +66,7 @@ public:
 
 	void					CheckSanity();
 
+	bool					operator==(const CScalableFloat& u) const;
 	bool					operator<(const CScalableFloat& u) const;
 	bool					operator>(const CScalableFloat& u) const;
 
@@ -76,6 +77,7 @@ protected:
 	bool					m_bZero;
 	short					m_aiScaleStack[SCALESTACK_SIZE];
 	double					m_flRemainder;
+	double					m_flOverflow;
 };
 
 inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)
@@ -108,6 +110,7 @@ public:
 	CScalableVector			Normalized() const { return CScalableVector(GetUnits(SCALE_METER).Normalized(), SCALE_METER); }
 	CScalableFloat			Length() const;
 	CScalableFloat			LengthSqr() const;
+	CScalableFloat			Dot(const CScalableVector& v) const;
 
 	CScalableVector			operator-(void) const;
 
@@ -130,6 +133,8 @@ public:
 
 	CScalableFloat			operator[](int i) const;
 	CScalableFloat&			operator[](int i);
+
+	bool					operator==(const CScalableVector& u) const;
 
 protected:
 	CScalableFloat			x, y, z;
@@ -176,5 +181,7 @@ inline CScalableVector operator*( Vector v, const CScalableFloat& f )
 {
 	return CScalableVector( f*v.x, f*v.y, f*v.z );
 }
+
+bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint);
 
 #endif

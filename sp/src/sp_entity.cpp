@@ -189,7 +189,10 @@ void ISPEntity::SetGlobalScalableOrigin(const CScalableVector& vecOrigin)
 	if (GetScalableMoveParent() == NULL)
 		SetLocalScalableOrigin(vecOrigin);
 	else
-		TAssert("Unimplemented");
+	{
+		CScalableMatrix mGlobalToLocal = GetScalableMoveParent()->GetGlobalToLocalScalableTransform();
+		SetLocalScalableOrigin(mGlobalToLocal * vecOrigin);
+	}
 }
 
 void ISPEntity::SetGlobalScalableAngles(const EAngle& angAngles)
@@ -257,6 +260,14 @@ void ISPEntity::SetLocalScalableOrigin(const CScalableVector& vecOrigin)
 	InvalidateGlobalScalableTransforms();
 };
 
+CScalableVector ISPEntity::GetLastGlobalScalableOrigin() const
+{
+	if (GetScalableMoveParent())
+		return GetScalableMoveParent()->GetGlobalScalableTransform() * GetLastLocalScalableOrigin();
+	else
+		return GetLastLocalScalableOrigin();
+}
+
 void ISPEntity::SetLocalScalableVelocity(const CScalableVector& vecVelocity)
 {
 //	if (!m_vecLocalScalableVelocity.IsInitialized())
@@ -319,12 +330,41 @@ EAngle ISPEntity::GetRenderAngles() const
 
 bool ISPEntity::IsTouching(ISPEntity* pOther, CScalableVector& vecPoint)
 {
-	vecPoint = GetGlobalScalableOrigin();
+	if ((pOther->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
+		return false;
 
-	CScalableFloat flRadius = pOther->GetRadius();
+	if (GetScalableMoveParent() == pOther)
+	{
+		bool bResult = pOther->CollideLocal(GetLastLocalScalableOrigin(), GetLocalScalableOrigin(), vecPoint);
+		if (bResult)
+			vecPoint = GetScalableMoveParent()->GetGlobalScalableTransform() * vecPoint;
+		return bResult;
+	}
+	else
+		return pOther->Collide(GetLastGlobalScalableOrigin(), GetGlobalScalableOrigin(), vecPoint);
+}
 
-	if ((pOther->GetGlobalScalableOrigin() - vecPoint).Length() < flRadius)
-		return true;
+bool ISPEntity::CollideLocal(const CScalableVector& v1, const CScalableVector& v2, CScalableVector& vecPoint)
+{
+	if (GetRadius().IsZero())
+		return false;
 
-	return false;
+	if (v1 == v2)
+	{
+		vecPoint = v1;
+		return (v1.Length() < GetRadius());
+	}
+
+	return LineSegmentIntersectsSphere(v1, v2, CScalableVector(), GetRadius(), vecPoint);
+}
+
+bool ISPEntity::Collide(const CScalableVector& v1, const CScalableVector& v2, CScalableVector& vecPoint)
+{
+	if (GetRadius().IsZero())
+		return false;
+
+	if (v1 == v2)
+		return ((v1-GetGlobalScalableOrigin()).Length() < GetRadius());
+
+	return LineSegmentIntersectsSphere(v1, v2, GetGlobalScalableOrigin(), GetRadius(), vecPoint);
 }
