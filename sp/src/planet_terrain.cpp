@@ -254,16 +254,20 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	Vector vec4 = svec4.GetUnits(eRender);
 
 	c->BeginRenderQuads();
-	c->TexCoord(pBranch->m_vecMin);
+	c->TexCoord(pBranch->m_vecMin, 0);
+	c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
 	c->Normal(pBranch->m_oData.vec1n);
 	c->Vertex(vec1);
-	c->TexCoord(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+	c->TexCoord(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y), 0);
+	c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMax.x, pBranch->m_oData.vecDetailMin.y), 1);
 	c->Normal(pBranch->m_oData.vec2n);
 	c->Vertex(vec2);
-	c->TexCoord(pBranch->m_vecMax);
+	c->TexCoord(pBranch->m_vecMax, 0);
+	c->TexCoord(pBranch->m_oData.vecDetailMax, 1);
 	c->Normal(pBranch->m_oData.vec3n);
 	c->Vertex(vec3);
-	c->TexCoord(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+	c->TexCoord(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y), 0);
+	c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMin.x, pBranch->m_oData.vecDetailMax.y), 1);
 	c->Normal(pBranch->m_oData.vec4n);
 	c->Vertex(vec4);
 	c->EndRender();
@@ -406,6 +410,18 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 
 		CScalableFloat flRadius = (vecQuadCenter - vecQuadMax).Length();
 		pBranch->m_oData.flRadiusMeters = (float)flRadius.GetUnits(SCALE_METER);
+
+		pBranch->m_oData.vecDetailMin = DoubleVector2D(0, 0);
+		pBranch->m_oData.vecDetailMax = DoubleVector2D(1, 1);
+
+		// Count how many divisions it takes to get down to resolution level.
+		float flRadiusMeters = pBranch->m_oData.flRadiusMeters;
+		int iDivisions = 0;
+		while (flRadiusMeters > r_terrainresolution.GetFloat())
+		{
+			flRadiusMeters /= 2;
+			pBranch->m_oData.vecDetailMax = pBranch->m_oData.vecDetailMax*2;
+		}
 	}
 }
 

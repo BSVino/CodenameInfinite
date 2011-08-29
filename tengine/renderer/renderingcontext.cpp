@@ -39,7 +39,13 @@ CRenderingContext::~CRenderingContext()
 		glPopMatrix();
 
 	if (m_bBoundTexture)
-		glBindTexture(GL_TEXTURE_2D, 0);
+	{
+		for (size_t i = 0; i < 8; i++)
+		{
+			glClientActiveTexture(GL_TEXTURE0+i);
+			glBindTexture(GL_TEXTURE_2D, i);
+		}
+	}
 
 	if (m_bFBO)
 	{
@@ -422,13 +428,13 @@ void CRenderingContext::RenderBillboard(const tstring& sTexture, float flRadius)
 
 	BindTexture(iTexture);
 	BeginRenderQuads();
-		TexCoord(0, 1);
+		TexCoord(0.0f, 1.0f);
 		Vertex(-vecRight + vecUp);
-		TexCoord(0, 0);
+		TexCoord(0.0f, 0.0f);
 		Vertex(-vecRight - vecUp);
-		TexCoord(1, 0);
+		TexCoord(1.0f, 0.0f);
 		Vertex(vecRight - vecUp);
-		TexCoord(1, 1);
+		TexCoord(1.0f, 1.0f);
 		Vertex(vecRight + vecUp);
 	EndRender();
 }
@@ -508,17 +514,22 @@ void CRenderingContext::SetUniform(const char* pszName, const Color& clrValue)
 	glUniform3fv(iUniform, 1, Vector(clrValue));
 }
 
-void CRenderingContext::BindTexture(const tstring& sName)
+void CRenderingContext::BindTexture(const tstring& sName, int iChannel)
 {
-	BindTexture(CTextureLibrary::GetTextureGLID(sName));
+	BindTexture(CTextureLibrary::GetTextureGLID(sName), iChannel);
 }
 
-void CRenderingContext::BindTexture(size_t iTexture)
+void CRenderingContext::BindTexture(size_t iTexture, int iChannel)
 {
 	if (!m_bAttribs)
 		PushAttribs();
 
+	glClientActiveTexture(GL_TEXTURE0+iChannel);
+	glActiveTexture(GL_TEXTURE0+iChannel);
+
 	glBindTexture(GL_TEXTURE_2D, (GLuint)iTexture);
+	glEnable(GL_TEXTURE_2D);
+
 	m_bBoundTexture = true;
 }
 
@@ -534,7 +545,8 @@ void CRenderingContext::BeginRenderTris()
 {
 	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
-	m_avecTexCoords.clear();
+	m_avecTexCoord.clear();
+	m_aavecTexCoords.clear();
 	m_avecNormals.clear();
 	m_avecVertices.clear();
 
@@ -548,7 +560,8 @@ void CRenderingContext::BeginRenderQuads()
 {
 	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
-	m_avecTexCoords.clear();
+	m_avecTexCoord.clear();
+	m_aavecTexCoords.clear();
 	m_avecNormals.clear();
 	m_avecVertices.clear();
 
@@ -562,7 +575,8 @@ void CRenderingContext::BeginRenderDebugLines()
 {
 	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
-	m_avecTexCoords.clear();
+	m_avecTexCoord.clear();
+	m_aavecTexCoords.clear();
 	m_avecNormals.clear();
 	m_avecVertices.clear();
 
@@ -573,31 +587,48 @@ void CRenderingContext::BeginRenderDebugLines()
 	m_iDrawMode = GL_LINE_LOOP;
 }
 
-void CRenderingContext::TexCoord(float s, float t)
+void CRenderingContext::TexCoord(float s, float t, int iChannel)
 {
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	m_vecTexCoord = Vector2D(s, t);
+	if (iChannel >= (int)m_avecTexCoord.size())
+		m_avecTexCoord.resize(iChannel+1);
+	m_avecTexCoord[iChannel] = Vector2D(s, t);
+
 	m_bTexCoord = true;
 }
 
-void CRenderingContext::TexCoord(const Vector2D& v)
+void CRenderingContext::TexCoord(const Vector2D& v, int iChannel)
 {
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	m_vecTexCoord = v;
+	if (iChannel >= (int)m_avecTexCoord.size())
+		m_avecTexCoord.resize(iChannel+1);
+	m_avecTexCoord[iChannel] = v;
+
 	m_bTexCoord = true;
 }
 
-void CRenderingContext::TexCoord(const DoubleVector2D& v)
+void CRenderingContext::TexCoord(const DoubleVector2D& v, int iChannel)
 {
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	m_vecTexCoord = Vector2D(v);
+	if (iChannel >= (int)m_avecTexCoord.size())
+		m_avecTexCoord.resize(iChannel+1);
+	m_avecTexCoord[iChannel] = Vector2D(v);
+
 	m_bTexCoord = true;
 }
 
-void CRenderingContext::TexCoord(const Vector& v)
+void CRenderingContext::TexCoord(const Vector& v, int iChannel)
 {
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	m_vecTexCoord = v;
+	if (iChannel >= (int)m_avecTexCoord.size())
+		m_avecTexCoord.resize(iChannel+1);
+	m_avecTexCoord[iChannel] = v;
+
+	m_bTexCoord = true;
+}
+
+void CRenderingContext::TexCoord(const DoubleVector& v, int iChannel)
+{
+	if (iChannel >= (int)m_avecTexCoord.size())
+		m_avecTexCoord.resize(iChannel+1);
+	m_avecTexCoord[iChannel] = DoubleVector2D(v);
+
 	m_bTexCoord = true;
 }
 
@@ -613,7 +644,13 @@ void CRenderingContext::Vertex(const Vector& v)
 	glEnableClientState(GL_VERTEX_ARRAY);
 
 	if (m_bTexCoord)
-		m_avecTexCoords.push_back(m_vecTexCoord);
+	{
+		if (m_aavecTexCoords.size() < m_avecTexCoord.size())
+			m_aavecTexCoords.resize(m_avecTexCoord.size());
+
+		for (size_t i = 0; i < m_aavecTexCoords.size(); i++)
+			m_aavecTexCoords[i].push_back(m_avecTexCoord[i]);
+	}
 
 	if (m_bNormal)
 		m_avecNormals.push_back(m_vecNormal);
@@ -630,11 +667,29 @@ void CRenderingContext::RenderCallList(size_t iCallList)
 
 void CRenderingContext::EndRender()
 {
-	glClientActiveTexture(GL_TEXTURE0);
+	eastl::vector<size_t> aiTexCoords;
+	for (size_t i = 0; i < m_aavecTexCoords.size(); i++)
+	{
+		tstring sCoord = sprintf("vecTexCoord%d", i);
+		size_t iAttribute = glGetAttribLocation(m_iProgram, sCoord.c_str());
+		aiTexCoords.push_back(iAttribute);
+	}
+
 	if (m_bTexCoord)
-		glTexCoordPointer(2, GL_FLOAT, 0, m_avecTexCoords.data());
+	{
+		for (size_t i = 0; i < m_aavecTexCoords.size(); i++)
+		{
+			if (aiTexCoords[i] == ~0)
+				continue;
+
+			glEnableVertexAttribArray(aiTexCoords[i]);
+			glVertexAttribPointer(aiTexCoords[i], 2, GL_FLOAT, false, 0, m_aavecTexCoords[i].data());
+		}
+	}
+
 	if (m_bNormal)
 		glNormalPointer(GL_FLOAT, 0, m_avecNormals.data());
+
 	glVertexPointer(3, GL_FLOAT, 0, m_avecVertices.data());
 	glDrawArrays(m_iDrawMode, 0, m_avecVertices.size());
 

@@ -543,13 +543,13 @@ void CSystemInstance::Render(CRenderingContext* c)
 
 			c->BeginRenderQuads();
 
-			c->TexCoord(0, 1);
+			c->TexCoord(0.0f, 1.0f);
 			c->Vertex(vecTL);
-			c->TexCoord(0, 0);
+			c->TexCoord(0.0f, 0.0f);
 			c->Vertex(vecBL);
-			c->TexCoord(1, 0);
+			c->TexCoord(1.0f, 0.0f);
 			c->Vertex(vecBR);
-			c->TexCoord(1, 1);
+			c->TexCoord(1.0f, 1.0f);
 			c->Vertex(vecTR);
 
 			c->EndRender();

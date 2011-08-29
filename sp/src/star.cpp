@@ -47,6 +47,7 @@ void CStar::PostRender(bool bTransparent) const
 	c.SetColor(Color(255, 255, 255, 255));
 	c.SetLighting(false);
 
+	c.UseProgram("model");
 	c.RenderBillboard("textures/star-yellow.png", (float)(GetRenderScalableRadius()*2).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 }
 

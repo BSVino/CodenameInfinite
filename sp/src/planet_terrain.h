@@ -48,6 +48,8 @@ public:
 	Vector				vec2n;
 	Vector				vec3n;
 	Vector				vec4n;
+	DoubleVector2D		vecDetailMin;
+	DoubleVector2D		vecDetailMax;
 };
 
 typedef CQuadTree<CBranchData, double> CTerrainQuadTree;

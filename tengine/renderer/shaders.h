@@ -83,10 +83,17 @@ private:
 inline const char* CShaderLibrary::GetVSPassShader()
 {
 	return
+		"attribute vec2 vecTexCoord0;"
+		"attribute vec2 vecTexCoord1;"
+
+		"varying vec2 vecFragmentTexCoord0;"
+		"varying vec2 vecFragmentTexCoord1;"
+
 		"void main()"
 		"{"
 		"	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
-		"	gl_TexCoord[0] = gl_MultiTexCoord0;"
+		"	vecFragmentTexCoord0 = vecTexCoord0;"
+		"	vecFragmentTexCoord1 = vecTexCoord1;"
 		"	gl_FrontColor = gl_Color;"
 		"}";
 }

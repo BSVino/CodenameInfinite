@@ -69,6 +69,7 @@ CPlanet::~CPlanet()
 void CPlanet::Precache()
 {
 	PrecacheTexture("textures/planet.png");
+	PrecacheTexture("textures/grass.png");
 }
 
 void CPlanet::Spawn()
@@ -174,11 +175,17 @@ void CPlanet::PostRender(bool bTransparent) const
 	CRenderingContext c(GameServer()->GetRenderer());
 
 	c.SetBackCulling(false);	// Ideally this would be on but it's not a big deal.
-	c.BindTexture("textures/planet.png");
+	c.BindTexture("textures/planet.png", 0);
+	if (eScale <= SCALE_METER)
+		c.BindTexture("textures/grass.png", 1);
 
 	c.UseProgram(CShaderLibrary::GetProgram("planet"));
 	c.SetUniform("iDiffuse", 0);
+	if (eScale <= SCALE_METER)
+		c.SetUniform("iDetail", 1);
+	c.SetUniform("bDetail", eScale <= SCALE_METER);
 	c.SetUniform("vecStarLightPosition", vecStarLightPosition);
+	c.SetUniform("eScale", eScale);
 
 	if (r_colorcodescales.GetBool())
 	{

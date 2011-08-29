@@ -11,6 +11,9 @@
 #endif
 
 template <class unit_t>
+class TVector2D;
+
+template <class unit_t>
 class TVector
 {
 public:
@@ -22,6 +25,8 @@ public:
 			// Conversions
 			TVector(const TVector<float>& v);
 			TVector(const TVector<double>& v);
+			TVector(const class TVector2D<float>& v);
+			TVector(const class TVector2D<double>& v);
 
 public:
 	TVector<unit_t>	operator-(void) const;
@@ -444,6 +449,18 @@ public:
 
 	unit_t	x, y;
 };
+
+template <class unit_t>
+inline TVector<unit_t>::TVector(const TVector2D<float>& v)
+	: x((unit_t)v.x), y((unit_t)v.y), z(0)
+{
+}
+
+template <class unit_t>
+inline TVector<unit_t>::TVector(const TVector2D<double>& v)
+	: x((unit_t)v.x), y((unit_t)v.y), z(0)
+{
+}
 
 typedef TVector2D<float> Vector2D;
 typedef TVector2D<double> DoubleVector2D;
