@@ -82,42 +82,11 @@ void CSPGame::Simulate()
 		apSimulateList.push_back(pSPEntity);
 	}
 
+	eastl::vector<ISPEntity*> apCollisionList;
+	apCollisionList.reserve(CBaseEntity::GetNumEntities());
+	apCollisionList.clear();
+
 	// Move all entities
-	for (size_t i = 0; i < apSimulateList.size(); i++)
-	{
-		ISPEntity* pEntity = apSimulateList[i];
-		if (!pEntity)
-			continue;
-
-		CScalableMatrix mGlobalToLocalRotation = pEntity->GetGlobalToLocalScalableTransform();
-		mGlobalToLocalRotation.SetTranslation(CScalableVector());
-
-		// Break simulations up into very small steps in order to preserve accuracy.
-		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
-		for (float flCurrentSimulationTime = GameServer()->GetSimulationTime(); flCurrentSimulationTime < GameServer()->GetGameTime(); flCurrentSimulationTime += flSimulationFrameTime)
-		{
-			CScalableVector vecVelocity = pEntity->GetLocalScalableVelocity();
-			if (vecVelocity.IsZero())
-				continue;
-
-			CScalableVector vecGlobalGravity = pEntity->GetGlobalScalableGravity();
-			CScalableVector vecLocalGravity;
-			if (!vecGlobalGravity.IsZero())
-			{
-				CScalableFloat flLength = vecGlobalGravity.Length();
-				vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
-				pEntity->SetLocalScalableVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
-			}
-			else
-				vecLocalGravity = CScalableVector();
-
-			pEntity->SetLocalScalableOrigin(pEntity->GetLocalScalableOrigin() + vecVelocity * flSimulationFrameTime);
-		}
-	}
-
-	while (GameServer()->GetSimulationTime() < GameServer()->GetGameTime())
-		GameServer()->AdvanceSimulationTime(flSimulationFrameTime);
-
 	for (size_t i = 0; i < apSimulateList.size(); i++)
 	{
 		ISPEntity* pEntity = apSimulateList[i];
@@ -144,14 +113,72 @@ void CSPGame::Simulate()
 			if (!pEntity->ShouldTouch(pSPEntity2))
 				continue;
 
-			CScalableVector vecPoint;
-			if (pEntity->IsTouching(pSPEntity2, vecPoint))
+			apCollisionList.push_back(pSPEntity2);
+		}
+
+		CScalableMatrix mGlobalToLocalRotation = pEntity->GetGlobalToLocalScalableTransform();
+		mGlobalToLocalRotation.SetTranslation(CScalableVector());
+
+		// Break simulations up into very small steps in order to preserve accuracy.
+		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
+		for (float flCurrentSimulationTime = GameServer()->GetSimulationTime(); flCurrentSimulationTime < GameServer()->GetGameTime(); flCurrentSimulationTime += flSimulationFrameTime)
+		{
+			CScalableVector vecVelocity = pEntity->GetLocalScalableVelocity();
+
+			CScalableVector vecGlobalGravity = pEntity->GetGlobalScalableGravity();
+			CScalableVector vecLocalGravity;
+			if (!vecGlobalGravity.IsZero())
 			{
-				pEntity->SetGlobalScalableOrigin(vecPoint);
-				pEntity->Touching(pSPEntity2);
+				CScalableFloat flLength = vecGlobalGravity.Length();
+				vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
+				pEntity->SetLocalScalableVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
 			}
+			else
+				vecLocalGravity = CScalableVector();
+
+			CScalableVector vecDestination = pEntity->GetLocalScalableOrigin() + vecVelocity * flSimulationFrameTime;
+			CScalableVector vecGlobalDestination = vecDestination;
+			if (pEntity->GetScalableMoveParent())
+				vecGlobalDestination = pEntity->GetScalableMoveParent()->GetGlobalScalableTransform() * vecDestination;
+
+			bool bContact = false;
+			for (size_t i = 0; i < apCollisionList.size(); i++)
+			{
+				ISPEntity* pSPEntity = dynamic_cast<ISPEntity*>(apCollisionList[i]);
+
+				CScalableVector vecPoint;
+
+				if (pEntity->GetScalableMoveParent() == pSPEntity)
+				{
+					if (pEntity->IsTouchingLocal(pSPEntity, vecDestination, vecPoint))
+					{
+						bContact = true;
+						pEntity->SetLocalScalableOrigin(vecPoint);
+						pEntity->Touching(pSPEntity);
+						vecDestination = vecPoint;
+						vecGlobalDestination = pEntity->GetScalableMoveParent()->GetGlobalScalableTransform() * vecDestination;
+					}
+				}
+				else
+				{
+					if (pEntity->IsTouching(pSPEntity, vecGlobalDestination, vecPoint))
+					{
+						bContact = true;
+						pEntity->SetGlobalScalableOrigin(vecPoint);
+						pEntity->Touching(pSPEntity);
+						vecGlobalDestination = vecPoint;
+						vecDestination = pEntity->GetScalableMoveParent()->GetGlobalToLocalScalableTransform() * vecGlobalDestination;
+					}
+				}
+			}
+
+			if (!bContact)
+				pEntity->SetLocalScalableOrigin(vecDestination);
 		}
 	}
+
+	while (GameServer()->GetSimulationTime() < GameServer()->GetGameTime())
+		GameServer()->AdvanceSimulationTime(flSimulationFrameTime);
 }
 
 CSPCharacter* CSPGame::GetLocalPlayerCharacter()

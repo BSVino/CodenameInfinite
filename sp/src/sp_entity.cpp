@@ -328,20 +328,22 @@ EAngle ISPEntity::GetRenderAngles() const
 	return GetScalableRenderTransform().GetAngles();
 }
 
-bool ISPEntity::IsTouching(ISPEntity* pOther, CScalableVector& vecPoint)
+bool ISPEntity::IsTouchingLocal(ISPEntity* pOther, const CScalableVector& vecDestination, CScalableVector& vecPoint)
 {
 	if ((pOther->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
 		return false;
 
-	if (GetScalableMoveParent() == pOther)
-	{
-		bool bResult = pOther->CollideLocal(GetLastLocalScalableOrigin(), GetLocalScalableOrigin(), vecPoint);
-		if (bResult)
-			vecPoint = GetScalableMoveParent()->GetGlobalScalableTransform() * vecPoint;
-		return bResult;
-	}
-	else
-		return pOther->Collide(GetLastGlobalScalableOrigin(), GetGlobalScalableOrigin(), vecPoint);
+	TAssert(GetScalableMoveParent() == pOther);
+
+	return pOther->CollideLocal(GetLocalScalableOrigin(), vecDestination, vecPoint);
+}
+
+bool ISPEntity::IsTouching(ISPEntity* pOther, const CScalableVector& vecDestination, CScalableVector& vecPoint)
+{
+	if ((pOther->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
+		return false;
+
+	return pOther->Collide(GetGlobalScalableOrigin(), vecDestination, vecPoint);
 }
 
 bool ISPEntity::CollideLocal(const CScalableVector& v1, const CScalableVector& v2, CScalableVector& vecPoint)

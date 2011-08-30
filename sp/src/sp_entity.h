@@ -66,7 +66,8 @@ public:
 	virtual EAngle					GetRenderAngles() const;
 
 	virtual bool					ShouldTouch(ISPEntity* pOther) { return true; };
-	virtual bool					IsTouching(ISPEntity* pOther, CScalableVector& vecPoint);
+	virtual bool					IsTouchingLocal(ISPEntity* pOther, const CScalableVector& vecDestination, CScalableVector& vecPoint);
+	virtual bool					IsTouching(ISPEntity* pOther, const CScalableVector& vecDestination, CScalableVector& vecPoint);
 	virtual bool					CollideLocal(const CScalableVector& v1, const CScalableVector& v2, CScalableVector& vecPoint);
 	virtual bool					Collide(const CScalableVector& v1, const CScalableVector& v2, CScalableVector& vecPoint);
 	virtual void					Touching(ISPEntity* pOther) {};
