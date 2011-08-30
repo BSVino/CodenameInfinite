@@ -42,7 +42,6 @@ public:
 	void					RenderBillboard(const tstring& sTexture, float flRadius);
 
 	void					UseFrameBuffer(const class CFrameBuffer* pBuffer);
-	void					UseProgram(size_t iProgram);
 	void					UseProgram(const tstring& sProgram);
 	void					SetUniform(const char* pszName, int iValue);
 	void					SetUniform(const char* pszName, float flValue);
@@ -74,6 +73,7 @@ public:
 	bool					m_bBoundTexture;
 	bool					m_bFBO;
 	size_t					m_iProgram;
+	class CShader*			m_pShader;
 	bool					m_bAttribs;
 
 	bool					m_bColorSwap;

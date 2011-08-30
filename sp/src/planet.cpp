@@ -179,7 +179,7 @@ void CPlanet::PostRender(bool bTransparent) const
 	if (eScale <= SCALE_METER)
 		c.BindTexture("textures/grass.png", 1);
 
-	c.UseProgram(CShaderLibrary::GetProgram("planet"));
+	c.UseProgram("planet");
 	c.SetUniform("iDiffuse", 0);
 	if (eScale <= SCALE_METER)
 		c.SetUniform("iDetail", 1);

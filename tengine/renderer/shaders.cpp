@@ -115,19 +115,19 @@ void CShaderLibrary::WriteLog(const char* pszLog, const char* pszShaderText)
 
 CShader* CShaderLibrary::GetShader(const tstring& sName)
 {
-	eastl::map<tstring, size_t>::const_iterator i = m_aShaderNames.find(sName);
-	if (i == m_aShaderNames.end())
+	eastl::map<tstring, size_t>::const_iterator i = Get()->m_aShaderNames.find(sName);
+	if (i == Get()->m_aShaderNames.end())
 		return NULL;
 
-	return &m_aShaders[i->second];
+	return &Get()->m_aShaders[i->second];
 }
 
 CShader* CShaderLibrary::GetShader(size_t i)
 {
-	if (i >= m_aShaders.size())
+	if (i >= Get()->m_aShaders.size())
 		return NULL;
 
-	return &m_aShaders[i];
+	return &Get()->m_aShaders[i];
 }
 
 size_t CShaderLibrary::GetProgram(const tstring& sName)
@@ -141,19 +141,6 @@ size_t CShaderLibrary::GetProgram(const tstring& sName)
 		return 0;
 
 	return Get()->GetShader(sName)->m_iProgram;
-}
-
-size_t CShaderLibrary::GetProgram(size_t iProgram)
-{
-	TAssert(Get());
-	if (!Get())
-		return 0;
-
-	TAssert(Get()->GetShader(iProgram));
-	if (!Get()->GetShader(iProgram))
-		return 0;
-
-	return Get()->GetShader(iProgram)->m_iProgram;
 }
 
 CShader::CShader(const tstring& sName, const tstring& sVertexFile, const tstring& sFragmentFile)
@@ -320,10 +307,21 @@ bool CShader::Compile()
 	glGetProgramiv((GLuint)m_iProgram, GL_LINK_STATUS, &iProgramLinked);
 
 	TAssert(iVertexCompiled == GL_TRUE && iFragmentCompiled == GL_TRUE && iProgramLinked == GL_TRUE);
-	if (iVertexCompiled == GL_TRUE && iFragmentCompiled == GL_TRUE && iProgramLinked == GL_TRUE)
-		return true;
-	else
+	if (iVertexCompiled != GL_TRUE || iFragmentCompiled != GL_TRUE || iProgramLinked != GL_TRUE)
 		return false;
+
+	size_t iTexCoordAttribute;
+	int i = 0;
+	do
+	{
+		tstring sCoord = sprintf("vecTexCoord%d", i++);
+		iTexCoordAttribute = glGetAttribLocation(m_iProgram, sCoord.c_str());
+		if (iTexCoordAttribute != ~0)
+			m_aiTexCoordAttributes.push_back(iTexCoordAttribute);
+	}
+	while (iTexCoordAttribute != ~0);
+
+	return true;
 }
 
 void CShader::Destroy()

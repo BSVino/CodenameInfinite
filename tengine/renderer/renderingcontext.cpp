@@ -448,17 +448,6 @@ void CRenderingContext::UseFrameBuffer(const CFrameBuffer* pBuffer)
 	glViewport(0, 0, (GLsizei)pBuffer->m_iWidth, (GLsizei)pBuffer->m_iHeight);
 }
 
-void CRenderingContext::UseProgram(size_t iProgram)
-{
-	TAssert(m_pRenderer->ShouldUseShaders());
-
-	if (!m_pRenderer->ShouldUseShaders())
-		return;
-
-	m_iProgram = iProgram;
-	glUseProgram((GLuint)iProgram);
-}
-
 void CRenderingContext::UseProgram(const tstring& sProgram)
 {
 	TAssert(m_pRenderer->ShouldUseShaders());
@@ -466,8 +455,13 @@ void CRenderingContext::UseProgram(const tstring& sProgram)
 	if (!m_pRenderer->ShouldUseShaders())
 		return;
 
-	m_iProgram = CShaderLibrary::GetProgram(sProgram);
-	glUseProgram((GLuint)m_iProgram);
+	m_pShader = CShaderLibrary::GetShader(sProgram);
+	TAssert(m_pShader);
+	if (!m_pShader)
+		return;
+
+	m_iProgram = m_pShader->m_iProgram;
+	glUseProgram((GLuint)m_pShader->m_iProgram);
 }
 
 void CRenderingContext::SetUniform(const char* pszName, int iValue)
@@ -667,23 +661,16 @@ void CRenderingContext::RenderCallList(size_t iCallList)
 
 void CRenderingContext::EndRender()
 {
-	eastl::vector<size_t> aiTexCoords;
-	for (size_t i = 0; i < m_aavecTexCoords.size(); i++)
-	{
-		tstring sCoord = sprintf("vecTexCoord%d", i);
-		size_t iAttribute = glGetAttribLocation(m_iProgram, sCoord.c_str());
-		aiTexCoords.push_back(iAttribute);
-	}
-
 	if (m_bTexCoord)
 	{
 		for (size_t i = 0; i < m_aavecTexCoords.size(); i++)
 		{
-			if (aiTexCoords[i] == ~0)
+			int iTexCoordAttribute = m_pShader->m_aiTexCoordAttributes[i];
+			if (iTexCoordAttribute == ~0)
 				continue;
 
-			glEnableVertexAttribArray(aiTexCoords[i]);
-			glVertexAttribPointer(aiTexCoords[i], 2, GL_FLOAT, false, 0, m_aavecTexCoords[i].data());
+			glEnableVertexAttribArray(iTexCoordAttribute);
+			glVertexAttribPointer(iTexCoordAttribute, 2, GL_FLOAT, false, 0, m_aavecTexCoords[i].data());
 		}
 	}
 

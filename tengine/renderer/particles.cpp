@@ -104,7 +104,7 @@ void CParticleSystemLibrary::Render()
 		CRenderingContext c(GameServer()->GetRenderer());
 		if (GameServer()->GetRenderer()->ShouldUseShaders())
 		{
-			c.UseProgram(CShaderLibrary::GetProgram("model"));
+			c.UseProgram("model");
 			c.SetUniform("bDiffuse", true);
 			c.SetUniform("iDiffuse", 0);
 			c.SetUniform("bColorSwapInAlpha", false);
@@ -123,7 +123,7 @@ void CParticleSystemLibrary::Render()
 		CRenderingContext c(GameServer()->GetRenderer());
 		if (GameServer()->GetRenderer()->ShouldUseShaders())
 		{
-			c.UseProgram(CShaderLibrary::GetProgram("model"));
+			c.UseProgram("model");
 			c.SetUniform("bDiffuse", true);
 			c.SetUniform("iDiffuse", 0);
 			c.SetUniform("bColorSwapInAlpha", false);

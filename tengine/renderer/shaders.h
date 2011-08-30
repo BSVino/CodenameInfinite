@@ -23,6 +23,7 @@ public:
 	size_t					m_iVShader;
 	size_t					m_iFShader;
 	size_t					m_iProgram;
+	eastl::vector<int>		m_aiTexCoordAttributes;
 };
 
 class CShaderLibrary
@@ -34,16 +35,14 @@ public:
 							~CShaderLibrary();
 
 public:
-	size_t					GetNumShaders() { return m_aShaders.size(); };
+	static size_t			GetNumShaders() { return Get()->m_aShaders.size(); };
 
-	CShader*				GetShader(const tstring& sName);
-	CShader*				GetShader(size_t i);
+	static CShader*			GetShader(const tstring& sName);
+	static CShader*			GetShader(size_t i);
 
-public:
 	static void				AddShader(const tstring& sName, const tstring& sVertex, const tstring& sFragment);
 
 	static size_t			GetProgram(const tstring& sName);
-	static size_t			GetProgram(size_t iProgram);
 
 	static const char*		GetVSPassShader();
 

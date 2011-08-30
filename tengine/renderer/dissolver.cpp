@@ -202,7 +202,7 @@ void CModelDissolver::Render()
 	c.SetColor(Color(255, 255, 255, 255));
 	if (pRenderer->ShouldUseShaders())
 	{
-		c.UseProgram(CShaderLibrary::GetProgram("model"));
+		c.UseProgram("model");
 		c.SetUniform("bDiffuse", true);
 		c.SetUniform("iDiffuse", 0);
 	}
