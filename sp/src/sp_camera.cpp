@@ -10,7 +10,7 @@
 #include "planet.h"
 #include "sp_renderer.h"
 
-CScalableVector CSPCamera::GetCameraScalablePosition()
+CScalableVector CSPCamera::GetCameraPosition()
 {
 	if (m_bFreeMode)
 		return CScalableVector(BaseClass::GetCameraPosition(), SCALE_METER);
@@ -19,12 +19,12 @@ CScalableVector CSPCamera::GetCameraScalablePosition()
 	if (!pCharacter)
 		return CScalableVector(Vector(10,0,0), SCALE_METER);
 
-	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeightScalable();
+	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
 	return vecEyeHeight;
 }
 
-CScalableVector CSPCamera::GetCameraScalableTarget()
+CScalableVector CSPCamera::GetCameraTarget()
 {
 	if (m_bFreeMode)
 		return CScalableVector(BaseClass::GetCameraTarget(), SCALE_METER);
@@ -40,32 +40,14 @@ CScalableVector CSPCamera::GetCameraScalableTarget()
 	if (eScale < SCALE_METER)
 		eScale = SCALE_METER;
 
-	return GetCameraScalablePosition() + CScalableVector(pCharacter->GetGlobalScalableTransform().GetForwardVector(), eScale);
+	return GetCameraPosition() + CScalableVector(pCharacter->GetGlobalTransform().GetForwardVector(), eScale);
 }
 
-Vector CSPCamera::GetCameraPosition()
-{
-	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
-	if (eScale == SCALE_NONE)
-		return Vector(0, 0, 0);
-
-	return GetCameraScalablePosition().GetUnits(eScale);
-}
-
-Vector CSPCamera::GetCameraTarget()
-{
-	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
-	if (eScale == SCALE_NONE)
-		return Vector(10, 0, 0);
-
-	return GetCameraScalableTarget().GetUnits(eScale);
-}
-
-Vector CSPCamera::GetCameraUp()
+TVector CSPCamera::GetCameraUp()
 {
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter)
-		return Vector(pCharacter->GetGlobalScalableTransform().GetUpVector());
+		return Vector(pCharacter->GetGlobalTransform().GetUpVector());
 
 	return BaseClass::GetCameraUp();
 }

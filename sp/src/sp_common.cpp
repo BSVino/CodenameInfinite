@@ -25,117 +25,35 @@ CScalableFloat::CScalableFloat(float flUnits, scale_t eScale)
 {
 	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
 
+	m_bZero = true;
 	m_flRemainder = 0;
 	m_flOverflow = 0;
 
-	if (flUnits == 0)
-	{
-		m_bZero = true;
-		return;
-	}
-
-	m_bZero = false;
-
-	int i = SCALESTACK_INDEX(eScale);
-	m_bPositive = (flUnits > 0);
-
-	if (m_bPositive)
-	{
-		while (flUnits < 1)
-		{
-			flUnits *= 1000;
-			i--;
-		}
-
-		while (flUnits > 1000)
-		{
-			flUnits /= 1000;
-			i++;
-		}
-
-		if (i >= SCALESTACK_SIZE)
-		{
-			int k = i;
-			while (k-- > SCALESTACK_SIZE)
-				flUnits *= 1000;
-			if (flUnits < 2000000000)
-			{
-				m_flOverflow += (long)flUnits;
-				flUnits -= (long)flUnits;
-				flUnits *= 1000;
-			}
-			else
-			{
-				m_flOverflow += flUnits;
-				flUnits = 0;
-			}
-			i = SCALESTACK_SIZE-1;
-		}
-
-		while (flUnits > 0 && i >= 0)
-		{
-			m_aiScaleStack[i] = (short)flUnits;
-			flUnits -= m_aiScaleStack[i];
-			flUnits *= 1000;
-			i--;
-		}
-
-		m_flRemainder = flUnits/1000;
-	}
-	else
-	{
-		while (flUnits > -1)
-		{
-			flUnits *= 1000;
-			i--;
-		}
-
-		while (flUnits < -1000)
-		{
-			flUnits /= 1000;
-			i++;
-		}
-
-		if (i >= SCALESTACK_SIZE)
-		{
-			int k = i;
-			while (k-- > SCALESTACK_SIZE)
-				flUnits *= 1000;
-			if (flUnits > -2000000000)
-			{
-				m_flOverflow += (long)flUnits;
-				flUnits -= (long)flUnits;
-				flUnits *= 1000;
-			}
-			else
-			{
-				m_flOverflow += flUnits;
-				flUnits = 0;
-			}
-			i = SCALESTACK_SIZE-1;
-		}
-
-		while (flUnits < 0 && i >= 0)
-		{
-			m_aiScaleStack[i] = (short)flUnits;
-			flUnits -= m_aiScaleStack[i];
-			flUnits *= 1000;
-			i--;
-		}
-
-		m_flRemainder = flUnits/1000;
-	}
-
-	CHECKSANITY(*this);
+	Construct(flUnits, eScale);
 }
 
 CScalableFloat::CScalableFloat(double flUnits, scale_t eScale)
 {
 	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
-
+	m_bZero = true;
 	m_flRemainder = 0;
 	m_flOverflow = 0;
 
+	Construct(flUnits, eScale);
+}
+
+CScalableFloat::CScalableFloat(float flMeters)
+{
+	memset(&m_aiScaleStack[0], 0, SCALESTACK_SIZE*sizeof(short));
+	m_bZero = true;
+	m_flRemainder = 0;
+	m_flOverflow = 0;
+
+	Construct(flMeters, SCALE_METER);
+}
+
+void CScalableFloat::Construct(double flUnits, scale_t eScale)
+{
 	if (flUnits == 0)
 	{
 		m_bZero = true;
@@ -304,18 +222,18 @@ CScalableFloat CScalableFloat::AddSimilar(const CScalableFloat& u) const
 
 	CScalableFloat flReturn;
 	flReturn.m_bPositive = m_bPositive;
+	flReturn.m_bZero = m_bZero && u.m_bZero;
+
+	flReturn.m_flOverflow = m_flOverflow + u.m_flOverflow;
+
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
 		flReturn.m_aiScaleStack[i] += m_aiScaleStack[i] + u.m_aiScaleStack[i];
 		flReturn.NormalizeStackPosition(i);
 	}
 
-	flReturn.m_bZero = m_bZero && u.m_bZero;
-
 	flReturn.m_flRemainder = m_flRemainder + u.m_flRemainder;
 	flReturn.NormalizeRemainder();
-
-	flReturn.m_flOverflow = m_flOverflow + u.m_flOverflow;
 
 	CHECKSANITY(flReturn);
 
@@ -468,7 +386,8 @@ CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
 	// Since I hard-coded the code below, this would have to be updated if I add a scale.
 	TAssert(SCALESTACK_SIZE == SCALE_TERAMETER);
 
-	double aflResults[13];
+	const int iResults = 13;
+	double aflResults[iResults];
 
 	{
 		double fll0 = (double)m_aiScaleStack[0] + m_flRemainder;
@@ -506,7 +425,7 @@ CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
 	flReturn.m_bPositive = f.m_bPositive?m_bPositive:!m_bPositive;
 	flReturn.m_bZero = true;
 
-	for (size_t i = 0; i < 11; i++)
+	for (size_t i = 0; i < iResults; i++)
 	{
 		int j = i;
 		double flValue = aflResults[j];
@@ -1267,6 +1186,21 @@ bool CScalableFloat::operator>(const CScalableFloat& u) const
 	return (m_flRemainder > u.m_flRemainder);
 }
 
+bool CScalableFloat::operator<(float flMeters) const
+{
+	return GetUnits(SCALE_METER) < flMeters;
+}
+
+bool CScalableFloat::operator>(float flMeters) const
+{
+	return GetUnits(SCALE_METER) > flMeters;
+}
+
+CScalableFloat::operator double() const
+{
+	return GetUnits(SCALE_METER);
+}
+
 static float g_aflConversions[11] = 
 {
 	0.000000000000001f,
@@ -1325,6 +1259,13 @@ CScalableVector::CScalableVector(DoubleVector vecUnits, scale_t eScale)
 	z = CScalableFloat(vecUnits.z, eScale);
 }
 
+CScalableVector::CScalableVector(Vector vecMeters)
+{
+	x = CScalableFloat(vecMeters.x, SCALE_METER);
+	y = CScalableFloat(vecMeters.y, SCALE_METER);
+	z = CScalableFloat(vecMeters.z, SCALE_METER);
+}
+
 DoubleVector CScalableVector::GetUnits(scale_t eScale) const
 {
 	DoubleVector vecResult = Vector(0,0,0);
@@ -1348,11 +1289,8 @@ bool CScalableVector::IsZero()
 
 CScalableFloat CScalableVector::Length() const
 {
-	double flX = x.GetUnits(SCALE_METER);
-	double flY = y.GetUnits(SCALE_METER);
-	double flZ = z.GetUnits(SCALE_METER);
-	double f = flX*flX + flY*flY + flZ*flZ;
-	CScalableFloat r(sqrt(f), SCALE_METER);
+	CScalableFloat f = x*x + y*y + z*z;
+	CScalableFloat r(sqrt(f.GetUnits(SCALE_METER)), SCALE_METER);
 
 	return r;
 }
@@ -1439,6 +1377,20 @@ CScalableVector CScalableVector::operator/( float f ) const
 	return vecReturn;
 }
 
+void CScalableVector::operator+=(const CScalableVector& u)
+{
+	x += u.x;
+	y += u.y;
+	z += u.z;
+}
+
+void CScalableVector::operator-=(const CScalableVector& u)
+{
+	x -= u.x;
+	y -= u.y;
+	z -= u.z;
+}
+
 CScalableFloat CScalableVector::Index(int i) const
 {
 	if (i == 0)
@@ -1478,6 +1430,11 @@ CScalableFloat& CScalableVector::operator[](int i)
 bool CScalableVector::operator==(const CScalableVector& u) const
 {
 	return (x == u.x && y == u.y && z == u.z);
+}
+
+CScalableVector::operator Vector() const
+{
+	return GetUnits(SCALE_METER);
 }
 
 CScalableMatrix::CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition)
@@ -1532,6 +1489,45 @@ EAngle CScalableMatrix::GetAngles() const
 		flPitch += 2;
 
 	return EAngle(asin(flPitch) * 180/M_PI, atan2(-m[2][0], m[0][0]) * 180/M_PI, atan2(-m[1][2], m[1][1]) * 180/M_PI);
+}
+
+void CScalableMatrix::SetRotation(const Quaternion& q)
+{
+	float x = q.x;
+	float y = q.y;
+	float z = q.z;
+	float w = q.w;
+
+	float x2 = 2*x*x;
+	float y2 = 2*y*y;
+	float z2 = 2*z*z;
+
+	float xy2 = 2*x*y;
+	float xz2 = 2*x*z;
+	float yz2 = 2*y*z;
+	float xw2 = 2*x*w;
+	float zw2 = 2*z*w;
+	float yw2 = 2*y*w;
+
+	m[0][0] = 1 - y2 - z2;
+	m[0][1] = xy2 - zw2;
+	m[0][2] = xz2 + yw2;
+	m[0][3] = 0;
+
+	m[1][0] = xy2 + zw2;
+	m[1][1] = 1 - x2 - z2;
+	m[1][2] = yz2 - xw2;
+	m[1][3] = 0;
+
+	m[2][0] = xz2 - yw2;
+	m[2][1] = yz2 + xw2;
+	m[2][2] = 1 - x2 - y2;
+	m[2][3] = 0;
+
+	m[3][0] = 0;
+	m[3][1] = 0;
+	m[3][2] = 0;
+	m[3][3] = 0;
 }
 
 CScalableMatrix CScalableMatrix::operator*(const CScalableMatrix& t) const
@@ -1615,24 +1611,37 @@ Matrix4x4 CScalableMatrix::GetUnits(scale_t eScale) const
 	return r;
 }
 
+CScalableMatrix::operator Quaternion() const
+{
+	Matrix4x4 r;
+	r.Init(m[0][0], m[0][1], m[0][2], 0, m[1][0], m[1][1], m[1][2], 0, m[2][0], m[2][1], m[2][2], 0, 0, 0, 0, 1);
+	Quaternion q(r);
+	return q;
+}
+
+CScalableMatrix::operator Matrix4x4() const
+{
+	return GetUnits(SCALE_METER);
+}
+
 bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint)
 {
 	CScalableVector vecLine = v2 - v1;
 	CScalableVector vecSphere = v1 - s;
 
 	CScalableFloat flA = vecLine.LengthSqr();
-	CScalableFloat flB = vecSphere.Dot(vecLine) * 2;
+	CScalableFloat flB = vecSphere.Dot(vecLine) * 2.0f;
 	CScalableFloat flC1 = s.LengthSqr() + v1.LengthSqr();
-	CScalableFloat flC2 = (s.Dot(v1)*2);
+	CScalableFloat flC2 = (s.Dot(v1)*2.0f);
 	CScalableFloat flC = flC1 - flC2 - flRadius*flRadius;
 
-	CScalableFloat flBB4AC = flB*flB - flA*flC*4;
+	CScalableFloat flBB4AC = flB*flB - flA*flC*4.0f;
 	if (flBB4AC < CScalableFloat())
 		return false;
 
 	CScalableFloat flSqrt(sqrt(flBB4AC.GetUnits(SCALE_METER)), SCALE_METER);
-	CScalableFloat flPlus = (-flB + flSqrt)/(flA*2);
-	CScalableFloat flMinus = (-flB - flSqrt)/(flA*2);
+	CScalableFloat flPlus = (-flB + flSqrt)/(flA*2.0f);
+	CScalableFloat flMinus = (-flB - flSqrt)/(flA*2.0f);
 
 	CScalableFloat fl1(1.0f, SCALE_METER);
 	bool bPlusBelow0 = flPlus < CScalableFloat();

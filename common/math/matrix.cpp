@@ -149,7 +149,7 @@ void Matrix4x4::SetTranslation(const Vector& vecPos)
 	m[2][3] = vecPos.z;
 }
 
-void Matrix4x4::SetRotation(const EAngle& angDir)
+void Matrix4x4::SetAngles(const EAngle& angDir)
 {
 	float sp = sin(angDir.p * M_PI/180);
 	float sy = sin(angDir.y * M_PI/180);
@@ -302,7 +302,7 @@ Matrix4x4 Matrix4x4::operator+=(const Vector& v)
 Matrix4x4 Matrix4x4::operator+=(const EAngle& a)
 {
 	Matrix4x4 r;
-	r.SetRotation(a);
+	r.SetAngles(a);
 	(*this) *= r;
 
 	return *this;

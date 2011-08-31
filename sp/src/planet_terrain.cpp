@@ -173,7 +173,7 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
 
-	CScalableVector vecDistanceToQuad = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
+	CScalableVector vecDistanceToQuad = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalOrigin();
 
 	int iPushes = 0;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
@@ -221,7 +221,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 	scale_t ePlanet = m_pPlanet->GetScale();
 	scale_t eRender = SPGame()->GetSPRenderer()->GetRenderingScale();
-	CScalableMatrix mPlanetTransform = m_pPlanet->GetGlobalScalableTransform();
+	CScalableMatrix mPlanetTransform = m_pPlanet->GetGlobalTransform();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
 	CScalableVector svec1;
@@ -229,9 +229,9 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	CScalableVector svec3;
 	CScalableVector svec4;
 
-	if (pCharacter->GetScalableMoveParent() == m_pPlanet)
+	if (pCharacter->GetMoveParent() == m_pPlanet)
 	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetLocalScalableOrigin();
+		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
 
 		svec1 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin);
 		svec2 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin);
@@ -240,7 +240,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	}
 	else
 	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 		svec1 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin;
 		svec2 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin;
@@ -311,9 +311,9 @@ void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 		Vector vecForward;
 		GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
-		CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
+		CScalableMatrix mPlanet = m_pPlanet->GetGlobalTransform();
 		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 		CScalableVector vecQuadCenter = pBranch->m_oData.vecGlobalQuadCenter - vecCharacterOrigin;
 		CScalableVector vecQuadMax = mPlanet * CScalableVector(QuadTreeToWorld(this, pBranch->m_vecMax), m_pPlanet->GetScale()) - vecCharacterOrigin;
@@ -373,8 +373,8 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 			CalcRenderVectors(pBranch);
 
 			CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-			CScalableMatrix mPlanet = m_pPlanet->GetGlobalScalableTransform();
-			CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalScalableOrigin();
+			CScalableMatrix mPlanet = m_pPlanet->GetGlobalTransform();
+			CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalOrigin();
 
 			Vector vecPlanetCenterUnscaled = vecPlanetCenter.GetUnits(m_pPlanet->GetScale());
 			float flRadiusUnscaled = (float)CScalableFloat(pBranch->m_oData.flRadiusMeters, SCALE_METER).GetUnits(m_pPlanet->GetScale());
@@ -432,7 +432,7 @@ void CPlanetTerrain::CalcRenderVectors(CTerrainQuadTreeBranch* pBranch)
 
 	pBranch->m_oData.iRenderVectorsLastFrame = GameServer()->GetFrame();
 
-	pBranch->m_oData.vecGlobalQuadCenter = m_pPlanet->GetGlobalScalableTransform() * CScalableVector(pBranch->GetCenter(), m_pPlanet->GetScale());
+	pBranch->m_oData.vecGlobalQuadCenter = m_pPlanet->GetGlobalTransform() * CScalableVector(pBranch->GetCenter(), m_pPlanet->GetScale());
 }
 
 float CPlanetTerrain::GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch)

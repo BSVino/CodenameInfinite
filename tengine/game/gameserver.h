@@ -126,6 +126,7 @@ protected:
 	size_t										m_iFrame;
 
 	eastl::vector<CEntityHandle<CBaseEntity> >	m_apSimulateList;
+	eastl::vector<CEntityHandle<CBaseEntity> >	m_apCollisionList;
 	eastl::vector<CBaseEntity*>					m_apRenderList;
 
 	class CCamera*								m_pCamera;

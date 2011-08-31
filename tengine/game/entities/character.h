@@ -28,8 +28,8 @@ public:
 	void							SetControllingPlayer(CPlayer* pCharacter);
 	CPlayer*						GetControllingPlayer() const;
 
-	virtual float					EyeHeight() { return 180; }
-	virtual float					CharacterSpeed() { return 80; }
+	virtual TFloat					EyeHeight() { return 180.0f; }
+	virtual TFloat					CharacterSpeed() { return 80.0f; }
 
 	CBaseEntity*					GetGroundEntity() const { return m_hGround; }
 	void							SetGroundEntity(CBaseEntity* pEntity) { m_hGround = pEntity; }

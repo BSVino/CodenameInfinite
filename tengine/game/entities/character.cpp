@@ -67,6 +67,9 @@ void CCharacter::StopMove(movetype_t eMoveType)
 
 void CCharacter::MoveThink()
 {
+	if (!GetGroundEntity())
+		return;
+
 	if (m_vecGoalVelocity.LengthSqr())
 		m_vecGoalVelocity.Normalize();
 
@@ -74,20 +77,24 @@ void CCharacter::MoveThink()
 	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
 	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
 
+	Vector vecUp = (GetGlobalOrigin() - GetGroundEntity()->GetGlobalOrigin()).NormalizedVector();
+	Vector vecRight = vecUp.Cross(m_vecMoveVelocity);
+	Vector vecForward = vecRight.Cross(vecUp);
+
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{
-		Vector vecVelocity = GetLocalVelocity();
+		TVector vecVelocity = GetLocalVelocity();
 
-		Matrix4x4 m = GetLocalTransform();
-		m.SetTranslation(Vector(0,0,0));
+		TMatrix m = GetLocalTransform();
+		m.SetTranslation(TVector());
 
-		Vector vecMove = m_vecMoveVelocity * (GameServer()->GetFrameTime() * CharacterSpeed());
+		TVector vecMove = vecForward * (CharacterSpeed() * GameServer()->GetFrameTime());
 		vecVelocity = m * vecMove;
 
 		SetLocalVelocity(vecVelocity);
 	}
 	else
-		SetLocalVelocity(Vector(0, 0, 0));
+		SetLocalVelocity(TVector());
 }
 
 void CCharacter::SetControllingPlayer(CPlayer* pCharacter)

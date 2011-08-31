@@ -15,12 +15,12 @@ public:
 	// Quad trees aren't always flat, they're curvy and wonky sometimes. This function should translate a 3d coordinate to a quadtree coordinate
 	// The output should be ([0, 1], [0, 1])
 	// If the point is not in the quad tree then return a value less than 0 or greater than 1 for x or y
-	virtual TVector2D<F>		WorldToQuadTree(const CQuadTree<T, F>* pTree, const TVector<F>& vecWorld) const=0;
+	virtual TemplateVector2D<F>		WorldToQuadTree(const CQuadTree<T, F>* pTree, const TemplateVector<F>& vecWorld) const=0;
 	// This is the opposite conversion from the above.
-	virtual TVector<F>				QuadTreeToWorld(const CQuadTree<T, F>* pTree, const TVector2D<F>& vecTree) const=0;
+	virtual TemplateVector<F>		QuadTreeToWorld(const CQuadTree<T, F>* pTree, const TemplateVector2D<F>& vecTree) const=0;
 
-	virtual TVector2D<F>		WorldToQuadTree(CQuadTree<T, F>* pTree, const TVector<F>& vecWorld)=0;
-	virtual TVector<F>				QuadTreeToWorld(CQuadTree<T, F>* pTree, const TVector2D<F>& vecTree)=0;
+	virtual TemplateVector2D<F>		WorldToQuadTree(CQuadTree<T, F>* pTree, const TemplateVector<F>& vecWorld)=0;
+	virtual TemplateVector<F>		QuadTreeToWorld(CQuadTree<T, F>* pTree, const TemplateVector2D<F>& vecTree)=0;
 
 	virtual bool				ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
 };
@@ -29,7 +29,7 @@ template <class T, typename F=float>
 class CQuadTreeBranch
 {
 public:
-	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TVector2D<F> vecMin, TVector2D<F> vecMax, unsigned short iDepth, const T& oData = T())
+	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TemplateVector2D<F> vecMin, TemplateVector2D<F> vecMax, unsigned short iDepth, const T& oData = T())
 	{
 		m_pDataSource = pSource;
 		m_pParent = pParent;
@@ -55,11 +55,11 @@ public:
 
 	void						InitPathfinding();
 	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors);
-	CQuadTreeBranch<T, F>*		FindLeaf(const TVector<F>& vecPoint);
+	CQuadTreeBranch<T, F>*		FindLeaf(const TemplateVector<F>& vecPoint);
 	void						SetGScore(float flGScore);
 	float						GetFScore();
-	TVector<F>					GetCenter();
-	TVector<F>					GetCenter() const;
+	TemplateVector<F>			GetCenter();
+	TemplateVector<F>			GetCenter() const;
 
 	void						DebugRender();
 
@@ -68,8 +68,8 @@ public:
 	CQuadTreeBranch<T, F>*		m_pParent;
 	CQuadTree<T, F>*			m_pTree;
 
-	TVector2D<F>				m_vecMin;
-	TVector2D<F>				m_vecMax;
+	TemplateVector2D<F>			m_vecMin;
+	TemplateVector2D<F>			m_vecMax;
 
 	unsigned short				m_iDepth;
 
@@ -96,7 +96,7 @@ public:
 	float						m_flHScore;
 	float						m_flFScore;
 	bool						m_bCenterCalculated;
-	TVector<F>					m_vecCenter;
+	TemplateVector<F>			m_vecCenter;
 
 	CQuadTreeBranch<T, F>*		m_pPathParent;
 };
@@ -122,7 +122,7 @@ public:
 
 	void						Init(CQuadTreeDataSource<T, F>* pSource, const T& oData);
 
-	class CQuadTreeBranch<T, F>*FindLeaf(const TVector<F>& vecPoint);
+	class CQuadTreeBranch<T, F>*FindLeaf(const TemplateVector<F>& vecPoint);
 	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors);
 
 protected:
@@ -147,11 +147,11 @@ template <class T, typename F>
 void CQuadTree<T, F>::Init(CQuadTreeDataSource<T, F>* pSource, const T& oData)
 {
 	m_pDataSource = pSource;
-	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TVector2D<F>(0, 0), TVector2D<F>(1, 1), 0, oData);
+	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TemplateVector2D<F>(0, 0), TemplateVector2D<F>(1, 1), 0, oData);
 }
 
 template <class T, typename F>
-CQuadTreeBranch<T, F>* CQuadTree<T, F>::FindLeaf(const TVector<F>& vecPoint)
+CQuadTreeBranch<T, F>* CQuadTree<T, F>::FindLeaf(const TemplateVector<F>& vecPoint)
 {
 	if (!m_pQuadTreeHead)
 		return NULL;
@@ -159,7 +159,7 @@ CQuadTreeBranch<T, F>* CQuadTree<T, F>::FindLeaf(const TVector<F>& vecPoint)
 	if (!m_pDataSource)
 		return NULL;
 
-	TVector2D<F> vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
+	TemplateVector2D<F> vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
 
 	if (vecQuadTreePoint.x < 0)
 		return NULL;
@@ -219,10 +219,10 @@ void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren)
 		if (!m_pBranches[0])
 		{
 			F flSize = (m_vecMax.x - m_vecMin.x)/2;
-			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(0, 0), m_vecMin + TVector2D<F>(flSize, flSize), m_iDepth+1);
-			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(0, flSize), m_vecMin + TVector2D<F>(flSize, flSize+flSize), m_iDepth+1);
-			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(flSize, 0), m_vecMin + TVector2D<F>(flSize+flSize, flSize), m_iDepth+1);
-			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TVector2D<F>(flSize, flSize), m_vecMin + TVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1);
+			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, 0), m_vecMin + TemplateVector2D<F>(flSize, flSize), m_iDepth+1);
+			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, flSize), m_vecMin + TemplateVector2D<F>(flSize, flSize+flSize), m_iDepth+1);
+			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, 0), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize), m_iDepth+1);
+			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, flSize), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1);
 		}
 
 		if (bAndChildren)
@@ -308,9 +308,9 @@ void CQuadTreeBranch<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, ea
 }
 
 template <class T, typename F>
-CQuadTreeBranch<T, F>* CQuadTreeBranch<T, F>::FindLeaf(const TVector<F>& vecPoint)
+CQuadTreeBranch<T, F>* CQuadTreeBranch<T, F>::FindLeaf(const TemplateVector<F>& vecPoint)
 {
-	TVector2D<F> vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
+	TemplateVector2D<F> vecQuadTreePoint = m_pDataSource->WorldToQuadTree(vecPoint);
 
 	if (vecQuadTreePoint.x < m_vecMin.x)
 		return NULL;
@@ -364,7 +364,7 @@ float CQuadTreeBranch<T, F>::GetFScore()
 }
 
 template <class T, typename F>
-TVector<F> CQuadTreeBranch<T, F>::GetCenter()
+TemplateVector<F> CQuadTreeBranch<T, F>::GetCenter()
 {
 	if (!m_bCenterCalculated)
 	{
@@ -376,7 +376,7 @@ TVector<F> CQuadTreeBranch<T, F>::GetCenter()
 }
 
 template <class T, typename F>
-TVector<F> CQuadTreeBranch<T, F>::GetCenter() const
+TemplateVector<F> CQuadTreeBranch<T, F>::GetCenter() const
 {
 	TAssert(m_bCenterCalculated);
 

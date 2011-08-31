@@ -14,9 +14,9 @@ typedef enum {
 	FINDPLANET_INATMOSPHERE,
 } findplanet_t;
 
-class CSPCharacter : public CCharacter, public ISPEntity
+class CSPCharacter : public CCharacter
 {
-	REGISTER_ENTITY_CLASS_INTERFACES(CSPCharacter, CCharacter, 1);
+	REGISTER_ENTITY_CLASS(CSPCharacter, CCharacter);
 
 public:
 								CSPCharacter();
@@ -24,25 +24,20 @@ public:
 public:
 	virtual void				Think();
 
-	virtual void				MoveThink();
-
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
 	CPlanet*					FindNearestPlanet();
 
-	virtual Vector				GetUpVector();
+	virtual TVector				GetUpVector();
 
 	void						LockViewToPlanet();
 
 	void						StandOnNearestPlanet();
 
-	virtual CScalableFloat		EyeHeightScalable();
-	virtual CScalableFloat		CharacterSpeedScalable();
+	virtual CScalableFloat		EyeHeight();
+	virtual CScalableFloat		CharacterSpeed();
 
-	virtual float				EyeHeight();
-	virtual float				CharacterSpeed();
-
-	virtual bool				ShouldTouch(ISPEntity* pOther);
-	virtual inline CScalableVector	GetGlobalScalableGravity() const;
+	virtual bool				ShouldTouch(CBaseEntity* pOther) const;
+	virtual inline CScalableVector	GetGlobalGravity() const;
 	virtual void				FindGroundEntity();
 
 protected:

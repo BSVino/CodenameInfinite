@@ -50,18 +50,18 @@ void CPlayerCharacter::MoveThink()
 
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{
-		CScalableVector vecVelocity = GetLocalScalableVelocity();
+		CScalableVector vecVelocity = GetLocalVelocity();
 
-		CScalableMatrix m = GetLocalScalableTransform();
+		CScalableMatrix m = GetLocalTransform();
 		m.SetTranslation(CScalableVector());
 
-		CScalableVector vecMove = m_vecMoveVelocity * (CharacterSpeedScalable() * GameServer()->GetFrameTime());
+		CScalableVector vecMove = m_vecMoveVelocity * (CharacterSpeed() * GameServer()->GetFrameTime());
 		vecVelocity = m * vecMove;
 
-		SetLocalScalableVelocity(vecVelocity);
+		SetLocalVelocity(vecVelocity);
 	}
 	else
-		SetLocalScalableVelocity(CScalableVector());
+		SetLocalVelocity(CScalableVector());
 }
 
 void CPlayerCharacter::ToggleFlying()
@@ -88,10 +88,10 @@ void CPlayerCharacter::StopFlying()
 	SetSimulated(true);
 }
 
-CScalableFloat CPlayerCharacter::CharacterSpeedScalable()
+CScalableFloat CPlayerCharacter::CharacterSpeed()
 {
 	if (!m_bFlying)
-		return BaseClass::CharacterSpeedScalable();
+		return BaseClass::CharacterSpeed();
 
 	float flDebugBonus = 1;
 #ifdef _DEBUG
@@ -103,7 +103,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeedScalable()
 
 	CScalableFloat flMaxSpeed = CScalableFloat(10.0f, SCALE_MEGAMETER);
 
-	CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
+	CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - GetGlobalOrigin()).Length();
 	CScalableFloat flCloseOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
 
 	if (flDistance < flCloseOrbit)
@@ -134,20 +134,12 @@ CScalableFloat CPlayerCharacter::CharacterSpeedScalable()
 		return flMaxSpeed;
 }
 
-bool CPlayerCharacter::ShouldTouch(ISPEntity* pOther)
-{
-	if (GetGroundEntity() == static_cast<CSPEntity*>(pOther))
-		return false;
-
-	return BaseClass::ShouldTouch(pOther);
-}
-
-CScalableVector CPlayerCharacter::GetGlobalScalableGravity() const
+CScalableVector CPlayerCharacter::GetGlobalGravity() const
 {
 	if (m_bFlying)
 		return CScalableVector();
 
-	return ISPEntity::GetGlobalScalableGravity();
+	return BaseClass::GetGlobalGravity();
 }
 
 void CPlayerCharacter::FindGroundEntity()

@@ -39,7 +39,7 @@ void CModelDissolver::AddModel(CBaseEntity* pEntity, Color* pclrSwap, Vector* pv
 
 	Matrix4x4 mTransform;
 	mTransform.SetTranslation(pEntity->GetRenderOrigin());
-	mTransform.SetRotation(pEntity->GetRenderAngles());
+	mTransform.SetAngles(pEntity->GetRenderAngles());
 
 	if (pvecScale)
 	{
@@ -138,7 +138,7 @@ void CModelDissolver::AddTriangle(CConversionMeshInstance* pMeshInstance, CConve
 
 	Vector vecVelocity = vecAverage - pMeshInstance->m_pScene->m_oExtends.Center();
 	pNewTri->m_mVelocity.SetTranslation(vecVelocity);
-	pNewTri->m_mVelocity.SetRotation(EAngle(
+	pNewTri->m_mVelocity.SetAngles(EAngle(
 		RandomFloat(-90, 90),
 		RandomFloat(-180, 180),
 		RandomFloat(-90, 90)

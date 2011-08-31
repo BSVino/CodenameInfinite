@@ -5,6 +5,7 @@
 
 #include <vector.h>
 #include <common.h>
+#include <quaternion.h>
 
 typedef enum
 {
@@ -33,8 +34,11 @@ public:
 							CScalableFloat();
 							CScalableFloat(float flUnits, scale_t eScale);
 							CScalableFloat(double flUnits, scale_t eScale);
+							CScalableFloat(float flMeters);
 
 public:
+	void					Construct(double flUnits, scale_t eScale);
+
 	double					GetUnits(scale_t eScale) const;
 	bool					IsPositive() const { return m_bPositive; };
 	bool					IsNegative() const { return !m_bPositive; };
@@ -69,6 +73,10 @@ public:
 	bool					operator==(const CScalableFloat& u) const;
 	bool					operator<(const CScalableFloat& u) const;
 	bool					operator>(const CScalableFloat& u) const;
+	bool					operator<(float flMeters) const;
+	bool					operator>(float flMeters) const;
+
+	operator double() const;
 
 	static double			ConvertUnits(double flUnit, scale_t eFrom, scale_t eTo);
 
@@ -100,6 +108,7 @@ public:
 							CScalableVector(const CScalableFloat& x, const CScalableFloat& y, const CScalableFloat& z);
 							CScalableVector(Vector vecUnits, scale_t eScale);
 							CScalableVector(DoubleVector vecUnits, scale_t eScale);
+							CScalableVector(Vector vecMeters);
 
 public:
 	DoubleVector			GetUnits(scale_t eScale) const;
@@ -130,6 +139,9 @@ public:
 		return CScalableVector( v.x*f, v.y*f, v.z*f );
 	}
 
+	void					operator+=(const CScalableVector& v);
+	void					operator-=(const CScalableVector& v);
+
 	CScalableFloat			Index(int i) const;
 	CScalableFloat&			Index(int i);
 
@@ -138,7 +150,9 @@ public:
 
 	bool					operator==(const CScalableVector& u) const;
 
-protected:
+	operator Vector() const;
+
+public:
 	CScalableFloat			x, y, z;
 };
 
@@ -157,6 +171,8 @@ public:
 	void					SetAngles(const EAngle& angDir);
 	EAngle					GetAngles() const;
 
+	void					SetRotation(const Quaternion& q);
+
 	CScalableMatrix			operator*(const CScalableMatrix& t) const;
 
 	// Transform a vector
@@ -173,6 +189,9 @@ public:
 	Vector					GetRightVector() const { return GetColumn(2); }
 
 	class Matrix4x4			GetUnits(scale_t eScale) const;
+
+	operator Quaternion() const;
+	operator Matrix4x4() const;
 
 public:
 	float					m[3][3];

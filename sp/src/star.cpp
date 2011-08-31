@@ -42,17 +42,17 @@ void CStar::PostRender(bool bTransparent) const
 		return;
 
 	CRenderingContext c(GameServer()->GetRenderer());
-	c.Transform(ISPEntity::GetRenderTransform());
+	c.Transform(GetRenderTransform());
 	c.SetBlend(BLEND_ADDITIVE);
 	c.SetColor(Color(255, 255, 255, 255));
 	c.SetLighting(false);
 
 	c.UseProgram("model");
-	c.RenderBillboard("textures/star-yellow.png", (float)(GetRenderScalableRadius()*2).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+	c.RenderBillboard("textures/star-yellow.png", (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 }
 
 CScalableFloat CStar::GetCloseOrbit()
 {
 	// For Earth values this resolves to about 600km above the ground, or about twice the altitude of the ISS.
-	return GetRadius()/10;
+	return GetRadius()/10.0f;
 }

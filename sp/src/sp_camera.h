@@ -11,12 +11,9 @@ class CSPCamera : public CCamera
 	DECLARE_CLASS(CSPCamera, CCamera);
 
 public:
-	virtual CScalableVector		GetCameraScalablePosition();
-	virtual CScalableVector		GetCameraScalableTarget();
-
-	virtual Vector				GetCameraPosition();
-	virtual Vector				GetCameraTarget();
-	virtual Vector				GetCameraUp();
+	virtual CScalableVector		GetCameraPosition();
+	virtual CScalableVector		GetCameraTarget();
+	virtual TVector				GetCameraUp();
 	virtual float				GetCameraFOV();
 
 	virtual float				GetCameraFar() { return 1200.0f; };

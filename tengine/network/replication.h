@@ -7,7 +7,7 @@
 
 #include <common.h>
 #include <color.h>
-#include <vector.h>
+#include <tengine_config.h>
 #include <strutils.h>
 
 #include "network.h"
@@ -216,10 +216,10 @@ public:
 };
 
 template <>
-inline const float& CNetworkedVariable<float>::operator=(const float& c)
+inline const TFloat& CNetworkedVariable<TFloat>::operator=(const TFloat& c)
 {
-	float flDifference = c - m_oVariable;
-	if (m_bInitialized && ((flDifference>0)?flDifference:-flDifference) < m_flEpsilon)
+	TFloat flDifference = c - m_oVariable;
+	if (m_bInitialized && ((flDifference>TFloat(0))?flDifference:-flDifference) < m_flEpsilon)
 		return m_oVariable;
 
 	m_bDirty = true;
@@ -229,10 +229,10 @@ inline const float& CNetworkedVariable<float>::operator=(const float& c)
 }
 
 template <>
-inline const float& CNetworkedVariable<float>::operator=(const CNetworkedVariable<float>& c)
+inline const TFloat& CNetworkedVariable<TFloat>::operator=(const CNetworkedVariable<TFloat>& c)
 {
-	float flDifference = c.m_oVariable - m_oVariable;
-	if (m_bInitialized && ((flDifference>0)?flDifference:-flDifference) < m_flEpsilon)
+	TFloat flDifference = c.m_oVariable - m_oVariable;
+	if (m_bInitialized && ((flDifference>TFloat(0))?flDifference:-flDifference) < m_flEpsilon)
 		return m_oVariable;
 
 	m_bDirty = true;
@@ -413,7 +413,7 @@ protected:
 	C	m_oVariable[iArraySize];
 };
 
-class CNetworkedVector : public CNetworkedVariable<Vector>
+class CNetworkedVector : public CNetworkedVariable<TVector>
 {
 public:
 	CNetworkedVector()
@@ -422,9 +422,9 @@ public:
 		m_bInitialized = true;
 	}
 
-	inline const CNetworkedVector& operator=(const Vector v)
+	inline const CNetworkedVector& operator=(const TVector& v)
 	{
-		if ((m_oVariable - v).LengthSqr() > 0)
+		if ((m_oVariable - v).LengthSqr() > TFloat(0.0f))
 		{
 			m_bDirty = true;
 			m_oVariable = v;
@@ -435,22 +435,22 @@ public:
 		return *this;
 	}
 
-	inline Vector operator*(float f)
+	inline TVector operator*(TFloat f)
 	{
 		return m_oVariable * f;
 	}
 
-	inline Vector operator*(float f) const
+	inline TVector operator*(TFloat f) const
 	{
 		return m_oVariable * f;
 	}
 
-	inline Vector operator/(float f)
+	inline TVector operator/(TFloat f)
 	{
 		return m_oVariable / f;
 	}
 
-	inline Vector operator/(float f) const
+	inline TVector operator/(TFloat f) const
 	{
 		return m_oVariable / f;
 	}

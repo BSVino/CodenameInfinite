@@ -45,25 +45,25 @@ void CCamera::Think()
 	}
 }
 
-Vector CCamera::GetCameraPosition()
+TVector CCamera::GetCameraPosition()
 {
 	if (m_bFreeMode)
 		return m_vecFreeCamera;
 
-	return Vector(30, 30, 30);
+	return TVector(30, 30, 30);
 }
 
-Vector CCamera::GetCameraTarget()
+TVector CCamera::GetCameraTarget()
 {
 	if (m_bFreeMode)
 		return m_vecFreeCamera + AngleVector(m_angFreeCamera);
 
-	return Vector(0,0,0);
+	return TVector(0,0,0);
 }
 
-Vector CCamera::GetCameraUp()
+TVector CCamera::GetCameraUp()
 {
-	return Vector(0, 1, 0);
+	return TVector(0, 1, 0);
 }
 
 float CCamera::GetCameraFOV()

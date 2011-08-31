@@ -25,10 +25,10 @@ REGISTER_ENTITY(CBaseEntity);
 NETVAR_TABLE_BEGIN(CBaseEntity);
 	NETVAR_DEFINE(CEntityHandle<CBaseEntity>, m_hMoveParent);
 	NETVAR_DEFINE(CEntityHandle<CBaseEntity>, m_ahMoveChildren);
-	NETVAR_DEFINE(Vector, m_vecGlobalGravity);
-	NETVAR_DEFINE_INTERVAL(Vector, m_vecLocalOrigin, 0.15f);
+	NETVAR_DEFINE(TVector, m_vecGlobalGravity);
+	NETVAR_DEFINE_INTERVAL(TVector, m_vecLocalOrigin, 0.15f);
 	NETVAR_DEFINE_INTERVAL(EAngle, m_angLocalAngles, 0.15f);
-	NETVAR_DEFINE_INTERVAL(Vector, m_vecLocalVelocity, 0.15f);
+	NETVAR_DEFINE_INTERVAL(TVector, m_vecLocalVelocity, 0.15f);
 	NETVAR_DEFINE(bool, m_bTakeDamage);
 	NETVAR_DEFINE(float, m_flTotalHealth);
 	NETVAR_DEFINE(float, m_flHealth);
@@ -50,14 +50,14 @@ SAVEDATA_TABLE_BEGIN(CBaseEntity);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CBaseEntity>, m_hMoveParent);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CBaseEntity>, m_ahMoveChildren);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bGlobalTransformsDirty);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Matrix4x4, m_mGlobalTransform);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, Vector, m_vecGlobalGravity);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Matrix4x4, m_mLocalTransform);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TMatrix, m_mGlobalTransform);
+	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, TVector, m_vecGlobalGravity);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TMatrix, m_mLocalTransform);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Quaternion, m_qLocalRotation);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, Vector, m_vecLocalOrigin);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecLastLocalOrigin);
+	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, TVector, m_vecLocalOrigin);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TVector, m_vecLastLocalOrigin);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, EAngle, m_angLocalAngles);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, Vector, m_vecLocalVelocity);
+	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, TVector, m_vecLocalVelocity);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iHandle);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, bool, m_bTakeDamage);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, float, m_flTotalHealth);
@@ -167,9 +167,9 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 
 	if (m_hMoveParent != NULL)
 	{
-		Matrix4x4 mPreviousGlobal = GetGlobalTransform();
-		Vector vecPreviousVelocity = GetGlobalVelocity();
-		Vector vecPreviousLastOrigin = mPreviousGlobal * GetLastLocalOrigin();
+		TMatrix mPreviousGlobal = GetGlobalTransform();
+		TVector vecPreviousVelocity = GetGlobalVelocity();
+		TVector vecPreviousLastOrigin = mPreviousGlobal * GetLastLocalOrigin();
 
 		for (size_t i = 0; i < m_hMoveParent->m_ahMoveChildren.size(); i++)
 		{
@@ -191,9 +191,9 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 		InvalidateGlobalTransforms();
 	}
 
-	Vector vecPreviousVelocity = GetLocalVelocity();
-	Vector vecPreviousLastOrigin = GetLastLocalOrigin();
-	Matrix4x4 mPreviousTransform = GetLocalTransform();
+	TVector vecPreviousVelocity = GetLocalVelocity();
+	TVector vecPreviousLastOrigin = GetLastLocalOrigin();
+	TMatrix mPreviousTransform = GetLocalTransform();
 
 	m_hMoveParent = pParent;
 
@@ -202,7 +202,7 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 
 	pParent->m_ahMoveChildren.push_back(this);
 
-	Matrix4x4 mGlobalToLocal = m_hMoveParent->GetGlobalToLocalTransform();
+	TMatrix mGlobalToLocal = m_hMoveParent->GetGlobalToLocalTransform();
 
 	m_vecLastLocalOrigin = mGlobalToLocal * vecPreviousLastOrigin;
 	m_mLocalTransform = mGlobalToLocal * mPreviousTransform;
@@ -210,14 +210,14 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 	m_qLocalRotation = Quaternion(m_mLocalTransform);
 	m_angLocalAngles = m_mLocalTransform.GetAngles();
 
-	float flVelocityLength = vecPreviousVelocity.Length();
-	if (flVelocityLength > 0)
+	TFloat flVelocityLength = vecPreviousVelocity.Length();
+	if (flVelocityLength > TFloat(0))
 	{
-		mGlobalToLocal.SetTranslation(Vector(0, 0, 0));
+		mGlobalToLocal.SetTranslation(TVector(0, 0, 0));
 		m_vecLocalVelocity = (mGlobalToLocal * (vecPreviousVelocity/flVelocityLength))*flVelocityLength;
 	}
 	else
-		m_vecLocalVelocity = Vector(0, 0, 0);
+		m_vecLocalVelocity = TVector(0, 0, 0);
 
 	InvalidateGlobalTransforms();
 }
@@ -230,7 +230,7 @@ void CBaseEntity::InvalidateGlobalTransforms()
 		m_ahMoveChildren[i]->InvalidateGlobalTransforms();
 }
 
-const Matrix4x4& CBaseEntity::GetGlobalTransform()
+const TMatrix& CBaseEntity::GetGlobalTransform()
 {
 	if (!m_bGlobalTransformsDirty)
 		return m_mGlobalTransform;
@@ -245,7 +245,7 @@ const Matrix4x4& CBaseEntity::GetGlobalTransform()
 	return m_mGlobalTransform;
 }
 
-Matrix4x4 CBaseEntity::GetGlobalTransform() const
+TMatrix CBaseEntity::GetGlobalTransform() const
 {
 	if (!m_bGlobalTransformsDirty)
 		return m_mGlobalTransform;
@@ -261,30 +261,30 @@ Matrix4x4 CBaseEntity::GetGlobalTransform() const
 		return m_hMoveParent->GetGlobalTransform() * m_mLocalTransform;
 }
 
-void CBaseEntity::SetGlobalTransform(const Matrix4x4& m)
+void CBaseEntity::SetGlobalTransform(const TMatrix& m)
 {
 	m_hMoveParent = NULL;
 	m_mGlobalTransform = m_mLocalTransform = m;
 	m_bGlobalTransformsDirty = false;
 }
 
-Matrix4x4 CBaseEntity::GetGlobalToLocalTransform()
+TMatrix CBaseEntity::GetGlobalToLocalTransform()
 {
-	Matrix4x4 mInverse = GetGlobalTransform();
+	TMatrix mInverse = GetGlobalTransform();
 	mInverse.InvertTR();
 	return mInverse;
 }
 
-Matrix4x4 CBaseEntity::GetGlobalToLocalTransform() const
+TMatrix CBaseEntity::GetGlobalToLocalTransform() const
 {
-	Matrix4x4 mInverse = GetGlobalTransform();
+	TMatrix mInverse = GetGlobalTransform();
 	mInverse.InvertTR();
 	return mInverse;
 }
 
-Vector CBaseEntity::GetGlobalOrigin()
+TVector CBaseEntity::GetGlobalOrigin()
 {
-	return Vector(GetGlobalTransform().GetColumn(3));
+	return GetGlobalTransform().GetTranslation();
 }
 
 EAngle CBaseEntity::GetGlobalAngles()
@@ -292,9 +292,9 @@ EAngle CBaseEntity::GetGlobalAngles()
 	return GetGlobalTransform().GetAngles();
 }
 
-Vector CBaseEntity::GetGlobalOrigin() const
+TVector CBaseEntity::GetGlobalOrigin() const
 {
-	return Vector(GetGlobalTransform().GetColumn(3));
+	return GetGlobalTransform().GetTranslation();
 }
 
 EAngle CBaseEntity::GetGlobalAngles() const
@@ -302,12 +302,15 @@ EAngle CBaseEntity::GetGlobalAngles() const
 	return GetGlobalTransform().GetAngles();
 }
 
-void CBaseEntity::SetGlobalOrigin(const Vector& vecOrigin)
+void CBaseEntity::SetGlobalOrigin(const TVector& vecOrigin)
 {
 	if (m_hMoveParent == NULL)
 		SetLocalOrigin(vecOrigin);
 	else
-		TAssert("Unimplemented");
+	{
+		TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
+		SetLocalOrigin(mGlobalToLocal * vecOrigin);
+	}
 }
 
 void CBaseEntity::SetGlobalAngles(const EAngle& angAngles)
@@ -316,44 +319,44 @@ void CBaseEntity::SetGlobalAngles(const EAngle& angAngles)
 		SetLocalAngles(angAngles);
 	else
 	{
-		Matrix4x4 mGlobalToLocal = m_hMoveParent->GetGlobalToLocalTransform();
-		mGlobalToLocal.SetTranslation(Vector(0,0,0));
-		Matrix4x4 mGlobalAngles;
-		mGlobalAngles.SetRotation(angAngles);
-		Matrix4x4 mLocalAngles = mGlobalToLocal * mGlobalAngles;
+		TMatrix mGlobalToLocal = m_hMoveParent->GetGlobalToLocalTransform();
+		mGlobalToLocal.SetTranslation(TVector(0,0,0));
+		TMatrix mGlobalAngles;
+		mGlobalAngles.SetAngles(angAngles);
+		TMatrix mLocalAngles = mGlobalToLocal * mGlobalAngles;
 		SetLocalAngles(mLocalAngles.GetAngles());
 	}
 }
 
-Vector CBaseEntity::GetGlobalVelocity()
+TVector CBaseEntity::GetGlobalVelocity()
 {
-	Matrix4x4 mGlobalToLocalRotation = GetGlobalToLocalTransform();
-	mGlobalToLocalRotation.SetTranslation(Vector(0,0,0));
+	TMatrix mGlobalToLocalRotation = GetGlobalToLocalTransform();
+	mGlobalToLocalRotation.SetTranslation(TVector(0,0,0));
 
-	if (m_vecLocalVelocity.Get().LengthSqr() > 0)
+	if (m_vecLocalVelocity.Get().LengthSqr() > TFloat(0))
 	{
-		float flLength = m_vecLocalVelocity.Get().Length();
+		TFloat flLength = m_vecLocalVelocity.Get().Length();
 		return (mGlobalToLocalRotation * (m_vecLocalVelocity/flLength))*flLength;
 	}
 	else
-		return Vector(0, 0, 0);
+		return TVector(0, 0, 0);
 }
 
-Vector CBaseEntity::GetGlobalVelocity() const
+TVector CBaseEntity::GetGlobalVelocity() const
 {
-	Matrix4x4 mGlobalToLocalRotation = GetGlobalToLocalTransform();
-	mGlobalToLocalRotation.SetTranslation(Vector(0,0,0));
+	TMatrix mGlobalToLocalRotation = GetGlobalToLocalTransform();
+	mGlobalToLocalRotation.SetTranslation(TVector(0,0,0));
 
-	if (m_vecLocalVelocity.Get().LengthSqr() > 0)
+	if (m_vecLocalVelocity.Get().LengthSqr() > TFloat(0))
 	{
-		float flLength = m_vecLocalVelocity.Get().Length();
+		TFloat flLength = m_vecLocalVelocity.Get().Length();
 		return (mGlobalToLocalRotation * (m_vecLocalVelocity/flLength))*flLength;
 	}
 	else
-		return Vector(0, 0, 0);
+		return TVector(0, 0, 0);
 }
 
-void CBaseEntity::SetLocalTransform(const Matrix4x4& m)
+void CBaseEntity::SetLocalTransform(const TMatrix& m)
 {
 	SetLocalOrigin(m.GetTranslation());
 	SetLocalAngles(m.GetAngles());
@@ -374,12 +377,12 @@ void CBaseEntity::SetLocalRotation(const Quaternion& q)
 	InvalidateGlobalTransforms();
 }
 
-void CBaseEntity::SetLocalOrigin(const Vector& vecOrigin)
+void CBaseEntity::SetLocalOrigin(const TVector& vecOrigin)
 {
 	if (!m_vecLocalOrigin.IsInitialized())
 		m_vecLocalOrigin = vecOrigin;
 
-	if ((vecOrigin - m_vecLocalOrigin).LengthSqr() == 0)
+	if ((vecOrigin - m_vecLocalOrigin).LengthSqr() == TFloat(0))
 		return;
 
 	OnSetLocalOrigin(vecOrigin);
@@ -390,12 +393,20 @@ void CBaseEntity::SetLocalOrigin(const Vector& vecOrigin)
 	InvalidateGlobalTransforms();
 };
 
-void CBaseEntity::SetLocalVelocity(const Vector& vecVelocity)
+TVector CBaseEntity::GetLastGlobalOrigin() const
+{
+	if (GetMoveParent())
+		return GetMoveParent()->GetGlobalTransform() * GetLastLocalOrigin();
+	else
+		return GetLastLocalOrigin();
+}
+
+void CBaseEntity::SetLocalVelocity(const TVector& vecVelocity)
 {
 	if (!m_vecLocalVelocity.IsInitialized())
 		m_vecLocalOrigin = vecVelocity;
 
-	if ((vecVelocity - m_vecLocalVelocity).LengthSqr() == 0)
+	if ((vecVelocity - m_vecLocalVelocity).LengthSqr() == TFloat(0))
 		return;
 
 	m_vecLocalVelocity = vecVelocity;
@@ -412,7 +423,7 @@ void CBaseEntity::SetLocalAngles(const EAngle& angAngles)
 
 	m_angLocalAngles = angAngles;
 
-	m_mLocalTransform.SetRotation(angAngles);
+	m_mLocalTransform.SetAngles(angAngles);
 	m_qLocalRotation.SetAngles(angAngles);
 
 	InvalidateGlobalTransforms();
@@ -561,6 +572,18 @@ void CBaseEntity::Delete()
 void CBaseEntity::Delete(const eastl::vector<tstring>& sArgs)
 {
 	Delete();
+}
+
+bool CBaseEntity::IsTouchingLocal(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint)
+{
+	TAssert(GetMoveParent() == pOther);
+
+	return pOther->CollideLocal(GetLocalOrigin(), vecDestination, vecPoint);
+}
+
+bool CBaseEntity::IsTouching(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint)
+{
+	return pOther->Collide(GetGlobalOrigin(), vecDestination, vecPoint);
 }
 
 void CBaseEntity::CallInput(const eastl::string& sName, const tstring& sArgs)
@@ -725,34 +748,39 @@ void CBaseEntity::SetSoundVolume(const tstring& sFilename, float flVolume)
 	CSoundLibrary::SetSoundVolume(this, sFilename, flVolume);
 }
 
-float CBaseEntity::Distance(Vector vecSpot) const
+TFloat CBaseEntity::Distance(const TVector& vecSpot) const
 {
-	float flDistance = (GetGlobalOrigin() - vecSpot).Length();
+	TFloat flDistance = (GetGlobalOrigin() - vecSpot).Length();
 	if (flDistance < GetBoundingRadius())
 		return 0;
 
 	return flDistance - GetBoundingRadius();
 }
 
-bool CBaseEntity::Collide(const Vector& v1, const Vector& v2, Vector& vecPoint)
+bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint)
 {
-	if (m_pTracer)
+	if (GetBoundingRadius() == TFloat(0))
+		return false;
+
+	if (v1 == v2)
 	{
-		// Got to translate from world space to object space and back again. The collision mesh is in object space!
-		Matrix4x4 m = GetGlobalTransform();
-
-		Matrix4x4 i(m);
-		i.InvertTR();
-
-		raytrace::CTraceResult tr;
-		bool bHit = m_pTracer->Raytrace(i*v1, i*v2, &tr);
-		if (bHit)
-			vecPoint = m*tr.m_vecHit;
-		return bHit;
+		vecPoint = v1;
+		return (v1.Length() < GetBoundingRadius());
 	}
 
-	if (GetBoundingRadius() == 0)
+	return LineSegmentIntersectsSphere(v1, v2, TVector(), GetBoundingRadius(), vecPoint);
+}
+
+bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint)
+{
+	if (GetBoundingRadius() == TFloat(0))
 		return false;
+
+	if (v1 == v2)
+	{
+		vecPoint = v1;
+		return ((v1-GetGlobalOrigin()).Length() < GetBoundingRadius());
+	}
 
 	return LineSegmentIntersectsSphere(v1, v2, GetGlobalOrigin(), GetBoundingRadius(), vecPoint);
 }

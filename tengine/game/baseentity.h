@@ -9,6 +9,8 @@
 #include <quaternion.h>
 #include <common.h>
 
+#include <tengine_config.h>
+
 #include <network/network.h>
 
 #include "entityhandle.h"
@@ -308,15 +310,15 @@ public:
 	void									SetName(const eastl::string& sName) { m_sName = sName; };
 	eastl::string							GetName() { return m_sName; };
 
-	virtual float							GetBoundingRadius() const { return 0; };
-	virtual float							GetRenderRadius() const { return GetBoundingRadius(); };
+	virtual TFloat							GetBoundingRadius() const { return 0; };
+	virtual TFloat							GetRenderRadius() const { return GetBoundingRadius(); };
 
 	void									SetModel(const tstring& sModel);
 	void									SetModel(size_t iModel);
 	size_t									GetModel() const { return m_iModel; };
 
-	virtual Matrix4x4						GetRenderTransform() const { return GetGlobalTransform(); };
-	virtual Vector							GetRenderOrigin() const { return GetGlobalOrigin(); };
+	virtual Matrix4x4						GetRenderTransform() const { return Matrix4x4(GetGlobalTransform()); };
+	virtual Vector							GetRenderOrigin() const { return Vector(GetGlobalOrigin()); };
 	virtual EAngle							GetRenderAngles() const { return GetGlobalAngles(); };
 
 	void									SetMoveParent(CBaseEntity* pParent);
@@ -324,48 +326,50 @@ public:
 	bool									HasMoveParent() const { return m_hMoveParent != NULL; };
 	void									InvalidateGlobalTransforms();
 
-	const Matrix4x4&						GetGlobalTransform();
-	Matrix4x4								GetGlobalTransform() const;
-	void									SetGlobalTransform(const Matrix4x4& m);
+	const TMatrix&							GetGlobalTransform();
+	TMatrix									GetGlobalTransform() const;
+	void									SetGlobalTransform(const TMatrix& m);
 
-	Matrix4x4								GetGlobalToLocalTransform();
-	Matrix4x4								GetGlobalToLocalTransform() const;
+	TMatrix									GetGlobalToLocalTransform();
+	TMatrix									GetGlobalToLocalTransform() const;
 
-	virtual Vector							GetGlobalOrigin();
+	virtual TVector							GetGlobalOrigin();
 	virtual EAngle							GetGlobalAngles();
 
-	virtual Vector							GetGlobalOrigin() const;
+	virtual TVector							GetGlobalOrigin() const;
 	virtual EAngle							GetGlobalAngles() const;
 
-	void									SetGlobalOrigin(const Vector& vecOrigin);
+	void									SetGlobalOrigin(const TVector& vecOrigin);
 	void									SetGlobalAngles(const EAngle& angAngles);
 
-	virtual Vector							GetGlobalVelocity();
-	virtual Vector							GetGlobalVelocity() const;
+	virtual TVector							GetGlobalVelocity();
+	virtual TVector							GetGlobalVelocity() const;
 
-	inline Vector							GetGlobalGravity() const { return m_vecGlobalGravity; };
-	void									SetGlobalGravity(Vector vecGravity) { m_vecGlobalGravity = vecGravity; };
+	virtual inline TVector					GetGlobalGravity() const { return m_vecGlobalGravity; };
+	void									SetGlobalGravity(const TVector& vecGravity) { m_vecGlobalGravity = vecGravity; };
 
-	const Matrix4x4&						GetLocalTransform() const { return m_mLocalTransform; }
-	void									SetLocalTransform(const Matrix4x4& m);
+	const TMatrix&							GetLocalTransform() const { return m_mLocalTransform; }
+	void									SetLocalTransform(const TMatrix& m);
 
 	const Quaternion&						GetLocalRotation() const { return m_qLocalRotation; }
 	void									SetLocalRotation(const Quaternion& q);
 
-	virtual inline Vector					GetLocalOrigin() const { return m_vecLocalOrigin; };
-	void									SetLocalOrigin(const Vector& vecOrigin);
-	virtual void							OnSetLocalOrigin(const Vector& vecOrigin) {}
+	virtual inline TVector					GetLocalOrigin() const { return m_vecLocalOrigin; };
+	void									SetLocalOrigin(const TVector& vecOrigin);
+	virtual void							OnSetLocalOrigin(const TVector& vecOrigin) {}
 
-	inline Vector							GetLastLocalOrigin() const { return m_vecLastLocalOrigin; };
-	void									SetLastLocalOrigin(const Vector& vecOrigin) { m_vecLastLocalOrigin = vecOrigin; };
+	inline TVector							GetLastLocalOrigin() const { return m_vecLastLocalOrigin; };
+	void									SetLastLocalOrigin(const TVector& vecOrigin) { m_vecLastLocalOrigin = vecOrigin; };
 
-	inline Vector							GetLocalVelocity() const { return m_vecLocalVelocity; };
-	void									SetLocalVelocity(const Vector& vecVelocity);
+	inline TVector							GetLastGlobalOrigin() const;
+
+	inline TVector							GetLocalVelocity() const { return m_vecLocalVelocity; };
+	void									SetLocalVelocity(const TVector& vecVelocity);
 
 	inline EAngle							GetLocalAngles() const { return m_angLocalAngles; };
 	void									SetLocalAngles(const EAngle& angLocalAngles);
 
-	virtual Vector							GetUpVector() { return Vector(0, 1, 0); };
+	virtual TVector							GetUpVector() { return TVector(0, 1, 0); };
 
 	bool									GetSimulated() const { return m_bSimulated; };
 	void									SetSimulated(bool bSimulated) { m_bSimulated = bSimulated; };
@@ -421,7 +425,8 @@ public:
 
 	virtual bool							ShouldSimulate() const { return GetSimulated(); };
 	virtual bool							ShouldTouch(CBaseEntity* pOther) const { return false; };
-	virtual bool							IsTouching(CBaseEntity* pOther, Vector& vecPoint) const { return false; };
+	virtual bool							IsTouchingLocal(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint);
+	virtual bool							IsTouching(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint);
 	virtual void							Touching(CBaseEntity* pOther) {};
 
 	void									CallInput(const eastl::string& sName, const tstring& sArgs);
@@ -435,9 +440,10 @@ public:
 	bool									IsSoundPlaying(const tstring& sModel);
 	void									SetSoundVolume(const tstring& sModel, float flVolume);
 
-	virtual float							Distance(Vector vecSpot) const;
+	virtual TFloat							Distance(const TVector& vecSpot) const;
 
-	virtual bool							Collide(const Vector& v1, const Vector& v2, Vector& vecPoint);
+	virtual bool							CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint);
+	virtual bool							Collide(const TVector& v1, const TVector& v2, TVector& vecPoint);
 
 	virtual int								GetCollisionGroup() { return m_iCollisionGroup; }
 	virtual void							SetCollisionGroup(int iCollisionGroup) { m_iCollisionGroup = iCollisionGroup; }
@@ -494,7 +500,7 @@ public:
 	static bool								Unserialize(std::istream& i, const char* pszClassName, void* pEntity);
 
 	template <class T>
-	static T*								FindClosest(Vector vecPoint, CBaseEntity* pFurther = NULL);
+	static T*								FindClosest(const TVector& vecPoint, CBaseEntity* pFurther = NULL);
 
 	static void								FindEntitiesByName(const eastl::string& sName, eastl::vector<CBaseEntity*>& apEntities);
 
@@ -509,13 +515,13 @@ protected:
 	CNetworkedSTLVector<CEntityHandle<CBaseEntity>>	m_ahMoveChildren;
 
 	bool									m_bGlobalTransformsDirty;
-	Matrix4x4								m_mGlobalTransform;
+	TMatrix									m_mGlobalTransform;
 	CNetworkedVector						m_vecGlobalGravity;
 
-	Matrix4x4								m_mLocalTransform;
+	TMatrix									m_mLocalTransform;
 	Quaternion								m_qLocalRotation;
 	CNetworkedVector						m_vecLocalOrigin;
-	Vector									m_vecLastLocalOrigin;
+	TVector									m_vecLastLocalOrigin;
 	CNetworkedEAngle						m_angLocalAngles;
 	CNetworkedVector						m_vecLocalVelocity;
 
@@ -565,11 +571,11 @@ public: \
 #include "template_functions.h"
 
 template <class T>
-T* CBaseEntity::FindClosest(Vector vecPoint, CBaseEntity* pFurther)
+T* CBaseEntity::FindClosest(const TVector& vecPoint, CBaseEntity* pFurther)
 {
 	T* pClosest = NULL;
 
-	float flFurtherDistance = 0;
+	TFloat flFurtherDistance = 0;
 	if (pFurther)
 		flFurtherDistance = pFurther->Distance(vecPoint);
 
@@ -588,7 +594,7 @@ T* CBaseEntity::FindClosest(Vector vecPoint, CBaseEntity* pFurther)
 		if (pT == pFurther)
 			continue;
 
-		float flEntityDistance = pT->Distance(vecPoint);
+		TFloat flEntityDistance = pT->Distance(vecPoint);
 		if (pFurther && (flEntityDistance <= flFurtherDistance))
 			continue;
 

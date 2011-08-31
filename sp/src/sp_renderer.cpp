@@ -64,8 +64,8 @@ void CSPRenderer::BuildScaleFrustums()
 		scale_t eScale = (scale_t)(i+1);
 		m_eRenderingScale = eScale;
 
-		SetCameraPosition(pCamera->GetCameraScalablePosition().GetUnits(eScale));
-		SetCameraTarget(pCamera->GetCameraScalableTarget().GetUnits(eScale));
+		SetCameraPosition(pCamera->GetCameraPosition().GetUnits(eScale));
+		SetCameraTarget(pCamera->GetCameraTarget().GetUnits(eScale));
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -139,7 +139,7 @@ void CSPRenderer::StartRendering()
 			continue;
 		}
 
-		if (pStar->GetGlobalScalableOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalScalableOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition))
+		if (pStar->GetGlobalOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition))
 			m_hClosestStar = pStar;
 	}
 
@@ -211,7 +211,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 		CPlanet* pPlanet = pCharacter->GetNearestPlanet();
 		if (pPlanet)
 		{
-			CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - pCharacter->GetGlobalScalableOrigin()).Length() - pPlanet->GetRadius();
+			CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - pPlanet->GetRadius();
 			float flAtmosphere = (float)RemapVal(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1, 0);
 			c->SetUniform("flAtmosphere", flAtmosphere);
 			c->SetUniform("vecUp", pCharacter->GetUpVector());
@@ -248,8 +248,8 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 
 	CSPCamera* pCamera = SPGame()->GetSPCamera();
 
-	SetCameraPosition(pCamera->GetCameraScalablePosition().GetUnits(m_eRenderingScale));
-	SetCameraTarget(pCamera->GetCameraScalableTarget().GetUnits(m_eRenderingScale));
+	SetCameraPosition(pCamera->GetCameraPosition().GetUnits(m_eRenderingScale));
+	SetCameraTarget(pCamera->GetCameraTarget().GetUnits(m_eRenderingScale));
 	SetCameraUp(pCamera->GetCameraUp());
 	SetCameraFOV(pCamera->GetCameraFOV());
 	SetCameraNear(pCamera->GetCameraNear());
@@ -273,7 +273,7 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 		if (!pSPEntity->ShouldRenderAtScale(m_eRenderingScale))
 			continue;
 
-		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), (float)pSPEntity->GetScalableRenderRadius().GetUnits(m_eRenderingScale)))
+		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), (float)pSPEntity->GetRenderRadius().GetUnits(m_eRenderingScale)))
 			continue;
 
 		apRender.push_back(pSPEntity);

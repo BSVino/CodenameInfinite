@@ -90,7 +90,7 @@ void CPlanet::Think()
 
 	BaseClass::Think();
 
-	SetLocalScalableAngles(GetLocalScalableAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
+	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
 
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
@@ -104,23 +104,23 @@ void CPlanet::RenderUpdate()
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	if (pCharacter->GetScalableMoveParent() == this)
+	if (pCharacter->GetMoveParent() == this)
 	{
-		s_vecCharacterLocalOrigin = DoubleVector(pCharacter->GetLocalScalableOrigin().GetUnits(GetScale()));
+		s_vecCharacterLocalOrigin = DoubleVector(pCharacter->GetLocalOrigin().GetUnits(GetScale()));
 	}
 	else
 	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalScalableOrigin();
+		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
 		// Instead, transform the player to the planet's local once and do the math in local space.
-		CScalableMatrix mPlanetGlobalToLocal = GetGlobalScalableTransform();
+		CScalableMatrix mPlanetGlobalToLocal = GetGlobalTransform();
 		mPlanetGlobalToLocal.InvertTR();
 		s_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
 	}
 
-	Vector vecOrigin = (GetGlobalScalableOrigin() - pCharacter->GetGlobalScalableOrigin()).GetUnits(GetScale());
-	Vector vecOutside = vecOrigin + vecUp * (float)GetScalableRenderRadius().GetUnits(GetScale());
+	Vector vecOrigin = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
+	Vector vecOutside = vecOrigin + vecUp * (float)GetRenderRadius().GetUnits(GetScale());
 
 	Vector vecScreen = SPGame()->GetSPRenderer()->ScreenPositionAtScale(GetScale(), vecOrigin);
 	Vector vecTop = SPGame()->GetSPRenderer()->ScreenPositionAtScale(GetScale(), vecOutside);
@@ -147,12 +147,13 @@ bool CPlanet::ShouldRenderAtScale(scale_t eScale) const
 	return false;
 }
 
-CScalableFloat CPlanet::GetScalableRenderRadius() const
+CScalableFloat CPlanet::GetRenderRadius() const
 {
 	return m_flRadius;
 }
 
 CVar r_colorcodescales("r_colorcodescales", "off");
+CVar debug_showplanetcollision("debug_showplanetcollision", "off");
 
 void CPlanet::PostRender(bool bTransparent) const
 {
@@ -165,9 +166,41 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
+	if (debug_showplanetcollision.GetBool())
+	{
+		CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+		CScalableVector vecPoint;
+		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
+		CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin();
+		if (LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(1.0f, SCALE_GIGAMETER), GetGlobalOrigin(), GetRadius(), vecPoint))
+		{
+			CRenderingContext c(GameServer()->GetRenderer());
+
+			CScalableVector vecRender = vecPoint - pLocalCharacter->GetGlobalOrigin();
+			c.Translate((vecPoint - pLocalCharacter->GetGlobalOrigin()).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+			c.SetColor(Color(255, 0, 0));
+			c.BeginRenderDebugLines();
+			c.Vertex(Vector(-10000, 0, 0));
+			c.Vertex(Vector(10000, 0, 0));
+			c.EndRender();
+			c.SetColor(Color(0, 255, 0));
+			c.BeginRenderDebugLines();
+			c.Vertex(Vector(0, -10000, 0));
+			c.Vertex(Vector(0, 10000, 0));
+			c.EndRender();
+			c.SetColor(Color(0, 0, 255));
+			c.BeginRenderDebugLines();
+			c.Vertex(Vector(0, 0, -10000));
+			c.Vertex(Vector(0, 0, 10000));
+			c.EndRender();
+			c.SetColor(Color(255, 255, 255));
+			c.RenderSphere();
+		}
+	}
+
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	CScalableMatrix mPlanetToLocal = GetGlobalScalableTransform();
+	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
 	mPlanetToLocal.InvertTR();
 
 	Vector vecStarLightPosition = (mPlanetToLocal.TransformNoTranslate(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
@@ -210,5 +243,5 @@ void CPlanet::PostRender(bool bTransparent) const
 CScalableFloat CPlanet::GetCloseOrbit()
 {
 	// For Earth values this resolves to about 600km above the ground, or about twice the altitude of the ISS.
-	return GetRadius()/10;
+	return GetRadius()/10.0f;
 }

@@ -463,11 +463,14 @@ void CGameServer::Simulate()
 	m_apSimulateList.reserve(CBaseEntity::GetNumEntities());
 	m_apSimulateList.clear();
 
-	size_t iMaxEntities = GetMaxEntities();
+	size_t iMaxEntities = GameServer()->GetMaxEntities();
 	for (size_t i = 0; i < iMaxEntities; i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
 		if (!pEntity)
+			continue;
+
+		if (pEntity->IsDeleted())
 			continue;
 
 		pEntity->SetLastLocalOrigin(pEntity->GetLocalOrigin());
@@ -478,6 +481,8 @@ void CGameServer::Simulate()
 		m_apSimulateList.push_back(pEntity);
 	}
 
+	m_apCollisionList.reserve(CBaseEntity::GetNumEntities());
+
 	// Move all entities
 	for (size_t i = 0; i < m_apSimulateList.size(); i++)
 	{
@@ -485,43 +490,7 @@ void CGameServer::Simulate()
 		if (!pEntity)
 			continue;
 
-		Matrix4x4 mGlobalToLocalRotation = pEntity->GetGlobalToLocalTransform();
-		mGlobalToLocalRotation.SetTranslation(Vector(0,0,0));
-
-		// Break simulations up into very small steps in order to preserve accuracy.
-		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
-		for (float flCurrentSimulationTime = m_flSimulationTime; flCurrentSimulationTime < m_flGameTime; flCurrentSimulationTime += flSimulationFrameTime)
-		{
-			Vector vecVelocity = pEntity->GetLocalVelocity();
-			if (vecVelocity.LengthSqr() == 0)
-				continue;
-
-			Vector vecGlobalGravity = pEntity->GetGlobalGravity();
-			Vector vecLocalGravity;
-			if (vecGlobalGravity.LengthSqr() > 0)
-			{
-				float flLength = vecGlobalGravity.Length();
-				vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
-			}
-			else
-				vecLocalGravity = Vector(0, 0, 0);
-
-			pEntity->SetLocalOrigin(pEntity->GetLocalOrigin() + vecVelocity * flSimulationFrameTime);
-			pEntity->SetLocalVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
-		}
-	}
-
-	while (m_flSimulationTime < m_flGameTime)
-		m_flSimulationTime += flSimulationFrameTime;
-
-	for (size_t i = 0; i < m_apSimulateList.size(); i++)
-	{
-		CBaseEntity* pEntity = m_apSimulateList[i];
-		if (!pEntity)
-			continue;
-
-		if (pEntity->IsDeleted())
-			continue;
+		m_apCollisionList.clear();
 
 		for (size_t j = 0; j < iMaxEntities; j++)
 		{
@@ -533,17 +502,90 @@ void CGameServer::Simulate()
 			if (pEntity2->IsDeleted())
 				continue;
 
+			if (pEntity2 == pEntity)
+				continue;
+
 			if (!pEntity->ShouldTouch(pEntity2))
 				continue;
 
-			Vector vecPoint;
-			if (pEntity->IsTouching(pEntity2, vecPoint))
+			m_apCollisionList.push_back(pEntity2);
+		}
+
+		TMatrix mGlobalToLocalRotation;
+		if (pEntity->HasMoveParent())
+		{
+			mGlobalToLocalRotation = pEntity->GetMoveParent()->GetGlobalToLocalTransform();
+			mGlobalToLocalRotation.SetTranslation(TVector());
+		}
+
+		// Break simulations up into very small steps in order to preserve accuracy.
+		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
+		for (float flCurrentSimulationTime = GameServer()->GetSimulationTime(); flCurrentSimulationTime < GameServer()->GetGameTime(); flCurrentSimulationTime += flSimulationFrameTime)
+		{
+			TVector vecVelocity = pEntity->GetLocalVelocity();
+
+			TVector vecGlobalGravity = pEntity->GetGlobalGravity();
+			TVector vecLocalGravity;
+			if (!vecGlobalGravity.IsZero())
 			{
-				pEntity->SetGlobalOrigin(vecPoint);
-				pEntity->Touching(pEntity2);
+				if (pEntity->HasMoveParent())
+				{
+					TFloat flLength = vecGlobalGravity.Length();
+					vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
+				}
+				else
+					vecLocalGravity = vecGlobalGravity;
+				pEntity->SetLocalVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
 			}
+			else
+				vecLocalGravity = TVector();
+
+			TVector vecDestination = pEntity->GetLocalOrigin() + vecVelocity * flSimulationFrameTime;
+			TVector vecGlobalDestination = vecDestination;
+			if (pEntity->GetMoveParent())
+				vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecDestination;
+
+			bool bContact = false;
+			for (size_t i = 0; i < m_apCollisionList.size(); i++)
+			{
+				CBaseEntity* pEntity2 = m_apCollisionList[i];
+
+				TVector vecPoint;
+
+				if (pEntity->GetMoveParent() == pEntity2)
+				{
+					if (pEntity->IsTouchingLocal(pEntity2, vecDestination, vecPoint))
+					{
+						bContact = true;
+						pEntity->SetLocalOrigin(vecPoint);
+						pEntity->Touching(pEntity2);
+						vecDestination = vecPoint;
+						vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecDestination;
+					}
+				}
+				else
+				{
+					if (pEntity->IsTouching(pEntity2, vecGlobalDestination, vecPoint))
+					{
+						bContact = true;
+						pEntity->SetGlobalOrigin(vecPoint);
+						pEntity->Touching(pEntity2);
+						vecGlobalDestination = vecPoint;
+						if (pEntity->GetMoveParent())
+							vecDestination = pEntity->GetMoveParent()->GetGlobalToLocalTransform() * vecGlobalDestination;
+						else
+							vecDestination = vecGlobalDestination;
+					}
+				}
+			}
+
+			if (!bContact)
+				pEntity->SetLocalOrigin(vecDestination);
 		}
 	}
+
+	while (GameServer()->GetSimulationTime() < GameServer()->GetGameTime())
+		GameServer()->AdvanceSimulationTime(flSimulationFrameTime);
 }
 
 CVar r_cullfrustum("r_frustumculling", "on");
@@ -582,7 +624,7 @@ void CGameServer::Render()
 		if (!pEntity->ShouldRender())
 			continue;
 
-		if (bFrustumCulling && !GameWindow()->GetRenderer()->IsSphereInFrustum(pEntity->GetRenderOrigin(), pEntity->GetRenderRadius()))
+		if (bFrustumCulling && !GameWindow()->GetRenderer()->IsSphereInFrustum(pEntity->GetRenderOrigin(), (float)pEntity->GetRenderRadius()))
 			continue;
 
 		m_apRenderList.push_back(pEntity);

@@ -42,7 +42,7 @@ void CSPHUD::Paint(int x, int y, int w, int h)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
 		if (!pEntity)
-			return;
+			continue;
 
 		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pEntity);
 		if (pPlanet)
@@ -50,7 +50,7 @@ void CSPHUD::Paint(int x, int y, int w, int h)
 			CScalableVector vecScalablePlanet = pPlanet->GetScalableRenderOrigin();
 
 			CScalableFloat flDistance = vecScalablePlanet.Length();
-			if (flDistance < pPlanet->GetRadius()*2)
+			if (flDistance < pPlanet->GetRadius()*2.0f)
 				continue;
 
 			Vector vecPlanet = vecScalablePlanet.GetUnits(SCALE_METER);

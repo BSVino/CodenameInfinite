@@ -13,8 +13,9 @@ public:
 
 	virtual void				Think();
 
-	virtual CScalableFloat		GetRenderScalableRadius() const { return m_flRadius; };
 	virtual void				PostRender(bool bTransparent) const;
+
+	virtual TFloat				GetBoundingRadius() const { return GetRadius(); };
 
 	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
 	CScalableFloat				GetRadius() const { return m_flRadius; }

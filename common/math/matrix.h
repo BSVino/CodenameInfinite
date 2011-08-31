@@ -32,7 +32,7 @@ public:
 
 	// Set a transformation
 	void		SetTranslation(const Vector& vecPos);
-	void		SetRotation(const EAngle& angDir);
+	void		SetAngles(const EAngle& angDir);
 	void		SetRotation(float flAngle, const Vector& vecAxis);
 	void		SetRotation(const Quaternion& q);
 	void		SetOrientation(const Vector& vecDir);

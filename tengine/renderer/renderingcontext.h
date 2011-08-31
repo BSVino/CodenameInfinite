@@ -2,7 +2,7 @@
 #define TINKER_RENDERINGCONTEXT_H
 
 #include <tstring.h>
-#include <vector.h>
+#include <tengine_config.h>
 #include <plane.h>
 #include <matrix.h>
 #include <color.h>
@@ -17,7 +17,7 @@ public:
 
 public:
 	void					Transform(const Matrix4x4& m);
-	void					Translate(Vector vecTranslate);
+	void					Translate(const Vector& vecTranslate);
 	void					Rotate(float flAngle, Vector vecAxis);
 	void					Scale(float flX, float flY, float flZ);
 	void					ResetTransformations();

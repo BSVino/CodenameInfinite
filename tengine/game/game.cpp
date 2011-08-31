@@ -133,7 +133,7 @@ bool CGame::TraceLine(const Vector& s1, const Vector& s2, Vector& vecHit, CBaseE
 		if (iCollisionGroup && !(pEntity->GetCollisionGroup() & iCollisionGroup))
 			continue;
 
-		Vector vecPoint;
+		TVector vecPoint;
 		if (pEntity->Collide(s1, s2, vecPoint))
 		{
 			if (!bHit || (vecPoint - s1).LengthSqr() < (vecClosest - s1).LengthSqr())

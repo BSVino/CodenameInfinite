@@ -52,13 +52,13 @@ void CSPWindow::SetupSP()
 	Game()->AddPlayer(pPlayer);
 
 	CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
-	pCharacter->SetGlobalScalableOrigin(CScalableVector());
-	pCharacter->SetGlobalScalableAngles(EAngle(10, 80, 90));
+	pCharacter->SetGlobalOrigin(CScalableVector());
+	pCharacter->SetGlobalAngles(EAngle(10, 80, 90));
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 	pPlanet->SetPlanetName("Earth");
-	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
+	pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
 	pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(50.0f, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 	pPlanet->SetMinutesPerRevolution(30);
@@ -66,14 +66,14 @@ void CSPWindow::SetupSP()
 
 	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 	pPlanet->SetPlanetName("Mars");
-	pPlanet->SetGlobalScalableOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
+	pPlanet->SetGlobalOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
 	pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
 	pPlanet->SetAtmosphereThickness(CScalableFloat(25.0f, SCALE_KILOMETER));
 	pPlanet->SetMinutesPerRevolution(20);
 	pPlanet->SetAtmosphereColor(Color(0.64f, 0.25f, 0.25f));
 
 	CStar* pStar = GameServer()->Create<CStar>("CStar");
-	pStar->SetGlobalScalableOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
+	pStar->SetGlobalOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
 	pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
 	pStar->SetLightColor(Color(255, 242, 143));
 

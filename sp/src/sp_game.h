@@ -12,9 +12,6 @@ public:
 
 	virtual void			Think();
 
-	virtual void			Simulate();
-	virtual bool			ShouldRunSimulation() { return false; };
-
 	class CSPCharacter*		GetLocalPlayerCharacter();
 	class CSPRenderer*		GetSPRenderer();
 	class CSPCamera*		GetSPCamera();

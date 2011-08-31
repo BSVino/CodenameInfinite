@@ -35,14 +35,14 @@ void CSPPlayer::MouseMotion(int x, int y)
 	CScalableMatrix mRotate;
 	mRotate.SetAngles(angMouse);
 
-	CScalableMatrix mTransform = GetPlayerCharacter()->GetLocalScalableTransform();
+	CScalableMatrix mTransform = GetPlayerCharacter()->GetLocalTransform();
 	mTransform.SetTranslation(CScalableVector());
 
 	CScalableMatrix mNewTransform = mTransform * mRotate;
 
-	mNewTransform.SetTranslation(GetPlayerCharacter()->GetLocalScalableOrigin());
+	mNewTransform.SetTranslation(GetPlayerCharacter()->GetLocalOrigin());
 
-	GetPlayerCharacter()->SetLocalScalableTransform(mNewTransform);
+	GetPlayerCharacter()->SetLocalTransform(mNewTransform);
 }
 
 void CSPPlayer::KeyPress(int c)

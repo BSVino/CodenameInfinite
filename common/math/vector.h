@@ -11,46 +11,46 @@
 #endif
 
 template <class unit_t>
-class TVector2D;
+class TemplateVector2D;
 
 template <class unit_t>
-class TVector
+class TemplateVector
 {
 public:
-			TVector();
-			TVector(class Color c);
-			TVector(unit_t x, unit_t y, unit_t z);
-			TVector(unit_t* xyz);
+			TemplateVector();
+			TemplateVector(class Color c);
+			TemplateVector(unit_t x, unit_t y, unit_t z);
+			TemplateVector(unit_t* xyz);
 
 			// Conversions
-			TVector(const TVector<float>& v);
-			TVector(const TVector<double>& v);
-			TVector(const class TVector2D<float>& v);
-			TVector(const class TVector2D<double>& v);
+			TemplateVector(const TemplateVector<float>& v);
+			TemplateVector(const TemplateVector<double>& v);
+			TemplateVector(const class TemplateVector2D<float>& v);
+			TemplateVector(const class TemplateVector2D<double>& v);
 
 public:
-	TVector<unit_t>	operator-(void) const;
+	TemplateVector<unit_t>	operator-(void) const;
 
-	TVector<unit_t>	operator+(const TVector<unit_t>& v) const;
-	TVector<unit_t>	operator-(const TVector<unit_t>& v) const;
-	TVector<unit_t>	operator*(unit_t s) const;
-	TVector<unit_t>	operator/(unit_t s) const;
+	TemplateVector<unit_t>	operator+(const TemplateVector<unit_t>& v) const;
+	TemplateVector<unit_t>	operator-(const TemplateVector<unit_t>& v) const;
+	TemplateVector<unit_t>	operator*(unit_t s) const;
+	TemplateVector<unit_t>	operator/(unit_t s) const;
 
-	void	operator+=(const TVector<unit_t> &v);
-	void	operator-=(const TVector<unit_t> &v);
+	void	operator+=(const TemplateVector<unit_t> &v);
+	void	operator-=(const TemplateVector<unit_t> &v);
 	void	operator*=(unit_t s);
 	void	operator/=(unit_t s);
 
-	TVector<unit_t>	operator*(const TVector<unit_t>& v) const;
+	TemplateVector<unit_t>	operator*(const TemplateVector<unit_t>& v) const;
 
-	friend TVector<unit_t> operator*( unit_t f, const TVector<unit_t>& v )
+	friend TemplateVector<unit_t> operator*( unit_t f, const TemplateVector<unit_t>& v )
 	{
-		return TVector( v.x*f, v.y*f, v.z*f );
+		return TemplateVector( v.x*f, v.y*f, v.z*f );
 	}
 
-	friend TVector<unit_t> operator/( unit_t f, const TVector<unit_t>& v )
+	friend TemplateVector<unit_t> operator/( unit_t f, const TemplateVector<unit_t>& v )
 	{
-		return TVector( f/v.x, f/v.y, f/v.z );
+		return TemplateVector( f/v.x, f/v.y, f/v.z );
 	}
 
 	unit_t	Length() const;
@@ -58,13 +58,13 @@ public:
 	unit_t	Length2D() const;
 	unit_t	Length2DSqr() const;
 	void	Normalize();
-	TVector<unit_t>	Normalized() const;
+	TemplateVector<unit_t>	Normalized() const;
 
-	unit_t	Distance(const TVector<unit_t>& v) const;
-	unit_t	DistanceSqr(const TVector<unit_t>& v) const;
+	unit_t	Distance(const TemplateVector<unit_t>& v) const;
+	unit_t	DistanceSqr(const TemplateVector<unit_t>& v) const;
 
-	unit_t	Dot(const TVector<unit_t>& v) const;
-	TVector<unit_t>	Cross(const TVector<unit_t>& v) const;
+	unit_t	Dot(const TemplateVector<unit_t>& v) const;
+	TemplateVector<unit_t>	Cross(const TemplateVector<unit_t>& v) const;
 
 	operator unit_t*()
 	{
@@ -85,19 +85,19 @@ public:
 	unit_t	x, y, z;
 };
 
-typedef TVector<float> Vector;
-typedef TVector<double> DoubleVector;
+typedef TemplateVector<float> Vector;
+typedef TemplateVector<double> DoubleVector;
 
 #include <color.h>
 
 template <class unit_t>
-inline TVector<unit_t>::TVector()
+inline TemplateVector<unit_t>::TemplateVector()
 	: x(0), y(0), z(0)
 {
 }
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(Color c)
+inline TemplateVector<unit_t>::TemplateVector(Color c)
 {
 	x = (float)c.r()/255.0f;
 	y = (float)c.g()/255.0f;
@@ -105,61 +105,61 @@ inline TVector<unit_t>::TVector(Color c)
 }
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(unit_t X, unit_t Y, unit_t Z)
+inline TemplateVector<unit_t>::TemplateVector(unit_t X, unit_t Y, unit_t Z)
 	: x(X), y(Y), z(Z)
 {
 }
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(unit_t* xyz)
+inline TemplateVector<unit_t>::TemplateVector(unit_t* xyz)
 	: x(*xyz), y(*(xyz+1)), z(*(xyz+2))
 {
 }
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(const TVector<float>& v)
+inline TemplateVector<unit_t>::TemplateVector(const TemplateVector<float>& v)
 	: x((unit_t)v.x), y((unit_t)v.y), z((unit_t)v.z)
 {
 }
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(const TVector<double>& v)
+inline TemplateVector<unit_t>::TemplateVector(const TemplateVector<double>& v)
 	: x((unit_t)v.x), y((unit_t)v.y), z((unit_t)v.z)
 {
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::operator-() const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::operator-() const
 {
-	return TVector(-x, -y, -z);
+	return TemplateVector(-x, -y, -z);
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::operator+(const TVector<unit_t>& v) const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::operator+(const TemplateVector<unit_t>& v) const
 {
-	return TVector(x+v.x, y+v.y, z+v.z);
+	return TemplateVector(x+v.x, y+v.y, z+v.z);
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::operator-(const TVector<unit_t>& v) const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::operator-(const TemplateVector<unit_t>& v) const
 {
-	return TVector(x-v.x, y-v.y, z-v.z);
+	return TemplateVector(x-v.x, y-v.y, z-v.z);
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::operator*(unit_t s) const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::operator*(unit_t s) const
 {
-	return TVector(x*s, y*s, z*s);
+	return TemplateVector(x*s, y*s, z*s);
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::operator/(unit_t s) const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::operator/(unit_t s) const
 {
-	return TVector(x/s, y/s, z/s);
+	return TemplateVector(x/s, y/s, z/s);
 }
 
 template <class unit_t>
-inline void TVector<unit_t>::operator+=(const TVector<unit_t>& v)
+inline void TemplateVector<unit_t>::operator+=(const TemplateVector<unit_t>& v)
 {
 	x += v.x;
 	y += v.y;
@@ -167,7 +167,7 @@ inline void TVector<unit_t>::operator+=(const TVector<unit_t>& v)
 }
 
 template <class unit_t>
-inline void TVector<unit_t>::operator-=(const TVector<unit_t>& v)
+inline void TemplateVector<unit_t>::operator-=(const TemplateVector<unit_t>& v)
 {
 	x -= v.x;
 	y -= v.y;
@@ -175,7 +175,7 @@ inline void TVector<unit_t>::operator-=(const TVector<unit_t>& v)
 }
 
 template <class unit_t>
-inline void TVector<unit_t>::operator*=(unit_t s)
+inline void TemplateVector<unit_t>::operator*=(unit_t s)
 {
 	x *= s;
 	y *= s;
@@ -183,7 +183,7 @@ inline void TVector<unit_t>::operator*=(unit_t s)
 }
 
 template <class unit_t>
-inline void TVector<unit_t>::operator/=(unit_t s)
+inline void TemplateVector<unit_t>::operator/=(unit_t s)
 {
 	x /= s;
 	y /= s;
@@ -191,99 +191,99 @@ inline void TVector<unit_t>::operator/=(unit_t s)
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::operator*(const TVector<unit_t>& v) const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::operator*(const TemplateVector<unit_t>& v) const
 {
-	return TVector(x*v.x, y*v.y, z*v.z);
+	return TemplateVector(x*v.x, y*v.y, z*v.z);
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::Length() const
+inline unit_t TemplateVector<unit_t>::Length() const
 {
 	return sqrt(x*x + y*y + z*z);
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::LengthSqr() const
+inline unit_t TemplateVector<unit_t>::LengthSqr() const
 {
 	return x*x + y*y + z*z;
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::Length2D() const
+inline unit_t TemplateVector<unit_t>::Length2D() const
 {
 	return sqrt(x*x + z*z);
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::Length2DSqr() const
+inline unit_t TemplateVector<unit_t>::Length2DSqr() const
 {
 	return x*x + z*z;
 }
 
 template <class unit_t>
-inline void TVector<unit_t>::Normalize()
+inline void TemplateVector<unit_t>::Normalize()
 {
 	unit_t flLength = Length();
 	if (!flLength)
-		*this=TVector(0,0,1);
+		*this=TemplateVector(0,0,1);
 	else
 		*this/=flLength;
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::Normalized() const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::Normalized() const
 {
 	unit_t flLength = Length();
 	if (!flLength)
-		return TVector(0,0,1);
+		return TemplateVector(0,0,1);
 	else
 		return *this/flLength;
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::Distance(const TVector<unit_t>& v) const
+inline unit_t TemplateVector<unit_t>::Distance(const TemplateVector<unit_t>& v) const
 {
 	return (*this - v).Length();
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::DistanceSqr(const TVector<unit_t>& v) const
+inline unit_t TemplateVector<unit_t>::DistanceSqr(const TemplateVector<unit_t>& v) const
 {
 	return (*this - v).LengthSqr();
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::Dot(const TVector<unit_t>& v) const
+inline unit_t TemplateVector<unit_t>::Dot(const TemplateVector<unit_t>& v) const
 {
 	return x*v.x + y*v.y + z*v.z;
 }
 
 template <class unit_t>
-inline TVector<unit_t> TVector<unit_t>::Cross(const TVector<unit_t>& v) const
+inline TemplateVector<unit_t> TemplateVector<unit_t>::Cross(const TemplateVector<unit_t>& v) const
 {
-	return TVector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
+	return TemplateVector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 }
 
 template <class unit_t>
-inline unit_t& TVector<unit_t>::operator[](int i)
-{
-	return (&x)[i];
-}
-
-template <class unit_t>
-inline unit_t TVector<unit_t>::operator[](int i) const
+inline unit_t& TemplateVector<unit_t>::operator[](int i)
 {
 	return (&x)[i];
 }
 
 template <class unit_t>
-inline unit_t& TVector<unit_t>::operator[](size_t i)
+inline unit_t TemplateVector<unit_t>::operator[](int i) const
 {
 	return (&x)[i];
 }
 
 template <class unit_t>
-inline unit_t TVector<unit_t>::operator[](size_t i) const
+inline unit_t& TemplateVector<unit_t>::operator[](size_t i)
+{
+	return (&x)[i];
+}
+
+template <class unit_t>
+inline unit_t TemplateVector<unit_t>::operator[](size_t i) const
 {
 	return (&x)[i];
 }
@@ -418,24 +418,24 @@ inline EAngle VectorAngles( const Vector& vecForward )
 }
 
 template <class unit_t>
-class TVector2D
+class TemplateVector2D
 {
 public:
-				TVector2D();
-				TVector2D(unit_t x, unit_t y);
-				TVector2D(TVector<unit_t> v);
+				TemplateVector2D();
+				TemplateVector2D(unit_t x, unit_t y);
+				TemplateVector2D(TemplateVector<unit_t> v);
 
 				// Conversions
-				TVector2D(const TVector2D<float>& v);
-				TVector2D(const TVector2D<double>& v);
+				TemplateVector2D(const TemplateVector2D<float>& v);
+				TemplateVector2D(const TemplateVector2D<double>& v);
 
 public:
 	float	LengthSqr() const;
 
-	TVector2D<unit_t>	operator+(const TVector2D<unit_t>& v) const;
-	TVector2D<unit_t>	operator-(const TVector2D<unit_t>& v) const;
-	TVector2D<unit_t>	operator*(float s) const;
-	TVector2D<unit_t>	operator/(float s) const;
+	TemplateVector2D<unit_t>	operator+(const TemplateVector2D<unit_t>& v) const;
+	TemplateVector2D<unit_t>	operator-(const TemplateVector2D<unit_t>& v) const;
+	TemplateVector2D<unit_t>	operator*(float s) const;
+	TemplateVector2D<unit_t>	operator/(float s) const;
 
 	operator float*()
 	{
@@ -451,78 +451,78 @@ public:
 };
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(const TVector2D<float>& v)
+inline TemplateVector<unit_t>::TemplateVector(const TemplateVector2D<float>& v)
 	: x((unit_t)v.x), y((unit_t)v.y), z(0)
 {
 }
 
 template <class unit_t>
-inline TVector<unit_t>::TVector(const TVector2D<double>& v)
+inline TemplateVector<unit_t>::TemplateVector(const TemplateVector2D<double>& v)
 	: x((unit_t)v.x), y((unit_t)v.y), z(0)
 {
 }
 
-typedef TVector2D<float> Vector2D;
-typedef TVector2D<double> DoubleVector2D;
+typedef TemplateVector2D<float> Vector2D;
+typedef TemplateVector2D<double> DoubleVector2D;
 
 template <class unit_t>
-inline TVector2D<unit_t>::TVector2D()
+inline TemplateVector2D<unit_t>::TemplateVector2D()
 	: x(0), y(0)
 {
 }
 
 template <class unit_t>
-inline TVector2D<unit_t>::TVector2D(unit_t X, unit_t Y)
+inline TemplateVector2D<unit_t>::TemplateVector2D(unit_t X, unit_t Y)
 	: x(X), y(Y)
 {
 }
 
 template <class unit_t>
-inline TVector2D<unit_t>::TVector2D(TVector<unit_t> v)
+inline TemplateVector2D<unit_t>::TemplateVector2D(TemplateVector<unit_t> v)
 	: x(v.x), y(v.y)
 {
 }
 
 template <class unit_t>
-inline TVector2D<unit_t>::TVector2D(const TVector2D<float>& v)
+inline TemplateVector2D<unit_t>::TemplateVector2D(const TemplateVector2D<float>& v)
 	: x((unit_t)v.x), y((unit_t)v.y)
 {
 }
 
 template <class unit_t>
-inline TVector2D<unit_t>::TVector2D(const TVector2D<double>& v)
+inline TemplateVector2D<unit_t>::TemplateVector2D(const TemplateVector2D<double>& v)
 	: x((unit_t)v.x), y((unit_t)v.y)
 {
 }
 
 template <class unit_t>
-inline float TVector2D<unit_t>::LengthSqr() const
+inline float TemplateVector2D<unit_t>::LengthSqr() const
 {
 	return x*x + y*y;
 }
 
 template <class unit_t>
-inline TVector2D<unit_t> TVector2D<unit_t>::operator+(const TVector2D<unit_t>& v) const
+inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator+(const TemplateVector2D<unit_t>& v) const
 {
-	return TVector2D(x+v.x, y+v.y);
+	return TemplateVector2D(x+v.x, y+v.y);
 }
 
 template <class unit_t>
-inline TVector2D<unit_t> TVector2D<unit_t>::operator-(const TVector2D<unit_t>& v) const
+inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator-(const TemplateVector2D<unit_t>& v) const
 {
-	return TVector2D(x-v.x, y-v.y);
+	return TemplateVector2D(x-v.x, y-v.y);
 }
 
 template <class unit_t>
-inline TVector2D<unit_t> TVector2D<unit_t>::operator*(float s) const
+inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator*(float s) const
 {
-	return TVector2D(x*s, y*s);
+	return TemplateVector2D(x*s, y*s);
 }
 
 template <class unit_t>
-inline TVector2D<unit_t> TVector2D<unit_t>::operator/(float s) const
+inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator/(float s) const
 {
-	return TVector2D(x/s, y/s);
+	return TemplateVector2D(x/s, y/s);
 }
 
 class Vector4D

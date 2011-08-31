@@ -86,10 +86,10 @@ public:
 	void						CalcRenderVectors(CTerrainQuadTreeBranch* pBranch);
 	float						GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch);
 
-	virtual TVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
-	virtual DoubleVector		QuadTreeToWorld(const CTerrainQuadTree* pTree, const TVector2D<double>& vecTree) const;
-	virtual TVector2D<double>	WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
-	virtual DoubleVector		QuadTreeToWorld(CTerrainQuadTree* pTree, const TVector2D<double>& vecTree);
+	virtual TemplateVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
+	virtual DoubleVector		QuadTreeToWorld(const CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree) const;
+	virtual TemplateVector2D<double>	WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
+	virtual DoubleVector		QuadTreeToWorld(CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree);
 	virtual bool				ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete);
 
 	Vector						GetDirection() const { return m_vecDirection; }

@@ -1,7 +1,7 @@
 #ifndef DT_CAMERA_H
 #define DT_CAMERA_H
 
-#include "vector.h"
+#include "tengine_config.h"
 
 class CCamera
 {
@@ -11,9 +11,9 @@ public:
 public:
 	virtual void	Think();
 
-	virtual Vector	GetCameraPosition();
-	virtual Vector	GetCameraTarget();
-	virtual Vector	GetCameraUp();
+	virtual TVector	GetCameraPosition();
+	virtual TVector	GetCameraTarget();
+	virtual TVector	GetCameraUp();
 	virtual float	GetCameraFOV();
 	virtual float	GetCameraNear() { return 1.0f; };
 	virtual float	GetCameraFar() { return 10000.0f; };
@@ -27,9 +27,9 @@ public:
 
 public:
 	bool			m_bFreeMode;
-	Vector			m_vecFreeCamera;
+	TVector			m_vecFreeCamera;
 	EAngle			m_angFreeCamera;
-	Vector			m_vecFreeVelocity;
+	TVector			m_vecFreeVelocity;
 
 	int				m_iMouseLastX;
 	int				m_iMouseLastY;

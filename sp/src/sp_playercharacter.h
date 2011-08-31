@@ -21,10 +21,9 @@ public:
 	void						EngageHyperdrive() { m_bHyperdrive = true; };
 	void						DisengageHyperdrive() { m_bHyperdrive = false; };
 
-	virtual CScalableFloat		CharacterSpeedScalable();
+	virtual CScalableFloat		CharacterSpeed();
 
-	virtual bool				ShouldTouch(ISPEntity* pOther);
-	virtual inline CScalableVector	GetGlobalScalableGravity() const;
+	virtual inline CScalableVector	GetGlobalGravity() const;
 	virtual void				FindGroundEntity();
 
 protected:

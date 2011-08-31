@@ -71,7 +71,7 @@ void CRenderingContext::Transform(const Matrix4x4& m)
 	glMultMatrixf(m.Transposed());	// GL uses column major.
 }
 
-void CRenderingContext::Translate(Vector vecTranslate)
+void CRenderingContext::Translate(const Vector& vecTranslate)
 {
 	if (!m_bMatrixTransformations)
 	{

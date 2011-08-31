@@ -22,8 +22,10 @@ public:
 
 	virtual bool				ShouldRenderAtScale(scale_t eScale) const;
 
-	virtual CScalableFloat		GetScalableRenderRadius() const;
+	virtual CScalableFloat		GetRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;
+
+	virtual TFloat				GetBoundingRadius() const { return GetRadius(); };
 
 	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
 	CScalableFloat				GetRadius() const { return m_flRadius; }
