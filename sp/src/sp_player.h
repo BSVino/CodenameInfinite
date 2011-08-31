@@ -12,7 +12,7 @@ public:
 	virtual void					KeyPress(int c);
 	virtual void					KeyRelease(int c);
 
-	class CSPCharacter*				GetSPCharacter();
+	class CPlayerCharacter*			GetPlayerCharacter();
 };
 
 #endif

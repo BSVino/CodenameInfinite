@@ -17,7 +17,7 @@
 #include <game/camera.h>
 
 #include "sp_player.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "sp_renderer.h"
 #include "planet.h"
 #include "star.h"
@@ -51,7 +51,7 @@ void CSPWindow::SetupSP()
 	CSPPlayer* pPlayer = GameServer()->Create<CSPPlayer>("CSPPlayer");
 	Game()->AddPlayer(pPlayer);
 
-	CSPCharacter* pCharacter = GameServer()->Create<CSPCharacter>("CSPCharacter");
+	CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
 	pCharacter->SetGlobalScalableOrigin(CScalableVector());
 	pCharacter->SetGlobalScalableAngles(EAngle(10, 80, 90));
 	pPlayer->SetCharacter(pCharacter);

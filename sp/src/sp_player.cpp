@@ -5,7 +5,7 @@
 #include <tinker/application.h>
 #include <tinker/keys.h>
 
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
@@ -35,39 +35,42 @@ void CSPPlayer::MouseMotion(int x, int y)
 	CScalableMatrix mRotate;
 	mRotate.SetAngles(angMouse);
 
-	CScalableMatrix mTransform = GetSPCharacter()->GetLocalScalableTransform();
+	CScalableMatrix mTransform = GetPlayerCharacter()->GetLocalScalableTransform();
 	mTransform.SetTranslation(CScalableVector());
 
 	CScalableMatrix mNewTransform = mTransform * mRotate;
 
-	mNewTransform.SetTranslation(GetSPCharacter()->GetLocalScalableOrigin());
+	mNewTransform.SetTranslation(GetPlayerCharacter()->GetLocalScalableOrigin());
 
-	GetSPCharacter()->SetLocalScalableTransform(mNewTransform);
+	GetPlayerCharacter()->SetLocalScalableTransform(mNewTransform);
 }
 
 void CSPPlayer::KeyPress(int c)
 {
 	BaseClass::KeyPress(c);
 
-	if (GetSPCharacter() == NULL)
+	if (GetPlayerCharacter() == NULL)
 		return;
 
 	if (c == TINKER_KEY_LSHIFT)
-		GetSPCharacter()->EngageHyperdrive();
+		GetPlayerCharacter()->EngageHyperdrive();
+
+	if (c == 'F')
+		GetPlayerCharacter()->ToggleFlying();
 }
 
 void CSPPlayer::KeyRelease(int c)
 {
 	BaseClass::KeyRelease(c);
 
-	if (GetSPCharacter() == NULL)
+	if (GetPlayerCharacter() == NULL)
 		return;
 
 	if (c == TINKER_KEY_LSHIFT)
-		GetSPCharacter()->DisengageHyperdrive();
+		GetPlayerCharacter()->DisengageHyperdrive();
 }
 
-CSPCharacter* CSPPlayer::GetSPCharacter()
+CPlayerCharacter* CSPPlayer::GetPlayerCharacter()
 {
-	return static_cast<CSPCharacter*>(m_hCharacter.GetPointer());
+	return static_cast<CPlayerCharacter*>(m_hCharacter.GetPointer());
 }

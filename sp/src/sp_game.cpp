@@ -116,8 +116,12 @@ void CSPGame::Simulate()
 			apCollisionList.push_back(pSPEntity2);
 		}
 
-		CScalableMatrix mGlobalToLocalRotation = pEntity->GetGlobalToLocalScalableTransform();
-		mGlobalToLocalRotation.SetTranslation(CScalableVector());
+		CScalableMatrix mGlobalToLocalRotation;
+		if (pEntity->HasScalableMoveParent())
+		{
+			mGlobalToLocalRotation = pEntity->GetScalableMoveParent()->GetGlobalToLocalScalableTransform();
+			mGlobalToLocalRotation.SetTranslation(CScalableVector());
+		}
 
 		// Break simulations up into very small steps in order to preserve accuracy.
 		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
@@ -129,8 +133,13 @@ void CSPGame::Simulate()
 			CScalableVector vecLocalGravity;
 			if (!vecGlobalGravity.IsZero())
 			{
-				CScalableFloat flLength = vecGlobalGravity.Length();
-				vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
+				if (pEntity->HasScalableMoveParent())
+				{
+					CScalableFloat flLength = vecGlobalGravity.Length();
+					vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
+				}
+				else
+					vecLocalGravity = vecGlobalGravity;
 				pEntity->SetLocalScalableVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
 			}
 			else

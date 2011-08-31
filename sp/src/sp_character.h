@@ -24,11 +24,10 @@ public:
 public:
 	virtual void				Think();
 
+	virtual void				MoveThink();
+
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
 	CPlanet*					FindNearestPlanet();
-
-	void						EngageHyperdrive() { m_bHyperdrive = true; };
-	void						DisengageHyperdrive() { m_bHyperdrive = false; };
 
 	virtual Vector				GetUpVector();
 
@@ -42,11 +41,13 @@ public:
 	virtual float				EyeHeight();
 	virtual float				CharacterSpeed();
 
+	virtual bool				ShouldTouch(ISPEntity* pOther);
+	virtual inline CScalableVector	GetGlobalScalableGravity() const;
+	virtual void				FindGroundEntity();
+
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 	float						m_flNextPlanetCheck;
-
-	bool						m_bHyperdrive;
 
 	float						m_flLastEnteredAtmosphere;
 	float						m_flRollFromSpace;

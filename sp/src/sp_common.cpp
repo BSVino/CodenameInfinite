@@ -643,7 +643,7 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 
 	flReturn.m_bPositive = f.m_bPositive?m_bPositive:!m_bPositive;
 
-	for (size_t i = 0; i <= SCALESTACK_SIZE; i++)
+	for (size_t i = 0; i <= SCALESTACK_SIZE+1; i++)
 	{
 		double flResult;
 		int j = i;
@@ -652,6 +652,12 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 			// Really this is a hack but I want to borrow the code in this loop for the remainder as well.
 			flResult = m_flRemainder/flDivide;
 			j = 0;
+		}
+		else if (i == SCALESTACK_SIZE+1)
+		{
+			// And the overflow.
+			flResult = m_flOverflow/flDivide;
+			j = SCALESTACK_SIZE;
 		}
 		else
 		{
@@ -1058,6 +1064,10 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero && h.m_bZero;
 
 	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder + h.m_flRemainder;
+
+	if (bLargest)
+		flReturn.m_bPositive = flReturn.m_flRemainder > 0;
+
 	flReturn.NormalizeRemainder();
 
 	CHECKSANITY(flReturn);
@@ -1133,12 +1143,15 @@ void CScalableFloat::NormalizeRemainder()
 		{
 			while (j < SCALESTACK_SIZE-1 && m_aiScaleStack[j+1] == 0)
 			{
-				TAssert(j+1 < SCALESTACK_SIZE-1);
 				m_aiScaleStack[j+1] += 999;
 				j++;
 			}
 
-			m_aiScaleStack[j+1]--;
+			if (j == SCALESTACK_SIZE-1)
+				m_flOverflow -= 1;
+			else
+				m_aiScaleStack[j+1]--;
+
 			m_aiScaleStack[0] += 1000;
 		}
 	}
@@ -1152,12 +1165,15 @@ void CScalableFloat::NormalizeRemainder()
 		{
 			while (j < SCALESTACK_SIZE-1 && m_aiScaleStack[j+1] == 0)
 			{
-				TAssert(j+1 < SCALESTACK_SIZE-1);
 				m_aiScaleStack[j+1] -= 999;
 				j++;
 			}
 
-			m_aiScaleStack[j+1]++;
+			if (j == SCALESTACK_SIZE-1)
+				m_flOverflow += 1;
+			else
+				m_aiScaleStack[j+1]++;
+
 			m_aiScaleStack[0] -= 1000;
 		}
 	}
@@ -1349,6 +1365,11 @@ CScalableFloat CScalableVector::LengthSqr() const
 CScalableFloat CScalableVector::Dot(const CScalableVector& v) const
 {
 	return x*v.x + y*v.y + z*v.z;
+}
+
+CScalableVector CScalableVector::Cross(const CScalableVector& v) const
+{
+	return CScalableVector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 }
 
 CScalableVector CScalableVector::operator-() const

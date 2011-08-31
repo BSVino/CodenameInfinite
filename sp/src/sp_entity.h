@@ -35,7 +35,7 @@ public:
 	virtual CScalableVector			GetGlobalScalableVelocity();
 	virtual CScalableVector			GetGlobalScalableVelocity() const;
 
-	inline CScalableVector			GetGlobalScalableGravity() const { return m_vecGlobalScalableGravity; };
+	virtual inline CScalableVector	GetGlobalScalableGravity() const { return m_vecGlobalScalableGravity; };
 	void							SetGlobalScalableGravity(CScalableVector vecGravity) { m_vecGlobalScalableGravity = vecGravity; };
 
 	const CScalableMatrix&			GetLocalScalableTransform() const { return m_mLocalScalableTransform; }

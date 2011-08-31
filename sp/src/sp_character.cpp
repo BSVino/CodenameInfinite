@@ -24,7 +24,6 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlanet>, m_hNearestPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
 SAVEDATA_TABLE_END();
@@ -36,11 +35,52 @@ CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
-	m_bHyperdrive = false;
 }
 
 void CSPCharacter::Think()
 {
+	BaseClass::Think();
+
+	CPlanet* pPlanet = GetNearestPlanet();
+
+	if (pPlanet && !HasScalableMoveParent())
+	{
+		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
+		m_flRollFromSpace = GetGlobalScalableAngles().r;
+		SetScalableMoveParent(pPlanet);
+	}
+
+	if (pPlanet)
+	{
+		// Estimate this planet's mass given things we know about earth. Assume equal densities.
+		double flEarthVolume = 1097509500000000000000.0;	// cubic meters
+		double flEarthMass = 5974200000000000000000000.0;	// kilograms
+
+		// 4/3 * pi * r^3 = volume of a sphere
+		CScalableFloat flPlanetVolume = pPlanet->GetRadius()*pPlanet->GetRadius()*pPlanet->GetRadius()*(M_PI*4/3);
+		double flPlanetMass = RemapVal(flPlanetVolume, CScalableFloat(), CScalableFloat(flEarthVolume, SCALE_METER), 0, flEarthMass);
+
+		double flG = 0.0000000000667384;					// Gravitational constant
+
+		CScalableVector vecDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin());
+		CScalableFloat flDistance = vecDistance.Length();
+		CScalableFloat flGravity = CScalableFloat(flPlanetMass*flG, SCALE_METER)/(flDistance*flDistance);
+
+		CScalableVector vecGravity = vecDistance * flGravity / flDistance;
+
+		SetGlobalScalableGravity(vecGravity);
+	}
+}
+
+void CSPCharacter::MoveThink()
+{
+	if (!GetGroundEntity())
+		return;
+
+	CSPEntity* pSPGroundEntity = dynamic_cast<CSPEntity*>(GetGroundEntity());
+	if (!pSPGroundEntity)
+		return;
+
 	if (m_vecGoalVelocity.LengthSqr())
 		m_vecGoalVelocity.Normalize();
 
@@ -48,10 +88,9 @@ void CSPCharacter::Think()
 	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
 	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
 
-#ifndef _DEBUG
-	if (m_bHyperdrive)
-		m_vecMoveVelocity.y = m_vecMoveVelocity.z = 0;
-#endif
+	Vector vecUp = (GetGlobalScalableOrigin() - pSPGroundEntity->GetGlobalScalableOrigin()).NormalizedVector();
+	Vector vecRight = vecUp.Cross(m_vecMoveVelocity);
+	Vector vecForward = vecRight.Cross(vecUp);
 
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{
@@ -60,23 +99,13 @@ void CSPCharacter::Think()
 		CScalableMatrix m = GetLocalScalableTransform();
 		m.SetTranslation(CScalableVector());
 
-		CScalableVector vecMove = m_vecMoveVelocity * (CharacterSpeedScalable() * GameServer()->GetFrameTime());
+		CScalableVector vecMove = vecForward * (CharacterSpeedScalable() * GameServer()->GetFrameTime());
 		vecVelocity = m * vecMove;
 
 		SetLocalScalableVelocity(vecVelocity);
 	}
 	else
 		SetLocalScalableVelocity(CScalableVector());
-
-	CPlanet* pPlanet = GetNearestPlanet();
-
-	if (pPlanet && !HasScalableMoveParent())
-	{
-		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
-		m_flRollFromSpace = GetGlobalScalableAngles().r;
-	}
-
-	SetScalableMoveParent(pPlanet);
 }
 
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
@@ -224,69 +253,69 @@ CScalableFloat CSPCharacter::EyeHeightScalable()
 
 CScalableFloat CSPCharacter::CharacterSpeedScalable()
 {
-	float flDebugBonus = 1;
-#ifdef _DEBUG
-	if (m_bHyperdrive)
-		flDebugBonus = 10;
-#endif
-
-	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_ANY);
-
-	CScalableFloat flMaxSpeed = CScalableFloat(10.0f, SCALE_MEGAMETER);
-
-	CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - GetGlobalScalableOrigin()).Length();
-	CScalableFloat flCloseOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
-
-	if (flDistance < flCloseOrbit)
-	{
-		CScalableFloat flAtmosphereSpeed = CScalableFloat(500.0f, SCALE_KILOMETER);
-
-		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
-
-		if (flDistance < flAtmosphere)
-		{
-			CScalableFloat flGroundSpeed = CScalableFloat(1.0f, SCALE_KILOMETER);
-			return RemapVal(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
-		}
-
-		if (flDistance > flCloseOrbit)
-			return flMaxSpeed * flDebugBonus;
-
-		return RemapVal(flDistance, flAtmosphere, flCloseOrbit, flAtmosphereSpeed, flMaxSpeed) * flDebugBonus;
-	}
-
-	if (m_bHyperdrive)
-	{
-		CScalableFloat flMinSpeed = flMaxSpeed;
-		flMaxSpeed = CScalableFloat(50.0f, SCALE_GIGAMETER);
-		return RemapVal(flDistance, flCloseOrbit, CScalableFloat(1.0f, SCALE_GIGAMETER), flMinSpeed, flMaxSpeed);
-	}
-	else
-		return flMaxSpeed;
+	return CScalableFloat(2.0f, SCALE_METER);
 }
 
 float CSPCharacter::EyeHeight()
 {
+	TAssert(false);
 	// 180 centimeters
 	return 0.18f;
 }
 
 float CSPCharacter::CharacterSpeed()
 {
-	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_CLOSEORBIT);
+	TAssert(false);
+	return 80000;
+}
 
-	float flSpeed = 80000;
+bool CSPCharacter::ShouldTouch(ISPEntity* pOther)
+{
+	return true;
+}
 
-	if (pPlanet)
+CScalableVector CSPCharacter::GetGlobalScalableGravity() const
+{
+	if (GetGroundEntity())
+		return CScalableVector();
+
+	return ISPEntity::GetGlobalScalableGravity();
+}
+
+void CSPCharacter::FindGroundEntity()
+{
+	CScalableVector vecUp = GetGlobalScalableTransform().GetUpVector() * CScalableFloat(1.0f, SCALE_METER);
+
+	size_t iMaxEntities = GameServer()->GetMaxEntities();
+	for (size_t j = 0; j < iMaxEntities; j++)
 	{
-		CScalableVector vecOrigin = GetGlobalScalableOrigin();
-		CScalableFloat flDistance = (pPlanet->GetGlobalScalableOrigin() - vecOrigin).Length();
-		flSpeed = RemapValClamped(
-			(float)flDistance.GetUnits(SCALE_KILOMETER),
-			(float)(pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness()).GetUnits(SCALE_KILOMETER),
-			(float)(pPlanet->GetRadius()+pPlanet->GetCloseOrbit()).GetUnits(SCALE_KILOMETER),
-			200.0f, 80000.0f);
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(j);
+
+		if (!pEntity)
+			continue;
+
+		if (pEntity->IsDeleted())
+			continue;
+
+		ISPEntity* pSPEntity = dynamic_cast<ISPEntity*>(pEntity);
+		if (!pSPEntity)
+			continue;
+
+		if (pSPEntity == this)
+			continue;
+
+		if (!ShouldTouch(pSPEntity))
+			continue;
+
+		CScalableVector vecPoint;
+		if (ISPEntity::IsTouching(pSPEntity, GetGlobalScalableOrigin() - vecUp, vecPoint))
+		{
+			SetGroundEntity(pEntity);
+			SetSimulated(false);
+			return;
+		}
 	}
 
-	return flSpeed;
+	SetGroundEntity(NULL);
+	SetSimulated(true);
 }

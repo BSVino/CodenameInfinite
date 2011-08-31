@@ -23,6 +23,7 @@ public:
 
 	void							Move(movetype_t);
 	void							StopMove(movetype_t);
+	virtual void					MoveThink();
 
 	void							SetControllingPlayer(CPlayer* pCharacter);
 	CPlayer*						GetControllingPlayer() const;
@@ -30,8 +31,14 @@ public:
 	virtual float					EyeHeight() { return 180; }
 	virtual float					CharacterSpeed() { return 80; }
 
+	CBaseEntity*					GetGroundEntity() const { return m_hGround; }
+	void							SetGroundEntity(CBaseEntity* pEntity) { m_hGround = pEntity; }
+	virtual void					FindGroundEntity();
+
 protected:
 	CNetworkedHandle<CPlayer>		m_hControllingPlayer;
+
+	CNetworkedHandle<CBaseEntity>	m_hGround;
 
 	Vector							m_vecGoalVelocity;
 	Vector							m_vecMoveVelocity;

@@ -108,9 +108,11 @@ public:
 	bool					IsZero();
 
 	CScalableVector			Normalized() const { return CScalableVector(GetUnits(SCALE_METER).Normalized(), SCALE_METER); }
+	Vector					NormalizedVector() const { return GetUnits(SCALE_METER).Normalized(); }
 	CScalableFloat			Length() const;
 	CScalableFloat			LengthSqr() const;
 	CScalableFloat			Dot(const CScalableVector& v) const;
+	CScalableVector			Cross(const CScalableVector& v) const;
 
 	CScalableVector			operator-(void) const;
 

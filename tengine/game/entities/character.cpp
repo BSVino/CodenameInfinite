@@ -9,10 +9,12 @@ REGISTER_ENTITY(CCharacter);
 
 NETVAR_TABLE_BEGIN(CCharacter);
 	NETVAR_DEFINE(CEntityHandle, m_hControllingPlayer);
+	NETVAR_DEFINE(CEntityHandle, m_hGround);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, int, m_hControllingPlayer);
+	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, int, m_hGround);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecGoalVelocity);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecMoveVelocity);
 SAVEDATA_TABLE_END();
@@ -32,29 +34,11 @@ void CCharacter::Spawn()
 
 void CCharacter::Think()
 {
+	FindGroundEntity();
+
 	BaseClass::Think();
 
-	if (m_vecGoalVelocity.LengthSqr())
-		m_vecGoalVelocity.Normalize();
-
-	m_vecMoveVelocity.x = Approach(m_vecGoalVelocity.x, m_vecMoveVelocity.x, GameServer()->GetFrameTime()*4);
-	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
-	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
-
-	if (m_vecMoveVelocity.LengthSqr() > 0)
-	{
-		Vector vecVelocity = GetLocalVelocity();
-
-		Matrix4x4 m = GetLocalTransform();
-		m.SetTranslation(Vector(0,0,0));
-
-		Vector vecMove = m_vecMoveVelocity * (GameServer()->GetFrameTime() * CharacterSpeed());
-		vecVelocity = m * vecMove;
-
-		SetLocalVelocity(vecVelocity);
-	}
-	else
-		SetLocalVelocity(Vector(0, 0, 0));
+	MoveThink();
 }
 
 void CCharacter::Move(movetype_t eMoveType)
@@ -81,6 +65,31 @@ void CCharacter::StopMove(movetype_t eMoveType)
 		m_vecGoalVelocity.z = 0;
 }
 
+void CCharacter::MoveThink()
+{
+	if (m_vecGoalVelocity.LengthSqr())
+		m_vecGoalVelocity.Normalize();
+
+	m_vecMoveVelocity.x = Approach(m_vecGoalVelocity.x, m_vecMoveVelocity.x, GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
+
+	if (m_vecMoveVelocity.LengthSqr() > 0)
+	{
+		Vector vecVelocity = GetLocalVelocity();
+
+		Matrix4x4 m = GetLocalTransform();
+		m.SetTranslation(Vector(0,0,0));
+
+		Vector vecMove = m_vecMoveVelocity * (GameServer()->GetFrameTime() * CharacterSpeed());
+		vecVelocity = m * vecMove;
+
+		SetLocalVelocity(vecVelocity);
+	}
+	else
+		SetLocalVelocity(Vector(0, 0, 0));
+}
+
 void CCharacter::SetControllingPlayer(CPlayer* pCharacter)
 {
 	m_hControllingPlayer = pCharacter;
@@ -89,4 +98,10 @@ void CCharacter::SetControllingPlayer(CPlayer* pCharacter)
 CPlayer* CCharacter::GetControllingPlayer() const
 {
 	return m_hControllingPlayer;
+}
+
+void CCharacter::FindGroundEntity()
+{
+	// CSPCharacter has the implementation
+	TAssert(false);
 }

@@ -21,6 +21,7 @@ set (SPINTRO_SOURCES
 
 	sp_common.cpp
 	sp_character.cpp
+	sp_playercharacter.cpp
 	sp_player.cpp
 
 	sp_camera.cpp
