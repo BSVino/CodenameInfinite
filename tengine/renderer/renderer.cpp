@@ -737,8 +737,21 @@ void CRenderer::RenderMapFullscreen(size_t iMap)
 	glEnableClientState(GL_VERTEX_ARRAY);
 
 	glClientActiveTexture(GL_TEXTURE0);
-	glTexCoordPointer(2, GL_FLOAT, 0, m_vecFullscreenTexCoords);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	int iProgram;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &iProgram);
+	if (iProgram == 0)
+	{
+		glTexCoordPointer(2, GL_FLOAT, 0, m_vecFullscreenTexCoords);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	}
+	else
+	{
+		int iTexCoordAttribute = glGetAttribLocation(iProgram, "vecTexCoord0");
+
+		glEnableVertexAttribArray(iTexCoordAttribute);
+		glVertexAttribPointer(iTexCoordAttribute, 2, GL_FLOAT, false, 0, m_vecFullscreenTexCoords);
+	}
 
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
@@ -771,8 +784,21 @@ void CRenderer::RenderMapToBuffer(size_t iMap, CFrameBuffer* pBuffer)
 	glEnableClientState(GL_VERTEX_ARRAY);
 
 	glClientActiveTexture(GL_TEXTURE0);
-	glTexCoordPointer(2, GL_FLOAT, 0, pBuffer->m_vecTexCoords);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	int iProgram;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &iProgram);
+	if (iProgram == 0)
+	{
+		glTexCoordPointer(2, GL_FLOAT, 0, pBuffer->m_vecTexCoords);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	}
+	else
+	{
+		int iTexCoordAttribute = glGetAttribLocation(iProgram, "vecTexCoord0");
+
+		glEnableVertexAttribArray(iTexCoordAttribute);
+		glVertexAttribPointer(iTexCoordAttribute, 2, GL_FLOAT, false, 0, m_vecFullscreenTexCoords);
+	}
 
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
