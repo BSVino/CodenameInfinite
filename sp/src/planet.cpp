@@ -207,7 +207,6 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	CRenderingContext c(GameServer()->GetRenderer());
 
-	c.SetBackCulling(false);	// Ideally this would be on but it's not a big deal.
 	c.BindTexture("textures/planet.png", 0);
 	if (eScale <= SCALE_METER)
 		c.BindTexture("textures/grass.png", 1);

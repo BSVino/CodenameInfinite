@@ -857,6 +857,13 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 		}
 	}
 
+	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder;
+	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
+	{
+		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
+		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
+	}
+
 	bool bLargest = true;
 	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
 	{
@@ -888,7 +895,6 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero;
 
-	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder;
 	flReturn.NormalizeRemainder();
 
 	CHECKSANITY(flReturn);
@@ -921,6 +927,13 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 			j++;
 		}
+	}
+
+	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder + h.m_flRemainder;
+	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
+	{
+		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
+		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
 	}
 
 	bool bLargest = true;
@@ -981,8 +994,6 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	}
 
 	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero && h.m_bZero;
-
-	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder + h.m_flRemainder;
 
 	if (bLargest)
 		flReturn.m_bPositive = flReturn.m_flRemainder > 0;

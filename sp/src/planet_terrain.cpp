@@ -451,6 +451,9 @@ DoubleVector2D CPlanetTerrain::WorldToQuadTree(const CTerrainQuadTree* pTree, co
 {
 	TAssert(pTree == (CTerrainQuadTree*)this);
 
+	// This hasn't been updated to match QuadToWorldTree()
+	TAssert(false);
+
 	// Find the spot on the planet's surface that this point is closest to.
 	DoubleVector vecPlanetOrigin = m_pPlanet->GetGlobalOrigin();
 	DoubleVector vecPointDirection = (v - vecPlanetOrigin).Normalized();
@@ -507,12 +510,18 @@ DoubleVector CPlanetTerrain::QuadTreeToWorld(const CTerrainQuadTree* pTree, cons
 	double x = RemapVal(v.x, 0, 1, -1, 1);
 	double y = RemapVal(v.y, 0, 1, -1, 1);
 
-	if (vecDirection[0] != 0)
-		vecCubePoint = DoubleVector(vecDirection[0], x, y);
-	else if (vecDirection[1] != 0)
-		vecCubePoint = DoubleVector(x, vecDirection[1], y);
-	else
+	if (vecDirection[0] > 0)
+		vecCubePoint = DoubleVector(vecDirection[0], y, -x);
+	else if (vecDirection[0] < 0)
+		vecCubePoint = DoubleVector(vecDirection[0], y, x);
+	else if (vecDirection[1] > 0)
+		vecCubePoint = DoubleVector(-y, vecDirection[1], -x);
+	else if (vecDirection[1] < 0)
+		vecCubePoint = DoubleVector(y, vecDirection[1], -x);
+	else if (vecDirection[2] > 0)
 		vecCubePoint = DoubleVector(x, y, vecDirection[2]);
+	else
+		vecCubePoint = DoubleVector(-x, y, vecDirection[2]);
 
 	return vecCubePoint.Normalized() * m_pPlanet->GetRadius().GetUnits(m_pPlanet->GetScale());
 }
