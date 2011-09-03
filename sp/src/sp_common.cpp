@@ -666,7 +666,7 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 
 			while (flResult < 0 && j >= 0)
 			{
-				flReturn.m_aiScaleStack[j] = (short)flResult;
+				flReturn.m_aiScaleStack[j] += (short)flResult;
 				flReturn.NormalizeStackPosition(j);
 				flResult -= (short)flResult;
 				flResult *= 1000;

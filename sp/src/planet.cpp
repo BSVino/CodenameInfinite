@@ -171,8 +171,9 @@ void CPlanet::PostRender(bool bTransparent) const
 		CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
 		CScalableVector vecPoint;
 		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
-		CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin();
-		if (LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(1.0f, SCALE_GIGAMETER), GetGlobalOrigin(), GetRadius(), vecPoint))
+		CScalableVector vecUp = pLocalCharacter->GetUpVector();
+		CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
+		if (LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(10.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint))
 		{
 			CRenderingContext c(GameServer()->GetRenderer());
 
