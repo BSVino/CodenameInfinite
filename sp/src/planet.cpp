@@ -172,8 +172,24 @@ void CPlanet::PostRender(bool bTransparent) const
 		CScalableVector vecPoint;
 		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
 		CScalableVector vecUp = pLocalCharacter->GetUpVector();
-		CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-		if (LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(10.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint))
+		bool bIntersect;
+		
+		if (pLocalCharacter->GetMoveParent() == this)
+		{
+			CScalableMatrix mGlobalToLocal = GetGlobalToLocalTransform();
+			vecUp = mGlobalToLocal.TransformNoTranslate(vecUp);
+			vecForward = mGlobalToLocal.TransformNoTranslate(vecForward);
+			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
+			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), CScalableVector(), GetRadius(), vecPoint);
+			vecPoint = GetGlobalTransform() * vecPoint;
+		}
+		else
+		{
+			CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
+			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint);
+		}
+
+		if (bIntersect)
 		{
 			CRenderingContext c(GameServer()->GetRenderer());
 

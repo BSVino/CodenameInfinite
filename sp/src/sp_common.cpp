@@ -861,6 +861,7 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
 	{
 		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
+		flReturn.NormalizeStackPosition(0);
 		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
 	}
 
@@ -894,6 +895,9 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	}
 
 	flReturn.m_bZero = m_bZero && f.m_bZero && g.m_bZero;
+
+	if (bLargest)
+		flReturn.m_bPositive = flReturn.m_flRemainder > 0;
 
 	flReturn.NormalizeRemainder();
 
@@ -933,6 +937,7 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
 	{
 		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
+		flReturn.NormalizeStackPosition(0);
 		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
 	}
 
