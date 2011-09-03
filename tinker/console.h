@@ -36,6 +36,8 @@ protected:
 	glgui::CTextField*		m_pInput;
 
 	bool					m_bBackground;
+
+	int						m_iAutoComplete;
 };
 
 #endif
