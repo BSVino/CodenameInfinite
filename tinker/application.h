@@ -53,18 +53,18 @@ public:
 
 	static void					KeyEventCallback(int c, int e) { Get()->KeyEvent(c, e); };
 	void						KeyEvent(int c, int e);
-	virtual void				KeyPress(int c);
+	virtual bool				KeyPress(int c);
 	virtual void				KeyRelease(int c);
 
 	static void					CharEventCallback(int c, int e) { Get()->CharEvent(c, e); };
 	void						CharEvent(int c, int e);
-	virtual void				CharPress(int c);
+	virtual bool				CharPress(int c);
 	virtual void				CharRelease(int c);
 
-	virtual void				DoKeyPress(int c) {};
+	virtual bool				DoKeyPress(int c) { return false; };
 	virtual void				DoKeyRelease(int c) {};
 
-	virtual void				DoCharPress(int c) {};
+	virtual bool				DoCharPress(int c) { return false; };
 	virtual void				DoCharRelease(int c) {};
 
 	bool						IsCtrlDown();

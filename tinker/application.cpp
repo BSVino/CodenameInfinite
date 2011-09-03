@@ -580,15 +580,15 @@ void CApplication::CharEvent(int c, int e)
 		CharRelease(c);
 }
 
-void CApplication::KeyPress(int c)
+bool CApplication::KeyPress(int c)
 {
 	if (glgui::CRootPanel::Get()->KeyPressed(c, IsCtrlDown()))
-		return;
+		return true;
 
 	if (c == TINKER_KEY_F4 && IsAltDown())
 		exit(0);
 
-	DoKeyPress(c);
+	return DoKeyPress(c);
 }
 
 void CApplication::KeyRelease(int c)
@@ -596,18 +596,18 @@ void CApplication::KeyRelease(int c)
 	DoKeyRelease(c);
 }
 
-void CApplication::CharPress(int c)
+bool CApplication::CharPress(int c)
 {
 	if (c == '`')
 	{
 		ToggleConsole();
-		return;
+		return true;
 	}
 
 	if (glgui::CRootPanel::Get()->CharPressed(c))
-		return;
+		return true;
 
-	DoCharPress(c);
+	return DoCharPress(c);
 }
 
 void CApplication::CharRelease(int c)

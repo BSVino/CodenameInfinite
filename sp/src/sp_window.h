@@ -20,8 +20,6 @@ public:
 
 	virtual void				RenderLoading();
 
-	virtual void				DoKeyPress(int c);
-
 	class CSPRenderer*			GetRenderer();
 	class CSPHUD*				GetHUD() { return m_pSPHUD; };
 

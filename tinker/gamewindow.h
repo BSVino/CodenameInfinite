@@ -23,7 +23,7 @@ public:
 
 	virtual void				Render();
 
-	virtual void				KeyPress(int c);
+	virtual bool				KeyPress(int c);
 	virtual void				KeyRelease(int c);
 
 	virtual void				MouseMotion(int x, int y);

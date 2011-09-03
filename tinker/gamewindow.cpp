@@ -118,9 +118,10 @@ void CGameWindow::Render()
 	}
 }
 
-void CGameWindow::KeyPress(int c)
+bool CGameWindow::KeyPress(int c)
 {
-	BaseClass::KeyPress(c);
+	if (BaseClass::KeyPress(c))
+		return true;
 
 	if (GameServer() && GameServer()->GetCamera())
 		GameServer()->GetCamera()->KeyDown(c);
@@ -133,6 +134,8 @@ void CGameWindow::KeyPress(int c)
 			pPlayer->KeyPress(c);
 		}
 	}
+
+	return false;
 }
 
 void CGameWindow::KeyRelease(int c)

@@ -87,11 +87,6 @@ void CSPWindow::RenderLoading()
 	SwapBuffers();
 }
 
-void CSPWindow::DoKeyPress(int c)
-{
-	BaseClass::DoKeyPress(c);
-}
-
 CSPRenderer* CSPWindow::GetRenderer()
 {
 	return static_cast<CSPRenderer*>(GameServer()->GetRenderer());
