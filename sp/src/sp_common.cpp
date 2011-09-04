@@ -367,6 +367,15 @@ CScalableFloat CScalableFloat::operator-(const CScalableFloat& u) const
 
 void CScalableFloat::operator+=(const CScalableFloat& u)
 {
+	if (m_bZero)
+	{
+		*this = u;
+		return;
+	}
+
+	if (u.m_bZero)
+		return;
+
 	if (m_bPositive == u.m_bPositive)
 		*this = AddSimilar(u);
 	else
@@ -375,6 +384,15 @@ void CScalableFloat::operator+=(const CScalableFloat& u)
 
 void CScalableFloat::operator-=(const CScalableFloat& u)
 {
+	if (m_bZero)
+	{
+		*this = -u;
+		return;
+	}
+
+	if (u.m_bZero)
+		return;
+
 	if (m_bPositive == u.m_bPositive)
 		*this = AddDifferent(-u);
 	else
