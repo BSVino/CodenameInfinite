@@ -55,7 +55,7 @@ void CPlayerCharacter::MoveThink()
 		CScalableMatrix m = GetLocalTransform();
 		m.SetTranslation(CScalableVector());
 
-		CScalableVector vecMove = m_vecMoveVelocity * (CharacterSpeed() * GameServer()->GetFrameTime());
+		CScalableVector vecMove = m_vecMoveVelocity * CharacterSpeed();
 		vecVelocity = m * vecMove;
 
 		SetLocalVelocity(vecVelocity);
@@ -85,7 +85,7 @@ void CPlayerCharacter::StartFlying()
 void CPlayerCharacter::StopFlying()
 {
 	m_bFlying = false;
-	SetSimulated(true);
+	SetSimulated(false);
 }
 
 CScalableFloat CPlayerCharacter::CharacterSpeed()
@@ -101,20 +101,20 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 
 	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_ANY);
 
-	CScalableFloat flMaxSpeed = CScalableFloat(10.0f, SCALE_MEGAMETER);
+	CScalableFloat flMaxSpeed = CScalableFloat(1.0f, SCALE_MEGAMETER);
 
 	CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - GetGlobalOrigin()).Length();
 	CScalableFloat flCloseOrbit = pPlanet->GetRadius()+pPlanet->GetCloseOrbit();
 
 	if (flDistance < flCloseOrbit)
 	{
-		CScalableFloat flAtmosphereSpeed = CScalableFloat(500.0f, SCALE_KILOMETER);
+		CScalableFloat flAtmosphereSpeed = CScalableFloat(50.0f, SCALE_KILOMETER);
 
 		CScalableFloat flAtmosphere = pPlanet->GetRadius()+pPlanet->GetAtmosphereThickness();
 
 		if (flDistance < flAtmosphere)
 		{
-			CScalableFloat flGroundSpeed = CScalableFloat(1.0f, SCALE_KILOMETER);
+			CScalableFloat flGroundSpeed = CScalableFloat(0.5f, SCALE_KILOMETER);
 			return RemapVal(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
@@ -127,8 +127,8 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 	if (m_bHyperdrive)
 	{
 		CScalableFloat flMinSpeed = flMaxSpeed;
-		flMaxSpeed = CScalableFloat(50.0f, SCALE_GIGAMETER);
-		return RemapVal(flDistance, flCloseOrbit, CScalableFloat(1.0f, SCALE_GIGAMETER), flMinSpeed, flMaxSpeed);
+		flMaxSpeed = CScalableFloat(1.0f, SCALE_GIGAMETER);
+		return RemapVal(flDistance, flCloseOrbit, CScalableFloat(0.5f, SCALE_GIGAMETER), flMinSpeed, flMaxSpeed);
 	}
 	else
 		return flMaxSpeed;

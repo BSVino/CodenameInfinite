@@ -369,7 +369,7 @@ public:
 	inline EAngle							GetLocalAngles() const { return m_angLocalAngles; };
 	void									SetLocalAngles(const EAngle& angLocalAngles);
 
-	virtual TVector							GetUpVector() { return TVector(0, 1, 0); };
+	virtual TVector							GetUpVector() const { return TVector(0, 1, 0); };
 
 	bool									GetSimulated() const { return m_bSimulated; };
 	void									SetSimulated(bool bSimulated) { m_bSimulated = bSimulated; };

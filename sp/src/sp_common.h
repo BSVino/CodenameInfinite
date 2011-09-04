@@ -9,6 +9,7 @@
 
 typedef enum
 {
+	SCALE_RENDER = -1,	// SCALE_RENDER is meters but the view frustum is different
 	SCALE_NONE = 0,
 	SCALE_MILLIMETER,
 	SCALE_METER,

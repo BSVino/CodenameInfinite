@@ -540,8 +540,8 @@ void CGameServer::Simulate()
 			else
 				vecLocalGravity = TVector();
 
-			CScalableVector vecLocalOrigin = pEntity->GetLocalOrigin();
-			CScalableVector vecGlobalOrigin = pEntity->GetGlobalOrigin();
+			TVector vecLocalOrigin = pEntity->GetLocalOrigin();
+			TVector vecGlobalOrigin = pEntity->GetGlobalOrigin();
 
 			vecVelocity = vecVelocity * flSimulationFrameTime;
 

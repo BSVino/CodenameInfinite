@@ -118,9 +118,9 @@ void CGame::OnDeleted(CBaseEntity* pEntity)
 	RemovePlayer(dynamic_cast<CPlayer*>(pEntity));
 }
 
-bool CGame::TraceLine(const Vector& s1, const Vector& s2, Vector& vecHit, CBaseEntity** pHit, int iCollisionGroup)
+bool CGame::TraceLine(const TVector& s1, const TVector& s2, TVector& vecHit, TVector& vecNormal, CBaseEntity** pHit)
 {
-	Vector vecClosest = s2;
+	TVector vecClosest = s2;
 	bool bHit = false;
 	size_t iMaxEntities = GameServer()->GetMaxEntities();
 	for (size_t i = 0; i < iMaxEntities; i++)
@@ -133,12 +133,13 @@ bool CGame::TraceLine(const Vector& s1, const Vector& s2, Vector& vecHit, CBaseE
 		if (!pEntity->ShouldCollide())
 			continue;
 
-		TVector vecPoint, vecNormal;
-		if (pEntity->Collide(s1, s2, vecPoint, vecNormal))
+		TVector vecPoint, vecCollideNormal;
+		if (pEntity->Collide(s1, s2, vecPoint, vecCollideNormal))
 		{
 			if (!bHit || (vecPoint - s1).LengthSqr() < (vecClosest - s1).LengthSqr())
 			{
 				vecClosest = vecPoint;
+				vecNormal = vecCollideNormal;
 				bHit = true;
 				if (pHit)
 					*pHit = pEntity;

@@ -250,11 +250,6 @@ TMatrix CBaseEntity::GetGlobalTransform() const
 	if (!m_bGlobalTransformsDirty)
 		return m_mGlobalTransform;
 
-	// We don't want to have to call this function to get the global transform when we can't recalculate it
-	// due to being const. It's okay for objects with no move parent but if it happens a lot with objects
-	// with a move parent it can become a perf problem.
-	TAssert(m_hMoveParent == NULL);
-
 	if (m_hMoveParent == NULL)
 		return m_mLocalTransform;
 	else
@@ -270,14 +265,24 @@ void CBaseEntity::SetGlobalTransform(const TMatrix& m)
 
 TMatrix CBaseEntity::GetGlobalToLocalTransform()
 {
-	TMatrix mInverse = GetGlobalTransform();
+	TMatrix mInverse;
+	if (HasMoveParent())
+		mInverse = GetMoveParent()->GetGlobalTransform();
+	else
+		mInverse = GetGlobalTransform();
+
 	mInverse.InvertTR();
 	return mInverse;
 }
 
 TMatrix CBaseEntity::GetGlobalToLocalTransform() const
 {
-	TMatrix mInverse = GetGlobalTransform();
+	TMatrix mInverse;
+	if (HasMoveParent())
+		mInverse = GetMoveParent()->GetGlobalTransform();
+	else
+		mInverse = GetGlobalTransform();
+
 	mInverse.InvertTR();
 	return mInverse;
 }
@@ -344,16 +349,20 @@ TVector CBaseEntity::GetGlobalVelocity()
 
 TVector CBaseEntity::GetGlobalVelocity() const
 {
-	TMatrix mGlobalToLocalRotation = GetGlobalToLocalTransform();
-	mGlobalToLocalRotation.SetTranslation(TVector(0,0,0));
-
-	if (m_vecLocalVelocity.Get().LengthSqr() > TFloat(0))
+	if (HasMoveParent())
 	{
-		TFloat flLength = m_vecLocalVelocity.Get().Length();
-		return (mGlobalToLocalRotation * (m_vecLocalVelocity/flLength))*flLength;
+		TMatrix mParentGlobal = GetMoveParent()->GetGlobalTransform();
+
+		if (m_vecLocalVelocity.Get().LengthSqr() > TFloat(0))
+		{
+			TFloat flLength = m_vecLocalVelocity.Get().Length();
+			return (mParentGlobal.TransformNoTranslate(m_vecLocalVelocity/flLength))*flLength;
+		}
+		else
+			return TVector(0, 0, 0);
 	}
 	else
-		return TVector(0, 0, 0);
+		return GetLocalVelocity();
 }
 
 void CBaseEntity::SetLocalTransform(const TMatrix& m)
@@ -404,7 +413,7 @@ TVector CBaseEntity::GetLastGlobalOrigin() const
 void CBaseEntity::SetLocalVelocity(const TVector& vecVelocity)
 {
 	if (!m_vecLocalVelocity.IsInitialized())
-		m_vecLocalOrigin = vecVelocity;
+		m_vecLocalVelocity = vecVelocity;
 
 	if ((vecVelocity - m_vecLocalVelocity).LengthSqr() == TFloat(0))
 		return;
@@ -756,7 +765,14 @@ bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& ve
 	if (v1 == v2)
 	{
 		vecPoint = v1;
-		return (v1.Length() < GetBoundingRadius());
+		TFloat flLength = v1.Length();
+		vecNormal = v1/flLength;
+
+		bool bLess = flLength < GetBoundingRadius();
+		if (bLess)
+			vecPoint += vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+
+		return bLess;
 	}
 
 	return LineSegmentIntersectsSphere(v1, v2, TVector(), GetBoundingRadius(), vecPoint, vecNormal);
@@ -773,7 +789,15 @@ bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoin
 	if (v1 == v2)
 	{
 		vecPoint = v1;
-		return ((v1-GetGlobalOrigin()).Length() < GetBoundingRadius());
+		TVector vecPosition = v1-GetGlobalOrigin();
+		TFloat flLength = vecPosition.Length();
+		vecNormal = vecPosition/flLength;
+
+		bool bLess = flLength < GetBoundingRadius();
+		if (bLess)
+			vecPoint += vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+
+		return bLess;
 	}
 
 	return LineSegmentIntersectsSphere(v1, v2, GetGlobalOrigin(), GetBoundingRadius(), vecPoint, vecNormal);

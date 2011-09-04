@@ -22,22 +22,28 @@ public:
 								CSPCharacter();
 
 public:
+	virtual void				Spawn();
 	virtual void				Think();
 
-	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
-	CPlanet*					FindNearestPlanet();
+	virtual CScalableMatrix		GetScalableRenderTransform() const;
+	virtual CScalableVector		GetScalableRenderOrigin() const;
 
-	virtual TVector				GetUpVector();
+	virtual Matrix4x4			GetRenderTransform() const;
+	virtual Vector				GetRenderOrigin() const;
+
+	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
+	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE) const;
+	CPlanet*					FindNearestPlanet() const;
+
+	virtual TVector				GetUpVector() const;
 
 	void						LockViewToPlanet();
 
 	void						StandOnNearestPlanet();
 
-	virtual CScalableFloat		EyeHeight();
+	virtual TFloat				GetBoundingRadius() const { return 2.0f; };
+	virtual CScalableFloat		EyeHeight() const;
 	virtual CScalableFloat		CharacterSpeed();
-
-	virtual inline CScalableVector	GetGlobalGravity() const;
-	virtual void				FindGroundEntity();
 
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;

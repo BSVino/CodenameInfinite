@@ -160,6 +160,9 @@ double CScalableFloat::GetUnits(scale_t eScale) const
 	if (m_bZero)
 		return 0;
 
+	if (eScale == SCALE_RENDER)
+		eScale = SCALE_METER;
+
 	double flResult = 0;
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 		flResult += ConvertUnits(m_aiScaleStack[i], (scale_t)(i+1), eScale);
@@ -852,9 +855,16 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 	CScalableFloat flReturn;
 
+	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder;
+	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
+	{
+		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
+		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
+	}
+
 	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
 	{
-		flReturn.m_aiScaleStack[i] = m_aiScaleStack[i] + f.m_aiScaleStack[i] + g.m_aiScaleStack[i];
+		flReturn.m_aiScaleStack[i] += m_aiScaleStack[i] + f.m_aiScaleStack[i] + g.m_aiScaleStack[i];
 
 		int j = i;
 		while ((flReturn.m_aiScaleStack[j] <= -1000 || flReturn.m_aiScaleStack[j] >= 1000) && j < SCALESTACK_SIZE-1)
@@ -873,14 +883,6 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 			j++;
 		}
-	}
-
-	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder;
-	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
-	{
-		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
-		flReturn.NormalizeStackPosition(0);
-		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
 	}
 
 	bool bLargest = true;
@@ -928,9 +930,16 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 {
 	CScalableFloat flReturn;
 
+	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder + h.m_flRemainder;
+	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
+	{
+		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
+		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
+	}
+
 	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
 	{
-		flReturn.m_aiScaleStack[i] = m_aiScaleStack[i] + f.m_aiScaleStack[i] + g.m_aiScaleStack[i] + h.m_aiScaleStack[i];
+		flReturn.m_aiScaleStack[i] += m_aiScaleStack[i] + f.m_aiScaleStack[i] + g.m_aiScaleStack[i] + h.m_aiScaleStack[i];
 
 		int j = i;
 		while ((flReturn.m_aiScaleStack[j] <= -1000 || flReturn.m_aiScaleStack[j] >= 1000) && j < SCALESTACK_SIZE-1)
@@ -949,14 +958,6 @@ CScalableFloat CScalableFloat::AddMultiple(const CScalableFloat& f, const CScala
 
 			j++;
 		}
-	}
-
-	flReturn.m_flRemainder = m_flRemainder + f.m_flRemainder + g.m_flRemainder + h.m_flRemainder;
-	if (flReturn.m_flRemainder < -1 || flReturn.m_flRemainder > 1)
-	{
-		flReturn.m_aiScaleStack[0] += (int)flReturn.m_flRemainder;
-		flReturn.NormalizeStackPosition(0);
-		flReturn.m_flRemainder -= (int)flReturn.m_flRemainder;
 	}
 
 	bool bLargest = true;
@@ -1754,6 +1755,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	vecNormal = vecDifference / flDifferenceLength;
 	if (flDifferenceLength < flRadius)
 		vecPoint += vecNormal * ((flRadius-flDifferenceLength) + CScalableFloat(0.1f, SCALE_MILLIMETER));
+	TAssert((vecPoint - s).Length() >= flRadius);
 
 	return true;
 }

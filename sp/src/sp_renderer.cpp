@@ -150,7 +150,7 @@ void CSPRenderer::StartRendering()
 	RenderScale(SCALE_METER);
 	RenderScale(SCALE_MILLIMETER);
 
-	m_eRenderingScale = SCALE_METER;
+	m_eRenderingScale = SCALE_RENDER;
 
 	CCamera* pCamera = GameServer()->GetCamera();
 

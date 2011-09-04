@@ -3,6 +3,8 @@
 #include <tinker/application.h>
 
 #include "planet.h"
+#include "sp_game.h"
+#include "sp_renderer.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -24,6 +26,13 @@ CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
+}
+
+void CSPCharacter::Spawn()
+{
+	BaseClass::Spawn();
+
+	m_flMaxStepSize = TFloat(0.1f, SCALE_METER);
 }
 
 void CSPCharacter::Think()
@@ -62,6 +71,36 @@ void CSPCharacter::Think()
 	}
 }
 
+CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
+{
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
+
+	CScalableMatrix mTransform = GetGlobalTransform();
+	mTransform.SetTranslation(mTransform.GetTranslation() - vecCharacterOrigin);
+
+	return mTransform;
+}
+
+CScalableVector CSPCharacter::GetScalableRenderOrigin() const
+{
+	return GetScalableRenderTransform().GetTranslation();
+}
+
+Matrix4x4 CSPCharacter::GetRenderTransform() const
+{
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	TAssert(eScale != SCALE_NONE);
+	return GetScalableRenderTransform().GetUnits(eScale);
+}
+
+Vector CSPCharacter::GetRenderOrigin() const
+{
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	TAssert(eScale != SCALE_NONE);
+	return GetScalableRenderTransform().GetTranslation().GetUnits(eScale);
+}
+
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 {
 	if (GameServer()->GetGameTime() > m_flNextPlanetCheck)
@@ -96,7 +135,28 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 	return m_hNearestPlanet;
 }
 
-CPlanet* CSPCharacter::FindNearestPlanet()
+CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet) const
+{
+	if (eFindPlanet != FINDPLANET_INATMOSPHERE)
+	{
+		if (m_hNearestPlanet != NULL)
+			return m_hNearestPlanet;
+
+		CPlanet* pNearestPlanet = FindNearestPlanet();
+		if (eFindPlanet == FINDPLANET_ANY)
+			return pNearestPlanet;
+
+		CScalableFloat flDistance = (pNearestPlanet->GetGlobalOrigin() - GetGlobalOrigin()).Length() - pNearestPlanet->GetRadius();
+		if (eFindPlanet == FINDPLANET_CLOSEORBIT && flDistance > pNearestPlanet->GetCloseOrbit())
+			return NULL;
+		else
+			return pNearestPlanet;
+	}
+
+	return m_hNearestPlanet;
+}
+
+CPlanet* CSPCharacter::FindNearestPlanet() const
 {
 	CPlanet* pNearestPlanet = NULL;
 	CScalableFloat flNearestDistance;
@@ -127,11 +187,11 @@ CPlanet* CSPCharacter::FindNearestPlanet()
 	return pNearestPlanet;
 }
 
-TVector CSPCharacter::GetUpVector()
+TVector CSPCharacter::GetUpVector() const
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).Normalized().GetUnits(SCALE_METER);
+		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).NormalizedVector();
 
 	return Vector(0, 1, 0);
 }
@@ -201,7 +261,7 @@ void CSPCharacter::StandOnNearestPlanet()
 	SetLocalOrigin(vecPoint);
 }
 
-CScalableFloat CSPCharacter::EyeHeight()
+CScalableFloat CSPCharacter::EyeHeight() const
 {
 	// 180 centimeters
 	return CScalableFloat(1.8f, SCALE_METER);
@@ -209,48 +269,5 @@ CScalableFloat CSPCharacter::EyeHeight()
 
 CScalableFloat CSPCharacter::CharacterSpeed()
 {
-	return CScalableFloat(2.0f, SCALE_METER);
-}
-
-CScalableVector CSPCharacter::GetGlobalGravity() const
-{
-	if (GetGroundEntity())
-		return CScalableVector();
-
-	return BaseClass::GetGlobalGravity();
-}
-
-void CSPCharacter::FindGroundEntity()
-{
-	CScalableVector vecUp = GetGlobalTransform().GetUpVector() * CScalableFloat(1.0f, SCALE_METER);
-
-	size_t iMaxEntities = GameServer()->GetMaxEntities();
-	for (size_t j = 0; j < iMaxEntities; j++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(j);
-
-		if (!pEntity)
-			continue;
-
-		if (pEntity->IsDeleted())
-			continue;
-
-		if (!pEntity->ShouldCollide())
-			continue;
-
-		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
-		if (!pSPEntity)
-			continue;
-
-		CScalableVector vecPoint, vecNormal;
-		if (pSPEntity->Collide(GetGlobalOrigin(), GetGlobalOrigin() - vecUp, vecPoint, vecNormal))
-		{
-			SetGroundEntity(pEntity);
-			SetSimulated(false);
-			return;
-		}
-	}
-
-	SetGroundEntity(NULL);
-	SetSimulated(true);
+	return CScalableFloat(5.0f, SCALE_METER);
 }
