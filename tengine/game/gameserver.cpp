@@ -505,7 +505,7 @@ void CGameServer::Simulate()
 			if (pEntity2 == pEntity)
 				continue;
 
-			if (!pEntity->ShouldTouch(pEntity2))
+			if (!pEntity2->ShouldCollide())
 				continue;
 
 			m_apCollisionList.push_back(pEntity2);
@@ -540,47 +540,96 @@ void CGameServer::Simulate()
 			else
 				vecLocalGravity = TVector();
 
-			TVector vecDestination = pEntity->GetLocalOrigin() + vecVelocity * flSimulationFrameTime;
-			TVector vecGlobalDestination = vecDestination;
+			CScalableVector vecLocalOrigin = pEntity->GetLocalOrigin();
+			CScalableVector vecGlobalOrigin = pEntity->GetGlobalOrigin();
+
+			vecVelocity = vecVelocity * flSimulationFrameTime;
+
+			TVector vecLocalDestination = vecLocalOrigin + vecVelocity;
+			TVector vecGlobalDestination = vecLocalDestination;
 			if (pEntity->GetMoveParent())
-				vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecDestination;
+				vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
 
-			bool bContact = false;
-			for (size_t i = 0; i < m_apCollisionList.size(); i++)
+			TVector vecNewLocalOrigin = vecLocalDestination;
+
+			size_t iTries = 0;
+			while (true)
 			{
-				CBaseEntity* pEntity2 = m_apCollisionList[i];
+				iTries++;
 
-				TVector vecPoint;
+				TVector vecPoint, vecNormal;
 
-				if (pEntity->GetMoveParent() == pEntity2)
+				TVector vecLocalCollisionPoint, vecGlobalCollisionPoint;
+
+				bool bContact = false;
+				for (size_t i = 0; i < m_apCollisionList.size(); i++)
 				{
-					if (pEntity->IsTouchingLocal(pEntity2, vecDestination, vecPoint))
+					CBaseEntity* pEntity2 = m_apCollisionList[i];
+
+					if (pEntity->GetMoveParent() == pEntity2)
 					{
-						bContact = true;
-						pEntity->SetLocalOrigin(vecPoint);
-						pEntity->Touching(pEntity2);
-						vecDestination = vecPoint;
-						vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecDestination;
+						if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, vecPoint, vecNormal))
+						{
+							bContact = true;
+							pEntity->Touching(pEntity2);
+							vecLocalCollisionPoint = vecPoint;
+							vecGlobalCollisionPoint = pEntity->GetMoveParent()->GetGlobalTransform() * vecPoint;
+						}
+					}
+					else
+					{
+						if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, vecPoint, vecNormal))
+						{
+							bContact = true;
+							pEntity->Touching(pEntity2);
+							vecGlobalCollisionPoint = vecPoint;
+							if (pEntity->GetMoveParent())
+							{
+								vecLocalCollisionPoint = pEntity->GetMoveParent()->GetGlobalToLocalTransform() * vecPoint;
+								vecNormal = pEntity->GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(vecNormal);
+							}
+							else
+								vecLocalCollisionPoint = vecGlobalCollisionPoint;
+						}
 					}
 				}
+
+				if (bContact)
+				{
+					vecNewLocalOrigin = vecLocalCollisionPoint;
+					vecVelocity -= vecLocalCollisionPoint - vecLocalOrigin;
+				}
+
+				if (!bContact)
+					break;
+
+				if (iTries > 4)
+					break;
+
+				vecLocalOrigin = vecLocalCollisionPoint;
+				vecGlobalOrigin = vecGlobalCollisionPoint;
+
+				// Clip the velocity to the surface normal of whatever we hit.
+				TFloat flDistance = vecVelocity.Dot(vecNormal);
+
+				vecVelocity = vecVelocity - vecNormal * flDistance;
+
+				// Do it one more time just to make sure we're not headed towards the plane.
+				TFloat flAdjust = vecVelocity.Dot(vecNormal);
+				if (flAdjust < 0.0f)
+					vecVelocity -= (vecNormal * flAdjust);
+
+				vecLocalDestination = vecLocalOrigin + vecVelocity;
+
+				if (pEntity->GetMoveParent())
+					vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
 				else
-				{
-					if (pEntity->IsTouching(pEntity2, vecGlobalDestination, vecPoint))
-					{
-						bContact = true;
-						pEntity->SetGlobalOrigin(vecPoint);
-						pEntity->Touching(pEntity2);
-						vecGlobalDestination = vecPoint;
-						if (pEntity->GetMoveParent())
-							vecDestination = pEntity->GetMoveParent()->GetGlobalToLocalTransform() * vecGlobalDestination;
-						else
-							vecDestination = vecGlobalDestination;
-					}
-				}
+					vecGlobalDestination = vecLocalDestination;
+
+				pEntity->SetLocalVelocity(vecVelocity.Normalized() * pEntity->GetLocalVelocity().Length());
 			}
 
-			if (!bContact)
-				pEntity->SetLocalOrigin(vecDestination);
+			pEntity->SetLocalOrigin(vecNewLocalOrigin);
 		}
 	}
 

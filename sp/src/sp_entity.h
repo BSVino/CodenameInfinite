@@ -20,8 +20,10 @@ public:
 	virtual Matrix4x4				GetRenderTransform() const;
 	virtual Vector					GetRenderOrigin() const;
 
-	virtual bool					IsTouchingLocal(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint);
-	virtual bool					IsTouching(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint);
+	virtual bool					CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
+	virtual bool					Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
+
+	virtual bool					ShouldCollide() const { return true; }
 };
 
 #endif

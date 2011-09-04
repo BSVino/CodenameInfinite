@@ -424,9 +424,6 @@ public:
 	virtual void							Think() {};
 
 	virtual bool							ShouldSimulate() const { return GetSimulated(); };
-	virtual bool							ShouldTouch(CBaseEntity* pOther) const { return false; };
-	virtual bool							IsTouchingLocal(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint);
-	virtual bool							IsTouching(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint);
 	virtual void							Touching(CBaseEntity* pOther) {};
 
 	void									CallInput(const eastl::string& sName, const tstring& sArgs);
@@ -442,11 +439,10 @@ public:
 
 	virtual TFloat							Distance(const TVector& vecSpot) const;
 
-	virtual bool							CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint);
-	virtual bool							Collide(const TVector& v1, const TVector& v2, TVector& vecPoint);
+	virtual bool							CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
+	virtual bool							Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
 
-	virtual int								GetCollisionGroup() { return m_iCollisionGroup; }
-	virtual void							SetCollisionGroup(int iCollisionGroup) { m_iCollisionGroup = iCollisionGroup; }
+	virtual bool							ShouldCollide() const { return false; }
 
 	virtual bool							UsesRaytracedCollision() { return false; }
 

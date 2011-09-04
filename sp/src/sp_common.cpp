@@ -1212,6 +1212,38 @@ bool CScalableFloat::operator>(float flMeters) const
 	return GetUnits(SCALE_METER) > flMeters;
 }
 
+bool CScalableFloat::operator<=(const CScalableFloat& u) const
+{
+	if (m_flOverflow != 0 || u.m_flOverflow != 0)
+		return m_flOverflow <= u.m_flOverflow;
+
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		if (m_aiScaleStack[i] - u.m_aiScaleStack[i] == 0)
+			continue;
+
+		return m_aiScaleStack[i] <= u.m_aiScaleStack[i];
+	}
+
+	return (m_flRemainder <= u.m_flRemainder);
+}
+
+bool CScalableFloat::operator>=(const CScalableFloat& u) const
+{
+	if (m_flOverflow != 0 || u.m_flOverflow != 0)
+		return m_flOverflow >= u.m_flOverflow;
+
+	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
+	{
+		if (m_aiScaleStack[i] - u.m_aiScaleStack[i] == 0)
+			continue;
+
+		return m_aiScaleStack[i] >= u.m_aiScaleStack[i];
+	}
+
+	return (m_flRemainder >= u.m_flRemainder);
+}
+
 CScalableFloat::operator double() const
 {
 	return GetUnits(SCALE_METER);
@@ -1640,7 +1672,7 @@ CScalableMatrix::operator Matrix4x4() const
 	return GetUnits(SCALE_METER);
 }
 
-bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint)
+bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint, CScalableVector& vecNormal)
 {
 	CScalableVector vecLine = v2 - v1;
 	CScalableVector vecSphere = v1 - s;
@@ -1673,6 +1705,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	{
 		// We are inside the sphere.
 		vecPoint = v1;
+		vecNormal = (v1 - s).Normalized();
 		return true;
 	}
 
@@ -1682,6 +1715,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 		// If it's still here later that means no.
 		TAssert(false);
 		vecPoint = v1;
+		vecNormal = (v1 - s).Normalized();
 		return true;
 	}
 
@@ -1695,5 +1729,13 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	CScalableVector vecDirection = vecLine / flDistance;
 
 	vecPoint = v1 + vecDirection * (flMinus * flDistance);
+
+	// Oftentimes we are slightly stuck inside the sphere. Pull us out a little bit.
+	CScalableVector vecDifference = vecPoint - s;
+	CScalableFloat flDifferenceLength = vecDifference.Length();
+	vecNormal = vecDifference / flDifferenceLength;
+	if (flDifferenceLength < flRadius)
+		vecPoint += vecNormal * ((flRadius-flDifferenceLength) + CScalableFloat(0.1f, SCALE_MILLIMETER));
+
 	return true;
 }

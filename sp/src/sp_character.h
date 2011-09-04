@@ -36,7 +36,6 @@ public:
 	virtual CScalableFloat		EyeHeight();
 	virtual CScalableFloat		CharacterSpeed();
 
-	virtual bool				ShouldTouch(CBaseEntity* pOther) const;
 	virtual inline CScalableVector	GetGlobalGravity() const;
 	virtual void				FindGroundEntity();
 

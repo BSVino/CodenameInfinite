@@ -574,18 +574,6 @@ void CBaseEntity::Delete(const eastl::vector<tstring>& sArgs)
 	Delete();
 }
 
-bool CBaseEntity::IsTouchingLocal(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint)
-{
-	TAssert(GetMoveParent() == pOther);
-
-	return pOther->CollideLocal(GetLocalOrigin(), vecDestination, vecPoint);
-}
-
-bool CBaseEntity::IsTouching(CBaseEntity* pOther, const TVector& vecDestination, TVector& vecPoint)
-{
-	return pOther->Collide(GetGlobalOrigin(), vecDestination, vecPoint);
-}
-
 void CBaseEntity::CallInput(const eastl::string& sName, const tstring& sArgs)
 {
 	CEntityInput* pInput = GetInput(sName.c_str());
@@ -757,8 +745,11 @@ TFloat CBaseEntity::Distance(const TVector& vecSpot) const
 	return flDistance - GetBoundingRadius();
 }
 
-bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint)
+bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
 {
+	if (!ShouldCollide())
+		return false;
+
 	if (GetBoundingRadius() == TFloat(0))
 		return false;
 
@@ -768,11 +759,14 @@ bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& ve
 		return (v1.Length() < GetBoundingRadius());
 	}
 
-	return LineSegmentIntersectsSphere(v1, v2, TVector(), GetBoundingRadius(), vecPoint);
+	return LineSegmentIntersectsSphere(v1, v2, TVector(), GetBoundingRadius(), vecPoint, vecNormal);
 }
 
-bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint)
+bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
 {
+	if (!ShouldCollide())
+		return false;
+
 	if (GetBoundingRadius() == TFloat(0))
 		return false;
 
@@ -782,7 +776,7 @@ bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoin
 		return ((v1-GetGlobalOrigin()).Length() < GetBoundingRadius());
 	}
 
-	return LineSegmentIntersectsSphere(v1, v2, GetGlobalOrigin(), GetBoundingRadius(), vecPoint);
+	return LineSegmentIntersectsSphere(v1, v2, GetGlobalOrigin(), GetBoundingRadius(), vecPoint, vecNormal);
 }
 
 void CBaseEntity::SetSpawnSeed(size_t iSpawnSeed)

@@ -76,6 +76,9 @@ public:
 	bool					operator<(float flMeters) const;
 	bool					operator>(float flMeters) const;
 
+	bool					operator<=(const CScalableFloat& u) const;
+	bool					operator>=(const CScalableFloat& u) const;
+
 	operator double() const;
 
 	static double			ConvertUnits(double flUnit, scale_t eFrom, scale_t eTo);
@@ -203,6 +206,6 @@ inline CScalableVector operator*( Vector v, const CScalableFloat& f )
 	return CScalableVector( f*v.x, f*v.y, f*v.z );
 }
 
-bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint);
+bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint, CScalableVector& vecNormal);
 
 #endif

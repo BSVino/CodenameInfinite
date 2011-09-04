@@ -169,7 +169,7 @@ void CPlanet::PostRender(bool bTransparent) const
 	if (debug_showplanetcollision.GetBool())
 	{
 		CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
-		CScalableVector vecPoint;
+		CScalableVector vecPoint, vecNormal;
 		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
 		CScalableVector vecUp = pLocalCharacter->GetUpVector();
 		bool bIntersect;
@@ -180,13 +180,14 @@ void CPlanet::PostRender(bool bTransparent) const
 			vecUp = mGlobalToLocal.TransformNoTranslate(vecUp);
 			vecForward = mGlobalToLocal.TransformNoTranslate(vecForward);
 			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), CScalableVector(), GetRadius(), vecPoint);
+			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), CScalableVector(), GetRadius(), vecPoint, vecNormal);
 			vecPoint = GetGlobalTransform() * vecPoint;
+			vecNormal = GetGlobalTransform() * vecNormal;
 		}
 		else
 		{
 			CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint);
+			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint, vecNormal);
 		}
 
 		if (bIntersect)
@@ -195,6 +196,11 @@ void CPlanet::PostRender(bool bTransparent) const
 
 			CScalableVector vecRender = vecPoint - pLocalCharacter->GetGlobalOrigin();
 			c.Translate((vecPoint - pLocalCharacter->GetGlobalOrigin()).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+			c.SetColor(Color(255, 255, 255));
+			c.BeginRenderDebugLines();
+			c.Vertex(vecNormal*-10000);
+			c.Vertex(vecNormal*10000);
+			c.EndRender();
 			c.SetColor(Color(255, 0, 0));
 			c.BeginRenderDebugLines();
 			c.Vertex(Vector(-10000, 0, 0));

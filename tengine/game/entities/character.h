@@ -31,6 +31,8 @@ public:
 	virtual TFloat					EyeHeight() { return 180.0f; }
 	virtual TFloat					CharacterSpeed() { return 80.0f; }
 
+	virtual bool					ShouldCollide() const { return true; }
+
 	CBaseEntity*					GetGroundEntity() const { return m_hGround; }
 	void							SetGroundEntity(CBaseEntity* pEntity) { m_hGround = pEntity; }
 	virtual void					FindGroundEntity();

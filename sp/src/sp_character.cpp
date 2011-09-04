@@ -193,26 +193,23 @@ void CSPCharacter::StandOnNearestPlanet()
 	CScalableVector vecCharacterOrigin = GetGlobalOrigin();
 	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
-	CScalableVector vecOrigin = vecPlanetOrigin + vecCharacterDirection * pPlanet->GetRadius();
-	SetGlobalOrigin(vecOrigin);
-
 	SetMoveParent(pPlanet);
+
+	TVector vecPoint, vecNormal;
+	pPlanet->CollideLocal(vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), vecPoint, vecNormal);
+
+	SetLocalOrigin(vecPoint);
 }
 
 CScalableFloat CSPCharacter::EyeHeight()
 {
 	// 180 centimeters
-	return CScalableFloat(0.18f, SCALE_METER);
+	return CScalableFloat(1.8f, SCALE_METER);
 }
 
 CScalableFloat CSPCharacter::CharacterSpeed()
 {
 	return CScalableFloat(2.0f, SCALE_METER);
-}
-
-bool CSPCharacter::ShouldTouch(CBaseEntity* pOther) const
-{
-	return !!dynamic_cast<CSPEntity*>(pOther);
 }
 
 CScalableVector CSPCharacter::GetGlobalGravity() const
@@ -238,15 +235,15 @@ void CSPCharacter::FindGroundEntity()
 		if (pEntity->IsDeleted())
 			continue;
 
+		if (!pEntity->ShouldCollide())
+			continue;
+
 		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
 		if (!pSPEntity)
 			continue;
 
-		if (!ShouldTouch(pSPEntity))
-			continue;
-
-		CScalableVector vecPoint;
-		if (IsTouching(pSPEntity, GetGlobalOrigin() - vecUp, vecPoint))
+		CScalableVector vecPoint, vecNormal;
+		if (pSPEntity->Collide(GetGlobalOrigin(), GetGlobalOrigin() - vecUp, vecPoint, vecNormal))
 		{
 			SetGroundEntity(pEntity);
 			SetSimulated(false);
