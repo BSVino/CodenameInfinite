@@ -20,7 +20,7 @@ INPUTS_TABLE_END();
 
 bool CSPEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
 {
-	if ((v1 - GetLocalOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
+	if (v1.Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
 		return false;
 
 	return BaseClass::CollideLocal(v1, v2, vecPoint, vecNormal);
