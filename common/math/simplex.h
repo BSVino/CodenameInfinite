@@ -3,29 +3,33 @@
 
 #include <mtrand.h>
 
+template <class F>
 class CSimplexNoise
 {
 public:
+					CSimplexNoise();
 					CSimplexNoise(size_t iSeed);
 
 public:
-	float			Noise(float x, float y);
+	void			Init(size_t iSeed);
+
+	F				Noise(F x, F y);
 
 private:
-	inline float	Grad(int hash, float x, float y)
+	inline F		Grad(int hash, F x, F y)
 	{
 		int h = hash&7;
-		float u = h<4?x:y;
-		float v = h<4?y:x;
+		F u = h<4?x:y;
+		F v = h<4?y:x;
 		return ((h&1)?-u:u) + ((h&2)? -2.0f*v : 2.0f*v);
 	}
 
-	inline float	Fade(float t)
+	inline F		Fade(F t)
 	{
 		return t*t*t*(t*(t*6-15)+10);
 	}
 
-	inline int		Floor(float x)
+	inline int		Floor(F x)
 	{
 		if (x >= 0)
 			return (int)x;
@@ -33,7 +37,7 @@ private:
 			return (int)x-1;
 	}
 
-	inline float	Lerp(float t, float a, float b)
+	inline F		Lerp(F t, F a, F b)
 	{
 		return a + t*(b-a);
 	}
@@ -42,7 +46,19 @@ private:
 	unsigned char	m_aiRand[512];
 };
 
-inline CSimplexNoise::CSimplexNoise(size_t iSeed)
+template <class F>
+inline CSimplexNoise<F>::CSimplexNoise()
+{
+}
+
+template <class F>
+inline CSimplexNoise<F>::CSimplexNoise(size_t iSeed)
+{
+	Init(iSeed);
+}
+
+template <class F>
+inline void CSimplexNoise<F>::Init(size_t iSeed)
 {
 	mtsrand(iSeed);
 	for (size_t i = 0; i < 256; i++)
@@ -50,11 +66,12 @@ inline CSimplexNoise::CSimplexNoise(size_t iSeed)
 	memcpy(&m_aiRand[256], &m_aiRand[0], 256);
 }
 
-inline float CSimplexNoise::Noise(float x, float y)
+template <class F>
+inline F CSimplexNoise<F>::Noise(F x, F y)
 {
     int ix0, iy0, ix1, iy1;
-    float fx0, fy0, fx1, fy1;
-    float s, t, nx0, nx1, n0, n1;
+    F fx0, fy0, fx1, fy1;
+    F s, t, nx0, nx1, n0, n1;
 
     ix0 = Floor(x);
     iy0 = Floor(y);

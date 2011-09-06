@@ -57,6 +57,7 @@ void CSPWindow::SetupSP()
 	pPlayer->SetCharacter(pCharacter);
 
 	CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+	pPlanet->SetRandomSeed(0);
 	pPlanet->SetPlanetName("Earth");
 	pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
 	pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
@@ -65,6 +66,7 @@ void CSPWindow::SetupSP()
 	pPlanet->SetAtmosphereColor(Color(0.25f, 0.41f, 0.64f));
 
 	pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+	pPlanet->SetRandomSeed(1);
 	pPlanet->SetPlanetName("Mars");
 	pPlanet->SetGlobalOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
 	pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
@@ -77,7 +79,7 @@ void CSPWindow::SetupSP()
 	pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
 	pStar->SetLightColor(Color(255, 242, 143));
 
-	pCharacter->StandOnNearestPlanet();
+//	pCharacter->StandOnNearestPlanet();
 }
 
 void CSPWindow::RenderLoading()

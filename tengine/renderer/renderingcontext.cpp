@@ -665,6 +665,9 @@ void CRenderingContext::EndRender()
 	{
 		for (size_t i = 0; i < m_aavecTexCoords.size(); i++)
 		{
+			if (i >= m_pShader->m_aiTexCoordAttributes.size())
+				continue;
+
 			int iTexCoordAttribute = m_pShader->m_aiTexCoordAttributes[i];
 			if (iTexCoordAttribute == ~0)
 				continue;

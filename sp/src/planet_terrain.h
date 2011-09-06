@@ -12,7 +12,6 @@ class CBranchData
 public:
 	CBranchData()
 	{
-		flHeight = 0;
 		bRender = false;
 		flScreenSize = 1;
 		flLastScreenUpdate = -1;
@@ -25,7 +24,6 @@ public:
 	}
 
 public:
-	float				flHeight;
 	bool				bRender;
 	float				flScreenSize;
 	CScalableFloat		flGlobalRadius;
@@ -50,6 +48,10 @@ public:
 	Vector				vec4n;
 	DoubleVector2D		vecDetailMin;
 	DoubleVector2D		vecDetailMax;
+	DoubleVector		vecOffset1;
+	DoubleVector		vecOffset2;
+	DoubleVector		vecOffset3;
+	DoubleVector		vecOffset4;
 };
 
 typedef CQuadTree<CBranchData, double> CTerrainQuadTree;
@@ -61,12 +63,7 @@ class CPlanetTerrain : public CTerrainQuadTree, public CTerrainQuadTreeDataSourc
 	friend class CPlanet;
 
 public:
-	CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
-		: CTerrainQuadTree()
-	{
-		m_pPlanet = pPlanet;
-		m_vecDirection = vecDirection;
-	};
+								CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection);
 
 public:
 	void						Init();
@@ -86,10 +83,13 @@ public:
 	void						CalcRenderVectors(CTerrainQuadTreeBranch* pBranch);
 	float						GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch);
 
+	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
+
 	virtual TemplateVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
 	virtual DoubleVector		QuadTreeToWorld(const CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree) const;
 	virtual TemplateVector2D<double>	WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
 	virtual DoubleVector		QuadTreeToWorld(CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree);
+	virtual DoubleVector		GetBranchCenter(CTerrainQuadTreeBranch* pBranch);
 	virtual bool				ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete);
 
 	Vector						GetDirection() const { return m_vecDirection; }

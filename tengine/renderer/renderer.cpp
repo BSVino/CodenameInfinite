@@ -185,9 +185,9 @@ void CRenderer::CreateNoise()
 	if (!WantNoise())
 		return;
 
-	CSimplexNoise n1(mtrand()+0);
-	CSimplexNoise n2(mtrand()+1);
-	CSimplexNoise n3(mtrand()+2);
+	CSimplexNoise<float> n1(mtrand()+0);
+	CSimplexNoise<float> n2(mtrand()+1);
+	CSimplexNoise<float> n3(mtrand()+2);
 
 	float flSpaceFactor1 = 0.1f;
 	float flHeightFactor1 = 0.5f;

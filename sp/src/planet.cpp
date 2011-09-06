@@ -21,6 +21,7 @@ NETVAR_TABLE_BEGIN(CPlanet);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CPlanet);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iRandomSeed);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableFloat, m_flRadius);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableFloat, m_flAtmosphereThickness);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flMinutesPerRevolution);
@@ -34,6 +35,7 @@ SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_OMIT(m_pTerrainLf);
 	SAVEDATA_OMIT(m_pTerrainUp);
 	SAVEDATA_OMIT(m_pTerrainDn);
+	SAVEDATA_OMIT(m_aNoiseArray);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlanet);
@@ -53,6 +55,8 @@ Vector g_vecTerrainDirections[] =
 
 CPlanet::CPlanet()
 {
+	m_iRandomSeed = 0;
+
 	for (size_t i = 0; i < 6; i++)
 	{
 		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
@@ -95,6 +99,8 @@ void CPlanet::Think()
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
 
+CVar r_minquadrenderdepth("r_minquadrenderdepth", "-1");
+
 void CPlanet::RenderUpdate()
 {
 	TPROF("CPlanet::RenderUpdate");
@@ -106,7 +112,7 @@ void CPlanet::RenderUpdate()
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter->GetMoveParent() == this)
 	{
-		s_vecCharacterLocalOrigin = DoubleVector(pCharacter->GetLocalOrigin().GetUnits(GetScale()));
+		s_vecCharacterLocalOrigin = pCharacter->GetLocalOrigin().GetUnits(GetScale());
 	}
 	else
 	{
@@ -114,9 +120,8 @@ void CPlanet::RenderUpdate()
 
 		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
 		// Instead, transform the player to the planet's local once and do the math in local space.
-		CScalableMatrix mPlanetGlobalToLocal = GetGlobalTransform();
-		mPlanetGlobalToLocal.InvertTR();
-		s_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
+		CScalableMatrix mPlanetGlobalToLocal = GetGlobalToLocalTransform();
+		s_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
 	}
 
 	Vector vecOrigin = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
@@ -133,6 +138,9 @@ void CPlanet::RenderUpdate()
 		m_iMinQuadRenderDepth = 2;
 	else
 		m_iMinQuadRenderDepth = 3;
+
+	if (r_minquadrenderdepth.GetInt() >= 0)
+		m_iMinQuadRenderDepth = r_minquadrenderdepth.GetInt();
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_pTerrain[i]->Think();
@@ -260,6 +268,17 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_pTerrain[i]->Render(&c);
+}
+
+void CPlanet::SetRandomSeed(size_t iSeed)
+{
+	m_iRandomSeed = iSeed;
+
+	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
+	{
+		for (size_t j = 0; j < 3; j++)
+			m_aNoiseArray[i][j].Init(iSeed+i*3+j);
+	}
 }
 
 CScalableFloat CPlanet::GetCloseOrbit()

@@ -22,14 +22,16 @@ public:
 	virtual TemplateVector2D<F>		WorldToQuadTree(CQuadTree<T, F>* pTree, const TemplateVector<F>& vecWorld)=0;
 	virtual TemplateVector<F>		QuadTreeToWorld(CQuadTree<T, F>* pTree, const TemplateVector2D<F>& vecTree)=0;
 
-	virtual bool				ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
+	virtual TemplateVector<F>		GetBranchCenter(CQuadTreeBranch<T, F>* pBranch)=0;
+
+	virtual bool					ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
 };
 
 template <class T, typename F=float>
 class CQuadTreeBranch
 {
 public:
-	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TemplateVector2D<F> vecMin, TemplateVector2D<F> vecMax, unsigned short iDepth, const T& oData = T())
+	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TemplateVector2D<F> vecMin, TemplateVector2D<F> vecMax, unsigned short iDepth, unsigned char iParentIndex, const T& oData = T())
 	{
 		m_pDataSource = pSource;
 		m_pParent = pParent;
@@ -44,6 +46,7 @@ public:
 		m_vecMax = vecMax;
 
 		m_iDepth = iDepth;
+		m_iParentIndex = iParentIndex;
 
 		m_oData = oData;
 
@@ -59,7 +62,6 @@ public:
 	void						SetGScore(float flGScore);
 	float						GetFScore();
 	TemplateVector<F>			GetCenter();
-	TemplateVector<F>			GetCenter() const;
 
 	void						DebugRender();
 
@@ -72,14 +74,15 @@ public:
 	TemplateVector2D<F>			m_vecMax;
 
 	unsigned short				m_iDepth;
+	unsigned char				m_iParentIndex;
 
 	union
 	{
 		struct
 		{
 			CQuadTreeBranch<T, F>*	m_pBranchxy;
-			CQuadTreeBranch<T, F>*	m_pBranchxY;
 			CQuadTreeBranch<T, F>*	m_pBranchXy;
+			CQuadTreeBranch<T, F>*	m_pBranchxY;
 			CQuadTreeBranch<T, F>*	m_pBranchXY;
 		};
 		CQuadTreeBranch<T, F>*		m_pBranches[4];
@@ -147,7 +150,7 @@ template <class T, typename F>
 void CQuadTree<T, F>::Init(CQuadTreeDataSource<T, F>* pSource, const T& oData)
 {
 	m_pDataSource = pSource;
-	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TemplateVector2D<F>(0, 0), TemplateVector2D<F>(1, 1), 0, oData);
+	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TemplateVector2D<F>(0, 0), TemplateVector2D<F>(1, 1), 0, 0, oData);
 }
 
 template <class T, typename F>
@@ -219,10 +222,10 @@ void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren)
 		if (!m_pBranches[0])
 		{
 			F flSize = (m_vecMax.x - m_vecMin.x)/2;
-			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, 0), m_vecMin + TemplateVector2D<F>(flSize, flSize), m_iDepth+1);
-			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, flSize), m_vecMin + TemplateVector2D<F>(flSize, flSize+flSize), m_iDepth+1);
-			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, 0), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize), m_iDepth+1);
-			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, flSize), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1);
+			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, 0), m_vecMin + TemplateVector2D<F>(flSize, flSize), m_iDepth+1, 0);
+			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, 0), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize), m_iDepth+1, 1);
+			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, flSize), m_vecMin + TemplateVector2D<F>(flSize, flSize+flSize), m_iDepth+1, 2);
+			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, flSize), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1, 3);
 		}
 
 		if (bAndChildren)
@@ -368,20 +371,9 @@ TemplateVector<F> CQuadTreeBranch<T, F>::GetCenter()
 {
 	if (!m_bCenterCalculated)
 	{
-		m_vecCenter = (m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMin) + m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMax))/2;
+		m_vecCenter = m_pDataSource->GetBranchCenter(this);
 		m_bCenterCalculated = true;
 	}
-
-	return m_vecCenter;
-}
-
-template <class T, typename F>
-TemplateVector<F> CQuadTreeBranch<T, F>::GetCenter() const
-{
-	TAssert(m_bCenterCalculated);
-
-	if (!m_bCenterCalculated)
-		return (m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMin) + m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMax))/2;
 
 	return m_vecCenter;
 }
