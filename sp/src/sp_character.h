@@ -43,6 +43,7 @@ public:
 
 	virtual TFloat				GetBoundingRadius() const { return 2.0f; };
 	virtual CScalableFloat		EyeHeight() const;
+	virtual TFloat				JumpStrength();
 	virtual CScalableFloat		CharacterSpeed();
 
 protected:

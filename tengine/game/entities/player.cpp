@@ -68,6 +68,9 @@ void CPlayer::KeyPress(int c)
 		m_hCharacter->Move(MOVE_RIGHT);
 	if (c == 'A')
 		m_hCharacter->Move(MOVE_LEFT);
+
+	if (c == ' ')
+		m_hCharacter->Jump();
 }
 
 void CPlayer::KeyRelease(int c)

@@ -91,9 +91,15 @@ void CCharacter::MoveThink()
 	if (m_vecMoveVelocity.LengthSqr() > 0)
 	{
 		TMatrix m = GetLocalTransform();
-		TMatrix mGlobalToLocal = GetGlobalToLocalTransform();
 
-		Vector vecUp = mGlobalToLocal.TransformNoTranslate(GetUpVector());
+		Vector vecUp = GetUpVector();
+		
+		if (HasMoveParent())
+		{
+			TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
+			vecUp = mGlobalToLocal.TransformNoTranslate(vecUp);
+		}
+
 		Vector vecRight = m.GetForwardVector().Cross(vecUp).Normalized();
 		Vector vecForward = vecUp.Cross(vecRight).Normalized();
 		m.SetColumn(0, vecForward);
@@ -254,6 +260,23 @@ void CCharacter::MoveThink()
 	}
 }
 
+void CCharacter::Jump()
+{
+	if (!GetGroundEntity())
+		return;
+
+	SetGroundEntity(NULL);
+
+	Vector vecLocalUp = GetUpVector();
+	if (HasMoveParent())
+	{
+		TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
+		vecLocalUp = mGlobalToLocal.TransformNoTranslate(vecLocalUp);
+	}
+
+	SetLocalVelocity(GetLocalVelocity() + vecLocalUp * JumpStrength());
+}
+
 CVar debug_showplayervectors("debug_showplayervectors", "off");
 
 void CCharacter::PostRender(bool bTransparent) const
@@ -342,6 +365,15 @@ TVector CCharacter::GetGlobalGravity() const
 
 void CCharacter::FindGroundEntity()
 {
+	TVector vecVelocity = GetGlobalVelocity();
+
+	if (vecVelocity.Dot(GetUpVector()) > JumpStrength()/2.0f)
+	{
+		SetGroundEntity(NULL);
+		SetSimulated(true);
+		return;
+	}
+
 	TVector vecUp = GetUpVector() * m_flMaxStepSize;
 
 	size_t iMaxEntities = GameServer()->GetMaxEntities();

@@ -24,6 +24,7 @@ public:
 	void							Move(movetype_t);
 	void							StopMove(movetype_t);
 	virtual void					MoveThink();
+	virtual void					Jump();
 
 	virtual bool					ShouldRender() const { return true; };
 	virtual void					PostRender(bool bTransparent) const;
@@ -35,6 +36,7 @@ public:
 	virtual TFloat					GetBoundingRadius() const { return 200.0f; };
 	virtual TFloat					EyeHeight() const { return 180.0f; }
 	virtual TFloat					CharacterSpeed() { return 80.0f; }
+	virtual TFloat					JumpStrength() { return 150.0f; }
 	virtual inline TVector			GetGlobalGravity() const;
 
 	virtual bool					ShouldCollide() const { return true; }

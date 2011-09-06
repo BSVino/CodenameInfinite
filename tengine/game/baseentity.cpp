@@ -335,16 +335,20 @@ void CBaseEntity::SetGlobalAngles(const EAngle& angAngles)
 
 TVector CBaseEntity::GetGlobalVelocity()
 {
-	TMatrix mGlobalToLocalRotation = GetGlobalToLocalTransform();
-	mGlobalToLocalRotation.SetTranslation(TVector(0,0,0));
-
-	if (m_vecLocalVelocity.Get().LengthSqr() > TFloat(0))
+	if (HasMoveParent())
 	{
-		TFloat flLength = m_vecLocalVelocity.Get().Length();
-		return (mGlobalToLocalRotation * (m_vecLocalVelocity/flLength))*flLength;
+		TMatrix mParentGlobal = GetMoveParent()->GetGlobalTransform();
+
+		if (m_vecLocalVelocity.Get().LengthSqr() > TFloat(0))
+		{
+			TFloat flLength = m_vecLocalVelocity.Get().Length();
+			return (mParentGlobal.TransformNoTranslate(m_vecLocalVelocity/flLength))*flLength;
+		}
+		else
+			return TVector(0, 0, 0);
 	}
 	else
-		return TVector(0, 0, 0);
+		return GetLocalVelocity();
 }
 
 TVector CBaseEntity::GetGlobalVelocity() const

@@ -191,7 +191,7 @@ TVector CSPCharacter::GetUpVector() const
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).NormalizedVector();
+		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).Normalized();
 
 	return Vector(0, 1, 0);
 }
@@ -265,6 +265,11 @@ CScalableFloat CSPCharacter::EyeHeight() const
 {
 	// 180 centimeters
 	return CScalableFloat(1.8f, SCALE_METER);
+}
+
+CScalableFloat CSPCharacter::JumpStrength()
+{
+	return CScalableFloat(3.0f, SCALE_METER);
 }
 
 CScalableFloat CSPCharacter::CharacterSpeed()
