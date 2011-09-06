@@ -61,6 +61,9 @@ public:
 	Vector4D	GetColumn(int i) const;
 	void		SetColumn(int i, const Vector4D& vecColumn);
 	void		SetColumn(int i, const Vector& vecColumn);
+	Vector		GetForwardVector() const { return Vector(GetColumn(0)); }
+	Vector		GetUpVector() const { return Vector(GetColumn(1)); }
+	Vector		GetRightVector() const { return Vector(GetColumn(2)); }
 
 	void		InvertTR();
 

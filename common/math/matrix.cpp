@@ -361,9 +361,9 @@ Vector Matrix4x4::GetTranslation() const
 
 EAngle Matrix4x4::GetAngles() const
 {
-	if (m[1][0] > 0.99f)
+	if (m[1][0] > 0.999999f)
 		return EAngle(90, atan2(m[0][2], m[2][2]) * 180/M_PI, 0);
-	else if (m[1][0] < -0.99f)
+	else if (m[1][0] < -0.999999f)
 		return EAngle(-90, atan2(m[0][2], m[2][2]) * 180/M_PI, 0);
 
 	// Clamp to [-1, 1] looping
