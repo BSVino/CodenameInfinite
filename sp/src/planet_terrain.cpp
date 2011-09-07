@@ -366,7 +366,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 			return false;
 	}
 
-	if (r_terrainfrustumcull.GetBool())
+	if (r_terrainfrustumcull.GetBool() && pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth())
 	{
 		if (!pBranch->m_oData.bCompletelyInsideFrustum)
 		{
