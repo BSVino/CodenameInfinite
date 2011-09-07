@@ -5,6 +5,7 @@
 #include "planet.h"
 #include "sp_game.h"
 #include "sp_renderer.h"
+#include "sp_playercharacter.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -73,7 +74,7 @@ void CSPCharacter::Think()
 
 CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 	CScalableMatrix mTransform = GetGlobalTransform();

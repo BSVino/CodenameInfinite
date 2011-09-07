@@ -5,7 +5,7 @@
 #include <game/level.h>
 
 #include "sp_player.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "sp_camera.h"
 #include "sp_renderer.h"
 
@@ -50,9 +50,9 @@ void CSPGame::Think()
 	BaseClass::Think();
 }
 
-CSPCharacter* CSPGame::GetLocalPlayerCharacter()
+CPlayerCharacter* CSPGame::GetLocalPlayerCharacter()
 {
-	return static_cast<CSPCharacter*>(GetLocalPlayer()->GetCharacter());
+	return static_cast<CPlayerCharacter*>(GetLocalPlayer()->GetCharacter());
 }
 
 CSPRenderer* CSPGame::GetSPRenderer()

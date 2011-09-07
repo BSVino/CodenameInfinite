@@ -12,7 +12,7 @@ public:
 
 	virtual void			Think();
 
-	class CSPCharacter*		GetLocalPlayerCharacter();
+	class CPlayerCharacter*	GetLocalPlayerCharacter();
 	class CSPRenderer*		GetSPRenderer();
 	class CSPCamera*		GetSPCamera();
 };

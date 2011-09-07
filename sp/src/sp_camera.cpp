@@ -6,7 +6,7 @@
 #include <tengine/game/game.h>
 #include <tinker/cvar.h>
 
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "sp_game.h"
 #include "planet.h"
 #include "sp_renderer.h"
@@ -24,7 +24,7 @@ CScalableVector CSPCamera::GetCameraPosition()
 	if (GetThirdPerson())
 		return GetThirdPersonCameraPosition();
 
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (!pCharacter)
 		return CScalableVector(Vector(10,0,0), SCALE_METER);
 
@@ -44,7 +44,7 @@ CScalableVector CSPCamera::GetCameraTarget()
 	if (GetThirdPerson())
 		return GetThirdPersonCameraTarget();
 
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
 	if (!pCharacter)
 		return CScalableVector();
@@ -60,7 +60,7 @@ CScalableVector CSPCamera::GetCameraTarget()
 
 TVector CSPCamera::GetCameraUp()
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter)
 		return Vector(pCharacter->GetGlobalTransform().GetUpVector());
 
@@ -93,7 +93,7 @@ CVar cam_third_right("cam_third_right", "0.2");
 
 CScalableVector CSPCamera::GetThirdPersonCameraPosition()
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (!pCharacter)
 		return CScalableVector(Vector(10,0,0), SCALE_METER);
 
@@ -110,7 +110,7 @@ CScalableVector CSPCamera::GetThirdPersonCameraPosition()
 
 CScalableVector CSPCamera::GetThirdPersonCameraTarget()
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
 	if (!pCharacter)
 		return CScalableVector();

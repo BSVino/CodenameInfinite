@@ -11,7 +11,7 @@
 #include "sp_game.h"
 #include "sp_renderer.h"
 #include "sp_camera.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "star.h"
 #include "planet_terrain.h"
 
@@ -285,4 +285,27 @@ CScalableFloat CPlanet::GetCloseOrbit()
 {
 	// For Earth values this resolves to about 600km above the ground, or about twice the altitude of the ISS.
 	return GetRadius()/10.0f;
+}
+
+
+void Planet_RebuildTerrain(class CCommand* pCommand, eastl::vector<tstring>& asTokens, const tstring& sCommand)
+{
+	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
+	CPlanet* pNearestPlanet = pLocalPlayer->GetNearestPlanet(FINDPLANET_ANY);
+
+	pNearestPlanet->Debug_RebuildTerrain();
+}
+
+CCommand planet_rebuildterrain("planet_rebuildterrain", Planet_RebuildTerrain);
+
+void CPlanet::Debug_RebuildTerrain()
+{
+	for (size_t i = 0; i < 6; i++)
+		delete m_pTerrain[i];
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
+		m_pTerrain[i]->Init();
+	}
 }

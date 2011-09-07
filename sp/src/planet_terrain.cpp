@@ -10,7 +10,7 @@
 
 #include "sp_game.h"
 #include "sp_renderer.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "planet.h"
 
 CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
@@ -182,7 +182,7 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 	CalcRenderVectors(pBranch);
 	UpdateScreenSize(pBranch);
 
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
 
 	CScalableVector vecDistanceToQuad = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalOrigin();
@@ -235,7 +235,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	scale_t ePlanet = m_pPlanet->GetScale();
 	scale_t eRender = SPGame()->GetSPRenderer()->GetRenderingScale();
 	CScalableMatrix mPlanetTransform = m_pPlanet->GetGlobalTransform();
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
 	CScalableVector svec1;
 	CScalableVector svec2;
@@ -342,7 +342,7 @@ void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 		GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
 		CScalableMatrix mPlanet = m_pPlanet->GetGlobalTransform();
-		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+		CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 		CScalableVector vecQuadCenter = pBranch->m_oData.vecGlobalQuadCenter;
@@ -410,7 +410,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 		{
 			CalcRenderVectors(pBranch);
 
-			CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+			CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 			CScalableMatrix mPlanet = m_pPlanet->GetGlobalTransform();
 			CScalableVector vecPlanetCenter = pBranch->m_oData.vecGlobalQuadCenter - pCharacter->GetGlobalOrigin();
 
@@ -560,13 +560,28 @@ float CPlanetTerrain::GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch)
 
 DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 {
+	DoubleVector2D vecAdjustedCoordinate = vecCoordinate;
+	Vector vecDirection = GetDirection();
+	if (vecDirection[0] > 0)
+		vecAdjustedCoordinate += DoubleVector2D(0, 0);
+	else if (vecDirection[0] < 0)
+		vecAdjustedCoordinate += DoubleVector2D(2, 0);
+	else if (vecDirection[1] > 0)
+		vecAdjustedCoordinate += DoubleVector2D(0, 1);
+	else if (vecDirection[1] < 0)
+		vecAdjustedCoordinate += DoubleVector2D(0, -1);
+	else if (vecDirection[2] > 0)
+		vecAdjustedCoordinate += DoubleVector2D(3, 0);
+	else
+		vecAdjustedCoordinate += DoubleVector2D(1, 0);
+
 	DoubleVector vecOffset;
 	double flSpaceFactor = 1.1/2;
-	double flHeightFactor = 0.1;
+	double flHeightFactor = 0.035;
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{
-		double flXFactor = vecCoordinate.x * flSpaceFactor;
-		double flYFactor = vecCoordinate.y * flSpaceFactor;
+		double flXFactor = vecAdjustedCoordinate.x * flSpaceFactor;
+		double flYFactor = vecAdjustedCoordinate.y * flSpaceFactor;
 		double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * flHeightFactor;
 		double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * flHeightFactor;
 		double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * flHeightFactor;
@@ -574,7 +589,7 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 		vecOffset += DoubleVector(x, y, z);
 
 		flSpaceFactor = flSpaceFactor*2;
-		flHeightFactor = flHeightFactor/1.5;
+		flHeightFactor = flHeightFactor/1.4;
 	}
 
 	return vecOffset;

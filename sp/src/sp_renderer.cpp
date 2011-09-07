@@ -14,7 +14,7 @@
 
 #include "sp_window.h"
 #include "sp_game.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "planet.h"
 #include "star.h"
 #include "sp_camera.h"

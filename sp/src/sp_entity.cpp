@@ -5,7 +5,7 @@
 
 #include "sp_game.h"
 #include "sp_renderer.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 
 REGISTER_ENTITY(CSPEntity);
 
@@ -36,7 +36,7 @@ bool CSPEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint,
 
 CScalableMatrix CSPEntity::GetScalableRenderTransform() const
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 	CScalableMatrix mTransform = GetGlobalTransform();

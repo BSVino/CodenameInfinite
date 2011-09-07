@@ -56,6 +56,8 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
+	void						Debug_RebuildTerrain();
+
 protected:
 	size_t						m_iRandomSeed;
 
