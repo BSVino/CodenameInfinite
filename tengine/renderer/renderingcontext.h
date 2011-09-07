@@ -51,6 +51,7 @@ public:
 	void					BindTexture(size_t iTexture, int iChannel = 0);
 	void					SetColor(Color c);
 	void					BeginRenderTris();
+	void					BeginRenderTriFan();
 	void					BeginRenderQuads();
 	void					BeginRenderDebugLines();
 	void					TexCoord(float s, float t, int iChannel = 0);

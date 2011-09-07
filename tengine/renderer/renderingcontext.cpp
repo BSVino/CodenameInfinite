@@ -550,6 +550,21 @@ void CRenderingContext::BeginRenderTris()
 	m_iDrawMode = GL_TRIANGLES;
 }
 
+void CRenderingContext::BeginRenderTriFan()
+{
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+	m_avecTexCoord.clear();
+	m_aavecTexCoords.clear();
+	m_avecNormals.clear();
+	m_avecVertices.clear();
+
+	m_bTexCoord = false;
+	m_bNormal = false;
+
+	m_iDrawMode = GL_TRIANGLE_FAN;
+}
+
 void CRenderingContext::BeginRenderQuads()
 {
 	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);

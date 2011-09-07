@@ -38,16 +38,19 @@ public:
 
 	size_t				iRenderVectorsLastFrame;
 	CScalableVector		vecGlobalQuadCenter;
+	DoubleVector		vecCenter;
 	DoubleVector		vec1;
 	DoubleVector		vec2;
 	DoubleVector		vec3;
 	DoubleVector		vec4;
+	Vector				vecCenterNormal;
 	Vector				vec1n;
 	Vector				vec2n;
 	Vector				vec3n;
 	Vector				vec4n;
 	DoubleVector2D		vecDetailMin;
 	DoubleVector2D		vecDetailMax;
+	DoubleVector		vecOffsetCenter;
 	DoubleVector		vecOffset1;
 	DoubleVector		vecOffset2;
 	DoubleVector		vecOffset3;

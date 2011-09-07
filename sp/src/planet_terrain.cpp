@@ -237,6 +237,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	CScalableMatrix mPlanetTransform = m_pPlanet->GetGlobalTransform();
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
+	CScalableVector svecCenter;
 	CScalableVector svec1;
 	CScalableVector svec2;
 	CScalableVector svec3;
@@ -246,6 +247,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	{
 		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
 
+		svecCenter = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vecCenter, ePlanet) - vecCharacterOrigin);
 		svec1 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin);
 		svec2 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin);
 		svec3 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin);
@@ -255,18 +257,25 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	{
 		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
+		svecCenter = pBranch->m_oData.vecGlobalQuadCenter - vecCharacterOrigin;
 		svec1 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin;
 		svec2 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin;
 		svec3 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin;
 		svec4 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin;
 	}
 
+	Vector vecCenter = svecCenter.GetUnits(eRender);
 	Vector vec1 = svec1.GetUnits(eRender);
 	Vector vec2 = svec2.GetUnits(eRender);
 	Vector vec3 = svec3.GetUnits(eRender);
 	Vector vec4 = svec4.GetUnits(eRender);
 
-	c->BeginRenderQuads();
+	c->BeginRenderTriFan();
+		c->TexCoord((pBranch->m_vecMin + pBranch->m_vecMax)/2, 0);
+		c->TexCoord((pBranch->m_oData.vecDetailMin + pBranch->m_oData.vecDetailMax)/2, 1);
+		c->Normal(pBranch->m_oData.vecCenterNormal);
+		c->Vertex(vecCenter);
+
 		c->TexCoord(pBranch->m_vecMin, 0);
 		c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
 		c->Normal(pBranch->m_oData.vec1n);
@@ -286,6 +295,11 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 		c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMin.x, pBranch->m_oData.vecDetailMax.y), 1);
 		c->Normal(pBranch->m_oData.vec3n);
 		c->Vertex(vec3);
+
+		c->TexCoord(pBranch->m_vecMin, 0);
+		c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
+		c->Normal(pBranch->m_oData.vec1n);
+		c->Vertex(vec1);
 	c->EndRender();
 
 	if (r_showquaddebugoutlines.GetBool())
@@ -294,6 +308,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 		c.BindTexture(0);
 		c.SetColor(Color(255, 255, 255));
 		c.BeginRenderDebugLines();
+		c.Vertex(vecCenter);
 		c.Vertex(vec1);
 		c.Vertex(vec2);
 		c.Vertex(vec4);
@@ -435,6 +450,7 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 	{
 		if (pBranch->m_iDepth >= 20)
 		{
+			DoubleVector vecParentOffsetCenter = pBranch->m_pParent->m_oData.vecOffsetCenter;
 			DoubleVector vecParentOffset1 = pBranch->m_pParent->m_oData.vecOffset1;
 			DoubleVector vecParentOffset2 = pBranch->m_pParent->m_oData.vecOffset2;
 			DoubleVector vecParentOffset3 = pBranch->m_pParent->m_oData.vecOffset3;
@@ -446,38 +462,41 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 				pBranch->m_oData.vecOffset1 = vecParentOffset1;
 				pBranch->m_oData.vecOffset2 = (vecParentOffset1 + vecParentOffset2)/2;
 				pBranch->m_oData.vecOffset3 = (vecParentOffset1 + vecParentOffset3)/2;
-				pBranch->m_oData.vecOffset4 = (vecParentOffset1 + vecParentOffset2 + vecParentOffset3 + vecParentOffset4)/4;
+				pBranch->m_oData.vecOffset4 = vecParentOffsetCenter;
 			}
 
 			// Xy
-			if (pBranch->m_iParentIndex == 1)
+			else if (pBranch->m_iParentIndex == 1)
 			{
 				pBranch->m_oData.vecOffset1 = (vecParentOffset2 + vecParentOffset1)/2;
 				pBranch->m_oData.vecOffset2 = vecParentOffset2;
-				pBranch->m_oData.vecOffset3 = (vecParentOffset1 + vecParentOffset2 + vecParentOffset3 + vecParentOffset4)/4;
+				pBranch->m_oData.vecOffset3 = vecParentOffsetCenter;
 				pBranch->m_oData.vecOffset4 = (vecParentOffset2 + vecParentOffset4)/2;
 			}
 
 			// xY
-			if (pBranch->m_iParentIndex == 2)
+			else if (pBranch->m_iParentIndex == 2)
 			{
 				pBranch->m_oData.vecOffset1 = (vecParentOffset3 + vecParentOffset1)/2;
-				pBranch->m_oData.vecOffset2 = (vecParentOffset1 + vecParentOffset2 + vecParentOffset3 + vecParentOffset4)/4;
+				pBranch->m_oData.vecOffset2 = vecParentOffsetCenter;
 				pBranch->m_oData.vecOffset3 = vecParentOffset3;
 				pBranch->m_oData.vecOffset4 = (vecParentOffset3 + vecParentOffset4)/2;
 			}
 
 			// XY
-			if (pBranch->m_iParentIndex == 3)
+			else if (pBranch->m_iParentIndex == 3)
 			{
-				pBranch->m_oData.vecOffset1 = (vecParentOffset1 + vecParentOffset2 + vecParentOffset3 + vecParentOffset4)/4;
+				pBranch->m_oData.vecOffset1 = vecParentOffsetCenter;
 				pBranch->m_oData.vecOffset2 = (vecParentOffset4 + vecParentOffset2)/2;
 				pBranch->m_oData.vecOffset3 = (vecParentOffset4 + vecParentOffset3)/2;
 				pBranch->m_oData.vecOffset4 = vecParentOffset4;
 			}
+
+			pBranch->m_oData.vecOffsetCenter = (pBranch->m_oData.vecOffset1 + pBranch->m_oData.vecOffset2 + pBranch->m_oData.vecOffset3 + pBranch->m_oData.vecOffset4)/4;
 		}
 		else if (pBranch->m_iDepth == 0)
 		{
+			pBranch->m_oData.vecOffsetCenter = GenerateOffset((pBranch->m_vecMin + pBranch->m_vecMax)/2);
 			pBranch->m_oData.vecOffset1 = GenerateOffset(pBranch->m_vecMin);
 			pBranch->m_oData.vecOffset2 = GenerateOffset(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
 			pBranch->m_oData.vecOffset3 = GenerateOffset(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
@@ -485,6 +504,8 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 		}
 		else
 		{
+			pBranch->m_oData.vecOffsetCenter = GenerateOffset((pBranch->m_vecMin + pBranch->m_vecMax)/2);
+
 			// Don't regenerate offsets that our parents gave us.
 			if (pBranch->m_iParentIndex != 0)
 				pBranch->m_oData.vecOffset1 = GenerateOffset(pBranch->m_vecMin);
@@ -500,22 +521,24 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 		}
 
 		// Offsets are generated in planet space, add them right onto the quad position.
+		DoubleVector vecCenter = m_pDataSource->QuadTreeToWorld(this, (pBranch->m_vecMin + pBranch->m_vecMax)/2) + pBranch->m_oData.vecOffsetCenter;
 		DoubleVector vec1 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMin) + pBranch->m_oData.vecOffset1;
 		DoubleVector vec2 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y)) + pBranch->m_oData.vecOffset2;
 		DoubleVector vec3 = m_pDataSource->QuadTreeToWorld(this, DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y)) + pBranch->m_oData.vecOffset3;
 		DoubleVector vec4 = m_pDataSource->QuadTreeToWorld(this, pBranch->m_vecMax) + pBranch->m_oData.vecOffset4;
 
+		pBranch->m_oData.vecCenter = vecCenter;
 		pBranch->m_oData.vec1 = vec1;
 		pBranch->m_oData.vec2 = vec2;
 		pBranch->m_oData.vec3 = vec3;
 		pBranch->m_oData.vec4 = vec4;
 
+		pBranch->m_oData.vecCenterNormal = (vec1-vecCenter).Normalized().Cross((vec2-vecCenter).Normalized()).Normalized();
 		pBranch->m_oData.vec1n = (vec2-vec1).Normalized().Cross((vec3-vec1).Normalized()).Normalized();
 		pBranch->m_oData.vec2n = (vec4-vec2).Normalized().Cross((vec1-vec2).Normalized()).Normalized();
 		pBranch->m_oData.vec3n = (vec1-vec3).Normalized().Cross((vec4-vec3).Normalized()).Normalized();
 		pBranch->m_oData.vec4n = (vec3-vec4).Normalized().Cross((vec2-vec4).Normalized()).Normalized();
 
-		DoubleVector vecCenter = (pBranch->m_oData.vec1 + pBranch->m_oData.vec2 + pBranch->m_oData.vec3 + pBranch->m_oData.vec4)/4;
 		CScalableVector vecQuadCenter(vecCenter, m_pPlanet->GetScale());
 		CScalableVector vecQuadMax(pBranch->m_oData.vec4, m_pPlanet->GetScale());
 
@@ -688,7 +711,7 @@ DoubleVector CPlanetTerrain::GetBranchCenter(CTerrainQuadTreeBranch* pBranch)
 {
 	InitRenderVectors(pBranch);
 
-	return (pBranch->m_oData.vec1 + pBranch->m_oData.vec2 + pBranch->m_oData.vec3 + pBranch->m_oData.vec4)/4;
+	return pBranch->m_oData.vecCenter;
 }
 
 bool CPlanetTerrain::ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete)
