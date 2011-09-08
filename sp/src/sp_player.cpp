@@ -55,6 +55,9 @@ void CSPPlayer::KeyPress(int c)
 	if (c == TINKER_KEY_LSHIFT)
 		GetPlayerCharacter()->EngageHyperdrive();
 
+	if (c == TINKER_KEY_LCTRL)
+		GetPlayerCharacter()->SetWalkSpeedOverride(true);
+
 	if (c == 'F')
 		GetPlayerCharacter()->ToggleFlying();
 }
@@ -68,6 +71,9 @@ void CSPPlayer::KeyRelease(int c)
 
 	if (c == TINKER_KEY_LSHIFT)
 		GetPlayerCharacter()->DisengageHyperdrive();
+
+	if (c == TINKER_KEY_LCTRL)
+		GetPlayerCharacter()->SetWalkSpeedOverride(false);
 }
 
 CPlayerCharacter* CSPPlayer::GetPlayerCharacter()

@@ -296,7 +296,7 @@ void Planet_RebuildTerrain(class CCommand* pCommand, eastl::vector<tstring>& asT
 	pNearestPlanet->Debug_RebuildTerrain();
 }
 
-CCommand planet_rebuildterrain("planet_rebuildterrain", Planet_RebuildTerrain);
+CCommand planet_terrainrebuild("planet_terrainrebuild", Planet_RebuildTerrain);
 
 void CPlanet::Debug_RebuildTerrain()
 {

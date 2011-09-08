@@ -31,6 +31,7 @@ void CPlanetTerrain::Init()
 	oData.iLocalCharacterDotLastFrame = ~0;
 	oData.iShouldRenderLastFrame = ~0;
 	oData.bCompletelyInsideFrustum = false;
+	oData.iSplitSides = 0;
 	CTerrainQuadTree::Init(this, oData);
 }
 
@@ -46,6 +47,7 @@ void CPlanetTerrain::Think()
 }
 
 CVar r_terrainbuildsperframe("r_terrainbuildsperframe", "10");
+CVar r_freezeterrain("r_freezeterrain", "off");
 
 void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 {
@@ -55,44 +57,38 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 			pBranch->m_pBranches[i]->m_oData.bCompletelyInsideFrustum = pBranch->m_oData.bCompletelyInsideFrustum;
 	}
 
+	if (r_freezeterrain.GetBool())
+	{
+		if (pBranch->m_oData.bRender)
+			ProcessBranchRendering(pBranch);
+		else if (pBranch->m_pBranches[0])
+		{
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+				ThinkBranch(pBranch->m_pBranches[i]);
+		}
+
+		return;
+	}
+
 	if (pBranch->m_oData.bRender)
 	{
 		// If I can render then maybe my kids can too?
 		if (!pBranch->m_pBranches[0] && m_iBuildsThisFrame < r_terrainbuildsperframe.GetInt())
 		{
-			pBranch->BuildBranch(false);
+			BuildBranch(pBranch);
 
 			if (pBranch->m_pBranches[0])
-			{
-				if (pBranch->m_oData.bCompletelyInsideFrustum)
-				{
-					for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-						pBranch->m_pBranches[i]->m_oData.bCompletelyInsideFrustum = pBranch->m_oData.bCompletelyInsideFrustum;
-				}
-
-				// Push our already-generated offsets down to the kids. They won't regenerate these.
-				pBranch->m_pBranches[0]->m_oData.vecOffset1 = pBranch->m_oData.vecOffset1;
-				pBranch->m_pBranches[1]->m_oData.vecOffset2 = pBranch->m_oData.vecOffset2;
-				pBranch->m_pBranches[2]->m_oData.vecOffset3 = pBranch->m_oData.vecOffset3;
-				pBranch->m_pBranches[3]->m_oData.vecOffset4 = pBranch->m_oData.vecOffset4;
-
 				m_iBuildsThisFrame++;
-			}
-
-			// If I create branches this frame, be sure to test right away if we should push them.
-			pBranch->m_oData.flLastPushPull = -1;
 		}
 
 		bool bPush = ShouldPush(pBranch);
 
 		if (bPush)
 		{
-			pBranch->m_oData.bRender = false;
+			PushBranch(pBranch);
+
 			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-			{
-				pBranch->m_pBranches[i]->m_oData.bRender = true;
 				ThinkBranch(pBranch->m_pBranches[i]);
-			}
 		}
 		else
 			ProcessBranchRendering(pBranch);
@@ -106,9 +102,7 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 
 	if (bPull)
 	{
-		pBranch->m_oData.bRender = true;
-		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-			pBranch->m_pBranches[i]->m_oData.bRender = false;
+		PullBranch(pBranch);
 
 		ProcessBranchRendering(pBranch);
 	}
@@ -167,7 +161,181 @@ bool CPlanetTerrain::ShouldPull(CTerrainQuadTreeBranch* pBranch)
 			break;
 	}
 
-	return bAreKidsRenderingAndShouldnt;
+	if (!bAreKidsRenderingAndShouldnt)
+		return false;
+
+	return true;
+}
+
+void CPlanetTerrain::BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce)
+{
+	pBranch->BuildBranch(false, bForce);
+
+	if (pBranch->m_pBranches[0])
+	{
+		if (pBranch->m_oData.bCompletelyInsideFrustum)
+		{
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+				pBranch->m_pBranches[i]->m_oData.bCompletelyInsideFrustum = pBranch->m_oData.bCompletelyInsideFrustum;
+		}
+
+		// Push our already-generated offsets down to the kids. They won't regenerate these.
+		pBranch->m_pBranches[0]->m_oData.vecOffset1 = pBranch->m_oData.vecOffset1;
+		pBranch->m_pBranches[1]->m_oData.vecOffset2 = pBranch->m_oData.vecOffset2;
+		pBranch->m_pBranches[2]->m_oData.vecOffset3 = pBranch->m_oData.vecOffset3;
+		pBranch->m_pBranches[3]->m_oData.vecOffset4 = pBranch->m_oData.vecOffset4;
+
+		pBranch->m_pBranches[0]->m_oData.vecOffset4 = pBranch->m_oData.vecOffsetCenter;
+		pBranch->m_pBranches[1]->m_oData.vecOffset3 = pBranch->m_oData.vecOffsetCenter;
+		pBranch->m_pBranches[2]->m_oData.vecOffset2 = pBranch->m_oData.vecOffsetCenter;
+		pBranch->m_pBranches[3]->m_oData.vecOffset1 = pBranch->m_oData.vecOffsetCenter;
+	}
+
+	// If I create branches this frame, be sure to test right away if we should push them.
+	pBranch->m_oData.flLastPushPull = -1;
+}
+
+CVar r_terrainresolution("r_terrainresolution", "1.0");
+
+void CPlanetTerrain::PushBranch(CTerrainQuadTreeBranch* pBranch)
+{
+	if (!pBranch->m_pBranches[0])
+		// Force building the branch, we want to guarantee it will get built because we need it to push to.
+		BuildBranch(pBranch, true);
+
+	pBranch->m_oData.bRender = false;
+	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+		pBranch->m_pBranches[i]->m_oData.bRender = true;
+
+	CTerrainQuadTreeBranch* pNeighbor;
+
+	// If I'm a higher level than my neighbor then push my neighbor to get him
+	// down to my level. Keep all quads within one level of each other. This is
+	// so that I can make sure a quad renders properly.
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_LEFT);
+	if (pNeighbor)
+	{
+		// If I'm pushing, tell my neighbor that he needs to split his opposite side.
+		pNeighbor->m_oData.iSplitSides |= (1<<QUADSIDE_RIGHT);
+
+		// If my neighbor's kids are rendering, I need to split.
+		if (pNeighbor->m_pBranches[0] && (pNeighbor->m_pBranches[0]->m_oData.bRender || pNeighbor->m_pBranches[2]->m_oData.bRender))
+			pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_LEFT);
+
+		if (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender)
+			PushBranch(pNeighbor->m_pParent);
+	}
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_RIGHT);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides |= (1<<QUADSIDE_LEFT);
+
+		if (pNeighbor->m_pBranches[0] && (pNeighbor->m_pBranches[1]->m_oData.bRender || pNeighbor->m_pBranches[3]->m_oData.bRender))
+			pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_RIGHT);
+
+		if (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender)
+			PushBranch(pNeighbor->m_pParent);
+	}
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_TOP);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides |= (1<<QUADSIDE_BOTTOM);
+
+		if (pNeighbor->m_pBranches[0] && (pNeighbor->m_pBranches[0]->m_oData.bRender || pNeighbor->m_pBranches[1]->m_oData.bRender))
+			pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_TOP);
+
+		if (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender)
+			PushBranch(pNeighbor->m_pParent);
+	}
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_BOTTOM);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides |= (1<<QUADSIDE_TOP);
+
+		if (pNeighbor->m_pBranches[0] && (pNeighbor->m_pBranches[2]->m_oData.bRender || pNeighbor->m_pBranches[3]->m_oData.bRender))
+			pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_BOTTOM);
+
+		if (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender)
+			PushBranch(pNeighbor->m_pParent);
+	}
+}
+
+void CPlanetTerrain::PullBranch(CTerrainQuadTreeBranch* pBranch)
+{
+	TAssert(!pBranch->m_oData.bRender);
+	TAssert(pBranch->m_pBranches[0]->m_oData.bRender);
+
+	pBranch->m_oData.bRender = true;
+	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+		pBranch->m_pBranches[i]->m_oData.bRender = false;
+
+	CTerrainQuadTreeBranch* pNeighbor;
+
+	// Tell my neighbors that they no longer need to split their opposite sides.
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_LEFT);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides &= ~(1<<QUADSIDE_RIGHT);
+
+		if (pNeighbor->m_pBranches[0])
+		{
+			// If my neighbors are lower depth than I then I need to split on that side.
+			if (pNeighbor->m_pBranches[1]->m_oData.bRender || pNeighbor->m_pBranches[3]->m_oData.bRender)
+				pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_LEFT);
+		}
+
+		if (pNeighbor->m_oData.bRender || (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender))
+			pBranch->m_oData.iSplitSides &= ~(1<<QUADSIDE_LEFT);
+	}
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_RIGHT);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides &= ~(1<<QUADSIDE_LEFT);
+
+		if (pNeighbor->m_pBranches[0])
+		{
+			if (pNeighbor->m_pBranches[0]->m_oData.bRender || pNeighbor->m_pBranches[2]->m_oData.bRender)
+				pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_RIGHT);
+		}
+
+		if (pNeighbor->m_oData.bRender || (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender))
+			pBranch->m_oData.iSplitSides &= ~(1<<QUADSIDE_RIGHT);
+	}
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_TOP);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides &= ~(1<<QUADSIDE_BOTTOM);
+
+		if (pNeighbor->m_pBranches[0])
+		{
+			if (pNeighbor->m_pBranches[2]->m_oData.bRender || pNeighbor->m_pBranches[3]->m_oData.bRender)
+				pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_TOP);
+		}
+
+		if (pNeighbor->m_oData.bRender || (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender))
+			pBranch->m_oData.iSplitSides &= ~(1<<QUADSIDE_TOP);
+	}
+
+	pNeighbor = FindNeighbor(pBranch, QUADSIDE_BOTTOM);
+	if (pNeighbor)
+	{
+		pNeighbor->m_oData.iSplitSides &= ~(1<<QUADSIDE_TOP);
+
+		if (pNeighbor->m_pBranches[0])
+		{
+			if (pNeighbor->m_pBranches[0]->m_oData.bRender || pNeighbor->m_pBranches[1]->m_oData.bRender)
+				pBranch->m_oData.iSplitSides |= (1<<QUADSIDE_BOTTOM);
+		}
+
+		if (pNeighbor->m_oData.bRender || (pNeighbor->m_pParent && pNeighbor->m_pParent->m_oData.bRender))
+			pBranch->m_oData.iSplitSides &= ~(1<<QUADSIDE_BOTTOM);
+	}
 }
 
 CVar r_terrainbackfacecull("r_terrainbackfacecull", "on");
@@ -236,6 +404,8 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	scale_t eRender = SPGame()->GetSPRenderer()->GetRenderingScale();
 	CScalableMatrix mPlanetTransform = m_pPlanet->GetGlobalTransform();
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableVector vecCharacterLocalOrigin = pCharacter->GetLocalOrigin();
+	CScalableVector vecCharacterGlobalOrigin = pCharacter->GetGlobalOrigin();
 
 	CScalableVector svecCenter;
 	CScalableVector svec1;
@@ -245,23 +415,19 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 	if (pCharacter->GetMoveParent() == m_pPlanet)
 	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
-
-		svecCenter = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vecCenter, ePlanet) - vecCharacterOrigin);
-		svec1 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin);
-		svec2 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin);
-		svec3 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin);
-		svec4 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin);
+		svecCenter = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vecCenter, ePlanet) - vecCharacterLocalOrigin);
+		svec1 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterLocalOrigin);
+		svec2 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterLocalOrigin);
+		svec3 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterLocalOrigin);
+		svec4 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterLocalOrigin);
 	}
 	else
 	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
-
-		svecCenter = pBranch->m_oData.vecGlobalQuadCenter - vecCharacterOrigin;
-		svec1 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin;
-		svec2 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin;
-		svec3 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin;
-		svec4 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin;
+		svecCenter = pBranch->m_oData.vecGlobalQuadCenter - vecCharacterGlobalOrigin;
+		svec1 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterGlobalOrigin;
+		svec2 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterGlobalOrigin;
+		svec3 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterGlobalOrigin;
+		svec4 = mPlanetTransform * CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterGlobalOrigin;
 	}
 
 	Vector vecCenter = svecCenter.GetUnits(eRender);
@@ -281,20 +447,80 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 		c->Normal(pBranch->m_oData.vec1n);
 		c->Vertex(vec1);
 
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_TOP)) && pBranch->m_pBranches[0])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[0]->m_oData.vec2, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[0]->m_oData.vec2, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+
+			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[0]->m_vecMax.x, pBranch->m_pBranches[0]->m_vecMin.y), 0);
+			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[0]->m_oData.vecDetailMax.x, pBranch->m_pBranches[0]->m_oData.vecDetailMin.y), 1);
+			c->Normal(pBranch->m_pBranches[0]->m_oData.vec2n);
+			c->Vertex(vecSplit);
+		}
+
 		c->TexCoord(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y), 0);
 		c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMax.x, pBranch->m_oData.vecDetailMin.y), 1);
 		c->Normal(pBranch->m_oData.vec2n);
 		c->Vertex(vec2);
+
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_RIGHT)) && pBranch->m_pBranches[1])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[1]->m_oData.vec4, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[1]->m_oData.vec4, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+
+			c->TexCoord(pBranch->m_pBranches[1]->m_vecMax, 0);
+			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[3]->m_oData.vecDetailMax.x, pBranch->m_pBranches[3]->m_oData.vecDetailMin.y), 1);
+			c->Normal(pBranch->m_pBranches[1]->m_oData.vec4n);
+			c->Vertex(vecSplit);
+		}
 
 		c->TexCoord(pBranch->m_vecMax, 0);
 		c->TexCoord(pBranch->m_oData.vecDetailMax, 1);
 		c->Normal(pBranch->m_oData.vec4n);
 		c->Vertex(vec4);
 
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_BOTTOM)) && pBranch->m_pBranches[3])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[3]->m_oData.vec3, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[3]->m_oData.vec3, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+
+			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[3]->m_vecMin.x, pBranch->m_pBranches[3]->m_vecMax.y), 0);
+			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[3]->m_oData.vecDetailMin.x, pBranch->m_pBranches[3]->m_oData.vecDetailMax.y), 1);
+			c->Normal(pBranch->m_pBranches[3]->m_oData.vec3n);
+			c->Vertex(vecSplit);
+		}
+
 		c->TexCoord(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y), 0);
 		c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMin.x, pBranch->m_oData.vecDetailMax.y), 1);
 		c->Normal(pBranch->m_oData.vec3n);
 		c->Vertex(vec3);
+
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_LEFT)) && pBranch->m_pBranches[2])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[2]->m_oData.vec1, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[2]->m_oData.vec1, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+
+			c->TexCoord(pBranch->m_pBranches[2]->m_vecMin, 0);
+			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[0]->m_oData.vecDetailMin.x, pBranch->m_pBranches[0]->m_oData.vecDetailMax.y), 1);
+			c->Normal(pBranch->m_pBranches[2]->m_oData.vec1n);
+			c->Vertex(vecSplit);
+		}
 
 		c->TexCoord(pBranch->m_vecMin, 0);
 		c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
@@ -310,9 +536,57 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 		c.BeginRenderDebugLines();
 		c.Vertex(vecCenter);
 		c.Vertex(vec1);
+
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_TOP)) && pBranch->m_pBranches[0])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[0]->m_oData.vec2, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[0]->m_oData.vec2, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+			c.Vertex(vecSplit);
+		}
+
 		c.Vertex(vec2);
+
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_RIGHT)) && pBranch->m_pBranches[0])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[1]->m_oData.vec4, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[1]->m_oData.vec4, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+			c.Vertex(vecSplit);
+		}
+
 		c.Vertex(vec4);
+
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_BOTTOM)) && pBranch->m_pBranches[0])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[3]->m_oData.vec3, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[3]->m_oData.vec3, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+			c.Vertex(vecSplit);
+		}
+
 		c.Vertex(vec3);
+
+		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_LEFT)) && pBranch->m_pBranches[0])
+		{
+			CScalableVector svecSplit;
+			if (pCharacter->GetMoveParent() == m_pPlanet)
+				svecSplit = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_pBranches[2]->m_oData.vec1, ePlanet) - vecCharacterLocalOrigin);
+			else
+				svecSplit = mPlanetTransform * CScalableVector(pBranch->m_pBranches[2]->m_oData.vec1, ePlanet) - vecCharacterGlobalOrigin;
+			Vector vecSplit = svecSplit.GetUnits(eRender);
+			c.Vertex(vecSplit);
+		}
+
 		c.EndRender();
 	}
 
@@ -377,7 +651,6 @@ void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 	}
 }
 
-CVar r_terrainresolution("r_terrainresolution", "1.0");
 CVar r_minterrainsize("r_minterrainsize", "100");
 
 CVar r_terrainperspectivescale("r_terrainperspectivescale", "on");
@@ -507,17 +780,17 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 			pBranch->m_oData.vecOffsetCenter = GenerateOffset((pBranch->m_vecMin + pBranch->m_vecMax)/2);
 
 			// Don't regenerate offsets that our parents gave us.
-			if (pBranch->m_iParentIndex != 0)
+			if (pBranch->m_iParentIndex != 0 && pBranch->m_iParentIndex != 3)
+			{
 				pBranch->m_oData.vecOffset1 = GenerateOffset(pBranch->m_vecMin);
-
-			if (pBranch->m_iParentIndex != 1)
-				pBranch->m_oData.vecOffset2 = GenerateOffset(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
-
-			if (pBranch->m_iParentIndex != 2)
-				pBranch->m_oData.vecOffset3 = GenerateOffset(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
-
-			if (pBranch->m_iParentIndex != 3)
 				pBranch->m_oData.vecOffset4 = GenerateOffset(pBranch->m_vecMax);
+			}
+
+			if (pBranch->m_iParentIndex != 1 && pBranch->m_iParentIndex != 2)
+			{
+				pBranch->m_oData.vecOffset2 = GenerateOffset(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y));
+				pBranch->m_oData.vecOffset3 = GenerateOffset(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y));
+			}
 		}
 
 		// Offsets are generated in planet space, add them right onto the quad position.
@@ -725,4 +998,9 @@ bool CPlanetTerrain::ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bD
 		return false;
 
 	return ShouldRenderBranch(pBranch);
+}
+
+bool CPlanetTerrain::IsLeaf(CTerrainQuadTreeBranch* pBranch)
+{
+	return pBranch->m_oData.bRender;
 }

@@ -21,6 +21,7 @@ public:
 		iRenderVectorsLastFrame = ~0;
 		flRadiusMeters = 0;
 		bCompletelyInsideFrustum = false;
+		iSplitSides = 0;
 	}
 
 public:
@@ -35,6 +36,7 @@ public:
 	size_t				iLocalCharacterDotLastFrame;
 	float				flLocalCharacterDot;
 	bool				bCompletelyInsideFrustum;
+	char				iSplitSides;
 
 	size_t				iRenderVectorsLastFrame;
 	CScalableVector		vecGlobalQuadCenter;
@@ -75,6 +77,9 @@ public:
 	void						ThinkBranch(CTerrainQuadTreeBranch* pBranch);
 	bool						ShouldPush(CTerrainQuadTreeBranch* pBranch);
 	bool						ShouldPull(CTerrainQuadTreeBranch* pBranch);
+	void						BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce = false);
+	void						PushBranch(CTerrainQuadTreeBranch* pBranch);
+	void						PullBranch(CTerrainQuadTreeBranch* pBranch);
 	void						ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch);
 
 	void						Render(class CRenderingContext* c) const;
@@ -94,6 +99,7 @@ public:
 	virtual DoubleVector		QuadTreeToWorld(CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree);
 	virtual DoubleVector		GetBranchCenter(CTerrainQuadTreeBranch* pBranch);
 	virtual bool				ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete);
+	virtual bool				IsLeaf(CTerrainQuadTreeBranch* pBranch);
 
 	Vector						GetDirection() const { return m_vecDirection; }
 

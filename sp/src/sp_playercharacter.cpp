@@ -11,6 +11,7 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CPlayerCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bFlying);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bWalkSpeedOverride);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
 SAVEDATA_TABLE_END();
 
@@ -20,6 +21,7 @@ INPUTS_TABLE_END();
 CPlayerCharacter::CPlayerCharacter()
 {
 	m_bHyperdrive = false;
+	m_bWalkSpeedOverride = false;
 	m_bFlying = false;
 }
 
@@ -90,7 +92,7 @@ void CPlayerCharacter::StopFlying()
 
 CScalableFloat CPlayerCharacter::CharacterSpeed()
 {
-	if (!m_bFlying)
+	if (!m_bFlying || m_bWalkSpeedOverride)
 		return BaseClass::CharacterSpeed();
 
 	float flDebugBonus = 1;

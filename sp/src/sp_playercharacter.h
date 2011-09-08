@@ -18,6 +18,8 @@ public:
 	void						StartFlying();
 	void						StopFlying();
 
+	void						SetWalkSpeedOverride(bool bOverride) { m_bWalkSpeedOverride = bOverride; };
+
 	void						EngageHyperdrive() { m_bHyperdrive = true; };
 	void						DisengageHyperdrive() { m_bHyperdrive = false; };
 
@@ -28,6 +30,7 @@ public:
 
 protected:
 	bool						m_bFlying;
+	bool						m_bWalkSpeedOverride;
 	bool						m_bHyperdrive;
 };
 

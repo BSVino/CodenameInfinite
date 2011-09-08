@@ -5,6 +5,14 @@
 
 #include <vector.h>
 
+typedef enum
+{
+	QUADSIDE_LEFT,
+	QUADSIDE_RIGHT,
+	QUADSIDE_TOP,
+	QUADSIDE_BOTTOM,
+} quadside_t;
+
 template <class T, typename F> class CQuadTree;
 template <class T, typename F> class CQuadTreeBranch;
 
@@ -25,6 +33,8 @@ public:
 	virtual TemplateVector<F>		GetBranchCenter(CQuadTreeBranch<T, F>* pBranch)=0;
 
 	virtual bool					ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
+
+	virtual bool					IsLeaf(CQuadTreeBranch<T, F>* pBranch)=0;
 };
 
 template <class T, typename F=float>
@@ -54,7 +64,7 @@ public:
 	}
 
 public:
-	void						BuildBranch(bool bAndChildren = true);
+	void						BuildBranch(bool bAndChildren = true, bool bForce = false);
 
 	void						InitPathfinding();
 	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors);
@@ -127,6 +137,7 @@ public:
 
 	class CQuadTreeBranch<T, F>*FindLeaf(const TemplateVector<F>& vecPoint);
 	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::vector<CQuadTreeBranch<T, F>*>& apNeighbors);
+	CQuadTreeBranch<T, F>*		FindNeighbor(CQuadTreeBranch<T, F>* pLeaf, quadside_t eSide);
 
 protected:
 	CQuadTreeDataSource<T, F>*	m_pDataSource;
@@ -212,10 +223,151 @@ void CQuadTree<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, eastl::v
 }
 
 template <class T, typename F>
-void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren)
+CQuadTreeBranch<T, F>* CQuadTree<T, F>::FindNeighbor(CQuadTreeBranch<T, F>* pLeaf, quadside_t eSide)
+{
+	if (!pLeaf)
+		return NULL;
+
+	int iOriginalDepth = pLeaf->m_iDepth;
+
+	CQuadTreeBranch<T, F>* pCurrent = pLeaf;
+	if (eSide == QUADSIDE_LEFT || eSide == QUADSIDE_RIGHT)
+	{
+		if (eSide == QUADSIDE_LEFT)
+		{
+			while (pCurrent->m_iParentIndex == 0 || pCurrent->m_iParentIndex == 2)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+		else
+		{
+			while (pCurrent->m_iParentIndex == 1 || pCurrent->m_iParentIndex == 3)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+
+		if (!pCurrent->m_pParent)
+			return NULL;
+
+		pCurrent = pCurrent->m_pParent;
+
+		while (pCurrent->m_pBranches[0])
+		{
+			if (pCurrent->m_iDepth == pLeaf->m_iDepth)
+				break;
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				if (pCurrent->m_pBranches[i] == pLeaf)
+					continue;
+
+				if (pLeaf->m_vecMin.y < pCurrent->m_pBranches[i]->m_vecMin.y)
+					continue;
+
+				if (pLeaf->m_vecMax.y > pCurrent->m_pBranches[i]->m_vecMax.y)
+					continue;
+
+				if (eSide == QUADSIDE_LEFT)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMax.x < pLeaf->m_vecMin.x || pCurrent->m_pBranches[i]->m_vecMax.x > pLeaf->m_vecMax.x)
+						continue;
+				}
+
+				if (eSide == QUADSIDE_RIGHT)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMin.x > pLeaf->m_vecMax.x || pCurrent->m_pBranches[i]->m_vecMin.x < pLeaf->m_vecMin.x)
+						continue;
+				}
+
+				pCurrent = pCurrent->m_pBranches[i];
+				break;
+			}
+		}
+	}
+	else if (eSide == QUADSIDE_TOP || eSide == QUADSIDE_BOTTOM)
+	{
+		if (eSide == QUADSIDE_TOP)
+		{
+			while (pCurrent->m_iParentIndex == 0 || pCurrent->m_iParentIndex == 1)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+		else
+		{
+			while (pCurrent->m_iParentIndex == 2 || pCurrent->m_iParentIndex == 3)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+
+		if (!pCurrent->m_pParent)
+			return NULL;
+
+		pCurrent = pCurrent->m_pParent;
+
+		while (pCurrent->m_pBranches[0])
+		{
+			if (pCurrent->m_iDepth == pLeaf->m_iDepth)
+				break;
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				if (pCurrent->m_pBranches[i] == pLeaf)
+					continue;
+
+				if (pLeaf->m_vecMin.x < pCurrent->m_pBranches[i]->m_vecMin.x)
+					continue;
+
+				if (pLeaf->m_vecMax.x > pCurrent->m_pBranches[i]->m_vecMax.x)
+					continue;
+
+				if (eSide == QUADSIDE_TOP)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMax.y < pLeaf->m_vecMin.y || pCurrent->m_pBranches[i]->m_vecMax.y > pLeaf->m_vecMax.y)
+						continue;
+				}
+
+				if (eSide == QUADSIDE_BOTTOM)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMin.y > pLeaf->m_vecMax.y || pCurrent->m_pBranches[i]->m_vecMin.y < pLeaf->m_vecMin.y)
+						continue;
+				}
+
+				pCurrent = pCurrent->m_pBranches[i];
+				break;
+			}
+		}
+	}
+
+	if (pCurrent->m_iDepth != pLeaf->m_iDepth)
+		return NULL;
+
+	if (pCurrent == pLeaf)
+		return NULL;
+
+	return pCurrent;
+}
+
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren, bool bForce)
 {
 	bool bDelete;
-	bool bBuildBranch = m_pDataSource->ShouldBuildBranch(this, bDelete);
+	bool bBuildBranch = bForce || m_pDataSource->ShouldBuildBranch(this, bDelete);
 
 	if (bBuildBranch)
 	{
@@ -273,7 +425,26 @@ void CQuadTreeBranch<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, ea
 	if (!pLeaf)
 		return;
 
-	if (m_pBranches[0])
+	if (pLeaf == this)
+		return;
+
+	if (m_pDataSource->IsLeaf(this))
+	{
+		if (pLeaf->m_vecMin.x > m_vecMax.x)
+			return;
+
+		if (pLeaf->m_vecMin.y > m_vecMax.y)
+			return;
+
+		if (pLeaf->m_vecMax.x < m_vecMin.x)
+			return;
+
+		if (pLeaf->m_vecMax.y < m_vecMin.y)
+			return;
+
+		apNeighbors.push_back(this);
+	}
+	else if (m_pBranches[0])
 	{
 		for (size_t i = 0; i < 4; i++)
 		{
@@ -291,22 +462,6 @@ void CQuadTreeBranch<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, ea
 
 			m_pBranches[i]->FindNeighbors(pLeaf, apNeighbors);
 		}
-	}
-	else
-	{
-		if (pLeaf->m_vecMin.x > m_vecMax.x)
-			return;
-
-		if (pLeaf->m_vecMin.y > m_vecMax.y)
-			return;
-
-		if (pLeaf->m_vecMax.x < m_vecMin.x)
-			return;
-
-		if (pLeaf->m_vecMax.y < m_vecMin.y)
-			return;
-
-		apNeighbors.push_back(this);
 	}
 }
 
