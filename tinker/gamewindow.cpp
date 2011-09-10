@@ -21,9 +21,9 @@ void CGameWindow::OpenWindow()
 	GetScreenSize(iScreenWidth, iScreenHeight);
 
 #ifdef _DEBUG
-	BaseClass::OpenWindow(iScreenWidth/2, iScreenHeight/2, false, false);
+	BaseClass::OpenWindow(iScreenWidth*2/3, iScreenHeight*2/3, false, false);
 #else
-	BaseClass::OpenWindow(iScreenWidth, iScreenHeight, true, false);
+	BaseClass::OpenWindow(iScreenWidth, iScreenHeight, false, false);
 #endif
 
 	RenderLoading();
