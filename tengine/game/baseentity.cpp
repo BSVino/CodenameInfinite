@@ -758,8 +758,11 @@ TFloat CBaseEntity::Distance(const TVector& vecSpot) const
 	return flDistance - GetBoundingRadius();
 }
 
-bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
+bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
+	if (tr.bHit && tr.flFraction == 0)
+		return false;
+
 	if (!ShouldCollide())
 		return false;
 
@@ -768,22 +771,36 @@ bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& ve
 
 	if (v1 == v2)
 	{
-		vecPoint = v1;
+		tr.vecHit = v1;
 		TFloat flLength = v1.Length();
-		vecNormal = v1/flLength;
+		tr.vecNormal = v1/flLength;
 
-		bool bLess = flLength < GetBoundingRadius();
-		if (bLess)
-			vecPoint += vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+		tr.bHit = flLength < GetBoundingRadius();
 
-		return bLess;
+		if (tr.bHit)
+		{
+			tr.vecHit += tr.vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+			tr.flFraction = 0;
+			tr.pHit = this;
+		}
+
+		return tr.bHit;
 	}
 
-	return LineSegmentIntersectsSphere(v1, v2, TVector(), GetBoundingRadius(), vecPoint, vecNormal);
+	if (LineSegmentIntersectsSphere(v1, v2, TVector(), GetBoundingRadius(), tr))
+	{
+		tr.pHit = this;
+		return true;
+	}
+
+	return false;
 }
 
-bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
+bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
+	if (tr.bHit && tr.flFraction == 0)
+		return false;
+
 	if (!ShouldCollide())
 		return false;
 
@@ -792,19 +809,29 @@ bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoin
 
 	if (v1 == v2)
 	{
-		vecPoint = v1;
+		tr.vecHit = v1;
 		TVector vecPosition = v1-GetGlobalOrigin();
 		TFloat flLength = vecPosition.Length();
-		vecNormal = vecPosition/flLength;
+		tr.vecNormal = vecPosition/flLength;
 
-		bool bLess = flLength < GetBoundingRadius();
-		if (bLess)
-			vecPoint += vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+		tr.bHit = flLength < GetBoundingRadius();
+		if (tr.bHit)
+		{
+			tr.vecHit += tr.vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+			tr.flFraction = 0;
+			tr.pHit = this;
+		}
 
-		return bLess;
+		return tr.bHit;
 	}
 
-	return LineSegmentIntersectsSphere(v1, v2, GetGlobalOrigin(), GetBoundingRadius(), vecPoint, vecNormal);
+	if (LineSegmentIntersectsSphere(v1, v2, GetGlobalOrigin(), GetBoundingRadius(), tr))
+	{
+		tr.pHit = this;
+		return true;
+	}
+
+	return false;
 }
 
 void CBaseEntity::SetSpawnSeed(size_t iSpawnSeed)

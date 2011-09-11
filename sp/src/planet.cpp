@@ -177,10 +177,9 @@ void CPlanet::PostRender(bool bTransparent) const
 	if (debug_showplanetcollision.GetBool())
 	{
 		CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
-		CScalableVector vecPoint, vecNormal;
 		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
 		CScalableVector vecUp = pLocalCharacter->GetUpVector();
-		bool bIntersect;
+		CTraceResult tr;
 		
 		if (pLocalCharacter->GetMoveParent() == this)
 		{
@@ -188,26 +187,27 @@ void CPlanet::PostRender(bool bTransparent) const
 			vecUp = mGlobalToLocal.TransformNoTranslate(vecUp);
 			vecForward = mGlobalToLocal.TransformNoTranslate(vecForward);
 			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), CScalableVector(), GetRadius(), vecPoint, vecNormal);
-			vecPoint = GetGlobalTransform() * vecPoint;
-			vecNormal = GetGlobalTransform() * vecNormal;
+			// I would normally never use const_cast if this weren't a block of debug code.
+			const_cast<CPlanet*>(this)->CollideLocal(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), tr);
+			tr.vecHit = GetGlobalTransform() * tr.vecHit;
+			tr.vecNormal = GetGlobalTransform().TransformNoTranslate(tr.vecNormal);
 		}
 		else
 		{
 			CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint, vecNormal);
+			const_cast<CPlanet*>(this)->Collide(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
 		}
 
-		if (bIntersect)
+		if (tr.bHit)
 		{
 			CRenderingContext c(GameServer()->GetRenderer());
 
-			CScalableVector vecRender = vecPoint - pLocalCharacter->GetGlobalOrigin();
-			c.Translate((vecPoint - pLocalCharacter->GetGlobalOrigin()).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+			CScalableVector vecRender = tr.vecHit - pLocalCharacter->GetGlobalOrigin();
+			c.Translate((tr.vecHit - pLocalCharacter->GetGlobalOrigin()).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 			c.SetColor(Color(255, 255, 255));
 			c.BeginRenderDebugLines();
-			c.Vertex(vecNormal*-10000);
-			c.Vertex(vecNormal*10000);
+			c.Vertex(tr.vecNormal*-10000);
+			c.Vertex(tr.vecNormal*10000);
 			c.EndRender();
 			c.SetColor(Color(255, 0, 0));
 			c.BeginRenderDebugLines();
@@ -225,6 +225,7 @@ void CPlanet::PostRender(bool bTransparent) const
 			c.Vertex(Vector(0, 0, 10000));
 			c.EndRender();
 			c.SetColor(Color(255, 255, 255));
+			c.Scale(0.1f, 0.1f, 0.1f);
 			c.RenderSphere();
 		}
 	}
@@ -268,6 +269,82 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_pTerrain[i]->Render(&c);
+}
+
+bool CPlanet::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr)
+{
+	return CollideLocalAccurate(false, v1, v2, tr);
+}
+
+bool CPlanet::CollideLocalAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
+{
+	if (tr.bHit && tr.flFraction == 0)
+		return false;
+
+	if (!ShouldCollide())
+		return false;
+
+	if (GetBoundingRadius() == TFloat(0))
+		return false;
+
+/*	if (v1 == v2)
+	{
+		vecPoint = v1;
+		TFloat flLength = v1.Length();
+		vecNormal = v1/flLength;
+
+		bool bLess = flLength < GetBoundingRadius();
+		if (bLess)
+			vecPoint += vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+
+		return bLess;
+	}*/
+
+	for (size_t i = 0; i < 6; i++)
+		m_pTerrain[i]->CollideLocal(bAccurate, v1, v2, tr);
+
+	if (tr.bHit)
+		tr.pHit = this;
+
+	return tr.bHit;
+}
+
+bool CPlanet::Collide(const TVector& v1, const TVector& v2, CTraceResult& tr)
+{
+	return CollideAccurate(false, v1, v2, tr);
+}
+
+bool CPlanet::CollideAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
+{
+	if (tr.bHit && tr.flFraction == 0)
+		return false;
+
+	if (!ShouldCollide())
+		return false;
+
+	if (GetBoundingRadius() == TFloat(0))
+		return false;
+
+/*	if (v1 == v2)
+	{
+		vecPoint = v1;
+		TFloat flLength = v1.Length();
+		vecNormal = v1/flLength;
+
+		bool bLess = flLength < GetBoundingRadius();
+		if (bLess)
+			vecPoint += vecNormal * ((GetBoundingRadius()-flLength) + TFloat(0.0001f));
+
+		return bLess;
+	}*/
+
+	for (size_t i = 0; i < 6; i++)
+		m_pTerrain[i]->Collide(bAccurate, v1, v2, tr);
+
+	if (tr.bHit)
+		tr.pHit = this;
+
+	return tr.bHit;
 }
 
 void CPlanet::SetRandomSeed(size_t iSeed)

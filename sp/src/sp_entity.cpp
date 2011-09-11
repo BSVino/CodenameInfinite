@@ -18,20 +18,20 @@ SAVEDATA_TABLE_END();
 INPUTS_TABLE_BEGIN(CSPEntity);
 INPUTS_TABLE_END();
 
-bool CSPEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
+bool CSPEntity::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
 	if (v1.Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
 		return false;
 
-	return BaseClass::CollideLocal(v1, v2, vecPoint, vecNormal);
+	return BaseClass::CollideLocal(v1, v2, tr);
 }
 
-bool CSPEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
+bool CSPEntity::Collide(const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
 	if ((v1 - GetGlobalOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
 		return false;
 
-	return BaseClass::Collide(v1, v2, vecPoint, vecNormal);
+	return BaseClass::Collide(v1, v2, tr);
 }
 
 CScalableMatrix CSPEntity::GetScalableRenderTransform() const

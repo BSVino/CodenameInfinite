@@ -39,7 +39,7 @@ public:
 	virtual void								OnTakeDamage(class CBaseEntity* pVictim, class CBaseEntity* pAttacker, class CBaseEntity* pInflictor, float flDamage, bool bDirectHit, bool bKilled) {};
 	virtual void								OnDeleted(class CBaseEntity* pEntity);
 
-	virtual bool								TraceLine(const TVector& s1, const TVector& s2, TVector& vecHit, TVector& vecNormal, CBaseEntity** pHit);
+	virtual bool								TraceLine(const TVector& s1, const TVector& s2, CTraceResult& tr);
 
 	size_t										GetNumPlayers() const { return m_ahPlayers.size(); };
 	CPlayer*									GetPlayer(size_t i) const;

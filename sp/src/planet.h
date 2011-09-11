@@ -30,6 +30,12 @@ public:
 	virtual CScalableFloat		GetRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;
 
+	virtual bool				CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool				CollideLocalAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr);
+
+	virtual bool				Collide(const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool				CollideAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr);
+
 	virtual TFloat				GetBoundingRadius() const { return GetRadius(); };
 
 	void						SetRandomSeed(size_t iSeed);

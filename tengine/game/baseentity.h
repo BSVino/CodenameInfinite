@@ -29,6 +29,18 @@ namespace raytrace
 	class CRaytracer;
 };
 
+class CTraceResult : public TCollisionResult
+{
+public:
+	CTraceResult()
+	{
+		pHit = NULL;
+	}
+
+public:
+	class CBaseEntity*	pHit;
+};
+
 typedef void (*EntityRegisterCallback)();
 typedef size_t (*EntityCreateCallback)();
 
@@ -439,8 +451,8 @@ public:
 
 	virtual TFloat							Distance(const TVector& vecSpot) const;
 
-	virtual bool							CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
-	virtual bool							Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
+	virtual bool							CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool							Collide(const TVector& v1, const TVector& v2, CTraceResult& tr);
 
 	virtual bool							ShouldCollide() const { return false; }
 

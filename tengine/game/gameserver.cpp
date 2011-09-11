@@ -557,67 +557,67 @@ void CGameServer::Simulate()
 			{
 				iTries++;
 
-				TVector vecPoint, vecNormal;
+				CTraceResult trLocal, trGlobal;
 
-				TVector vecLocalCollisionPoint, vecGlobalCollisionPoint;
-
-				bool bContact = false;
 				for (size_t i = 0; i < m_apCollisionList.size(); i++)
 				{
 					CBaseEntity* pEntity2 = m_apCollisionList[i];
 
 					if (pEntity->GetMoveParent() == pEntity2)
 					{
-						if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, vecPoint, vecNormal))
+						if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, trLocal))
 						{
-							bContact = true;
-							pEntity->Touching(pEntity2);
-							vecLocalCollisionPoint = vecPoint;
-							vecGlobalCollisionPoint = pEntity->GetMoveParent()->GetGlobalTransform() * vecPoint;
+							trGlobal.bHit = true;
+							trGlobal.vecHit = pEntity2->GetGlobalTransform() * trLocal.vecHit;
+							trGlobal.vecNormal = trLocal.vecNormal;
+							trGlobal.flFraction = trLocal.flFraction;
 						}
 					}
 					else
 					{
-						if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, vecPoint, vecNormal))
+						if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, trGlobal))
 						{
-							bContact = true;
-							pEntity->Touching(pEntity2);
-							vecGlobalCollisionPoint = vecPoint;
+							trLocal.bHit = true;
+							trLocal.flFraction = trGlobal.flFraction;
 							if (pEntity->GetMoveParent())
 							{
-								vecLocalCollisionPoint = pEntity->GetMoveParent()->GetGlobalToLocalTransform() * vecPoint;
-								vecNormal = pEntity->GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(vecNormal);
+								trLocal.vecHit = pEntity->GetMoveParent()->GetGlobalToLocalTransform() * trGlobal.vecHit;
+								trLocal.vecNormal = pEntity->GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(trGlobal.vecNormal);
 							}
 							else
-								vecLocalCollisionPoint = vecGlobalCollisionPoint;
+							{
+								trLocal.vecHit = trGlobal.vecHit;
+								trLocal.vecNormal = trGlobal.vecNormal;
+							}
 						}
 					}
 				}
 
-				if (bContact)
+				if (trLocal.bHit)
 				{
-					vecNewLocalOrigin = vecLocalCollisionPoint;
-					vecVelocity -= vecLocalCollisionPoint - vecLocalOrigin;
+					pEntity->Touching(trLocal.pHit);
+					vecNewLocalOrigin = trLocal.vecHit;
+					vecVelocity -= trLocal.vecHit - vecLocalOrigin;
 				}
 
-				if (!bContact)
+				if (!trLocal.bHit)
 					break;
 
 				if (iTries > 4)
 					break;
 
-				vecLocalOrigin = vecLocalCollisionPoint;
-				vecGlobalOrigin = vecGlobalCollisionPoint;
+				vecLocalOrigin = trLocal.vecHit;
+				vecGlobalOrigin = trGlobal.vecHit;
 
 				// Clip the velocity to the surface normal of whatever we hit.
-				TFloat flDistance = vecVelocity.Dot(vecNormal);
+				TFloat flDistance = vecVelocity.Dot(trLocal.vecNormal);
 
-				vecVelocity = vecVelocity - vecNormal * flDistance;
+				vecVelocity = vecVelocity - trLocal.vecNormal * flDistance;
 
 				// Do it one more time just to make sure we're not headed towards the plane.
-				TFloat flAdjust = vecVelocity.Dot(vecNormal);
+				TFloat flAdjust = vecVelocity.Dot(trLocal.vecNormal);
 				if (flAdjust < 0.0f)
-					vecVelocity -= (vecNormal * flAdjust);
+					vecVelocity -= (trLocal.vecNormal * flAdjust);
 
 				vecLocalDestination = vecLocalOrigin + vecVelocity;
 

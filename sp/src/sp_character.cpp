@@ -250,16 +250,18 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
-	CScalableVector vecPlanetOrigin = pPlanet->GetGlobalOrigin();
-	CScalableVector vecCharacterOrigin = GetGlobalOrigin();
-	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
-
 	SetMoveParent(pPlanet);
 
-	TVector vecPoint, vecNormal;
-	pPlanet->CollideLocal(vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), vecPoint, vecNormal);
+	CScalableVector vecPlanetOrigin = pPlanet->GetLocalOrigin();
+	CScalableVector vecCharacterOrigin = GetLocalOrigin();
+	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
-	SetLocalOrigin(vecPoint);
+	CTraceResult tr;
+	pPlanet->CollideLocalAccurate(true, vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), tr);
+
+	TAssert(tr.bHit);
+
+	SetLocalOrigin(tr.vecHit);
 }
 
 CScalableFloat CSPCharacter::EyeHeight() const

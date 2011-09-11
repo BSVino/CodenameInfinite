@@ -395,6 +395,7 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 CVar r_showquaddebugoutlines("r_showquaddebugoutlines", "off");
 CVar r_showquadnormals("r_showquadnormals", "off");
 CVar r_showquadoffsets("r_showquadoffsets", "off");
+CVar r_showquadspheres("r_showquadspheres", "-1");
 
 void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class CRenderingContext* c) const
 {
@@ -528,6 +529,17 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 		c->Vertex(vec1);
 	c->EndRender();
 
+	if (r_showquadspheres.GetInt() == pBranch->m_iDepth)
+	{
+		float flRadius = (float)pBranch->m_oData.flGlobalRadius.GetUnits(eRender);
+		CRenderingContext c(GameServer()->GetRenderer());
+		c.BindTexture(0);
+		c.SetColor(Color(255, 255, 255));
+		c.Translate(vecCenter);
+		c.Scale(flRadius, flRadius, flRadius);
+		c.RenderSphere();
+	}
+
 	if (r_showquaddebugoutlines.GetBool())
 	{
 		CRenderingContext c(GameServer()->GetRenderer());
@@ -634,19 +646,13 @@ void CPlanetTerrain::UpdateScreenSize(CTerrainQuadTreeBranch* pBranch)
 		CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
-		CScalableVector vecQuadCenter = pBranch->m_oData.vecGlobalQuadCenter;
-		CScalableVector vecQuadLocalMax = CScalableVector(pBranch->m_oData.vec4, m_pPlanet->GetScale());
-		CScalableVector vecQuadMax = mPlanet * vecQuadLocalMax;
-		CScalableFloat flRadius = (vecQuadCenter-vecQuadMax).Length();
-
-		vecQuadCenter -= vecCharacterOrigin;
+		CScalableVector vecQuadCenter = pBranch->m_oData.vecGlobalQuadCenter - vecCharacterOrigin;
 
 		Vector vecScreen = pRenderer->ScreenPositionAtScale(m_pPlanet->GetScale(), vecQuadCenter.GetUnits(m_pPlanet->GetScale()));
-		Vector vecTop = pRenderer->ScreenPositionAtScale(m_pPlanet->GetScale(), (vecQuadCenter + vecUp*flRadius).GetUnits(m_pPlanet->GetScale()));
+		Vector vecTop = pRenderer->ScreenPositionAtScale(m_pPlanet->GetScale(), (vecQuadCenter + vecUp*pBranch->m_oData.flGlobalRadius).GetUnits(m_pPlanet->GetScale()));
 		float flWidth = (vecTop - vecScreen).Length()*2;
 
 		pBranch->m_oData.flScreenSize = flWidth;
-		pBranch->m_oData.flGlobalRadius = flRadius;
 		pBranch->m_oData.flLastScreenUpdate = GameServer()->GetGameTime();
 	}
 }
@@ -813,9 +819,25 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 		pBranch->m_oData.vec4n = (vec3-vec4).Normalized().Cross((vec2-vec4).Normalized()).Normalized();
 
 		CScalableVector vecQuadCenter(vecCenter, m_pPlanet->GetScale());
-		CScalableVector vecQuadMax(pBranch->m_oData.vec4, m_pPlanet->GetScale());
 
-		CScalableFloat flRadius = (vecQuadCenter - vecQuadMax).Length();
+		CScalableVector vecQuadMax1(pBranch->m_oData.vec1, m_pPlanet->GetScale());
+		CScalableFloat flRadius1 = (vecQuadCenter - vecQuadMax1).Length();
+		CScalableVector vecQuadMax2(pBranch->m_oData.vec2, m_pPlanet->GetScale());
+		CScalableFloat flRadius2 = (vecQuadCenter - vecQuadMax2).Length();
+		CScalableVector vecQuadMax3(pBranch->m_oData.vec3, m_pPlanet->GetScale());
+		CScalableFloat flRadius3 = (vecQuadCenter - vecQuadMax3).Length();
+		CScalableVector vecQuadMax4(pBranch->m_oData.vec4, m_pPlanet->GetScale());
+		CScalableFloat flRadius4 = (vecQuadCenter - vecQuadMax4).Length();
+
+		CScalableFloat flRadius = flRadius1;
+		if (flRadius2 > flRadius)
+			flRadius = flRadius2;
+		if (flRadius3 > flRadius)
+			flRadius = flRadius3;
+		if (flRadius4 > flRadius)
+			flRadius = flRadius4;
+
+		pBranch->m_oData.flGlobalRadius = flRadius;
 		pBranch->m_oData.flRadiusMeters = (float)flRadius.GetUnits(SCALE_METER);
 
 		pBranch->m_oData.vecDetailMin = DoubleVector2D(0, 0);
@@ -849,7 +871,7 @@ float CPlanetTerrain::GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch)
 
 	pBranch->m_oData.iLocalCharacterDotLastFrame = GameServer()->GetFrame();
 
-	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec3n)/2;
+	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec4n)/2;
 
 	return pBranch->m_oData.flLocalCharacterDot = (float)(pBranch->GetCenter()-m_pPlanet->GetCharacterLocalOrigin()).Normalized().Dot(vecNormal);
 }
@@ -1004,3 +1026,123 @@ bool CPlanetTerrain::IsLeaf(CTerrainQuadTreeBranch* pBranch)
 {
 	return pBranch->m_oData.bRender;
 }
+
+bool CPlanetTerrain::CollideLocal(bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
+{
+	InitRenderVectors(m_pQuadTreeHead);
+
+	CTraceResult tr2;
+	if (!LineSegmentIntersectsSphere(v1, v2, CScalableVector(m_pQuadTreeHead->m_oData.vecCenter, m_pPlanet->GetScale()), m_pQuadTreeHead->m_oData.flGlobalRadius, tr2))
+		return false;
+
+	return CollideLocalBranch(m_pQuadTreeHead, bAccurate, v1, v2, tr);
+}
+
+bool CPlanetTerrain::CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
+{
+	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec4n)/2;
+	float flDot = (float)(v2-v1).NormalizedVector().Dot(vecNormal.Normalized());
+
+	if (flDot > 0.2f)
+		return false;
+
+	if (bAccurate && !pBranch->m_pBranches[0] && pBranch->m_oData.flRadiusMeters/2 >= r_terrainresolution.GetFloat())
+		BuildBranch(pBranch, true);
+
+	if (pBranch->m_pBranches[0])
+	{
+		bool bInSphere = false;
+		for (size_t i = 0; i < 4; i++)
+		{
+			InitRenderVectors(pBranch->m_pBranches[i]);
+
+			CTraceResult tr2;
+			LineSegmentIntersectsSphere(v1, v2, CScalableVector(pBranch->m_pBranches[i]->m_oData.vecCenter, m_pPlanet->GetScale()), pBranch->m_pBranches[i]->m_oData.flGlobalRadius, tr2);
+
+			if (tr2.bHit || tr2.bStartInside)
+			{
+				bInSphere = true;
+				CollideLocalBranch(pBranch->m_pBranches[i], bAccurate, v1, v2, tr);
+			}
+		}
+
+		if (tr.bHit)
+			return true;
+
+		if (!bInSphere)
+			return false;
+
+		// If we hit the sphere but didn't hit anything, fall through and test our quad just in case it would have fallen through the cracks.
+	}
+
+	CScalableVector vec1 = CScalableVector(pBranch->m_oData.vec1, m_pPlanet->GetScale());
+	CScalableVector vec2 = CScalableVector(pBranch->m_oData.vec2, m_pPlanet->GetScale());
+	CScalableVector vec3 = CScalableVector(pBranch->m_oData.vec3, m_pPlanet->GetScale());
+	CScalableVector vec4 = CScalableVector(pBranch->m_oData.vec4, m_pPlanet->GetScale());
+
+	if (LineSegmentIntersectsTriangle(v1, v2, vec1, vec2, vec3, tr))
+		return true;
+	if (LineSegmentIntersectsTriangle(v1, v2, vec2, vec4, vec3, tr))
+		return true;
+
+	return false;
+}
+
+bool CPlanetTerrain::Collide(bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
+{
+	InitRenderVectors(m_pQuadTreeHead);
+	CalcRenderVectors(m_pQuadTreeHead);
+
+	CTraceResult tr2;
+	LineSegmentIntersectsSphere(v1, v2, m_pQuadTreeHead->m_oData.vecGlobalQuadCenter, m_pQuadTreeHead->m_oData.flGlobalRadius, tr2);
+	if (tr2.bHit || tr2.bStartInside)
+		return CollideBranch(m_pQuadTreeHead, bAccurate, v1, v2, tr);
+
+	return false;
+}
+
+bool CPlanetTerrain::CollideBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
+{
+	if (bAccurate && !pBranch->m_pBranches[0] && pBranch->m_oData.flRadiusMeters/2 >= r_terrainresolution.GetFloat())
+		BuildBranch(pBranch, true);
+
+	if (pBranch->m_pBranches[0])
+	{
+		bool bInSphere = false;
+		for (size_t i = 0; i < 4; i++)
+		{
+			InitRenderVectors(pBranch->m_pBranches[i]);
+			CalcRenderVectors(pBranch->m_pBranches[i]);
+
+			CTraceResult tr2;
+			LineSegmentIntersectsSphere(v1, v2, pBranch->m_pBranches[i]->m_oData.vecGlobalQuadCenter, pBranch->m_pBranches[i]->m_oData.flGlobalRadius, tr2);
+			if (tr2.bHit || tr2.bStartInside)
+			{
+				bInSphere = true;
+				CollideBranch(pBranch->m_pBranches[i], bAccurate, v1, v2, tr);
+			}
+		}
+
+		if (tr.bHit)
+			return true;
+
+		if (!bInSphere)
+			return false;
+
+		// If we hit the sphere but didn't hit anything, fall through and test our quad just in case it would have fallen through the cracks.
+	}
+
+	CScalableMatrix mPlanet = m_pPlanet->GetGlobalTransform();
+	CScalableVector vec1 = mPlanet * CScalableVector(pBranch->m_oData.vec1, m_pPlanet->GetScale());
+	CScalableVector vec2 = mPlanet * CScalableVector(pBranch->m_oData.vec2, m_pPlanet->GetScale());
+	CScalableVector vec3 = mPlanet * CScalableVector(pBranch->m_oData.vec3, m_pPlanet->GetScale());
+	CScalableVector vec4 = mPlanet * CScalableVector(pBranch->m_oData.vec4, m_pPlanet->GetScale());
+
+	if (LineSegmentIntersectsTriangle(v1, v2, vec1, vec2, vec3, tr))
+		return true;
+	if (LineSegmentIntersectsTriangle(v1, v2, vec2, vec4, vec3, tr))
+		return true;
+
+	return false;
+}
+

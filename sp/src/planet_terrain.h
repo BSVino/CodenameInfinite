@@ -5,6 +5,8 @@
 
 #include <quadtree.h>
 
+#include <tengine/game/baseentity.h>
+
 #include "sp_common.h"
 
 class CBranchData
@@ -93,13 +95,19 @@ public:
 
 	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
 
-	virtual TemplateVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
+	virtual DoubleVector2D		WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
 	virtual DoubleVector		QuadTreeToWorld(const CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree) const;
-	virtual TemplateVector2D<double>	WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
+	virtual DoubleVector2D		WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
 	virtual DoubleVector		QuadTreeToWorld(CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree);
 	virtual DoubleVector		GetBranchCenter(CTerrainQuadTreeBranch* pBranch);
 	virtual bool				ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete);
 	virtual bool				IsLeaf(CTerrainQuadTreeBranch* pBranch);
+
+	virtual bool				CollideLocal(bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
+	virtual bool				CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
+
+	virtual bool				Collide(bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
+	virtual bool				CollideBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
 
 	Vector						GetDirection() const { return m_vecDirection; }
 

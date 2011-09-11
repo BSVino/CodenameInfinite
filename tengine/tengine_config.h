@@ -4,6 +4,7 @@
 #define TFloat CScalableFloat
 #define TVector CScalableVector
 #define TMatrix CScalableMatrix
+#define TCollisionResult CScalableCollisionResult
 
 #include "../sp/src/sp_common.h"
 

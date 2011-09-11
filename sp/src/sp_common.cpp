@@ -571,7 +571,10 @@ CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
 CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 {
 	if (f.m_bZero)
+	{
+		TAssert(!f.m_bZero);
 		return CScalableFloat();
+	}
 
 	// I don't like doing this but there's really no way to do a proper division.
 	double flDivide = (double)f.GetUnits(SCALE_METER);
@@ -1691,10 +1694,25 @@ CScalableMatrix::operator Matrix4x4() const
 	return GetUnits(SCALE_METER);
 }
 
-bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint, CScalableVector& vecNormal)
+bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableCollisionResult& tr)
 {
 	CScalableVector vecLine = v2 - v1;
 	CScalableVector vecSphere = v1 - s;
+
+	if (vecLine.IsZero())
+	{
+		if (vecSphere.Length() < flRadius)
+		{
+			tr.bHit = true;
+			tr.vecHit = v1;
+			tr.flFraction = 0;
+			tr.vecNormal = vecSphere.Normalized();
+			tr.bStartInside = true;
+			return true;
+		}
+		else
+			return false;
+	}
 
 	CScalableFloat flA = vecLine.LengthSqr();
 	CScalableFloat flB = vecSphere.Dot(vecLine) * 2.0f;
@@ -1723,39 +1741,113 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	if (bMinusBelow0 && bPlusAbove1)
 	{
 		// We are inside the sphere.
-		vecPoint = v1;
-		vecNormal = (v1 - s).Normalized();
+		tr.vecHit = v1;
+		tr.vecNormal = (v1 - s).Normalized();
+		tr.flFraction = 0;
+		tr.bStartInside = true;
 		return true;
 	}
 
-	if (bMinusAbove1 && bPlusBelow0)
-	{
-		// We are inside the sphere. Is this even possible? I dunno. I'm putting an assert here to see.
-		// If it's still here later that means no.
-		TAssert(false);
-		vecPoint = v1;
-		vecNormal = (v1 - s).Normalized();
-		return true;
-	}
+	TAssert(!(bMinusAbove1 && bPlusBelow0));
 
 	// If flPlus is below 1 and flMinus is below 0 that means we started our trace inside the sphere and we're heading out.
 	// Don't intersect with the sphere in this case so that things on the inside can get out without getting stuck.
 	if (bMinusBelow0 && !bPlusAbove1)
+	{
+		tr.bStartInside = true;
 		return false;
+	}
+
+	// So at this point, flMinus is between 0 and 1, and flPlus is above 1.
+
+	float flFraction = (float)flMinus.GetUnits(SCALE_METER);
+	if (tr.flFraction < flFraction)
+		return false;
+
+	tr.bHit = true;
+	tr.flFraction = flFraction;
 
 	// In any other case, we intersect with the sphere and we use the flMinus value as the intersection point.
 	CScalableFloat flDistance = vecLine.Length();
 	CScalableVector vecDirection = vecLine / flDistance;
 
-	vecPoint = v1 + vecDirection * (flMinus * flDistance);
+	tr.vecHit = v1 + vecDirection * (flDistance * flFraction);
 
 	// Oftentimes we are slightly stuck inside the sphere. Pull us out a little bit.
-	CScalableVector vecDifference = vecPoint - s;
+	CScalableVector vecDifference = tr.vecHit - s;
 	CScalableFloat flDifferenceLength = vecDifference.Length();
-	vecNormal = vecDifference / flDifferenceLength;
+	tr.vecNormal = vecDifference / flDifferenceLength;
 	if (flDifferenceLength < flRadius)
-		vecPoint += vecNormal * ((flRadius-flDifferenceLength) + CScalableFloat(0.1f, SCALE_MILLIMETER));
-	TAssert((vecPoint - s).Length() >= flRadius);
+		tr.vecHit += tr.vecNormal * ((flRadius-flDifferenceLength) + CScalableFloat(0.1f, SCALE_MILLIMETER));
+	TAssert((tr.vecHit - s).Length() >= flRadius);
 
 	return true;
 }
+
+bool LineSegmentIntersectsTriangle(const CScalableVector& s0, const CScalableVector& s1, const CScalableVector& v0, const CScalableVector& v1, const CScalableVector& v2, CScalableCollisionResult& tr)
+{
+	CScalableVector u = v1 - v0;
+	CScalableVector v = v2 - v0;
+	CScalableVector n = u.Cross(v);
+
+	CScalableVector w0 = s0 - v0;
+
+	CScalableFloat a = -n.Dot(w0);
+	CScalableFloat b = n.Dot(s1-s0);
+
+	CScalableFloat ep = 1e-4f;
+
+	CScalableFloat flZero(0);
+	CScalableFloat flOne(1);
+
+	if ((b<flZero?-b:b) < ep)
+	{
+		if (a.IsZero())			// Segment is parallel
+		{
+			tr.bHit = true;
+			tr.flFraction = 0;
+			tr.vecHit = v0;
+			tr.vecNormal = (v1-v0).Normalized().Cross((v2-v0).Normalized()).Normalized();
+			return true;	// Segment is inside plane
+		}
+		else
+			return false;	// Segment is somewhere else
+	}
+
+	CScalableFloat r = a/b;
+	if (r < flZero)
+		return false;		// Segment goes away from the triangle
+	if (r > flOne)
+		return false;		// Segment goes away from the triangle
+
+	float flFraction = (float)r.GetUnits(SCALE_METER);
+	if (tr.flFraction < flFraction)
+		return false;
+
+	CScalableVector vecPoint = s0 + (s1-s0)*r;
+
+	CScalableFloat uu = u.Dot(u);
+	CScalableFloat uv = u.Dot(v);
+	CScalableFloat vv = v.Dot(v);
+	CScalableVector w = vecPoint - v0;
+	CScalableFloat wu = w.Dot(u);
+	CScalableFloat wv = w.Dot(v);
+
+	CScalableFloat D = uv * uv - uu * vv;
+
+	CScalableFloat s = (uv * wv - vv * wu) / D;
+	if (s <= ep || s >= flOne)		// Intersection point is outside the triangle
+		return false;
+
+	CScalableFloat t = (uv * wu - uu * wv) / D;
+	if (t <= ep || (s+t) >= flOne)	// Intersection point is outside the triangle
+		return false;
+
+	tr.bHit = true;
+	tr.flFraction = flFraction;
+	tr.vecHit = vecPoint;
+	tr.vecNormal = (v1-v0).Normalized().Cross((v2-v0).Normalized()).Normalized();
+
+	return true;
+}
+

@@ -167,67 +167,67 @@ void CCharacter::MoveThink()
 		{
 			iTries++;
 
-			TVector vecPoint, vecNormal;
+			CTraceResult trLocal, trGlobal;
 
-			TVector vecLocalCollisionPoint, vecGlobalCollisionPoint;
-
-			bool bContact = false;
 			for (size_t i = 0; i < apCollisionList.size(); i++)
 			{
 				CBaseEntity* pEntity2 = apCollisionList[i];
 
 				if (GetMoveParent() == pEntity2)
 				{
-					if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, vecPoint, vecNormal))
+					if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, trLocal))
 					{
-						bContact = true;
-						Touching(pEntity2);
-						vecLocalCollisionPoint = vecPoint;
-						vecGlobalCollisionPoint = GetMoveParent()->GetGlobalTransform() * vecPoint;
+						trGlobal.bHit = true;
+						trGlobal.vecHit = GetMoveParent()->GetGlobalTransform() * trLocal.vecHit;
+						trGlobal.vecNormal = trLocal.vecNormal;
+						trGlobal.flFraction = trLocal.flFraction;
 					}
 				}
 				else
 				{
-					if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, vecPoint, vecNormal))
+					if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, trLocal))
 					{
-						bContact = true;
-						Touching(pEntity2);
-						vecGlobalCollisionPoint = vecPoint;
+						trLocal.bHit = true;
+						trLocal.flFraction = trGlobal.flFraction;
 						if (GetMoveParent())
 						{
-							vecLocalCollisionPoint = GetMoveParent()->GetGlobalToLocalTransform() * vecPoint;
-							vecNormal = GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(vecNormal);
+							trLocal.vecHit = GetMoveParent()->GetGlobalToLocalTransform() * trGlobal.vecHit;
+							trLocal.vecNormal = GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(trGlobal.vecNormal);
 						}
 						else
-							vecLocalCollisionPoint = vecGlobalCollisionPoint;
+						{
+							trLocal.vecHit = trGlobal.vecHit;
+							trLocal.vecNormal = trGlobal.vecNormal;
+						}
 					}
 				}
 			}
 
-			if (bContact)
+			if (trLocal.bHit)
 			{
-				vecNewLocalOrigin = vecLocalCollisionPoint;
-				vecVelocity -= vecLocalCollisionPoint - vecLocalOrigin;
+				Touching(trLocal.pHit);
+				vecNewLocalOrigin = trLocal.vecHit;
+				vecVelocity -= trLocal.vecHit - vecLocalOrigin;
 			}
 
-			if (!bContact)
+			if (!trLocal.bHit)
 				break;
 
 			if (iTries > 4)
 				break;
 
-			vecLocalOrigin = vecLocalCollisionPoint;
-			vecGlobalOrigin = vecGlobalCollisionPoint;
+			vecLocalOrigin = trLocal.vecHit;
+			vecGlobalOrigin = trGlobal.vecHit;
 
 			// Clip the velocity to the surface normal of whatever we hit.
-			TFloat flDistance = vecVelocity.Dot(vecNormal);
+			TFloat flDistance = vecVelocity.Dot(trLocal.vecNormal);
 
-			vecVelocity = vecVelocity - vecNormal * flDistance;
+			vecVelocity = vecVelocity - trLocal.vecNormal * flDistance;
 
 			// Do it one more time just to make sure we're not headed towards the plane.
-			TFloat flAdjust = vecVelocity.Dot(vecNormal);
+			TFloat flAdjust = vecVelocity.Dot(trLocal.vecNormal);
 			if (flAdjust < 0.0f)
-				vecVelocity -= (vecNormal * flAdjust);
+				vecVelocity -= (trLocal.vecNormal * flAdjust);
 
 			vecLocalDestination = vecLocalOrigin + vecVelocity;
 
@@ -335,10 +335,10 @@ void CCharacter::ShowPlayerVectors() const
 	c.Vertex(vecEyeHeight + vecUp);
 	c.EndRender();
 
-	TVector vecPoint, vecNormal;
-	if (Game()->TraceLine(GetGlobalOrigin(), GetGlobalOrigin() - GetUpVector()*100, vecPoint, vecNormal, NULL))
+	CTraceResult tr;
+	if (Game()->TraceLine(GetGlobalOrigin(), GetGlobalOrigin() - GetUpVector()*100, tr))
 	{
-		c.Translate(vecPoint - GetGlobalOrigin());
+		c.Translate(tr.vecHit - GetGlobalOrigin());
 		c.Scale(0.1f, 0.1f, 0.1f);
 		c.SetColor(Color(255, 255, 255));
 		c.RenderSphere();
@@ -393,13 +393,13 @@ void CCharacter::FindGroundEntity()
 		if (pEntity == this)
 			continue;
 
-		TVector vecPoint, vecNormal;
 		if (GetMoveParent() == pEntity)
 		{
 			TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
 			Vector vecUpLocal = mGlobalToLocal.TransformNoTranslate(GetUpVector()) * m_flMaxStepSize;
 
-			if (pEntity->CollideLocal(GetLocalOrigin(), GetLocalOrigin() - vecUpLocal, vecPoint, vecNormal))
+			CTraceResult tr;
+			if (pEntity->CollideLocal(GetLocalOrigin(), GetLocalOrigin() - vecUpLocal, tr))
 			{
 				SetGroundEntity(pEntity);
 				SetSimulated(false);
@@ -409,7 +409,8 @@ void CCharacter::FindGroundEntity()
 		}
 		else
 		{
-			if (pEntity->Collide(GetGlobalOrigin(), GetGlobalOrigin() - vecUp, vecPoint, vecNormal))
+			CTraceResult tr;
+			if (pEntity->Collide(GetGlobalOrigin(), GetGlobalOrigin() - vecUp, tr))
 			{
 				SetGroundEntity(pEntity);
 				SetSimulated(false);
