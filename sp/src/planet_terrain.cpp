@@ -1032,10 +1032,11 @@ bool CPlanetTerrain::CollideLocal(bool bAccurate, const CScalableVector& v1, con
 	InitRenderVectors(m_pQuadTreeHead);
 
 	CTraceResult tr2;
-	if (!LineSegmentIntersectsSphere(v1, v2, CScalableVector(m_pQuadTreeHead->m_oData.vecCenter, m_pPlanet->GetScale()), m_pQuadTreeHead->m_oData.flGlobalRadius, tr2))
-		return false;
+	LineSegmentIntersectsSphere(v1, v2, CScalableVector(m_pQuadTreeHead->m_oData.vecCenter, m_pPlanet->GetScale()), m_pQuadTreeHead->m_oData.flGlobalRadius, tr2);
+	if (tr2.bHit || tr2.bStartInside)
+		return CollideLocalBranch(m_pQuadTreeHead, bAccurate, v1, v2, tr);
 
-	return CollideLocalBranch(m_pQuadTreeHead, bAccurate, v1, v2, tr);
+	return false;
 }
 
 bool CPlanetTerrain::CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
