@@ -12,6 +12,7 @@
 #include "sp_renderer.h"
 #include "sp_playercharacter.h"
 #include "planet.h"
+#include "terrain_chunks.h"
 
 CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 	: CTerrainQuadTree()
@@ -87,16 +88,40 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 		{
 			PushBranch(pBranch);
 
-			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-				ThinkBranch(pBranch->m_pBranches[i]);
+			if (pBranch->m_oData.bRender)
+				ProcessBranchRendering(pBranch);
+			else
+			{
+				for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+					ThinkBranch(pBranch->m_pBranches[i]);
+			}
 		}
 		else
 			ProcessBranchRendering(pBranch);
 
 		return;
 	}
+	else if (!pBranch->m_pBranches[0])
+	{
+		TAssert(pBranch->m_iDepth > m_pPlanet->m_iChunkDepth);
 
-	TAssert(pBranch->m_pBranches[0]);
+		// If I can render then maybe my kids can too?
+		if (m_iBuildsThisFrame < r_terrainbuildsperframe.GetInt())
+		{
+			BuildBranch(pBranch);
+
+			if (pBranch->m_pBranches[0])
+				m_iBuildsThisFrame++;
+		}
+
+		if (pBranch->m_pBranches[0])
+		{
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+				ThinkBranch(pBranch->m_pBranches[i]);
+		}
+
+		return;
+	}
 
 	bool bPull = ShouldPull(pBranch);
 
@@ -203,9 +228,19 @@ void CPlanetTerrain::PushBranch(CTerrainQuadTreeBranch* pBranch)
 		// Force building the branch, we want to guarantee it will get built because we need it to push to.
 		BuildBranch(pBranch, true);
 
+	// Don't push past chunk depth. Chunks handle things from there on out.
+	if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
+		return;
+
 	pBranch->m_oData.bRender = false;
 	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 		pBranch->m_pBranches[i]->m_oData.bRender = true;
+
+	if (pBranch->m_pBranches[0]->m_iDepth >= m_pPlanet->m_iChunkDepth)
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			m_pPlanet->m_pTerrainChunkManager->AddChunk(pBranch->m_pBranches[i]);
+	}
 
 	CTerrainQuadTreeBranch* pNeighbor;
 
@@ -272,6 +307,12 @@ void CPlanetTerrain::PullBranch(CTerrainQuadTreeBranch* pBranch)
 	pBranch->m_oData.bRender = true;
 	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 		pBranch->m_pBranches[i]->m_oData.bRender = false;
+
+	if (pBranch->m_pBranches[0]->m_iDepth == m_pPlanet->m_iChunkDepth)
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			m_pPlanet->m_pTerrainChunkManager->RemoveChunk(pBranch->m_pBranches[i]);
+	}
 
 	CTerrainQuadTreeBranch* pNeighbor;
 
@@ -346,6 +387,13 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 
 	if (r_terrainbackfacecull.GetBool() && GetLocalCharacterDot(pBranch) >= 0.1f)
 		return;
+
+	// Let the chunks handle it.
+	if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
+	{
+		m_pPlanet->m_pTerrainChunkManager->ProcessChunkRendering(pBranch);
+		return;
+	}
 
 	CalcRenderVectors(pBranch);
 	UpdateScreenSize(pBranch);
@@ -845,7 +893,6 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 
 		// Count how many divisions it takes to get down to resolution level.
 		float flRadiusMeters = pBranch->m_oData.flRadiusMeters;
-		int iDivisions = 0;
 		while (flRadiusMeters > r_terrainresolution.GetFloat())
 		{
 			flRadiusMeters /= 2;
@@ -1050,7 +1097,7 @@ bool CPlanetTerrain::CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bA
 	if (bAccurate && !pBranch->m_pBranches[0] && pBranch->m_oData.flRadiusMeters/2 >= r_terrainresolution.GetFloat())
 		BuildBranch(pBranch, true);
 
-	if (pBranch->m_pBranches[0])
+	if (pBranch->m_pBranches[0] && pBranch->m_iDepth <= m_pPlanet->m_iChunkDepth)
 	{
 		bool bInSphere = false;
 		for (size_t i = 0; i < 4; i++)
@@ -1107,7 +1154,7 @@ bool CPlanetTerrain::CollideBranch(CTerrainQuadTreeBranch* pBranch, bool bAccura
 	if (bAccurate && !pBranch->m_pBranches[0] && pBranch->m_oData.flRadiusMeters/2 >= r_terrainresolution.GetFloat())
 		BuildBranch(pBranch, true);
 
-	if (pBranch->m_pBranches[0])
+	if (pBranch->m_pBranches[0] && pBranch->m_iDepth <= m_pPlanet->m_iChunkDepth)
 	{
 		bool bInSphere = false;
 		for (size_t i = 0; i < 4; i++)

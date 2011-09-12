@@ -14,6 +14,7 @@
 #include "sp_playercharacter.h"
 #include "star.h"
 #include "planet_terrain.h"
+#include "terrain_chunks.h"
 
 REGISTER_ENTITY(CPlanet);
 
@@ -62,10 +63,14 @@ CPlanet::CPlanet()
 		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
 		m_pTerrain[i]->Init();
 	}
+
+	m_pTerrainChunkManager = new CTerrainChunkManager(this);
 }
 
 CPlanet::~CPlanet()
 {
+	delete m_pTerrainChunkManager;
+
 	for (size_t i = 0; i < 6; i++)
 		delete m_pTerrain[i];
 }
@@ -157,7 +162,7 @@ bool CPlanet::ShouldRenderAtScale(scale_t eScale) const
 
 CScalableFloat CPlanet::GetRenderRadius() const
 {
-	return m_flRadius;
+	return m_flRadius + GetAtmosphereThickness();
 }
 
 CVar r_colorcodescales("r_colorcodescales", "off");
@@ -269,6 +274,8 @@ void CPlanet::PostRender(bool bTransparent) const
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_pTerrain[i]->Render(&c);
+
+	m_pTerrainChunkManager->Render();
 }
 
 bool CPlanet::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr)
@@ -362,6 +369,16 @@ void CPlanet::SetRandomSeed(size_t iSeed)
 		for (size_t j = 0; j < 3; j++)
 			m_aNoiseArray[i][j].Init(iSeed+i*3+j);
 	}
+}
+
+void CPlanet::SetRadius(const CScalableFloat& flRadius)
+{
+	m_flRadius = flRadius;
+
+	m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters = 0;
+	m_pTerrain[0]->InitRenderVectors(m_pTerrain[0]->m_pQuadTreeHead);
+	int iMeterDepth = (int)(log(m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters)/log(2.0f));
+	m_iChunkDepth = iMeterDepth - 11;
 }
 
 CScalableFloat CPlanet::GetCloseOrbit()

@@ -40,11 +40,11 @@ public:
 
 	void						SetRandomSeed(size_t iSeed);
 
-	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
+	void						SetRadius(const CScalableFloat& flRadius);
 	CScalableFloat				GetRadius() const { return m_flRadius; }
 
 	void						SetAtmosphereThickness(const CScalableFloat& flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
-	const CScalableFloat&		GetAtmosphereThickness() { return m_flAtmosphereThickness; }
+	const CScalableFloat&		GetAtmosphereThickness() const { return m_flAtmosphereThickness; }
 
 	void						SetPlanetName(const tstring& sName) { m_sPlanetName = sName; }
 	tstring						GetPlanetName() const { return m_sPlanetName; }
@@ -71,6 +71,7 @@ protected:
 	CScalableFloat				m_flAtmosphereThickness;
 	float						m_flMinutesPerRevolution;
 	int							m_iMinQuadRenderDepth;
+	int							m_iChunkDepth;
 
 	bool						m_bOneSurface;
 
@@ -91,10 +92,12 @@ protected:
 		CPlanetTerrain*			m_pTerrain[6];
 	};
 
-	static DoubleVector			s_vecCharacterLocalOrigin;
+	class CTerrainChunkManager*	m_pTerrainChunkManager;
 
 	// 10 levels deep, 3 channels (x, y, z)
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];
+
+	static DoubleVector			s_vecCharacterLocalOrigin;
 };
 
 #endif
