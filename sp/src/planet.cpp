@@ -278,6 +278,9 @@ bool CPlanet::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& t
 
 bool CPlanet::CollideLocalAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
+	if (v1.Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
+		return false;
+
 	if (tr.bHit && tr.flFraction == 0)
 		return false;
 
@@ -316,6 +319,9 @@ bool CPlanet::Collide(const TVector& v1, const TVector& v2, CTraceResult& tr)
 
 bool CPlanet::CollideAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
+	if ((v1 - GetGlobalOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
+		return false;
+
 	if (tr.bHit && tr.flFraction == 0)
 		return false;
 
