@@ -103,6 +103,17 @@ inline double RemapVal(const CScalableFloat& flInput, const CScalableFloat& flIn
 	return (f.GetUnits(SCALE_METER) * (flOutHi-flOutLo)) + flOutLo;
 }
 
+inline CScalableFloat RemapValClamped(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)
+{
+	if (flInput < flInLo)
+		return flOutLo;
+
+	if (flInput > flInHi)
+		return flOutHi;
+
+	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
+}
+
 class CScalableVector
 {
 	friend class CScalableMatrix;

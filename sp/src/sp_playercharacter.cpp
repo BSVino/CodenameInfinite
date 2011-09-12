@@ -117,7 +117,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 		if (flDistance < flAtmosphere)
 		{
 			CScalableFloat flGroundSpeed = CScalableFloat(0.5f, SCALE_KILOMETER);
-			return RemapVal(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
+			return RemapValClamped(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
 		if (flDistance > flCloseOrbit)
