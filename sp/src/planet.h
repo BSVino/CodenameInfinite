@@ -2,18 +2,74 @@
 #define SP_PLANET_H
 
 #include <simplex.h>
+#include <geometry.h>
 
-#include "sp_entity.h"
+#include <tengine/game/baseentity.h>
 
 #define TERRAIN_NOISE_ARRAY_SIZE 15
 
 class CPlanetTerrain;
 
-class CPlanet : public CSPEntity
+template <class T, class F>
+class COctree;
+template <class T, class F>
+class COctreeBranch;
+template <class T, class F>
+class CQuadTreeBranch;
+class CBranchData;
+class CTerrainChunk;
+
+class CChunkOrQuad
+{
+public:
+	CChunkOrQuad()
+	{
+		m_pPlanet = NULL;
+		m_iChunk = ~0;
+		m_pQuad = NULL;
+	}
+
+	CChunkOrQuad(class CPlanet* pPlanet, size_t iChunk)
+	{
+		m_pPlanet = pPlanet;
+		m_iChunk = iChunk;
+		m_pQuad = NULL;
+	}
+
+	CChunkOrQuad(class CPlanet* pPlanet, CQuadTreeBranch<CBranchData, double>* pQuad)
+	{
+		m_pPlanet = pPlanet;
+		m_iChunk = ~0;
+		m_pQuad = pQuad;
+	}
+
+public:
+	bool Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr);
+
+	bool operator == (const CChunkOrQuad& r)
+	{
+		if (m_iChunk != ~0 && m_iChunk == r.m_iChunk)
+			return true;
+
+		if (m_pQuad && m_pQuad == r.m_pQuad)
+			return true;
+
+		return false;
+	}
+
+public:
+	class CPlanet*							m_pPlanet;
+	size_t									m_iChunk;
+	CQuadTreeBranch<CBranchData, double>*	m_pQuad;
+};
+
+class CPlanet : public CBaseEntity
 {
 	friend class CPlanetTerrain;
+	friend class CTerrainChunkManager;
+	friend class CChunkOrQuad;
+	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
 
-	REGISTER_ENTITY_CLASS(CPlanet, CSPEntity);
 public:
 								CPlanet();
 	virtual						~CPlanet();
@@ -25,16 +81,19 @@ public:
 	virtual void				Think();
 	virtual void				RenderUpdate();
 
+	virtual bool				ShouldRender() const { return true; };
 	virtual bool				ShouldRenderAtScale(scale_t eScale) const;
 
 	virtual CScalableFloat		GetRenderRadius() const;
 	virtual void				PostRender(bool bTransparent) const;
 
-	virtual bool				CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr);
-	virtual bool				CollideLocalAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool				CollideLocal(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool				CollideLocalAccurate(const CBaseEntity* pWith, bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr);
 
-	virtual bool				Collide(const TVector& v1, const TVector& v2, CTraceResult& tr);
-	virtual bool				CollideAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool				Collide(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool				CollideAccurate(const CBaseEntity* pWith, bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr);
+
+	virtual bool				ShouldCollide() const { return true; }
 
 	virtual TFloat				GetBoundingRadius() const { return GetRadius(); };
 
@@ -63,6 +122,7 @@ public:
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
 	void						Debug_RebuildTerrain();
+	void						Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
 
 protected:
 	size_t						m_iRandomSeed;
@@ -93,6 +153,7 @@ protected:
 	};
 
 	class CTerrainChunkManager*	m_pTerrainChunkManager;
+	COctree<CChunkOrQuad, double>* m_pOctree;
 
 	// 10 levels deep, 3 channels (x, y, z)
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];

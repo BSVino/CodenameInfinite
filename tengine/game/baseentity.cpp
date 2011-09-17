@@ -86,6 +86,8 @@ INPUTS_TABLE_END();
 
 CBaseEntity::CBaseEntity()
 {
+	m_oGameData.SetEntity(this);
+
 	if (s_iOverrideEntityListIndex == ~0)
 		m_iHandle = s_iNextEntityListIndex;
 	else
@@ -549,7 +551,7 @@ void CBaseEntity::Render(bool bTransparent) const
 
 	do {
 		CRenderingContext r(GameServer()->GetRenderer());
-		r.Transform(GetRenderTransform());
+		r.Transform(BaseGetRenderTransform());
 
 		ModifyContext(&r, bTransparent);
 
@@ -758,7 +760,7 @@ TFloat CBaseEntity::Distance(const TVector& vecSpot) const
 	return flDistance - GetBoundingRadius();
 }
 
-bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr)
+bool CBaseEntity::CollideLocal(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
 	if (tr.bHit && tr.flFraction == 0)
 		return false;
@@ -796,7 +798,7 @@ bool CBaseEntity::CollideLocal(const TVector& v1, const TVector& v2, CTraceResul
 	return false;
 }
 
-bool CBaseEntity::Collide(const TVector& v1, const TVector& v2, CTraceResult& tr)
+bool CBaseEntity::Collide(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
 	if (tr.bHit && tr.flFraction == 0)
 		return false;

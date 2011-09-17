@@ -10,10 +10,12 @@
 #include <common.h>
 
 #include <tengine_config.h>
+#include <tengine_config_data.h>
 
 #include <network/network.h>
 
 #include "entityhandle.h"
+#include "traceresult.h"
 
 typedef enum
 {
@@ -27,18 +29,6 @@ typedef enum
 namespace raytrace
 {
 	class CRaytracer;
-};
-
-class CTraceResult : public TCollisionResult
-{
-public:
-	CTraceResult()
-	{
-		pHit = NULL;
-	}
-
-public:
-	class CBaseEntity*	pHit;
 };
 
 typedef void (*EntityRegisterCallback)();
@@ -322,12 +312,18 @@ public:
 	void									SetName(const eastl::string& sName) { m_sName = sName; };
 	eastl::string							GetName() { return m_sName; };
 
+	CGameEntityData&						GameData() { return m_oGameData; }
+	const CGameEntityData&					GameData() const { return m_oGameData; }
+
 	virtual TFloat							GetBoundingRadius() const { return 0; };
 	virtual TFloat							GetRenderRadius() const { return GetBoundingRadius(); };
 
 	void									SetModel(const tstring& sModel);
 	void									SetModel(size_t iModel);
 	size_t									GetModel() const { return m_iModel; };
+
+	Matrix4x4								BaseGetRenderTransform() const { return m_oGameData.GetRenderTransform(); };
+	Vector									BaseGetRenderOrigin() const { return m_oGameData.GetRenderOrigin(); };
 
 	virtual Matrix4x4						GetRenderTransform() const { return Matrix4x4(GetGlobalTransform()); };
 	virtual Vector							GetRenderOrigin() const { return Vector(GetGlobalOrigin()); };
@@ -433,6 +429,7 @@ public:
 	void									SetDeleted() { m_bDeleted = true; }
 	DECLARE_ENTITY_INPUT(Delete);
 
+	void									BaseThink() { m_oGameData.Think(); };
 	virtual void							Think() {};
 
 	virtual bool							ShouldSimulate() const { return GetSimulated(); };
@@ -451,8 +448,11 @@ public:
 
 	virtual TFloat							Distance(const TVector& vecSpot) const;
 
-	virtual bool							CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr);
-	virtual bool							Collide(const TVector& v1, const TVector& v2, CTraceResult& tr);
+	bool									BaseCollideLocal(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr) { return m_oGameData.CollideLocal(pWith, v1, v2, tr); };
+	bool									BaseCollide(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr) { return m_oGameData.Collide(pWith, v1, v2, tr); };
+
+	virtual bool							CollideLocal(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr);
+	virtual bool							Collide(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr);
 
 	virtual bool							ShouldCollide() const { return false; }
 
@@ -557,6 +557,8 @@ protected:
 
 	size_t									m_iSpawnSeed;
 	CNetworkedVariable<float>				m_flSpawnTime;
+
+	CGameEntityData							m_oGameData;
 
 private:
 	static eastl::vector<CBaseEntity*>		s_apEntityList;

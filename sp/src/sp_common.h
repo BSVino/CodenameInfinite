@@ -231,7 +231,7 @@ public:
 public:
 	bool				bHit;
 	bool				bStartInside;
-	float				flFraction;
+	double				flFraction;
 	CScalableVector		vecHit;
 	CScalableVector		vecNormal;
 };

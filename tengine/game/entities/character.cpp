@@ -175,7 +175,7 @@ void CCharacter::MoveThink()
 
 				if (GetMoveParent() == pEntity2)
 				{
-					if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, trLocal))
+					if (pEntity2->BaseCollideLocal(this, vecLocalOrigin, vecLocalDestination, trLocal))
 					{
 						trGlobal.bHit = true;
 						trGlobal.vecHit = GetMoveParent()->GetGlobalTransform() * trLocal.vecHit;
@@ -185,7 +185,7 @@ void CCharacter::MoveThink()
 				}
 				else
 				{
-					if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, trLocal))
+					if (pEntity2->BaseCollide(this, vecGlobalOrigin, vecGlobalDestination, trLocal))
 					{
 						trLocal.bHit = true;
 						trLocal.flFraction = trGlobal.flFraction;
@@ -336,7 +336,7 @@ void CCharacter::ShowPlayerVectors() const
 	c.EndRender();
 
 	CTraceResult tr;
-	if (Game()->TraceLine(GetGlobalOrigin(), GetGlobalOrigin() - GetUpVector()*100, tr))
+	if (Game()->TraceLine(this, GetGlobalOrigin(), GetGlobalOrigin() - GetUpVector()*100, tr))
 	{
 		c.Translate(tr.vecHit - GetGlobalOrigin());
 		c.Scale(0.1f, 0.1f, 0.1f);
@@ -399,7 +399,7 @@ void CCharacter::FindGroundEntity()
 			Vector vecUpLocal = mGlobalToLocal.TransformNoTranslate(GetUpVector()) * m_flMaxStepSize;
 
 			CTraceResult tr;
-			if (pEntity->CollideLocal(GetLocalOrigin(), GetLocalOrigin() - vecUpLocal, tr))
+			if (pEntity->BaseCollideLocal(this, GetLocalOrigin(), GetLocalOrigin() - vecUpLocal, tr))
 			{
 				SetGroundEntity(pEntity);
 				SetSimulated(false);
@@ -410,7 +410,7 @@ void CCharacter::FindGroundEntity()
 		else
 		{
 			CTraceResult tr;
-			if (pEntity->Collide(GetGlobalOrigin(), GetGlobalOrigin() - vecUp, tr))
+			if (pEntity->BaseCollide(this, GetGlobalOrigin(), GetGlobalOrigin() - vecUp, tr))
 			{
 				SetGroundEntity(pEntity);
 				SetSimulated(false);

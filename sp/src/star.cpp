@@ -42,7 +42,7 @@ void CStar::PostRender(bool bTransparent) const
 		return;
 
 	CRenderingContext c(GameServer()->GetRenderer());
-	c.Transform(GetRenderTransform());
+	c.Transform(BaseGetRenderTransform());
 	c.SetBlend(BLEND_ADDITIVE);
 	c.SetColor(Color(255, 255, 255, 255));
 	c.SetLighting(false);

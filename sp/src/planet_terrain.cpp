@@ -2,6 +2,7 @@
 
 #include <geometry.h>
 #include <mtrand.h>
+#include <octree.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -214,6 +215,19 @@ void CPlanetTerrain::BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce)
 		pBranch->m_pBranches[1]->m_oData.vecOffset3 = pBranch->m_oData.vecOffsetCenter;
 		pBranch->m_pBranches[2]->m_oData.vecOffset2 = pBranch->m_oData.vecOffsetCenter;
 		pBranch->m_pBranches[3]->m_oData.vecOffset1 = pBranch->m_oData.vecOffsetCenter;
+
+		// Update the octree with these collisions.
+		m_pPlanet->m_pOctree->RemoveObject(CChunkOrQuad(m_pPlanet, pBranch));
+
+		if (pBranch->m_pBranches[0]->m_iDepth < m_pPlanet->m_iChunkDepth)
+		{
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			{
+				InitRenderVectors(pBranch->m_pBranches[i]);
+				double flRadius = pBranch->m_pBranches[i]->m_oData.flGlobalRadius.GetUnits(m_pPlanet->GetScale());
+				m_pPlanet->m_pOctree->AddObject(CChunkOrQuad(m_pPlanet, pBranch->m_pBranches[i]), TemplateAABB<double>(pBranch->m_pBranches[i]->GetCenter() - DoubleVector(flRadius, flRadius, flRadius), pBranch->m_pBranches[i]->GetCenter() + DoubleVector(flRadius, flRadius, flRadius)));
+			}
+		}
 	}
 
 	// If I create branches this frame, be sure to test right away if we should push them.
@@ -1074,7 +1088,7 @@ bool CPlanetTerrain::IsLeaf(CTerrainQuadTreeBranch* pBranch)
 	return pBranch->m_oData.bRender;
 }
 
-bool CPlanetTerrain::CollideLocal(bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
+bool CPlanetTerrain::CollideLocal(const CBaseEntity* pWith, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
 {
 	InitRenderVectors(m_pQuadTreeHead);
 
@@ -1136,7 +1150,7 @@ bool CPlanetTerrain::CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bA
 	return false;
 }
 
-bool CPlanetTerrain::Collide(bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
+bool CPlanetTerrain::Collide(const CBaseEntity* pWith, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
 {
 	InitRenderVectors(m_pQuadTreeHead);
 	CalcRenderVectors(m_pQuadTreeHead);

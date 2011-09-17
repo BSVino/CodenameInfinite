@@ -257,7 +257,7 @@ void CSPCharacter::StandOnNearestPlanet()
 	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
 	CTraceResult tr;
-	pPlanet->CollideLocalAccurate(true, vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), tr);
+	pPlanet->CollideLocalAccurate(this, true, vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), tr);
 
 	TAssert(tr.bHit);
 

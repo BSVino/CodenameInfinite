@@ -565,7 +565,7 @@ void CGameServer::Simulate()
 
 					if (pEntity->GetMoveParent() == pEntity2)
 					{
-						if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, trLocal))
+						if (pEntity2->BaseCollideLocal(pEntity, vecLocalOrigin, vecLocalDestination, trLocal))
 						{
 							trGlobal.bHit = true;
 							trGlobal.vecHit = pEntity2->GetGlobalTransform() * trLocal.vecHit;
@@ -575,7 +575,7 @@ void CGameServer::Simulate()
 					}
 					else
 					{
-						if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, trGlobal))
+						if (pEntity2->BaseCollide(pEntity, vecGlobalOrigin, vecGlobalDestination, trGlobal))
 						{
 							trLocal.bHit = true;
 							trLocal.flFraction = trGlobal.flFraction;

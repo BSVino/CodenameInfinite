@@ -29,71 +29,26 @@ CRaytracer::~CRaytracer()
 		delete m_pTree;
 }
 
-bool CRaytracer::Raytrace(const Ray& rayTrace, CTraceResult* pTR)
+bool CRaytracer::Raytrace(const Ray& rayTrace, CCollisionResult& tr)
 {
-	if (!m_pTree)
-		return RaytraceBruteForce(rayTrace, pTR);
+	// Has not been tested since the change to CCollisionResult
+	TAssert(false);
 
-	return m_pTree->Raytrace(rayTrace, pTR);
+	if (!m_pTree)
+	{
+		TAssert(m_pTree);
+		return false;
+	}
+
+	return m_pTree->Raytrace(rayTrace, tr);
 }
 
-bool CRaytracer::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResult* pTR)
+bool CRaytracer::Raytrace(const Vector& vecStart, const Vector& vecEnd, CCollisionResult& tr)
 {
 	if (!m_pTree)
 		return false;
 
-	return m_pTree->Raytrace(vecStart, vecEnd, pTR);
-}
-
-bool CRaytracer::RaytraceBruteForce(const Ray& rayTrace, CTraceResult* pTR)
-{
-	// Brute force method.
-	Vector vecClosest;
-	CConversionFace* pFaceClosest;
-	bool bFound = false;
-
-	for (size_t m = 0; m < m_pScene->GetNumMeshes(); m++)
-	{
-		CConversionMesh* pMesh = m_pScene->GetMesh(m);
-		for (size_t f = 0; f < pMesh->GetNumFaces(); f++)
-		{
-			CConversionFace* pFace = pMesh->GetFace(f);
-			for (size_t t = 0; t < pFace->GetNumVertices()-2; t++)
-			{
-				CConversionVertex* pV1 = pFace->GetVertex(0);
-				CConversionVertex* pV2 = pFace->GetVertex(t+1);
-				CConversionVertex* pV3 = pFace->GetVertex(t+2);
-
-				Vector v1 = pMesh->GetVertex(pV1->v);
-				Vector v2 = pMesh->GetVertex(pV2->v);
-				Vector v3 = pMesh->GetVertex(pV3->v);
-
-				Vector vecHit;
-				if (RayIntersectsTriangle(rayTrace, v1, v2, v3, &vecHit))
-				{
-					if (!bFound || (vecHit - rayTrace.m_vecPos).LengthSqr() < (vecClosest - rayTrace.m_vecPos).LengthSqr())
-					{
-						bFound = true;
-						vecClosest = vecHit;
-						pFaceClosest = pFace;
-					}
-				}
-			}
-		}
-	}
-
-	if (bFound)
-	{
-		if (pTR)
-		{
-			pTR->m_vecHit = vecClosest;
-			pTR->m_pFace = pFaceClosest;
-			pTR->m_pMeshInstance = NULL;
-		}
-		return true;
-	}
-
-	return false;
+	return m_pTree->Raytrace(vecStart, vecEnd, tr);
 }
 
 float CRaytracer::Closest(const Vector& vecPoint)
@@ -118,6 +73,14 @@ void CRaytracer::RemoveArea(const AABB& oBox)
 		return;
 
 	m_pTree->RemoveArea(oBox);
+}
+
+void CRaytracer::SetMaxDepth(size_t iMaxDepth)
+{
+	m_iMaxDepth = iMaxDepth;
+
+	if (m_pTree)
+		m_pTree->SetMaxDepth(iMaxDepth);
 }
 
 void CRaytracer::AddMeshesFromNode(CConversionSceneNode* pNode)
@@ -215,26 +178,30 @@ void CKDTree::BuildTree()
 	m_bBuilt = true;
 }
 
-bool CKDTree::Raytrace(const Ray& rayTrace, CTraceResult* pTR)
+bool CKDTree::Raytrace(const Ray& rayTrace, CCollisionResult& tr)
 {
+	// Has not been tested since the change to CCollisionResult
+	TAssert(false);
+
 	if (!m_bBuilt)
 		BuildTree();
 
 	if (!RayIntersectsAABB(rayTrace, m_pTop->GetBounds()))
 		return false;
 
-	return m_pTop->Raytrace(rayTrace, pTR);
+	return m_pTop->Raytrace(rayTrace, tr);
 }
 
-bool CKDTree::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResult* pTR)
+bool CKDTree::Raytrace(const Vector& vecStart, const Vector& vecEnd, CCollisionResult& tr)
 {
 	if (!m_bBuilt)
 		BuildTree();
 
-	if (!SegmentIntersectsAABB(vecStart, vecEnd, m_pTop->GetBounds()))
+	CCollisionResult cr;
+	if (!SegmentIntersectsAABB(vecStart, vecEnd, m_pTop->GetBounds(), cr))
 		return false;
 
-	return m_pTop->Raytrace(vecStart, vecEnd, pTR);
+	return m_pTop->Raytrace(vecStart, vecEnd, tr);
 }
 
 float CKDTree::Closest(const Vector& vecPoint)
@@ -512,8 +479,11 @@ void CKDNode::Build()
 	m_iTriangles = m_pLeft->m_iTriangles + m_pRight->m_iTriangles;
 }
 
-bool CKDNode::Raytrace(const Ray& rayTrace, CTraceResult* pTR)
+bool CKDNode::Raytrace(const Ray& rayTrace, CCollisionResult& tr)
 {
+	// Has not been tested since the change to CCollisionResult
+	TAssert(false);
+
 	CKDNode* pThis = this;
 
 	while (pThis->m_pLeft)
@@ -548,7 +518,7 @@ bool CKDNode::Raytrace(const Ray& rayTrace, CTraceResult* pTR)
 			pFarther = pThis->m_pLeft;
 		}
 
-		if (pCloser->Raytrace(rayTrace, pTR))
+		if (pCloser->Raytrace(rayTrace, tr))
 			return true;
 		else
 		{
@@ -604,28 +574,18 @@ bool CKDNode::Raytrace(const Ray& rayTrace, CTraceResult* pTR)
 #endif
 	}
 
-	if (bFound)
-	{
-		if (pTR)
-		{
-			pTR->m_vecHit = vecClosest;
-			pTR->m_pFace = pClosestTri->m_pFace;
-			pTR->m_pMeshInstance = pClosestTri->m_pMeshInstance;
-		}
-		return true;
-	}
-
-	return false;
+	return tr.bHit;
 }
 
-bool CKDNode::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResult* pTR)
+bool CKDNode::Raytrace(const Vector& vecStart, const Vector& vecEnd, CCollisionResult& tr)
 {
 	CKDNode* pThis = this;
 
 	while (pThis->m_pLeft)
 	{
-		bool bHitsLeft = SegmentIntersectsAABB(vecStart, vecEnd, pThis->m_pLeft->m_oBounds);
-		bool bHitsRight = SegmentIntersectsAABB(vecStart, vecEnd, pThis->m_pRight->m_oBounds);
+		CCollisionResult cr1, cr2;
+		bool bHitsLeft = SegmentIntersectsAABB(vecStart, vecEnd, pThis->m_pLeft->m_oBounds, cr1);
+		bool bHitsRight = SegmentIntersectsAABB(vecStart, vecEnd, pThis->m_pRight->m_oBounds, cr2);
 
 #ifdef _DEBUG
 		// If it hit this node then it's got to hit one of our child nodes since both child nodes add up to this one.
@@ -656,7 +616,7 @@ bool CKDNode::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResul
 			pFarther = pThis->m_pLeft;
 		}
 
-		if (pCloser->Raytrace(vecStart, vecEnd, pTR))
+		if (pCloser->Raytrace(vecStart, vecEnd, tr))
 			return true;
 		else
 		{
@@ -673,21 +633,17 @@ bool CKDNode::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResul
 
 	// No children. Test all triangles in this node.
 
-	Vector vecClosest;
-	CKDTri* pClosestTri;
-	bool bFound = false;
-
 	for (size_t i = 0; i < pThis->m_aTris.size(); i++)
 	{
 		CKDTri& oTri = pThis->m_aTris[i];
 
-		Vector vecHit;
-		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, oTri.v[0], oTri.v[1], oTri.v[2], &vecHit))
+		CCollisionResult cr;
+		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, oTri.v[0], oTri.v[1], oTri.v[2], cr))
 		{
 			// Sometimes a try will touch a closer leaf node,
 			// but actually intersect the ray in the back, so
 			// only accept hits inside this box.
-			if (!PointInsideAABB(pThis->m_oBounds, vecHit))
+			if (!PointInsideAABB(pThis->m_oBounds, cr.vecHit))
 			{
 #ifdef DEBUG_WITH_GL
 				DrawTri(oTri.v[0], oTri.v[1], oTri.v[2], 0.0f, 1.0f, 0.0f);
@@ -695,11 +651,13 @@ bool CKDNode::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResul
 				continue;
 			}
 
-			if (!bFound || (vecHit - vecStart).LengthSqr() < (vecClosest - vecStart).LengthSqr())
+			if (cr.flFraction < tr.flFraction)
 			{
-				bFound = true;
-				vecClosest = vecHit;
-				pClosestTri = &oTri;
+				tr.bHit = cr.bHit;
+				tr.flFraction = cr.flFraction;
+				tr.bStartInside &= cr.bStartInside;
+				tr.vecHit = cr.vecHit;
+				tr.vecNormal = cr.vecNormal;
 			}
 
 #ifdef DEBUG_WITH_GL
@@ -712,18 +670,7 @@ bool CKDNode::Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResul
 #endif
 	}
 
-	if (bFound)
-	{
-		if (pTR)
-		{
-			pTR->m_vecHit = vecClosest;
-			pTR->m_pFace = pClosestTri->m_pFace;
-			pTR->m_pMeshInstance = pClosestTri->m_pMeshInstance;
-		}
-		return true;
-	}
-
-	return false;
+	return tr.bHit;
 }
 
 float CKDNode::Closest(const Vector& vecPoint)

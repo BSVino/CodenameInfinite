@@ -26,6 +26,7 @@ endif (WIN32)
 
 set (TENGINE_SOURCES
 	game/baseentity.cpp
+	game/baseentitydata.cpp
 	game/camera.cpp
 	game/game.cpp
 	game/gameserver.cpp

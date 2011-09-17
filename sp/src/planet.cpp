@@ -1,6 +1,7 @@
 #include "planet.h"
 
 #include <geometry.h>
+#include <octree.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -64,12 +65,17 @@ CPlanet::CPlanet()
 		m_pTerrain[i]->Init();
 	}
 
+	m_pOctree = NULL;
+
 	m_pTerrainChunkManager = new CTerrainChunkManager(this);
 }
 
 CPlanet::~CPlanet()
 {
 	delete m_pTerrainChunkManager;
+
+	if (m_pOctree)
+		delete m_pOctree;
 
 	for (size_t i = 0; i < 6; i++)
 		delete m_pTerrain[i];
@@ -167,6 +173,8 @@ CScalableFloat CPlanet::GetRenderRadius() const
 
 CVar r_colorcodescales("r_colorcodescales", "off");
 CVar debug_showplanetcollision("debug_showplanetcollision", "off");
+CVar r_planetoctree("r_planetoctree", "off");
+CVar r_planets("r_planets", "on");
 
 void CPlanet::PostRender(bool bTransparent) const
 {
@@ -178,6 +186,9 @@ void CPlanet::PostRender(bool bTransparent) const
 	TPROF("CPlanet::PostRender");
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+
+	if (r_planetoctree.GetBool() && eScale == SCALE_MEGAMETER)
+		Debug_RenderOctree(m_pOctree->GetHead());
 
 	if (debug_showplanetcollision.GetBool())
 	{
@@ -193,14 +204,19 @@ void CPlanet::PostRender(bool bTransparent) const
 			vecForward = mGlobalToLocal.TransformNoTranslate(vecForward);
 			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
 			// I would normally never use const_cast if this weren't a block of debug code.
-			const_cast<CPlanet*>(this)->CollideLocal(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), tr);
+			const_cast<CPlanet*>(this)->CollideLocal(const_cast<CPlanet*>(this), vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), tr);
 			tr.vecHit = GetGlobalTransform() * tr.vecHit;
 			tr.vecNormal = GetGlobalTransform().TransformNoTranslate(tr.vecNormal);
 		}
 		else
 		{
+			// For the debug rendering code in the octree.
+			CRenderingContext c(GameServer()->GetRenderer());
+			c.Translate(-pLocalCharacter->GetGlobalOrigin().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+			c.Transform(GetGlobalTransform().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+
 			CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			const_cast<CPlanet*>(this)->Collide(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
+			const_cast<CPlanet*>(this)->Collide(const_cast<CPlanet*>(this), vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
 		}
 
 		if (tr.bHit)
@@ -235,12 +251,15 @@ void CPlanet::PostRender(bool bTransparent) const
 		}
 	}
 
+	if (!r_planets.GetBool())
+		return;
+
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
 	mPlanetToLocal.InvertTR();
 
-	Vector vecStarLightPosition = (mPlanetToLocal.TransformNoTranslate(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
+	Vector vecStarLightPosition = (mPlanetToLocal.TransformNoTranslate(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eScale);
 
 	CRenderingContext c(GameServer()->GetRenderer());
 
@@ -278,12 +297,12 @@ void CPlanet::PostRender(bool bTransparent) const
 	m_pTerrainChunkManager->Render();
 }
 
-bool CPlanet::CollideLocal(const TVector& v1, const TVector& v2, CTraceResult& tr)
+bool CPlanet::CollideLocal(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
-	return CollideLocalAccurate(false, v1, v2, tr);
+	return CollideLocalAccurate(pWith, false, v1, v2, tr);
 }
 
-bool CPlanet::CollideLocalAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
+bool CPlanet::CollideLocalAccurate(const CBaseEntity* pWith, bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
 	if (v1.Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
 		return false;
@@ -310,21 +329,24 @@ bool CPlanet::CollideLocalAccurate(bool bAccurate, const TVector& v1, const TVec
 		return bLess;
 	}*/
 
-	for (size_t i = 0; i < 6; i++)
-		m_pTerrain[i]->CollideLocal(bAccurate, v1, v2, tr);
-
-	if (tr.bHit)
-		tr.pHit = this;
+	CCollisionResult cr;
+	m_pOctree->Raytrace(v1.GetUnits(GetScale()), v2.GetUnits(GetScale()), cr);
+	tr.bHit = cr.bHit;
+	tr.bStartInside = cr.bStartInside;
+	tr.flFraction = cr.flFraction;
+	tr.pHit = this;
+	tr.vecHit = cr.vecHit;
+	tr.vecNormal = cr.vecNormal;
 
 	return tr.bHit;
 }
 
-bool CPlanet::Collide(const TVector& v1, const TVector& v2, CTraceResult& tr)
+bool CPlanet::Collide(const CBaseEntity* pWith, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
-	return CollideAccurate(false, v1, v2, tr);
+	return CollideAccurate(pWith, false, v1, v2, tr);
 }
 
-bool CPlanet::CollideAccurate(bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
+bool CPlanet::CollideAccurate(const CBaseEntity* pWith, bool bAccurate, const TVector& v1, const TVector& v2, CTraceResult& tr)
 {
 	if ((v1 - GetGlobalOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
 		return false;
@@ -351,11 +373,19 @@ bool CPlanet::CollideAccurate(bool bAccurate, const TVector& v1, const TVector& 
 		return bLess;
 	}*/
 
-	for (size_t i = 0; i < 6; i++)
-		m_pTerrain[i]->Collide(bAccurate, v1, v2, tr);
+	CScalableMatrix mGlobalToLocal = GetGlobalToLocalTransform();
+	CScalableVector vecLocal1, vecLocal2;
+	vecLocal1 = (mGlobalToLocal * v1);
+	vecLocal2 = (mGlobalToLocal * v2);
+	CCollisionResult cr;
+	m_pOctree->Raytrace(vecLocal1.GetUnits(GetScale()), vecLocal2.GetUnits(GetScale()), cr);
 
-	if (tr.bHit)
-		tr.pHit = this;
+	tr.bHit = cr.bHit;
+	tr.bStartInside = cr.bStartInside;
+	tr.flFraction = cr.flFraction;
+	tr.pHit = this;
+	tr.vecHit = GetGlobalTransform() * CScalableVector(cr.vecHit, GetScale());
+	tr.vecNormal = GetGlobalTransform().TransformNoTranslate(CScalableVector(cr.vecNormal, SCALE_METER));
 
 	return tr.bHit;
 }
@@ -374,6 +404,11 @@ void CPlanet::SetRandomSeed(size_t iSeed)
 void CPlanet::SetRadius(const CScalableFloat& flRadius)
 {
 	m_flRadius = flRadius;
+
+	if (m_pOctree)
+		delete m_pOctree;
+
+	m_pOctree = new COctree<CChunkOrQuad, double>((flRadius*2.0f).GetUnits(GetScale()));
 
 	m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters = 0;
 	m_pTerrain[0]->InitRenderVectors(m_pTerrain[0]->m_pQuadTreeHead);
@@ -407,5 +442,111 @@ void CPlanet::Debug_RebuildTerrain()
 	{
 		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
 		m_pTerrain[i]->Init();
+	}
+}
+
+void CPlanet::Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const
+{
+	if (!pBranch)
+		return;
+
+	if (r_planetoctree.GetInt() >= 0 && pBranch->m_iDepth > r_planetoctree.GetInt())
+		return;
+
+	if (pBranch->m_pBranches[0])
+	{
+		for (size_t i = 0; i < 8; i++)
+			Debug_RenderOctree(pBranch->m_pBranches[i]);
+		return;
+	}
+
+	if (r_planetoctree.GetInt() >= 0 && pBranch->m_iDepth != r_planetoctree.GetInt())
+		return;
+
+	if (!pBranch->m_aObjects.size())
+		return;
+
+	Matrix4x4 mPlanetTransform = GetGlobalTransform().GetUnits(GetScale());
+	mPlanetTransform.SetTranslation(Vector());
+
+	CRenderingContext c(GameServer()->GetRenderer());
+
+	double flMinX = pBranch->m_oBounds.m_vecMins.x;
+	double flMinY = pBranch->m_oBounds.m_vecMins.y;
+	double flMinZ = pBranch->m_oBounds.m_vecMins.z;
+	double flMaxX = pBranch->m_oBounds.m_vecMaxs.x;
+	double flMaxY = pBranch->m_oBounds.m_vecMaxs.y;
+	double flMaxZ = pBranch->m_oBounds.m_vecMaxs.z;
+
+	DoubleVector vecxyz = mPlanetTransform * DoubleVector(flMinX, flMinY, flMinZ);
+	DoubleVector vecXyz = mPlanetTransform * DoubleVector(flMaxX, flMinY, flMinZ);
+	DoubleVector vecxYz = mPlanetTransform * DoubleVector(flMinX, flMaxY, flMinZ);
+	DoubleVector vecXYz = mPlanetTransform * DoubleVector(flMaxX, flMaxY, flMinZ);
+	DoubleVector vecxyZ = mPlanetTransform * DoubleVector(flMinX, flMinY, flMaxZ);
+	DoubleVector vecXyZ = mPlanetTransform * DoubleVector(flMaxX, flMinY, flMaxZ);
+	DoubleVector vecxYZ = mPlanetTransform * DoubleVector(flMinX, flMaxY, flMaxZ);
+	DoubleVector vecXYZ = mPlanetTransform * DoubleVector(flMaxX, flMaxY, flMaxZ);
+
+	CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableVector vecRender = GetGlobalOrigin() - pLocalCharacter->GetGlobalOrigin();
+	c.Translate(vecRender.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+	c.BeginRenderDebugLines();
+		c.Vertex(vecxyZ);
+		c.Vertex(vecxyz);
+		c.Vertex(vecxYz);
+		c.Vertex(vecXYz);
+		c.Vertex(vecXyz);
+		c.Vertex(vecxyz);
+	c.EndRender();
+	c.BeginRenderDebugLines();
+		c.Vertex(vecxyZ);
+		c.Vertex(vecxYZ);
+		c.Vertex(vecxYz);
+		c.Vertex(vecxYZ);
+		c.Vertex(vecXYZ);
+		c.Vertex(vecXyZ);
+	c.EndRender();
+	c.BeginRenderDebugLines();
+		c.Vertex(vecXyz);
+		c.Vertex(vecXyZ);
+	c.EndRender();
+	c.BeginRenderDebugLines();
+		c.Vertex(vecXYz);
+		c.Vertex(vecXYZ);
+	c.EndRender();
+}
+
+
+bool CChunkOrQuad::Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr)
+{
+	if (m_pQuad)
+	{
+		scale_t eScale = static_cast<CPlanetTerrain*>(m_pQuad->m_pTree)->GetPlanet()->GetScale();
+		CScalableVector vec1 = CScalableVector(m_pQuad->m_oData.vec1, eScale);
+		CScalableVector vec2 = CScalableVector(m_pQuad->m_oData.vec2, eScale);
+		CScalableVector vec3 = CScalableVector(m_pQuad->m_oData.vec3, eScale);
+		CScalableVector vec4 = CScalableVector(m_pQuad->m_oData.vec4, eScale);
+		CScalableVector v1 = CScalableVector(vecStart, eScale);
+		CScalableVector v2 = CScalableVector(vecEnd, eScale);
+
+		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.vec1, m_pQuad->m_oData.vec2, m_pQuad->m_oData.vec3, tr))
+			return true;
+		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.vec2, m_pQuad->m_oData.vec4, m_pQuad->m_oData.vec3, tr))
+			return true;
+
+		return false;
+	}
+	else if (m_iChunk != ~0)
+	{
+		CTerrainChunk* pChunk = m_pPlanet->m_pTerrainChunkManager->GetChunk(m_iChunk);
+		if (!pChunk)
+			return false;
+
+		return pChunk->Raytrace(vecStart, vecEnd, tr);
+	}
+	else
+	{
+		TAssert(m_pQuad || m_iChunk != ~0);
+		return false;
 	}
 }

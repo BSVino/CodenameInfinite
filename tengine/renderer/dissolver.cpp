@@ -38,7 +38,7 @@ void CModelDissolver::AddModel(CBaseEntity* pEntity, Color* pclrSwap, Vector* pv
 		return;
 
 	Matrix4x4 mTransform;
-	mTransform.SetTranslation(pEntity->GetRenderOrigin());
+	mTransform.SetTranslation(pEntity->BaseGetRenderOrigin());
 	mTransform.SetAngles(pEntity->GetRenderAngles());
 
 	if (pvecScale)

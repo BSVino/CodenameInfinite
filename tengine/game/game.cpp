@@ -118,7 +118,7 @@ void CGame::OnDeleted(CBaseEntity* pEntity)
 	RemovePlayer(dynamic_cast<CPlayer*>(pEntity));
 }
 
-bool CGame::TraceLine(const TVector& s1, const TVector& s2, CTraceResult& tr)
+bool CGame::TraceLine(const CBaseEntity* pEntity, const TVector& s1, const TVector& s2, CTraceResult& tr)
 {
 	TVector vecClosest = s2;
 	bool bHit = false;
@@ -133,7 +133,7 @@ bool CGame::TraceLine(const TVector& s1, const TVector& s2, CTraceResult& tr)
 		if (!pEntity->ShouldCollide())
 			continue;
 
-		pEntity->Collide(s1, s2, tr);
+		pEntity->BaseCollide(pEntity, s1, s2, tr);
 	}
 
 	return tr.bHit;

@@ -121,11 +121,10 @@ void CSPRenderer::StartRendering()
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
-		if (pSPEntity)
-			m_ahRenderList.push_back(pSPEntity);
+		if (pEntity && pEntity->ShouldRender())
+			m_ahRenderList.push_back(pEntity);
 
-		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pSPEntity);
+		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pEntity);
 		if (pPlanet)
 			pPlanet->RenderUpdate();
 
@@ -218,7 +217,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 			c->SetUniform("clrSky", pPlanet->GetAtmosphereColor());
 			if (GetClosestStar())
 			{
-				c->SetUniform("vecStar", GetClosestStar()->GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
+				c->SetUniform("vecStar", GetClosestStar()->GameData().GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
 				c->SetUniform("clrStar", GetClosestStar()->GetLightColor());
 			}
 		}
@@ -263,20 +262,20 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 
 	bool bFrustumCulling = CVar::GetCVarBool("r_frustumculling");
 
-	eastl::vector<CSPEntity*> apRender;
+	eastl::vector<CBaseEntity*> apRender;
 
 	// First render all opaque objects
 	for (size_t i = 0; i < iEntities; i++)
 	{
-		CSPEntity* pSPEntity = m_ahRenderList[i];
+		CBaseEntity* pEntity = m_ahRenderList[i];
 
-		if (!pSPEntity->ShouldRenderAtScale(m_eRenderingScale))
+		if (!pEntity->GameData().ShouldRenderAtScale(m_eRenderingScale))
 			continue;
 
-		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), (float)pSPEntity->GetRenderRadius().GetUnits(m_eRenderingScale)))
+		if (bFrustumCulling && !IsSphereInFrustum(pEntity->GameData().GetScalableRenderOrigin().GetUnits(m_eRenderingScale), (float)pEntity->GetRenderRadius().GetUnits(m_eRenderingScale)))
 			continue;
 
-		apRender.push_back(pSPEntity);
+		apRender.push_back(pEntity);
 	}
 
 	size_t iRenderEntities = apRender.size();
