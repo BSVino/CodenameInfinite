@@ -254,9 +254,10 @@ void CPlanetTerrain::BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce)
 		pBranch->m_pBranches[3]->m_oData.vecOffset1 = pBranch->m_oData.vecOffsetCenter;
 
 		// Update the octree with these collisions.
-		m_pPlanet->m_pOctree->RemoveObject(CChunkOrQuad(m_pPlanet, pBranch));
-
 		if (pBranch->m_pBranches[0]->m_iDepth < m_pPlanet->m_iChunkDepth)
+			m_pPlanet->m_pOctree->RemoveObject(CChunkOrQuad(m_pPlanet, pBranch));
+
+		if (pBranch->m_pBranches[0]->m_iDepth <= m_pPlanet->m_iChunkDepth)
 		{
 			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 			{
@@ -297,6 +298,8 @@ void CPlanetTerrain::PushBranch(CTerrainQuadTreeBranch* pBranch)
 	}
 	else if (pBranch->m_pBranches[0]->m_iDepth == m_pPlanet->m_iChunkDepth)
 	{
+		m_pPlanet->m_pOctree->RemoveObject(CChunkOrQuad(m_pPlanet, pBranch));
+
 		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
 		{
 			pBranch->m_pBranches[i]->m_oData.bRender = true;

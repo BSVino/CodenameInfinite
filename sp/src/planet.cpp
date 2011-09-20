@@ -558,24 +558,20 @@ void CPlanet::Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* p
 	if (!pBranch->m_aObjects.size())
 		return;
 
+	CRenderingContext c(GameServer()->GetRenderer());
+	CScalableVector vecRender = GetGlobalOrigin() - pLocalCharacter->GetGlobalOrigin();
+	c.Translate(vecRender.GetUnits(eScale));
+
 	for (size_t i = 0; i < pBranch->m_aObjects.size(); i++)
 	{
 		CQuadTreeBranch<CBranchData, double>* pQuad = pBranch->m_aObjects[i].m_oData.m_pQuad;
 		if (!pQuad)
 			continue;
 
-		if (r_planetcollision.GetInt() >= 0 && pQuad->m_iDepth != r_planetcollision.GetInt())
-			continue;
+		DoubleVector vec1 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec1, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[0]*10, SCALE_KILOMETER))).GetUnits(eScale);
+		DoubleVector vec2 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec2, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[2]*10, SCALE_KILOMETER))).GetUnits(eScale);
+		DoubleVector vec4 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec4, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[8]*10, SCALE_KILOMETER))).GetUnits(eScale);
 
-		CRenderingContext c(GameServer()->GetRenderer());
-
-		DoubleVector vec1 = (mPlanetTransform * CScalableVector(pQuad->m_oData.vec1, GetScale())).GetUnits(eScale);
-		DoubleVector vec2 = (mPlanetTransform * CScalableVector(pQuad->m_oData.vec2, GetScale())).GetUnits(eScale);
-		//DoubleVector vec3 = (mPlanetTransform * CScalableVector(pQuad->m_oData.vec3, GetScale())).GetUnits(eScale);
-		DoubleVector vec4 = (mPlanetTransform * CScalableVector(pQuad->m_oData.vec4, GetScale())).GetUnits(eScale);
-
-		CScalableVector vecRender = GetGlobalOrigin() - pLocalCharacter->GetGlobalOrigin();
-		c.Translate(vecRender.GetUnits(eScale));
 		c.BeginRenderDebugLines();
 			c.Vertex(vec1);
 			c.Vertex(vec2);
