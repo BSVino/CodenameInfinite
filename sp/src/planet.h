@@ -63,6 +63,24 @@ public:
 	CQuadTreeBranch<CBranchData, double>*	m_pQuad;
 };
 
+inline bool operator < (const CChunkOrQuad& l, const CChunkOrQuad& r)
+{
+	if (l.m_iChunk != ~0 && r.m_iChunk != ~0)
+		return l.m_iChunk < r.m_iChunk;
+
+	if (l.m_pQuad && r.m_pQuad)
+		return l.m_pQuad < r.m_pQuad;
+
+	else if (l.m_iChunk != ~0 && r.m_pQuad)
+		return true;
+
+	else if (l.m_pQuad && r.m_iChunk != ~0)
+		return false;
+
+	TAssert(false);
+	return false;
+}
+
 class CPlanet : public CBaseEntity
 {
 	friend class CPlanetTerrain;

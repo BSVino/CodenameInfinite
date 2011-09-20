@@ -154,12 +154,16 @@ public:
 	size_t						GetMaxObjects() { return m_iMaxObjects; };
 	size_t						GetMaxDepth() { return m_iMaxDepth; };
 
+	eastl::map<T, eastl::vector<COctreeBranch<T, F>*> >&	GetObjectBranches() { return m_aapObjectBranches; }
+
 protected:
 	F							m_flSize;
 	class COctreeBranch<T, F>*	m_pOctreeHead;
 
 	size_t						m_iMaxObjects;
 	size_t						m_iMaxDepth;
+
+	eastl::map<T, eastl::vector<COctreeBranch<T, F>*> >	m_aapObjectBranches;
 };
 
 template <class T, typename F>
@@ -178,6 +182,7 @@ void COctree<T, F>::AddObject(const T& oData, const TemplateAABB<F>& oSize)
 	COctreeBranch<T, F>* pBranch = FindLeaf(oSize);
 
 	pBranch->m_aObjects.push_back(COctreeObject<T, F>(oData, oSize));
+	m_aapObjectBranches[oData].push_back(pBranch);
 
 	pBranch->TryPush();
 
@@ -190,7 +195,15 @@ void COctree<T, F>::RemoveObject(const T& oData)
 	if (!m_pOctreeHead)
 		return;
 
-	m_pOctreeHead->RemoveObject(oData);
+	eastl::vector<COctreeBranch<T, F>*> apBranches = m_aapObjectBranches[oData];
+	size_t iSize = apBranches.size();
+	for (size_t i = 0; i < iSize; i++)
+	{
+		COctreeBranch<T, F>* pBranch = apBranches[i];
+		pBranch->RemoveObject(oData);
+	}
+
+	m_aapObjectBranches.erase(oData);
 }
 
 template <class T, typename F>
@@ -397,6 +410,17 @@ void COctreeBranch<T, F>::TryPush()
 	{
 		COctreeObject<T, F>* pObject = &m_aObjects[j];
 
+		eastl::vector<COctreeBranch<T, F>*>& apBranches = m_pTree->GetObjectBranches()[pObject->m_oData];
+		size_t iBranches = apBranches.size();
+		for (size_t i = 0; i < iBranches; i++)
+		{
+			if (apBranches[i] == this)
+			{
+				apBranches.erase(apBranches.begin()+i);
+				break;
+			}
+		}
+
 		// Push an object down into every child branch that it touches.
 		for (size_t i = 0; i < 8; i++)
 		{
@@ -419,6 +443,7 @@ void COctreeBranch<T, F>::TryPush()
 				continue;
 
 			m_pBranches[i]->m_aObjects.push_back(*pObject);
+			apBranches.push_back(m_pBranches[i]);
 			abPushes[i] = true;
 		}
 	}
@@ -514,21 +539,13 @@ bool COctreeBranch<T, F>::Raytrace(const TemplateVector<F>& vecStart, const Temp
 template <class T, typename F>
 void COctreeBranch<T, F>::RemoveObject(const T& oObject)
 {
-	if (m_pBranches[0])
+	size_t iSize = m_aObjects.size();
+	for (size_t i = 0; i < iSize; i++)
 	{
-		for (size_t i = 0; i < 8; i++)
-			m_pBranches[i]->RemoveObject(oObject);
-	}
-	else
-	{
-		size_t iSize = m_aObjects.size();
-		for (size_t i = 0; i < iSize; i++)
+		if (m_aObjects[i].m_oData == oObject)
 		{
-			if (m_aObjects[i].m_oData == oObject)
-			{
-				m_aObjects.erase(m_aObjects.begin()+i);
-				return;
-			}
+			m_aObjects.erase(m_aObjects.begin()+i);
+			return;
 		}
 	}
 }
