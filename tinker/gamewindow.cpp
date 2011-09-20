@@ -23,7 +23,7 @@ void CGameWindow::OpenWindow()
 #ifdef _DEBUG
 	BaseClass::OpenWindow(iScreenWidth*2/3, iScreenHeight*2/3, false, false);
 #else
-	BaseClass::OpenWindow(iScreenWidth, iScreenHeight, false, false);
+	BaseClass::OpenWindow(iScreenWidth*2/3, iScreenHeight*2/3, false, false);
 #endif
 
 	RenderLoading();
