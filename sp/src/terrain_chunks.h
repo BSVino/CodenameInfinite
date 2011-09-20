@@ -42,6 +42,7 @@ public:
 	size_t								FindChunk(CTerrainQuadTreeBranch* pBranch);
 	CTerrainChunk*						GetChunk(size_t iChunk);
 
+	void								Think();
 	void								ProcessChunkRendering(CTerrainQuadTreeBranch* pBranch);
 	void								Render();
 

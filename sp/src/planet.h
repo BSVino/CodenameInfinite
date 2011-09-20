@@ -123,6 +123,7 @@ public:
 
 	void						Debug_RebuildTerrain();
 	void						Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
+	void						Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
 
 protected:
 	size_t						m_iRandomSeed;

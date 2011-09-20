@@ -61,7 +61,18 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 
 	if (r_freezeterrain.GetBool())
 	{
-		if (pBranch->m_oData.bRender)
+		if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
+		{
+			if (pBranch->m_iDepth == m_pPlanet->m_iChunkDepth)
+				m_pPlanet->m_pTerrainChunkManager->ProcessChunkRendering(pBranch);
+
+			if (pBranch->m_pBranches[0])
+			{
+				for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+					ThinkBranch(pBranch->m_pBranches[i]);
+			}
+		}
+		else if (pBranch->m_oData.bRender)
 			ProcessBranchRendering(pBranch);
 		else if (pBranch->m_pBranches[0])
 		{
@@ -72,7 +83,29 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 		return;
 	}
 
-	if (pBranch->m_oData.bRender)
+	if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
+	{
+		// Maybe try to build out kids?
+		if (!pBranch->m_pBranches[0] && m_iBuildsThisFrame < r_terrainbuildsperframe.GetInt())
+		{
+			BuildBranch(pBranch);
+
+			if (pBranch->m_pBranches[0])
+				m_iBuildsThisFrame++;
+		}
+
+		if (pBranch->m_iDepth == m_pPlanet->m_iChunkDepth)
+			m_pPlanet->m_pTerrainChunkManager->ProcessChunkRendering(pBranch);
+
+		if (pBranch->m_pBranches[0])
+		{
+			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+				ThinkBranch(pBranch->m_pBranches[i]);
+		}
+
+		return;
+	}
+	else if (pBranch->m_oData.bRender)
 	{
 		// If I can render then maybe my kids can too?
 		if (!pBranch->m_pBranches[0] && m_iBuildsThisFrame < r_terrainbuildsperframe.GetInt())
@@ -104,7 +137,7 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 	}
 	else if (!pBranch->m_pBranches[0])
 	{
-		TAssert(pBranch->m_iDepth > m_pPlanet->m_iChunkDepth);
+		TAssert(pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth);
 
 		// If I can render then maybe my kids can too?
 		if (m_iBuildsThisFrame < r_terrainbuildsperframe.GetInt())
@@ -177,6 +210,10 @@ bool CPlanetTerrain::ShouldPull(CTerrainQuadTreeBranch* pBranch)
 	if (!pBranch->m_pBranches[0])
 		return false;
 
+	// We don't push past the chunk depth, so we can't pull it either.
+	if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
+		return false;
+
 	// See if we can pull the render surface up from our kids.
 	bool bAreKidsRenderingAndShouldnt = true;
 
@@ -242,18 +279,38 @@ void CPlanetTerrain::PushBranch(CTerrainQuadTreeBranch* pBranch)
 		// Force building the branch, we want to guarantee it will get built because we need it to push to.
 		BuildBranch(pBranch, true);
 
+	pBranch->m_oData.bRender = false;
+
 	// Don't push past chunk depth. Chunks handle things from there on out.
 	if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
-		return;
-
-	pBranch->m_oData.bRender = false;
-	for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-		pBranch->m_pBranches[i]->m_oData.bRender = true;
-
-	if (pBranch->m_pBranches[0]->m_iDepth >= m_pPlanet->m_iChunkDepth)
 	{
 		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			pBranch->m_pBranches[i]->m_oData.bRender = false;
+
+		return;
+	}
+
+	if (pBranch->m_pBranches[0]->m_iDepth < m_pPlanet->m_iChunkDepth)
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			pBranch->m_pBranches[i]->m_oData.bRender = true;
+	}
+	else if (pBranch->m_pBranches[0]->m_iDepth == m_pPlanet->m_iChunkDepth)
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+		{
+			pBranch->m_pBranches[i]->m_oData.bRender = true;
 			m_pPlanet->m_pTerrainChunkManager->AddChunk(pBranch->m_pBranches[i]);
+		}
+
+		return;
+	}
+	else
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
+			pBranch->m_pBranches[i]->m_oData.bRender = false;
+
+		return;
 	}
 
 	CTerrainQuadTreeBranch* pNeighbor;
@@ -401,13 +458,6 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 
 	if (r_terrainbackfacecull.GetBool() && GetLocalCharacterDot(pBranch) >= 0.1f)
 		return;
-
-	// Let the chunks handle it.
-	if (pBranch->m_iDepth >= m_pPlanet->m_iChunkDepth)
-	{
-		m_pPlanet->m_pTerrainChunkManager->ProcessChunkRendering(pBranch);
-		return;
-	}
 
 	CalcRenderVectors(pBranch);
 	UpdateScreenSize(pBranch);

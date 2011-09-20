@@ -81,6 +81,11 @@ CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk)
 	return m_apChunks[iChunk];
 }
 
+void CTerrainChunkManager::Think()
+{
+	m_apRenderChunks.clear();
+}
+
 void CTerrainChunkManager::ProcessChunkRendering(CTerrainQuadTreeBranch* pBranch)
 {
 	size_t iChunk = FindChunk(pBranch);
@@ -162,8 +167,6 @@ void CTerrainChunkManager::Render()
 
 	for (size_t i = 0; i < aRenderChunks.size(); i++)
 		aRenderChunks[i]->Render(&c);
-
-	m_apRenderChunks.clear();
 }
 
 CTerrainChunk::CTerrainChunk(CTerrainQuadTreeBranch* pBranch)

@@ -6,7 +6,7 @@
 #include <vector.h>
 #include <geometry.h>
 
-#define DEBUG_WITH_GL
+//#define DEBUG_WITH_GL
 #ifdef DEBUG_WITH_GL
 #include <../../glew/include/GL/glew.h>
 
@@ -60,6 +60,8 @@ public:
 		m_iParentIndex = iParentIndex;
 
 		m_bCenterCalculated = false;
+
+		m_aObjects.reserve(m_pTree->GetMaxObjects());
 	}
 
 	~COctreeBranch()
@@ -126,7 +128,7 @@ public:
 		m_pOctreeHead = NULL;
 
 		m_iMaxObjects = 8;
-		m_iMaxDepth = 8;
+		m_iMaxDepth = 11;
 	};
 
 	~COctree()
@@ -179,7 +181,7 @@ void COctree<T, F>::AddObject(const T& oData, const TemplateAABB<F>& oSize)
 
 	pBranch->TryPush();
 
-	pBranch->CheckBranchSanity();
+	//pBranch->CheckBranchSanity();
 }
 
 template <class T, typename F>
@@ -342,7 +344,7 @@ bool COctree<T, F>::Raytrace(const TemplateVector<F>& vecStart, const TemplateVe
 template <class T, typename F>
 void COctreeBranch<T, F>::TryPush()
 {
-	if (m_iDepth > m_pTree->GetMaxDepth())
+	if (m_iDepth >= m_pTree->GetMaxDepth())
 		return;
 
 	if (!m_pBranches[0])
@@ -351,7 +353,9 @@ void COctreeBranch<T, F>::TryPush()
 		// If an object completely encapsulates the branch, we shouldn't consider it for making child branches.
 		size_t iObjectsNotEntirelyInside = 0;
 
-		for (size_t j = 0; j < m_aObjects.size(); j++)
+		size_t iMaxObjects = m_pTree->GetMaxObjects();
+		size_t iSize = m_aObjects.size();
+		for (size_t j = 0; j < iSize; j++)
 		{
 			COctreeObject<T, F>* pObject = &m_aObjects[j];
 
@@ -364,11 +368,11 @@ void COctreeBranch<T, F>::TryPush()
 				continue;
 
 			iObjectsNotEntirelyInside++;
-			if (iObjectsNotEntirelyInside >= m_pTree->GetMaxObjects())
+			if (iObjectsNotEntirelyInside >= iMaxObjects)
 				break;
 		}
 
-		if (iObjectsNotEntirelyInside >= m_pTree->GetMaxObjects())
+		if (iObjectsNotEntirelyInside >= iMaxObjects)
 		{
 			F flSize = (m_oBounds.m_vecMaxs.x - m_oBounds.m_vecMins.x)/2;
 			m_pBranchxyz = new COctreeBranch<T, F>(this, m_pTree, TemplateAABB<F>(m_oBounds.m_vecMins + TemplateVector<F>(0, 0, 0), m_oBounds.m_vecMins + TemplateVector<F>(flSize, flSize, flSize)), m_iDepth+1, 0);
@@ -385,7 +389,11 @@ void COctreeBranch<T, F>::TryPush()
 	if (!m_pBranches[0])
 		return;
 
-	for (size_t j = 0; j < m_aObjects.size(); j++)
+	bool abPushes[8];
+	abPushes[0] = abPushes[1] = abPushes[2] = abPushes[3] = abPushes[4] = abPushes[5] = abPushes[6] = abPushes[7] = false;
+
+	size_t iSize = m_aObjects.size();
+	for (size_t j = 0; j < iSize; j++)
 	{
 		COctreeObject<T, F>* pObject = &m_aObjects[j];
 
@@ -411,13 +419,19 @@ void COctreeBranch<T, F>::TryPush()
 				continue;
 
 			m_pBranches[i]->m_aObjects.push_back(*pObject);
+			abPushes[i] = true;
 		}
 	}
 
 	m_aObjects.clear();
 
 	for (size_t i = 0; i < 8; i++)
+	{
+		if (!abPushes[i])
+			continue;
+
 		m_pBranches[i]->TryPush();
+	}
 }
 
 template <class T, typename F>
@@ -507,7 +521,8 @@ void COctreeBranch<T, F>::RemoveObject(const T& oObject)
 	}
 	else
 	{
-		for (size_t i = 0; i < m_aObjects.size(); i++)
+		size_t iSize = m_aObjects.size();
+		for (size_t i = 0; i < iSize; i++)
 		{
 			if (m_aObjects[i].m_oData == oObject)
 			{
@@ -547,43 +562,64 @@ void COctreeBranch<T, F>::CheckBranchSanity()
 #ifdef DEBUG_WITH_GL
 inline void DrawBox(const TemplateAABB<double>& b, const Color& c)
 {
+	DoubleVector min = b.m_vecMins;
+	DoubleVector max = b.m_vecMaxs;
+	DoubleVector vecSize = b.Size();
+
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_KILOMETER)
+	{
+		min *= 1000;
+		max *= 1000;
+		vecSize *= 1000;
+	}
+
 	glLineWidth(2);
-	Vector vecSize = b.Size();
 	glColor3ubv(c);
 	glBegin(GL_LINE_STRIP);
-		glVertex3fv(Vector(b.m_vecMins));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(0, 0, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(vecSize.x, 0, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(vecSize.x, 0, 0)));
-		glVertex3fv(Vector(b.m_vecMins));
+		glVertex3fv(Vector(min));
+		glVertex3fv(Vector(min + DoubleVector(0, 0, vecSize.z)));
+		glVertex3fv(Vector(min + DoubleVector(vecSize.x, 0, vecSize.z)));
+		glVertex3fv(Vector(min + DoubleVector(vecSize.x, 0, 0)));
+		glVertex3fv(Vector(min));
 	glEnd();
 	glBegin(GL_LINE_STRIP);
-		glVertex3fv(Vector(b.m_vecMaxs));
-		glVertex3fv(Vector(b.m_vecMaxs - DoubleVector(0, 0, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMaxs - DoubleVector(vecSize.x, 0, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMaxs - DoubleVector(vecSize.x, 0, 0)));
-		glVertex3fv(Vector(b.m_vecMaxs));
+		glVertex3fv(Vector(max));
+		glVertex3fv(Vector(max - DoubleVector(0, 0, vecSize.z)));
+		glVertex3fv(Vector(max - DoubleVector(vecSize.x, 0, vecSize.z)));
+		glVertex3fv(Vector(max - DoubleVector(vecSize.x, 0, 0)));
+		glVertex3fv(Vector(max));
 	glEnd();
 	glBegin(GL_LINES);
-		glVertex3fv(Vector(b.m_vecMins));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(0, vecSize.y, 0)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(0, 0, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(0, vecSize.y, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(vecSize.x, 0, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(vecSize.x, vecSize.y, vecSize.z)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(vecSize.x, 0, 0)));
-		glVertex3fv(Vector(b.m_vecMins + DoubleVector(vecSize.x, vecSize.y, 0)));
+		glVertex3fv(Vector(min));
+		glVertex3fv(Vector(min + DoubleVector(0, vecSize.y, 0)));
+		glVertex3fv(Vector(min + DoubleVector(0, 0, vecSize.z)));
+		glVertex3fv(Vector(min + DoubleVector(0, vecSize.y, vecSize.z)));
+		glVertex3fv(Vector(min + DoubleVector(vecSize.x, 0, vecSize.z)));
+		glVertex3fv(Vector(min + DoubleVector(vecSize.x, vecSize.y, vecSize.z)));
+		glVertex3fv(Vector(min + DoubleVector(vecSize.x, 0, 0)));
+		glVertex3fv(Vector(min + DoubleVector(vecSize.x, vecSize.y, 0)));
 	glEnd();
 }
 
 inline void DrawTri(const TemplateVector<double>& v1, const TemplateVector<double>& v2, const TemplateVector<double>& v3, float r, float g, float b, int iLineWidth)
 {
+	Vector vv1 = v1;
+	Vector vv2 = v2;
+	Vector vv3 = v3;
+
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_KILOMETER)
+	{
+		vv1 *= 1000;
+		vv2 *= 1000;
+		vv3 *= 1000;
+	}
+
 	glLineWidth((float)iLineWidth);
 	glColor3f(r, g, b);
 	glBegin(GL_LINE_LOOP);
-		glVertex3fv(Vector(v1));
-		glVertex3fv(Vector(v2));
-		glVertex3fv(Vector(v3));
+		glVertex3fv(Vector(vv1));
+		glVertex3fv(Vector(vv2));
+		glVertex3fv(Vector(vv3));
 	glEnd();
 }
 #endif
