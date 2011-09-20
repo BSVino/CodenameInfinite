@@ -552,12 +552,12 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	c->BeginRenderTriFan();
 		c->TexCoord((pBranch->m_vecMin + pBranch->m_vecMax)/2, 0);
 		c->TexCoord((pBranch->m_oData.vecDetailMin + pBranch->m_oData.vecDetailMax)/2, 1);
-		c->Normal(pBranch->m_oData.vecCenterNormal);
+		c->Normal(pBranch->m_oData.avecNormals[4]);
 		c->Vertex(vecCenter);
 
 		c->TexCoord(pBranch->m_vecMin, 0);
 		c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
-		c->Normal(pBranch->m_oData.vec1n);
+		c->Normal(pBranch->m_oData.avecNormals[0]);
 		c->Vertex(vec1);
 
 		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_TOP)) && pBranch->m_pBranches[0])
@@ -571,13 +571,13 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[0]->m_vecMax.x, pBranch->m_pBranches[0]->m_vecMin.y), 0);
 			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[0]->m_oData.vecDetailMax.x, pBranch->m_pBranches[0]->m_oData.vecDetailMin.y), 1);
-			c->Normal(pBranch->m_pBranches[0]->m_oData.vec2n);
+			c->Normal(pBranch->m_pBranches[0]->m_oData.avecNormals[2]);
 			c->Vertex(vecSplit);
 		}
 
 		c->TexCoord(DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y), 0);
 		c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMax.x, pBranch->m_oData.vecDetailMin.y), 1);
-		c->Normal(pBranch->m_oData.vec2n);
+		c->Normal(pBranch->m_oData.avecNormals[2]);
 		c->Vertex(vec2);
 
 		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_RIGHT)) && pBranch->m_pBranches[1])
@@ -591,13 +591,13 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 			c->TexCoord(pBranch->m_pBranches[1]->m_vecMax, 0);
 			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[3]->m_oData.vecDetailMax.x, pBranch->m_pBranches[3]->m_oData.vecDetailMin.y), 1);
-			c->Normal(pBranch->m_pBranches[1]->m_oData.vec4n);
+			c->Normal(pBranch->m_pBranches[1]->m_oData.avecNormals[8]);
 			c->Vertex(vecSplit);
 		}
 
 		c->TexCoord(pBranch->m_vecMax, 0);
 		c->TexCoord(pBranch->m_oData.vecDetailMax, 1);
-		c->Normal(pBranch->m_oData.vec4n);
+		c->Normal(pBranch->m_oData.avecNormals[8]);
 		c->Vertex(vec4);
 
 		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_BOTTOM)) && pBranch->m_pBranches[3])
@@ -611,13 +611,13 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[3]->m_vecMin.x, pBranch->m_pBranches[3]->m_vecMax.y), 0);
 			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[3]->m_oData.vecDetailMin.x, pBranch->m_pBranches[3]->m_oData.vecDetailMax.y), 1);
-			c->Normal(pBranch->m_pBranches[3]->m_oData.vec3n);
+			c->Normal(pBranch->m_pBranches[3]->m_oData.avecNormals[6]);
 			c->Vertex(vecSplit);
 		}
 
 		c->TexCoord(DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y), 0);
 		c->TexCoord(DoubleVector2D(pBranch->m_oData.vecDetailMin.x, pBranch->m_oData.vecDetailMax.y), 1);
-		c->Normal(pBranch->m_oData.vec3n);
+		c->Normal(pBranch->m_oData.avecNormals[6]);
 		c->Vertex(vec3);
 
 		if ((pBranch->m_oData.iSplitSides & (1<<QUADSIDE_LEFT)) && pBranch->m_pBranches[2])
@@ -631,13 +631,13 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 			c->TexCoord(pBranch->m_pBranches[2]->m_vecMin, 0);
 			c->TexCoord(DoubleVector2D(pBranch->m_pBranches[0]->m_oData.vecDetailMin.x, pBranch->m_pBranches[0]->m_oData.vecDetailMax.y), 1);
-			c->Normal(pBranch->m_pBranches[2]->m_oData.vec1n);
+			c->Normal(pBranch->m_pBranches[2]->m_oData.avecNormals[0]);
 			c->Vertex(vecSplit);
 		}
 
 		c->TexCoord(pBranch->m_vecMin, 0);
 		c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
-		c->Normal(pBranch->m_oData.vec1n);
+		c->Normal(pBranch->m_oData.avecNormals[0]);
 		c->Vertex(vec1);
 	c->EndRender();
 
@@ -721,7 +721,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 		c.SetColor(Color(255, 255, 255));
 		c.BeginRenderDebugLines();
 		c.Vertex(vec1);
-		c.Vertex(vec1 + mPlanetTransform.TransformNoTranslate(pBranch->m_oData.vec1n));
+		c.Vertex(vec1 + mPlanetTransform.TransformNoTranslate(pBranch->m_oData.avecNormals[0]));
 		c.EndRender();
 	}
 
@@ -924,11 +924,55 @@ void CPlanetTerrain::InitRenderVectors(CTerrainQuadTreeBranch* pBranch)
 		pBranch->m_oData.vec3 = vec3;
 		pBranch->m_oData.vec4 = vec4;
 
-		pBranch->m_oData.vecCenterNormal = (vec1-vecCenter).Normalized().Cross((vec2-vecCenter).Normalized()).Normalized();
-		pBranch->m_oData.vec1n = (vec2-vec1).Normalized().Cross((vec3-vec1).Normalized()).Normalized();
-		pBranch->m_oData.vec2n = (vec4-vec2).Normalized().Cross((vec1-vec2).Normalized()).Normalized();
-		pBranch->m_oData.vec3n = (vec1-vec3).Normalized().Cross((vec4-vec3).Normalized()).Normalized();
-		pBranch->m_oData.vec4n = (vec3-vec4).Normalized().Cross((vec2-vec4).Normalized()).Normalized();
+		if (pBranch->m_iDepth < m_pPlanet->GetMinQuadRenderDepth())
+		{
+			pBranch->m_oData.avecNormals[0] = vec1.Normalized();
+			pBranch->m_oData.avecNormals[2] = vec2.Normalized();
+			pBranch->m_oData.avecNormals[4] = vecCenter.Normalized();
+			pBranch->m_oData.avecNormals[6] = vec3.Normalized();
+			pBranch->m_oData.avecNormals[8] = vec4.Normalized();
+
+			pBranch->m_oData.avecNormals[1] = ((pBranch->m_oData.avecNormals[0] + pBranch->m_oData.avecNormals[2])/2).Normalized();
+			pBranch->m_oData.avecNormals[3] = ((pBranch->m_oData.avecNormals[0] + pBranch->m_oData.avecNormals[6])/2).Normalized();
+			pBranch->m_oData.avecNormals[5] = ((pBranch->m_oData.avecNormals[2] + pBranch->m_oData.avecNormals[8])/2).Normalized();
+			pBranch->m_oData.avecNormals[7] = ((pBranch->m_oData.avecNormals[6] + pBranch->m_oData.avecNormals[8])/2).Normalized();
+		}
+		else
+		{
+			DoubleVector2D vecHalfX = (DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y) - pBranch->m_vecMin)/2;
+			DoubleVector2D vecHalfY = (DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y) - pBranch->m_vecMin)/2;
+
+			DoubleVector2D vec2DPositions[9];
+			vec2DPositions[0] = pBranch->m_vecMin;
+			vec2DPositions[1] = pBranch->m_vecMin + vecHalfX;
+			vec2DPositions[2] = pBranch->m_vecMin + vecHalfX*2;
+			vec2DPositions[3] = pBranch->m_vecMin + vecHalfY;
+			vec2DPositions[4] = pBranch->m_vecMin + vecHalfY + vecHalfX;
+			vec2DPositions[5] = pBranch->m_vecMin + vecHalfY + vecHalfX*2;
+			vec2DPositions[6] = pBranch->m_vecMin + vecHalfY*2;
+			vec2DPositions[7] = pBranch->m_vecMin + vecHalfY*2 + vecHalfX;
+			vec2DPositions[8] = pBranch->m_vecMin + vecHalfY*2 + vecHalfX*2;
+
+			for (size_t i = 0; i < 9; i++)
+			{
+				DoubleVector2D vecRightCoord = vec2DPositions[i] + vecHalfX;
+				DoubleVector2D vecTopCoord = vec2DPositions[i] - vecHalfY;
+				DoubleVector2D vecLeftCoord = vec2DPositions[i] - vecHalfX;
+				DoubleVector2D vecBottomCoord = vec2DPositions[i] + vecHalfY;
+
+				// This does a lot of redundant calculations and could be optimized if need be.
+				DoubleVector vecRightOffset = m_pDataSource->QuadTreeToWorld(this, vecRightCoord) + GenerateOffset(vecRightCoord);
+				DoubleVector vecTopOffset = m_pDataSource->QuadTreeToWorld(this, vecTopCoord) + GenerateOffset(vecTopCoord);
+				DoubleVector vecLeftOffset = m_pDataSource->QuadTreeToWorld(this, vecLeftCoord) + GenerateOffset(vecLeftCoord);
+				DoubleVector vecBottomOffset = m_pDataSource->QuadTreeToWorld(this, vecBottomCoord) + GenerateOffset(vecBottomCoord);
+				DoubleVector vecVectorOffset = m_pDataSource->QuadTreeToWorld(this, vec2DPositions[i]) + GenerateOffset(vec2DPositions[i]);
+
+				Vector vecNormal1 = (vecTopOffset-vecVectorOffset).Normalized().Cross((vecRightOffset-vecVectorOffset).Normalized()).Normalized();
+				Vector vecNormal2 = (vecBottomOffset-vecVectorOffset).Normalized().Cross((vecLeftOffset-vecVectorOffset).Normalized()).Normalized();
+
+				pBranch->m_oData.avecNormals[i] = (vecNormal1 + vecNormal2).Normalized();
+			}
+		}
 
 		CScalableVector vecQuadCenter(vecCenter, m_pPlanet->GetScale());
 
@@ -982,7 +1026,7 @@ float CPlanetTerrain::GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch)
 
 	pBranch->m_oData.iLocalCharacterDotLastFrame = GameServer()->GetFrame();
 
-	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec4n)/2;
+	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.avecNormals[0] + pBranch->m_oData.avecNormals[8])/2;
 
 	return pBranch->m_oData.flLocalCharacterDot = (float)(pBranch->GetCenter()-m_pPlanet->GetCharacterLocalOrigin()).Normalized().Dot(vecNormal);
 }
@@ -1152,7 +1196,7 @@ bool CPlanetTerrain::CollideLocal(const CBaseEntity* pWith, bool bAccurate, cons
 
 bool CPlanetTerrain::CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr)
 {
-	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.vec1n + pBranch->m_oData.vec4n)/2;
+	DoubleVector vecNormal = DoubleVector(pBranch->m_oData.avecNormals[0] + pBranch->m_oData.avecNormals[8])/2;
 	float flDot = (float)(v2-v1).NormalizedVector().Dot(vecNormal.Normalized());
 
 	if (flDot > 0.2f)

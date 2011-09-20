@@ -47,11 +47,7 @@ public:
 	DoubleVector		vec2;
 	DoubleVector		vec3;
 	DoubleVector		vec4;
-	Vector				vecCenterNormal;
-	Vector				vec1n;
-	Vector				vec2n;
-	Vector				vec3n;
-	Vector				vec4n;
+	Vector				avecNormals[9];
 	DoubleVector2D		vecDetailMin;
 	DoubleVector2D		vecDetailMax;
 	DoubleVector		vecOffsetCenter;
