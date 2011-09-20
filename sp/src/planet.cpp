@@ -584,14 +584,6 @@ bool CChunkOrQuad::Raytrace(const DoubleVector& vecStart, const DoubleVector& ve
 {
 	if (m_pQuad)
 	{
-		scale_t eScale = static_cast<CPlanetTerrain*>(m_pQuad->m_pTree)->GetPlanet()->GetScale();
-		CScalableVector vec1 = CScalableVector(m_pQuad->m_oData.vec1, eScale);
-		CScalableVector vec2 = CScalableVector(m_pQuad->m_oData.vec2, eScale);
-		CScalableVector vec3 = CScalableVector(m_pQuad->m_oData.vec3, eScale);
-		CScalableVector vec4 = CScalableVector(m_pQuad->m_oData.vec4, eScale);
-		CScalableVector v1 = CScalableVector(vecStart, eScale);
-		CScalableVector v2 = CScalableVector(vecEnd, eScale);
-
 		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.vec1, m_pQuad->m_oData.vec2, m_pQuad->m_oData.vec3, tr))
 			return true;
 		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.vec2, m_pQuad->m_oData.vec4, m_pQuad->m_oData.vec3, tr))
