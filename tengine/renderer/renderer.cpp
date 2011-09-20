@@ -606,7 +606,7 @@ void CRenderer::RenderOffscreenBuffers()
 
 		for (size_t i = 0; i < BLOOM_FILTERS; i++)
 		{
-			glUniform1f(flBrightness, 0.6f - 0.1f*i);
+			glUniform1f(flBrightness, BloomBrightnessCutoff() - 0.1f*i);
 			RenderMapToBuffer(m_oSceneBuffer.m_iMap, &m_oBloom1Buffers[i]);
 		}
 

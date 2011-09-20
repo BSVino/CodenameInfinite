@@ -44,6 +44,8 @@ public:
 
 	class CStar*	GetClosestStar() const;
 
+	float			BloomBrightnessCutoff() const { return 1.25f; }
+
 protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 

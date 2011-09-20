@@ -71,6 +71,7 @@ public:
 	void			SetSkybox(size_t ft, size_t bk, size_t lf, size_t rt, size_t up, size_t dn);
 	void			DisableSkybox();
 
+	virtual float	BloomBrightnessCutoff() const { return 0.6f; }
 	void			RenderBloomPass(CFrameBuffer* apSources, CFrameBuffer* apTargets, bool bHorizontal);
 
 	void			RenderMapFullscreen(size_t iMap);
