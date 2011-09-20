@@ -139,6 +139,8 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
+	const class CTerrainChunkManager* GetTerrainChunkManager() { return m_pTerrainChunkManager; }
+
 	void						Debug_RebuildTerrain();
 	void						Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
 	void						Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;

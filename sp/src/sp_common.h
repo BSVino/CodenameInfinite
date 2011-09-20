@@ -114,6 +114,17 @@ inline CScalableFloat RemapValClamped(const CScalableFloat& flInput, const CScal
 	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
 }
 
+inline double RemapValClamped(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, double flOutLo, double flOutHi)
+{
+	if (flInput < flInLo)
+		return flOutLo;
+
+	if (flInput > flInHi)
+		return flOutHi;
+
+	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
+}
+
 class CScalableVector
 {
 	friend class CScalableMatrix;

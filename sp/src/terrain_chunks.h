@@ -39,8 +39,9 @@ public:
 public:
 	void								AddChunk(CTerrainQuadTreeBranch* pBranch);
 	void								RemoveChunk(CTerrainQuadTreeBranch* pBranch);
-	size_t								FindChunk(CTerrainQuadTreeBranch* pBranch);
-	CTerrainChunk*						GetChunk(size_t iChunk);
+	size_t								FindChunk(CTerrainQuadTreeBranch* pBranch) const;
+	CTerrainChunk*						GetChunk(size_t iChunk) const;
+	size_t								GetNumChunks() const { return m_apChunks.size(); }
 
 	void								Think();
 	void								ProcessChunkRendering(CTerrainQuadTreeBranch* pBranch);

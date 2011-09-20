@@ -2,9 +2,12 @@
 
 #include <tengine/game/gameserver.h>
 #include <tengine/renderer/renderer.h>
+#include <tinker/cvar.h>
 
 #include "../planet.h"
-#include "../sp_character.h"
+#include "../terrain_chunks.h"
+#include "../sp_playercharacter.h"
+#include "../sp_game.h"
 
 CSPHUD::CSPHUD()
 	: glgui::CPanel(0, 0, glgui::CRootPanel::Get()->GetWidth(), glgui::CRootPanel::Get()->GetHeight())
@@ -63,6 +66,54 @@ void CSPHUD::Paint(int x, int y, int w, int h)
 			tstring sLabel = pPlanet->GetPlanetName() + " - " + GetStringDistance(flDistance);
 
 			glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
+		}
+	}
+
+	Debug_Paint();
+}
+
+CVar r_chunkdepth("r_chunkdepth", "off");
+
+void CSPHUD::Debug_Paint()
+{
+	Vector vecUp;
+	Vector vecForward;
+	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
+
+	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	if (r_chunkdepth.GetBool() && pLocalCharacter)
+	{
+		CPlanet* pPlanet = pLocalCharacter->GetNearestPlanet();
+		if (pPlanet)
+		{
+			const CTerrainChunkManager* pChunks = pPlanet->GetTerrainChunkManager();
+			size_t iChunks = pChunks->GetNumChunks();
+			for (size_t i = 0; i < iChunks; i++)
+			{
+				CTerrainChunk* pChunk = pChunks->GetChunk(i);
+				if (!pChunk)
+					continue;
+
+				CScalableVector vecBranchCenter = pPlanet->GetGlobalTransform() * CScalableVector(pChunk->GetBranch()->GetCenter(), pPlanet->GetScale());
+				vecBranchCenter -= pLocalCharacter->GetGlobalOrigin();
+
+				Vector vecPlanet = vecBranchCenter.GetUnits(SCALE_METER);
+
+				if (vecForward.Dot((vecPlanet).Normalized()) < 0)
+					continue;
+
+				CScalableFloat flDistance = vecBranchCenter.Length();
+
+				Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
+
+				double flDepth = RemapValClamped(flDistance, pChunk->GetBranch()->m_oData.flGlobalRadius, CScalableFloat(20.0f, SCALE_KILOMETER), 11, 1);
+				int iDepth = (int)flDepth;
+
+				tstring sLabel = GetStringDistance(flDistance) + " - " + sprintf("%d", iDepth);
+
+				glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
+			}
 		}
 	}
 }

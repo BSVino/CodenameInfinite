@@ -10,6 +10,8 @@ public:
 
 public:
 	virtual void	Paint(int x, int y, int w, int h);
+
+	virtual void	Debug_Paint();
 };
 
 #endif

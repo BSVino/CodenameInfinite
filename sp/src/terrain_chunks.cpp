@@ -63,9 +63,9 @@ void CTerrainChunkManager::RemoveChunk(CTerrainQuadTreeBranch* pBranch)
 	m_apChunks[i] = NULL;
 }
 
-size_t CTerrainChunkManager::FindChunk(CTerrainQuadTreeBranch* pBranch)
+size_t CTerrainChunkManager::FindChunk(CTerrainQuadTreeBranch* pBranch) const
 {
-	eastl::map<CTerrainQuadTreeBranch*, size_t>::iterator it = m_apBranchChunks.find(pBranch);
+	eastl::map<CTerrainQuadTreeBranch*, size_t>::const_iterator it = m_apBranchChunks.find(pBranch);
 
 	if (it == m_apBranchChunks.end())
 		return ~0;
@@ -73,7 +73,7 @@ size_t CTerrainChunkManager::FindChunk(CTerrainQuadTreeBranch* pBranch)
 	return it->second;
 }
 
-CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk)
+CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
 {
 	if (iChunk >= m_apChunks.size())
 		return NULL;
