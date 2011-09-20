@@ -791,7 +791,7 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 
 	float flDot = GetLocalCharacterDot(pBranch);
 
-	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
+	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f && pBranch->m_iDepth > 2)
 		return false;
 
 	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth())
