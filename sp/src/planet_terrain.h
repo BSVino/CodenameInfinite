@@ -99,12 +99,6 @@ public:
 	virtual bool				ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete);
 	virtual bool				IsLeaf(CTerrainQuadTreeBranch* pBranch);
 
-	virtual bool				CollideLocal(const CBaseEntity* pWith, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
-	virtual bool				CollideLocalBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
-
-	virtual bool				Collide(const CBaseEntity* pWith, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
-	virtual bool				CollideBranch(CTerrainQuadTreeBranch* pBranch, bool bAccurate, const CScalableVector& v1, const CScalableVector& v2, CTraceResult& tr);
-
 	Vector						GetDirection() const { return m_vecDirection; }
 	class CPlanet*				GetPlanet() const { return m_pPlanet; }
 
