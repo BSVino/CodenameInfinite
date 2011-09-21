@@ -97,12 +97,6 @@ void CPlanetTerrain::ThinkBranch(CTerrainQuadTreeBranch* pBranch)
 		if (pBranch->m_iDepth == m_pPlanet->m_iChunkDepth)
 			m_pPlanet->m_pTerrainChunkManager->ProcessChunkRendering(pBranch);
 
-		if (pBranch->m_pBranches[0])
-		{
-			for (size_t i = 0; i < (size_t)(m_bOneQuad?1:4); i++)
-				ThinkBranch(pBranch->m_pBranches[i]);
-		}
-
 		return;
 	}
 	else if (pBranch->m_oData.bRender)
@@ -270,6 +264,21 @@ void CPlanetTerrain::BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce)
 
 	// If I create branches this frame, be sure to test right away if we should push them.
 	pBranch->m_oData.flLastPushPull = -1;
+}
+
+void CPlanetTerrain::BuildBranchToDepth(CTerrainQuadTreeBranch* pBranch, size_t iDepth)
+{
+	if (pBranch->m_iDepth == iDepth)
+		return;
+
+	if (!pBranch->m_pBranches[0])
+		BuildBranch(pBranch, true);
+
+	if (pBranch->m_pBranches[0]->m_iDepth == iDepth)
+		return;
+
+	for (size_t i = 0; i < 4; i++)
+		BuildBranchToDepth(pBranch->m_pBranches[i], iDepth);
 }
 
 CVar r_terrainresolution("r_terrainresolution", "1.0");

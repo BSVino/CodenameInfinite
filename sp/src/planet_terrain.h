@@ -76,6 +76,7 @@ public:
 	bool						ShouldPush(CTerrainQuadTreeBranch* pBranch);
 	bool						ShouldPull(CTerrainQuadTreeBranch* pBranch);
 	void						BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce = false);
+	void						BuildBranchToDepth(CTerrainQuadTreeBranch* pBranch, size_t iDepth);
 	void						PushBranch(CTerrainQuadTreeBranch* pBranch);
 	void						PullBranch(CTerrainQuadTreeBranch* pBranch);
 	void						ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch);

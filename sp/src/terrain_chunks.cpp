@@ -12,6 +12,7 @@
 #include "sp_renderer.h"
 #include "star.h"
 #include "planet.h"
+#include "planet_terrain.h"
 
 CTerrainChunkManager::CTerrainChunkManager(CPlanet* pPlanet)
 {
@@ -36,7 +37,7 @@ void CTerrainChunkManager::AddChunk(CTerrainQuadTreeBranch* pBranch)
 		m_apChunks.push_back();
 	}
 
-	m_apChunks[iIndex] = new CTerrainChunk(pBranch);
+	m_apChunks[iIndex] = new CTerrainChunk(this, pBranch);
 
 	double flRadius = pBranch->m_oData.flGlobalRadius.GetUnits(m_pPlanet->GetScale());
 	m_pPlanet->m_pOctree->AddObject(CChunkOrQuad(m_pPlanet, iIndex), TemplateAABB<double>(pBranch->GetCenter() - DoubleVector(flRadius, flRadius, flRadius), pBranch->GetCenter() + DoubleVector(flRadius, flRadius, flRadius)));
@@ -84,6 +85,15 @@ CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
 void CTerrainChunkManager::Think()
 {
 	m_apRenderChunks.clear();
+
+	for (size_t i = 0; i < m_apChunks.size(); i++)
+	{
+		CTerrainChunk* pChunk = m_apChunks[i];
+		if (!pChunk)
+			continue;
+
+		pChunk->Think();
+	}
 }
 
 void CTerrainChunkManager::ProcessChunkRendering(CTerrainQuadTreeBranch* pBranch)
@@ -169,9 +179,11 @@ void CTerrainChunkManager::Render()
 		aRenderChunks[i]->Render(&c);
 }
 
-CTerrainChunk::CTerrainChunk(CTerrainQuadTreeBranch* pBranch)
+CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, CTerrainQuadTreeBranch* pBranch)
 {
+	m_pManager = pManager;
 	m_pBranch = pBranch;
+	m_iDepth = m_iMaxDepth = 0;
 
 	DoubleVector vecCenter = pBranch->GetCenter();
 
@@ -185,6 +197,29 @@ CTerrainChunk::CTerrainChunk(CTerrainQuadTreeBranch* pBranch)
 CTerrainChunk::~CTerrainChunk()
 {
 	delete m_pRaytracer;
+}
+
+void CTerrainChunk::Think()
+{
+	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	CScalableVector vecBranchCenter = m_pManager->m_pPlanet->GetGlobalTransform() * CScalableVector(m_pBranch->GetCenter(), m_pManager->m_pPlanet->GetScale());
+	vecBranchCenter -= pLocalCharacter->GetGlobalOrigin();
+
+	CScalableFloat flDistance = vecBranchCenter.Length();
+
+	double flDepth = RemapValClamped(flDistance, m_pBranch->m_oData.flGlobalRadius, CScalableFloat(1.5f, SCALE_KILOMETER), m_pManager->m_pPlanet->ChunkSize(), 0);
+	m_iDepth = (int)flDepth;
+
+	if (m_iDepth > m_iMaxDepth)
+		BuildBranchToDepth();
+}
+
+void CTerrainChunk::BuildBranchToDepth()
+{
+	static_cast<CPlanetTerrain*>(m_pBranch->m_pTree)->BuildBranchToDepth(m_pBranch, m_pBranch->m_iDepth+m_iDepth);
+
+	m_iMaxDepth = m_iDepth;
 }
 
 void CTerrainChunk::Render(class CRenderingContext* c)

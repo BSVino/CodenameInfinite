@@ -103,14 +103,10 @@ void CSPHUD::Debug_Paint()
 				if (vecForward.Dot((vecPlanet).Normalized()) < 0)
 					continue;
 
+				Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
 				CScalableFloat flDistance = vecBranchCenter.Length();
 
-				Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
-
-				double flDepth = RemapValClamped(flDistance, pChunk->GetBranch()->m_oData.flGlobalRadius, CScalableFloat(20.0f, SCALE_KILOMETER), 11, 1);
-				int iDepth = (int)flDepth;
-
-				tstring sLabel = GetStringDistance(flDistance) + " - " + sprintf("%d", iDepth);
+				tstring sLabel = GetStringDistance(flDistance) + " - " + sprintf("%d", pChunk->GetDepth());
 
 				glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
 			}

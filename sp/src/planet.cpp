@@ -428,7 +428,7 @@ void CPlanet::SetRadius(const CScalableFloat& flRadius)
 	m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters = 0;
 	m_pTerrain[0]->InitRenderVectors(m_pTerrain[0]->m_pQuadTreeHead);
 	int iMeterDepth = (int)(log(m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters)/log(2.0f));
-	m_iChunkDepth = iMeterDepth - 11;
+	m_iChunkDepth = iMeterDepth - ChunkSize();
 }
 
 CScalableFloat CPlanet::GetCloseOrbit()
@@ -568,9 +568,9 @@ void CPlanet::Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* p
 		if (!pQuad)
 			continue;
 
-		DoubleVector vec1 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec1, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[0]*10, SCALE_KILOMETER))).GetUnits(eScale);
-		DoubleVector vec2 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec2, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[2]*10, SCALE_KILOMETER))).GetUnits(eScale);
-		DoubleVector vec4 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec4, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[8]*10, SCALE_KILOMETER))).GetUnits(eScale);
+		DoubleVector vec1 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec1, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[0]*1, SCALE_METER))).GetUnits(eScale);
+		DoubleVector vec2 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec2, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[2]*1, SCALE_METER))).GetUnits(eScale);
+		DoubleVector vec4 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec4, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[8]*1, SCALE_METER))).GetUnits(eScale);
 
 		c.BeginRenderDebugLines();
 			c.Vertex(vec1);

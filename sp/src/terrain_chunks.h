@@ -16,23 +16,34 @@ namespace raytrace {
 class CTerrainChunk
 {
 public:
-										CTerrainChunk(CTerrainQuadTreeBranch* pBranch);
+										CTerrainChunk(class CTerrainChunkManager* pManager, CTerrainQuadTreeBranch* pBranch);
 										~CTerrainChunk();
 
 public:
+	void								Think();
+	void								BuildBranchToDepth();
+
 	void								Render(class CRenderingContext* c);
 
 	bool								Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr);
 
 	CTerrainQuadTreeBranch*				GetBranch() { return m_pBranch; }
 
+	size_t								GetDepth() { return m_iDepth; }
+
 protected:
+	class CTerrainChunkManager*			m_pManager;
 	CTerrainQuadTreeBranch*				m_pBranch;
 	raytrace::CRaytracer*				m_pRaytracer;
+
+	size_t								m_iDepth;
+	size_t								m_iMaxDepth;
 };
 
 class CTerrainChunkManager
 {
+	friend class CTerrainChunk;
+
 public:
 										CTerrainChunkManager(class CPlanet* pPlanet);
 
