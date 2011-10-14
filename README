@@ -1,6 +1,17 @@
+CODENAME: INFINITE
+
+This is the source code for Codename: Infinite. It is an attempt at creating an infinite universe with no loading or transitions.
+
+The "master" branch holds the latest stable sources. Floating point numbers and vectors are special "scalable" values which can hold very large numbers while retaining precision. Planets are simple spheres with no terrain. Each planet is comprised of six hemispheres, each hemisphere is a quad tree which generates more and more precise terrain as the player approaches the planet's surface. A lot of optimization has gone in to making this not slow. The biggest way that this code base could be improved would be to use OpenGL4 hardware tesselation to generate the terrain, instead of CPU based generation which is very slow and cpu bound.
+
+The "terrain" branch is an attempt at generating dynamic vector field terrain using a simple perlin noise algorithm. This presents many problems with things like collision and rendering speed, and is not ready for prime time.
+
+
+
+
 TINKER
 
-Tinker is Lunar Workshop's internal engine. It is a simple game engine made specifially for one game, Digitanks.
+Tinker is Lunar Workshop's internal engine. It is a simple game engine made specifially for their games.
 
 WARNING: I DO NOT RECOMMEND THAT YOU USE THIS SOURCE CODE TO MAKE YOUR GAME.
 
@@ -8,7 +19,6 @@ Tinker was made specifically for one purpose and probably would not serve other 
 
 * No animation code whatsoever
 * Slow rendering code
-* Hard-coded shaders
 * Difficult to use particle system
 * Shoddy networking code
 * No localization support
@@ -71,7 +81,6 @@ GLFW
 pthreads-w32 (win32 only)
 SDL
 SDL_mixer
-Steamworks SDK (optional)
 
 For Linux you can mostly get away with installing these packages with your package manager, but some packages may need manual installing. For Windows you must download these packages and place them in a directory named ext-deps, which is where Tinker will look for them when you compile.
 
