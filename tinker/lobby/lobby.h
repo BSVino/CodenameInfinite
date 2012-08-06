@@ -13,7 +13,7 @@ public:
 		eastl::map<tstring, tstring>::iterator it = asInfo.find(sKey);
 
 		if (it == asInfo.end())
-			return _T("");
+			return "";
 
 		return it->second;
 	}

@@ -221,7 +221,7 @@ CScalableFloat CScalableFloat::operator-() const
 
 CScalableFloat CScalableFloat::AddSimilar(const CScalableFloat& u) const
 {
-	TAssert(m_bPositive == u.m_bPositive);
+	TAssertNoMsg(m_bPositive == u.m_bPositive);
 
 	CScalableFloat flReturn;
 	flReturn.m_bPositive = m_bPositive;
@@ -245,7 +245,7 @@ CScalableFloat CScalableFloat::AddSimilar(const CScalableFloat& u) const
 
 CScalableFloat CScalableFloat::AddDifferent(const CScalableFloat& u) const
 {
-	TAssert(m_bPositive != u.m_bPositive);
+	TAssertNoMsg(m_bPositive != u.m_bPositive);
 
 	CScalableFloat flReturn;
 	flReturn.m_bPositive = m_bPositive;
@@ -405,7 +405,7 @@ void CScalableFloat::operator-=(const CScalableFloat& u)
 CScalableFloat CScalableFloat::operator*( const CScalableFloat& f ) const
 {
 	// Since I hard-coded the code below, this would have to be updated if I add a scale.
-	TAssert(SCALESTACK_SIZE == SCALE_TERAMETER);
+	TAssertNoMsg(SCALESTACK_SIZE == SCALE_TERAMETER);
 
 	const int iResults = 13;
 	double aflResults[iResults];
@@ -786,7 +786,7 @@ CScalableFloat CScalableFloat::operator*(float f) const
 
 CScalableFloat CScalableFloat::operator/(float f) const
 {
-	TAssert(f != 0);
+	TAssertNoMsg(f != 0);
 	if (f == 0)
 		return CScalableFloat();
 
@@ -1139,39 +1139,39 @@ void CScalableFloat::CheckSanity()
 	{
 		if (m_bZero)
 		{
-			TAssert(m_aiScaleStack[i] == 0);
+			TAssertNoMsg(m_aiScaleStack[i] == 0);
 		}
 		else
 		{
 			if (m_bPositive)
 			{
-				TAssert(m_aiScaleStack[i] >= 0);
-				TAssert(m_aiScaleStack[i] < 1000);
+				TAssertNoMsg(m_aiScaleStack[i] >= 0);
+				TAssertNoMsg(m_aiScaleStack[i] < 1000);
 			}
 			else
 			{
-				TAssert(m_aiScaleStack[i] <= 0);
-				TAssert(m_aiScaleStack[i] > -1000);
+				TAssertNoMsg(m_aiScaleStack[i] <= 0);
+				TAssertNoMsg(m_aiScaleStack[i] > -1000);
 			}
 		}
 	}
 
 	if (m_bZero)
 	{
-		TAssert(m_flRemainder == 0);
-		TAssert(m_flOverflow == 0);
+		TAssertNoMsg(m_flRemainder == 0);
+		TAssertNoMsg(m_flOverflow == 0);
 	}
 	else if (m_bPositive)
 	{
-		TAssert(m_flRemainder >= 0);
-		TAssert(m_flRemainder < 1);
-		TAssert(m_flOverflow >= 0);
+		TAssertNoMsg(m_flRemainder >= 0);
+		TAssertNoMsg(m_flRemainder < 1);
+		TAssertNoMsg(m_flOverflow >= 0);
 	}
 	else
 	{
-		TAssert(m_flRemainder <= 0);
-		TAssert(m_flRemainder > -1);
-		TAssert(m_flOverflow <= 0);
+		TAssertNoMsg(m_flRemainder <= 0);
+		TAssertNoMsg(m_flRemainder > -1);
+		TAssertNoMsg(m_flOverflow <= 0);
 	}
 }
 
@@ -1291,7 +1291,7 @@ double CScalableFloat::ConvertUnits(double flUnits, scale_t eFrom, scale_t eTo)
 	if (flUnits == 0)
 		return 0;
 
-	TAssert( eTo >= SCALE_MILLIMETER && eTo <= SCALE_HIGHEST );
+	TAssertNoMsg( eTo >= SCALE_MILLIMETER && eTo <= SCALE_HIGHEST );
 	if (eTo == SCALE_NONE)
 		return 0;
 
@@ -1301,7 +1301,7 @@ double CScalableFloat::ConvertUnits(double flUnits, scale_t eFrom, scale_t eTo)
 	if (eTo > SCALE_HIGHEST)
 		return 0;
 
-	TAssert( SCALE_HIGHEST+5 <= 11 );
+	TAssertNoMsg( SCALE_HIGHEST+5 <= 11 );
 	return flUnits * g_aflConversions[eFrom-eTo+5];
 }
 
@@ -1352,6 +1352,11 @@ bool CScalableVector::IsZero() const
 bool CScalableVector::IsZero()
 {
 	return x.IsZero() && y.IsZero() && z.IsZero();
+}
+
+void CScalableVector::Normalize()
+{
+	*this = CScalableVector(*this).Normalized();
 }
 
 CScalableFloat CScalableVector::Length() const
@@ -1444,6 +1449,15 @@ CScalableVector CScalableVector::operator/( float f ) const
 	return vecReturn;
 }
 
+CScalableVector CScalableVector::operator*( const CScalableVector& v ) const
+{
+	CScalableVector vecReturn;
+	for (size_t i = 0; i < 3; i++)
+		vecReturn[i] = Index(i) * v.Index(i);
+
+	return vecReturn;
+}
+
 void CScalableVector::operator+=(const CScalableVector& u)
 {
 	x += u.x;
@@ -1467,7 +1481,7 @@ CScalableFloat CScalableVector::Index(int i) const
 	if (i == 2)
 		return z;
 
-	TAssert(false);
+	TAssertNoMsg(false);
 	return x;
 }
 
@@ -1480,7 +1494,7 @@ CScalableFloat& CScalableVector::Index(int i)
 	if (i == 2)
 		return z;
 
-	TAssert(false);
+	TAssertNoMsg(false);
 	return x;
 }
 
@@ -1510,6 +1524,28 @@ CScalableMatrix::CScalableMatrix(const Vector& vecForward, const Vector& vecUp, 
 	SetColumn(1, vecUp);
 	SetColumn(2, vecRight);
 	SetTranslation(vecPosition);
+}
+
+CScalableMatrix::CScalableMatrix(const EAngle& angDirection, const CScalableVector& vecPosition)
+{
+	SetAngles(angDirection);
+	SetTranslation(vecPosition);
+
+	m[0][3] = 0;
+	m[1][3] = 0;
+	m[2][3] = 0;
+	m[3][3] = 1;
+}
+
+CScalableMatrix::CScalableMatrix(const Matrix4x4& mOther)
+{
+	for (size_t x = 0; x < 3; x++)
+	{
+		for (size_t y = 0; y < 3; y++)
+			m[x][y] = mOther.m[x][y];
+	}
+
+	SetTranslation(mOther.GetTranslation());
 }
 
 void CScalableMatrix::Identity()
@@ -1630,7 +1666,7 @@ CScalableVector CScalableMatrix::operator*(const CScalableVector& v) const
 	return vecResult;
 }
 
-CScalableVector CScalableMatrix::TransformNoTranslate(const CScalableVector& v) const
+CScalableVector CScalableMatrix::TransformVector(const CScalableVector& v) const
 {
 	CScalableVector vecResult;
 	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[0][1], v.z * m[0][2]);
@@ -1640,8 +1676,29 @@ CScalableVector CScalableMatrix::TransformNoTranslate(const CScalableVector& v) 
 	return vecResult;
 }
 
+bool CScalableMatrix::operator!=(const CScalableMatrix& o) const
+{
+	for (size_t x = 0; x < 3; x++)
+	{
+		for (size_t y = 0; y < 3; y++)
+		{
+			if (m[x][y] != o.m[x][y])
+				return false;
+		}
+	}
+
+	if (mt.x != o.mt.x)
+		return false;
+	if (mt.y != o.mt.y)
+		return false;
+	if (mt.z != o.mt.z)
+		return false;
+
+	return true;
+}
+
 // Not a true inversion, only works if the matrix is a translation/rotation matrix.
-void CScalableMatrix::InvertTR()
+void CScalableMatrix::InvertRT()
 {
 	CScalableMatrix t;
 
@@ -1658,6 +1715,15 @@ void CScalableMatrix::InvertTR()
 	SetTranslation(t*CScalableVector(-fl03, -fl13, -fl23));
 }
 
+CScalableMatrix CScalableMatrix::InvertedRT() const
+{
+	CScalableMatrix t = *this;
+
+	t.InvertRT();
+
+	return t;
+}
+
 void CScalableMatrix::SetColumn(int i, const Vector& vecColumn)
 {
 	m[0][i] = vecColumn.x;
@@ -1668,6 +1734,27 @@ void CScalableMatrix::SetColumn(int i, const Vector& vecColumn)
 Vector CScalableMatrix::GetColumn(int i) const
 {
 	return Vector(m[0][i], m[1][i], m[2][i]);
+}
+
+void CScalableMatrix::SetForwardVector(const Vector& v)
+{
+	m[0][0] = v.x;
+	m[0][1] = v.y;
+	m[0][2] = v.z;
+}
+
+void CScalableMatrix::SetUpVector(const Vector& v)
+{
+	m[1][0] = v.x;
+	m[1][1] = v.y;
+	m[1][2] = v.z;
+}
+
+void CScalableMatrix::SetRightVector(const Vector& v)
+{
+	m[2][0] = v.x;
+	m[2][1] = v.y;
+	m[2][2] = v.z;
 }
 
 Matrix4x4 CScalableMatrix::GetUnits(scale_t eScale) const
@@ -1732,7 +1819,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	{
 		// We are inside the sphere. Is this even possible? I dunno. I'm putting an assert here to see.
 		// If it's still here later that means no.
-		TAssert(false);
+		TAssertNoMsg(false);
 		vecPoint = v1;
 		vecNormal = (v1 - s).Normalized();
 		return true;
@@ -1755,7 +1842,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	vecNormal = vecDifference / flDifferenceLength;
 	if (flDifferenceLength < flRadius)
 		vecPoint += vecNormal * ((flRadius-flDifferenceLength) + CScalableFloat(0.1f, SCALE_MILLIMETER));
-	TAssert((vecPoint - s).Length() >= flRadius);
+	TAssertNoMsg((vecPoint - s).Length() >= flRadius);
 
 	return true;
 }

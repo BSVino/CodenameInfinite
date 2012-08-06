@@ -1,14 +1,12 @@
 #ifndef _TINKER_REPLICATION_H
 #define _TINKER_REPLICATION_H
 
-#include <EASTL/map.h>
-#include <EASTL/vector.h>
-#include <EASTL/string.h>
-
 #include <common.h>
 #include <color.h>
 #include <tengine_config.h>
 #include <strutils.h>
+
+#include <tinker/shell.h>
 
 #include "network.h"
 
@@ -56,6 +54,7 @@ public:
 
 	virtual void*		Serialize(size_t& iSize) { return NULL; }
 	virtual void		Unserialize(size_t iDataSize, void* pValue) {}
+	virtual void		Set(size_t iDataSize, void* pValue) {}
 
 public:
 	bool				m_bDirty;
@@ -202,6 +201,7 @@ public:
 
 	virtual void*		Serialize(size_t& iSize);
 	virtual void		Unserialize(size_t iDataSize, void* pValue);
+	virtual void		Set(size_t iDataSize, void* pValue);
 
 	void				SetEpsilon(float flEpsilon) { m_flEpsilon = flEpsilon; }
 	float				GetEpsilon() { return m_flEpsilon; }
@@ -283,13 +283,22 @@ inline void CNetworkedVariable<C>::Unserialize(size_t iDataSize, void* pValue)
 }
 
 template <class C>
-class CNetworkedSTLVector : public CNetworkedVariable<eastl::vector<C> >
+inline void CNetworkedVariable<C>::Set(size_t iDataSize, void* pValue)
+{
+	TAssert(iDataSize == sizeof(m_oVariable));
+	C* pTValue = (C*)pValue;
+	m_oVariable = *pTValue;
+	m_bInitialized = true;
+}
+
+template <class C>
+class CNetworkedSTLVector : public CNetworkedVariable<tvector<C> >
 {
 public:
 	// For some reason GCC 4.4.3 won't build without these.
-	using CNetworkedVariable<eastl::vector<C> >::m_bInitialized;
-	using CNetworkedVariable<eastl::vector<C> >::m_bDirty;
-	using CNetworkedVariable<eastl::vector<C> >::m_oVariable;
+	using CNetworkedVariable<tvector<C> >::m_bInitialized;
+	using CNetworkedVariable<tvector<C> >::m_bDirty;
+	using CNetworkedVariable<tvector<C> >::m_oVariable;
 
 	CNetworkedSTLVector()
 	{
@@ -331,7 +340,7 @@ public:
 		return m_oVariable.push_back();
 	}
 
-	inline typename eastl::vector<C>::iterator erase(size_t iPosition)
+	inline typename tvector<C>::iterator erase(size_t iPosition)
 	{
 		m_bDirty = true;
 		return m_oVariable.erase(m_oVariable.begin()+iPosition);

@@ -1,0 +1,417 @@
+#include "game_renderer.h"
+
+#include <tsort.h>
+#include <maths.h>
+#include <simplex.h>
+
+#include <common/worklistener.h>
+#include <renderer/shaders.h>
+#include <tinker/application.h>
+#include <tinker/cvar.h>
+#include <tinker/profiler.h>
+#include <game/gameserver.h>
+#include <textures/texturelibrary.h>
+#include <game/cameramanager.h>
+#include <physics/physics.h>
+#include <toys/toy.h>
+#include <textures/materiallibrary.h>
+#include <renderer/particles.h>
+#include <tools/workbench.h>
+
+#include "game_renderingcontext.h"
+
+CVar r_batch("r_batch", "1");
+
+CGameRenderer::CGameRenderer(size_t iWidth, size_t iHeight)
+	: CRenderer(iWidth, iHeight)
+{
+	TMsg("Initializing game renderer\n");
+
+	m_bBatching = false;
+	m_bDrawBackground = false;
+
+	m_bBatchThisFrame = r_batch.GetBool();
+
+	DisableSkybox();
+
+	m_pRendering = nullptr;
+}
+
+CVar r_cullfrustum("r_frustumculling", "on");
+
+void CGameRenderer::Render()
+{
+	TPROF("CGameRenderer::Render");
+
+	CCameraManager* pCamera = GameServer()->GetCameraManager();
+
+	SetCameraPosition(pCamera->GetCameraPosition());
+	SetCameraDirection(pCamera->GetCameraDirection());
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraOrthoHeight(pCamera->GetCameraOrthoHeight());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
+	SetRenderOrthographic(pCamera->ShouldRenderOrthographic());
+	SetCustomProjection(pCamera->UseCustomProjection());
+	SetCustomProjection(pCamera->GetCustomProjection());
+
+	PreRender();
+
+	{
+		CGameRenderingContext c(this);
+		ModifyContext(&c);
+		SetupFrame(&c);
+		StartRendering(&c);
+
+		if (CWorkbench::IsActive())
+			CWorkbench::RenderScene();
+		else
+			RenderEverything();
+
+		FinishRendering(&c);
+		FinishFrame(&c);
+	}
+
+	PostRender();
+}
+
+bool DistanceCompare(CBaseEntity* a, CBaseEntity* b)
+{
+	Vector vecCamera = GameServer()->GetCameraManager()->GetCameraPosition();
+	return ((a->GetGlobalOrigin() - vecCamera).LengthSqr() > (b->GetGlobalOrigin() - vecCamera).LengthSqr());
+}
+
+void CGameRenderer::RenderEverything()
+{
+	m_apRenderList.reserve(CBaseEntity::GetNumEntities());
+	m_apRenderList.clear();
+
+	bool bFrustumCulling = r_cullfrustum.GetBool();
+
+	// None of these had better get deleted while we're doing this since they're not handles.
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		if (!pEntity->ShouldRender())
+			continue;
+
+		if (bFrustumCulling && !IsSphereInFrustum(pEntity->GetGlobalCenter(), (float)pEntity->GetBoundingRadius()))
+			continue;
+
+		m_apRenderList.push_back(pEntity);
+	}
+
+	sort(m_apRenderList.begin(), m_apRenderList.end(), DistanceCompare);
+
+	m_bRenderingTransparent = false;
+
+	BeginBatching();
+
+	// First render all opaque objects
+	size_t iEntites = m_apRenderList.size();
+	for (size_t i = 0; i < iEntites; i++)
+		m_apRenderList[i]->Render();
+
+	RenderBatches();
+
+	m_bRenderingTransparent = true;
+
+	// Now render all transparent objects.
+	for (size_t i = 0; i < iEntites; i++)
+		m_apRenderList[i]->Render();
+
+	CParticleSystemLibrary::Render();
+}
+
+void CGameRenderer::SetupFrame(class CRenderingContext* pContext)
+{
+	TPROF("CGameRenderer::SetupFrame");
+
+	m_bBatchThisFrame = r_batch.GetBool();
+
+	BaseClass::SetupFrame(pContext);
+
+	if (m_hSkyboxFT.IsValid())
+		DrawSkybox(pContext);
+}
+
+void CGameRenderer::DrawSkybox(class CRenderingContext* pContext)
+{
+	TPROF("CGameRenderer::DrawSkybox");
+
+	TUnimplemented();	// Hasn't been tested since the 3.0 port
+
+	CCameraManager* pCamera = GameServer()->GetCameraManager();
+
+	SetCameraPosition(pCamera->GetCameraPosition());
+	SetCameraDirection(pCamera->GetCameraDirection());
+	SetCameraUp(pCamera->GetCameraUp());
+	SetCameraFOV(pCamera->GetCameraFOV());
+	SetCameraOrthoHeight(pCamera->GetCameraOrthoHeight());
+	SetCameraNear(pCamera->GetCameraNear());
+	SetCameraFar(pCamera->GetCameraFar());
+
+	CRenderingContext c(this, true);
+
+	c.SetProjection(Matrix4x4::ProjectPerspective(
+			m_flCameraFOV,
+			(float)m_iWidth/(float)m_iHeight,
+			m_flCameraNear,
+			m_flCameraFar
+		));
+
+	c.SetView(Matrix4x4::ConstructCameraView(m_vecCameraPosition, m_vecCameraDirection, m_vecCameraUp));
+
+	c.SetDepthTest(false);
+	c.UseProgram("skybox");
+
+	ModifySkyboxContext(&c);
+
+	c.BeginRenderVertexArray();
+	c.SetTexCoordBuffer(&m_avecSkyboxTexCoords[0][0]);
+	c.SetPositionBuffer(&m_avecSkyboxFT[0][0]);
+	c.BindTexture(m_hSkyboxFT->m_iGLID);
+	c.EndRenderVertexArray(6);
+
+	c.BeginRenderVertexArray();
+	c.SetTexCoordBuffer(&m_avecSkyboxTexCoords[0][0]);
+	c.SetPositionBuffer(&m_avecSkyboxBK[0][0]);
+	c.BindTexture(m_hSkyboxBK->m_iGLID);
+	c.EndRenderVertexArray(6);
+
+	c.BeginRenderVertexArray();
+	c.SetTexCoordBuffer(&m_avecSkyboxTexCoords[0][0]);
+	c.SetPositionBuffer(&m_avecSkyboxLF[0][0]);
+	c.BindTexture(m_hSkyboxLF->m_iGLID);
+	c.EndRenderVertexArray(6);
+
+	c.BeginRenderVertexArray();
+	c.SetTexCoordBuffer(&m_avecSkyboxTexCoords[0][0]);
+	c.SetPositionBuffer(&m_avecSkyboxRT[0][0]);
+	c.BindTexture(m_hSkyboxRT->m_iGLID);
+	c.EndRenderVertexArray(6);
+
+	c.BeginRenderVertexArray();
+	c.SetTexCoordBuffer(&m_avecSkyboxTexCoords[0][0]);
+	c.SetPositionBuffer(&m_avecSkyboxUP[0][0]);
+	c.BindTexture(m_hSkyboxUP->m_iGLID);
+	c.EndRenderVertexArray(6);
+
+	c.BeginRenderVertexArray();
+	c.SetTexCoordBuffer(&m_avecSkyboxTexCoords[0][0]);
+	c.SetPositionBuffer(&m_avecSkyboxDN[0][0]);
+	c.BindTexture(m_hSkyboxDN->m_iGLID);
+	c.EndRenderVertexArray(6);
+
+	c.ClearDepth();
+}
+
+CVar show_physics("debug_show_physics", "no");
+
+void CGameRenderer::FinishRendering(class CRenderingContext* pContext)
+{
+	TPROF("CGameRenderer::FinishRendering");
+
+	BaseClass::FinishRendering(pContext);
+
+	if (show_physics.GetBool() && ShouldRenderPhysicsDebug() && !CWorkbench::IsActive())
+		GamePhysics()->DebugDraw(show_physics.GetInt());
+}
+
+void CGameRenderer::SetSkybox(const CTextureHandle& ft, const CTextureHandle& bk, const CTextureHandle& lf, const CTextureHandle& rt, const CTextureHandle& up, const CTextureHandle& dn)
+{
+	m_hSkyboxFT = ft;
+	m_hSkyboxLF = lf;
+	m_hSkyboxBK = bk;
+	m_hSkyboxRT = rt;
+	m_hSkyboxDN = dn;
+	m_hSkyboxUP = up;
+
+	m_avecSkyboxTexCoords[0] = Vector2D(0, 1);
+	m_avecSkyboxTexCoords[1] = Vector2D(0, 0);
+	m_avecSkyboxTexCoords[2] = Vector2D(1, 0);
+	m_avecSkyboxTexCoords[3] = Vector2D(1, 1);
+
+	m_avecSkyboxFT[0] = Vector(100, 100, -100);
+	m_avecSkyboxFT[1] = Vector(100, -100, -100);
+	m_avecSkyboxFT[2] = Vector(100, -100, 100);
+	m_avecSkyboxFT[3] = Vector(100, 100, 100);
+
+	m_avecSkyboxBK[0] = Vector(-100, 100, 100);
+	m_avecSkyboxBK[1] = Vector(-100, -100, 100);
+	m_avecSkyboxBK[2] = Vector(-100, -100, -100);
+	m_avecSkyboxBK[3] = Vector(-100, 100, -100);
+
+	m_avecSkyboxLF[0] = Vector(-100, 100, -100);
+	m_avecSkyboxLF[1] = Vector(-100, -100, -100);
+	m_avecSkyboxLF[2] = Vector(100, -100, -100);
+	m_avecSkyboxLF[3] = Vector(100, 100, -100);
+
+	m_avecSkyboxRT[0] = Vector(100, 100, 100);
+	m_avecSkyboxRT[1] = Vector(100, -100, 100);
+	m_avecSkyboxRT[2] = Vector(-100, -100, 100);
+	m_avecSkyboxRT[3] = Vector(-100, 100, 100);
+
+	m_avecSkyboxUP[0] = Vector(-100, 100, -100);
+	m_avecSkyboxUP[1] = Vector(100, 100, -100);
+	m_avecSkyboxUP[2] = Vector(100, 100, 100);
+	m_avecSkyboxUP[3] = Vector(-100, 100, 100);
+
+	m_avecSkyboxDN[0] = Vector(100, -100, -100);
+	m_avecSkyboxDN[1] = Vector(-100, -100, -100);
+	m_avecSkyboxDN[2] = Vector(-100, -100, 100);
+	m_avecSkyboxDN[3] = Vector(100, -100, 100);
+}
+
+void CGameRenderer::DisableSkybox()
+{
+	m_hSkyboxFT.Reset();
+}
+
+void CGameRenderer::BeginBatching()
+{
+	if (!ShouldBatchThisFrame())
+		return;
+
+	m_bBatching = true;
+
+	for (auto it = m_aBatches.begin(); it != m_aBatches.end(); it++)
+		it->second.clear();
+}
+
+void CGameRenderer::AddToBatch(class CModel* pModel, const CBaseEntity* pEntity, const Matrix4x4& mTransformations, const Color& clrRender, bool bWinding)
+{
+	TAssert(pModel);
+	if (!pModel)
+		return;
+
+	for (size_t i = 0; i < pModel->m_ahMaterials.size(); i++)
+	{
+		CRenderBatch* pBatch = &m_aBatches[pModel->m_ahMaterials[i]].push_back();
+
+		pBatch->pEntity = pEntity;
+		pBatch->pModel = pModel;
+		pBatch->mTransformation = mTransformations;
+		pBatch->bWinding = bWinding;
+		pBatch->clrRender = clrRender;
+		pBatch->iMaterial = i;
+	}
+}
+
+void CGameRenderer::RenderBatches()
+{
+	TPROF("CGameRenderer::RenderBatches");
+
+	m_bBatching = false;
+
+	if (!ShouldBatchThisFrame())
+		return;
+
+	CGameRenderingContext c(this, true);
+	c.UseFrameBuffer(GetSceneBuffer());
+
+	for (auto it = m_aBatches.begin(); it != m_aBatches.end(); it++)
+	{
+		size_t iJobs = it->second.size();
+		if (!iJobs)
+			continue;
+
+		const CMaterialHandle& hMaterial = it->first;
+
+		if (!hMaterial)
+			continue;
+
+		c.UseMaterial(hMaterial);
+
+		if (IsRenderingTransparent() && hMaterial->m_sBlend == "")
+			continue;
+
+		if (!IsRenderingTransparent() && hMaterial->m_sBlend != "")
+			continue;
+
+		for (size_t i = 0; i < iJobs; i++)
+		{
+			CRenderBatch* pBatch = &it->second[i];
+
+			c.SetWinding(pBatch->bWinding);
+
+			c.ResetTransformations();
+			c.LoadTransform(pBatch->mTransformation);
+
+			c.SetColor(pBatch->clrRender);
+
+			m_pRendering = pBatch->pEntity;
+			m_pRendering->ModifyShader(&c);
+			ModifyShader(m_pRendering, &c);
+			c.RenderModel(pBatch->pModel, pBatch->iMaterial);
+			m_pRendering = nullptr;
+		}
+	}
+}
+
+void CGameRenderer::ClassifySceneAreaPosition(CModel* pModel)
+{
+	if (!pModel->m_pToy->GetNumSceneAreas())
+		return;
+
+	auto it = m_aiCurrentSceneAreas.find(pModel->m_sFilename);
+	if (it == m_aiCurrentSceneAreas.end())
+	{
+		// No entry? 
+		FindSceneAreaPosition(pModel);
+		return;
+	}
+
+	if (it->second >= pModel->m_pToy->GetNumSceneAreas())
+	{
+		FindSceneAreaPosition(pModel);
+		return;
+	}
+
+	if (pModel->m_pToy->GetSceneAreaAABB(it->second).Inside(m_vecCameraPosition))
+		return;
+
+	FindSceneAreaPosition(pModel);
+}
+
+size_t CGameRenderer::GetSceneAreaPosition(CModel* pModel)
+{
+	auto it = m_aiCurrentSceneAreas.find(pModel->m_sFilename);
+
+	if (it == m_aiCurrentSceneAreas.end())
+		return ~0;
+
+	return it->second;
+}
+
+void CGameRenderer::FindSceneAreaPosition(CModel* pModel)
+{
+	for (size_t i = 0; i < pModel->m_pToy->GetNumSceneAreas(); i++)
+	{
+		if (pModel->m_pToy->GetSceneAreaAABB(i).Inside(m_vecCameraPosition))
+		{
+			m_aiCurrentSceneAreas[pModel->m_sFilename] = i;
+			return;
+		}
+	}
+
+	// If there's no entry for this model yet, find the closest.
+	if (m_aiCurrentSceneAreas.find(pModel->m_sFilename) == m_aiCurrentSceneAreas.end())
+	{
+		size_t iClosest = 0;
+		for (size_t i = 1; i < pModel->m_pToy->GetNumSceneAreas(); i++)
+		{
+			if (pModel->m_pToy->GetSceneAreaAABB(i).Center().DistanceSqr(m_vecCameraPosition) < pModel->m_pToy->GetSceneAreaAABB(iClosest).Center().DistanceSqr(m_vecCameraPosition))
+				iClosest = i;
+		}
+
+		m_aiCurrentSceneAreas[pModel->m_sFilename] = iClosest;
+		return;
+	}
+
+	// Otherwise if we don't find one don't fuck with it. We'll consider ourselves to still be in the previous one.
+}

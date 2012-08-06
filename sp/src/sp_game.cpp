@@ -8,6 +8,7 @@
 #include "sp_character.h"
 #include "sp_camera.h"
 #include "sp_renderer.h"
+#include "ui/hud.h"
 
 CGame* CreateGame()
 {
@@ -19,15 +20,19 @@ CRenderer* CreateRenderer()
 	return new CSPRenderer();
 }
 
-CCamera* CreateCamera()
+CResource<CLevel> CreateLevel()
 {
-	CCamera* pCamera = new CSPCamera();
-	return pCamera;
+	return CResource<CLevel>(new CLevel());
 }
 
-CLevel* CreateLevel()
+CHUDViewport* CreateHUD()
 {
-	return new CLevel();
+	return new CSPHUD();
+}
+
+tstring GetInitialGameMode()
+{
+	return "game";
 }
 
 REGISTER_ENTITY(CSPGame);
@@ -58,9 +63,4 @@ CSPCharacter* CSPGame::GetLocalPlayerCharacter()
 CSPRenderer* CSPGame::GetSPRenderer()
 {
 	return static_cast<CSPRenderer*>(GameServer()->GetRenderer());
-}
-
-CSPCamera* CSPGame::GetSPCamera()
-{
-	return static_cast<CSPCamera*>(GameServer()->GetCamera());
 }

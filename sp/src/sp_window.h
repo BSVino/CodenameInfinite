@@ -1,7 +1,7 @@
 #ifndef SP_WINDOW_H
 #define SP_WINDOW_H
 
-#include <tinker/gamewindow.h>
+#include <ui/gamewindow.h>
 
 class CSPWindow : public CGameWindow
 {
@@ -11,8 +11,10 @@ public:
 								CSPWindow(int argc, char** argv);
 
 public:
-	virtual eastl::string		WindowTitle() { return "Codename: Infinite"; }
-	virtual tstring				AppDirectory() { return _T("SP"); }
+	virtual tstring             WindowTitle() { return "Codename: Infinite"; }
+	virtual tstring				AppDirectory() { return "SP"; }
+
+	class CRenderer*            CreateRenderer();
 
 	void						SetScreenshot(size_t iScreenshot) { m_iScreenshot = iScreenshot; };
 	void						SetupEngine();

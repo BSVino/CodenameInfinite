@@ -1,7 +1,8 @@
 #include "player.h"
 
-#include <tengine/game/game.h>
+#include <game/entities/game.h>
 #include <tinker/cvar.h>
+#include <tinker/keys.h>
 
 #include "character.h"
 
@@ -28,16 +29,44 @@ CPlayer::CPlayer()
 	m_iClient = NETWORK_LOCAL;
 }
 
+void NoClip(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
+{
+	if (!CVar::GetCVarBool("cheats"))
+	{
+		TMsg("Noclip is not allowed with cheats off.\n");
+		return;
+	}
+
+	if (!Game())
+		return;
+
+	if (!Game()->GetLocalPlayer())
+		return;
+
+	if (!Game()->GetLocalPlayer()->GetCharacter())
+		return;
+
+	CCharacter* pCharacter = Game()->GetLocalPlayer()->GetCharacter();
+	pCharacter->SetNoClip(!pCharacter->GetNoClip());
+
+	if (pCharacter->GetNoClip())
+		TMsg("NoClip ON\n");
+	else
+		TMsg("NoClip OFF\n");
+}
+
+CCommand noclip("noclip", ::NoClip);
+
 CVar m_sensitivity("m_sensitivity", "5");
 
 void CPlayer::MouseMotion(int x, int y)
 {
-	if (m_hCharacter == NULL)
+	if (!m_hCharacter)
 		return;
 
-	EAngle angDirection = m_hCharacter->GetLocalAngles();
+	EAngle angDirection = m_hCharacter->GetViewAngles();
 
-	angDirection.y -= (x/m_sensitivity.GetFloat());
+	angDirection.y += (x/m_sensitivity.GetFloat());
 	angDirection.p -= (y/m_sensitivity.GetFloat());
 
 	if (angDirection.p > 89)
@@ -52,12 +81,12 @@ void CPlayer::MouseMotion(int x, int y)
 	while (angDirection.y < -180)
 		angDirection.y += 360;
 
-	m_hCharacter->SetLocalAngles(angDirection);
+	m_hCharacter->SetViewAngles(angDirection);
 }
 
 void CPlayer::KeyPress(int c)
 {
-	if (m_hCharacter == NULL)
+	if (!m_hCharacter)
 		return;
 
 	if (c == 'W')
@@ -75,7 +104,7 @@ void CPlayer::KeyPress(int c)
 
 void CPlayer::KeyRelease(int c)
 {
-	if (m_hCharacter == NULL)
+	if (!m_hCharacter)
 		return;
 
 	if (c == 'W')
@@ -86,6 +115,40 @@ void CPlayer::KeyRelease(int c)
 		m_hCharacter->StopMove(MOVE_RIGHT);
 	if (c == 'A')
 		m_hCharacter->StopMove(MOVE_LEFT);
+}
+
+void CPlayer::JoystickButtonPress(int iJoystick, int c)
+{
+	if (c == TINKER_KEY_JOYSTICK_2)
+		m_hCharacter->Jump();
+}
+
+void CPlayer::JoystickAxis(int iJoystick, int iAxis, float flValue, float flChange)
+{
+	if (iAxis == 0)
+	{
+		if (flValue < -0.1f)
+			m_hCharacter->Move(MOVE_LEFT);
+		else if (flValue > 0.1f)
+			m_hCharacter->Move(MOVE_RIGHT);
+		else
+		{
+			m_hCharacter->StopMove(MOVE_LEFT);
+			m_hCharacter->StopMove(MOVE_RIGHT);
+		}
+	}
+	else if (iAxis == 1)
+	{
+		if (flValue < -0.1f)
+			m_hCharacter->Move(MOVE_BACKWARD);
+		else if (flValue > 0.1f)
+			m_hCharacter->Move(MOVE_FORWARD);
+		else
+		{
+			m_hCharacter->StopMove(MOVE_BACKWARD);
+			m_hCharacter->StopMove(MOVE_FORWARD);
+		}
+	}
 }
 
 void CPlayer::SetCharacter(CCharacter* pCharacter)

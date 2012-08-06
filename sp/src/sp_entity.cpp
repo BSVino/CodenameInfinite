@@ -18,22 +18,6 @@ SAVEDATA_TABLE_END();
 INPUTS_TABLE_BEGIN(CSPEntity);
 INPUTS_TABLE_END();
 
-bool CSPEntity::CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
-{
-	if (v1.Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
-		return false;
-
-	return BaseClass::CollideLocal(v1, v2, vecPoint, vecNormal);
-}
-
-bool CSPEntity::Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal)
-{
-	if ((v1 - GetGlobalOrigin()).Length() > CScalableFloat(500.0f, SCALE_MEGAMETER))
-		return false;
-
-	return BaseClass::Collide(v1, v2, vecPoint, vecNormal);
-}
-
 CScalableMatrix CSPEntity::GetScalableRenderTransform() const
 {
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
@@ -50,14 +34,14 @@ CScalableVector CSPEntity::GetScalableRenderOrigin() const
 	return GetScalableRenderTransform().GetTranslation();
 }
 
-Matrix4x4 CSPEntity::GetRenderTransform() const
+const Matrix4x4 CSPEntity::GetRenderTransform() const
 {
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetUnits(eScale);
 }
 
-Vector CSPEntity::GetRenderOrigin() const
+const Vector CSPEntity::GetRenderOrigin() const
 {
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);

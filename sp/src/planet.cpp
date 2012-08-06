@@ -7,6 +7,7 @@
 #include <tinker/application.h>
 #include <tinker/profiler.h>
 #include <renderer/shaders.h>
+#include <tengine/renderer/game_renderer.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"
@@ -68,8 +69,7 @@ CPlanet::~CPlanet()
 
 void CPlanet::Precache()
 {
-	PrecacheTexture("textures/planet.png");
-	PrecacheTexture("textures/grass.png");
+	PrecacheMaterial("textures/grass.mat");
 }
 
 void CPlanet::Spawn()
@@ -90,7 +90,7 @@ void CPlanet::Think()
 
 	BaseClass::Think();
 
-	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*(GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
+	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*((float)GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
 
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
@@ -115,7 +115,7 @@ void CPlanet::RenderUpdate()
 		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
 		// Instead, transform the player to the planet's local once and do the math in local space.
 		CScalableMatrix mPlanetGlobalToLocal = GetGlobalTransform();
-		mPlanetGlobalToLocal.InvertTR();
+		mPlanetGlobalToLocal.InvertRT();
 		s_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
 	}
 
@@ -147,7 +147,7 @@ bool CPlanet::ShouldRenderAtScale(scale_t eScale) const
 	return false;
 }
 
-CScalableFloat CPlanet::GetRenderRadius() const
+const CScalableFloat CPlanet::GetRenderRadius() const
 {
 	return m_flRadius;
 }
@@ -155,11 +155,11 @@ CScalableFloat CPlanet::GetRenderRadius() const
 CVar r_colorcodescales("r_colorcodescales", "off");
 CVar debug_showplanetcollision("debug_showplanetcollision", "off");
 
-void CPlanet::PostRender(bool bTransparent) const
+void CPlanet::PostRender() const
 {
-	BaseClass::PostRender(bTransparent);
+	BaseClass::PostRender();
 
-	if (bTransparent)
+	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
 	TPROF("CPlanet::PostRender");
@@ -177,8 +177,8 @@ void CPlanet::PostRender(bool bTransparent) const
 		if (pLocalCharacter->GetMoveParent() == this)
 		{
 			CScalableMatrix mGlobalToLocal = GetGlobalToLocalTransform();
-			vecUp = mGlobalToLocal.TransformNoTranslate(vecUp);
-			vecForward = mGlobalToLocal.TransformNoTranslate(vecForward);
+			vecUp = mGlobalToLocal.TransformVector(vecUp);
+			vecForward = mGlobalToLocal.TransformVector(vecForward);
 			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
 			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), CScalableVector(), GetRadius(), vecPoint, vecNormal);
 			vecPoint = GetGlobalTransform() * vecPoint;
@@ -224,20 +224,14 @@ void CPlanet::PostRender(bool bTransparent) const
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
-	mPlanetToLocal.InvertTR();
+	mPlanetToLocal.InvertRT();
 
-	Vector vecStarLightPosition = (mPlanetToLocal.TransformNoTranslate(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
+	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
 
 	CRenderingContext c(GameServer()->GetRenderer());
 
-	c.BindTexture("textures/planet.png", 0);
-	if (eScale <= SCALE_METER)
-		c.BindTexture("textures/grass.png", 1);
+	c.UseMaterial("textures/grass.mat");
 
-	c.UseProgram("planet");
-	c.SetUniform("iDiffuse", 0);
-	if (eScale <= SCALE_METER)
-		c.SetUniform("iDetail", 1);
 	c.SetUniform("bDetail", eScale <= SCALE_METER);
 	c.SetUniform("vecStarLightPosition", vecStarLightPosition);
 	c.SetUniform("eScale", eScale);

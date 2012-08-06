@@ -1,13 +1,33 @@
+/*
+Copyright (c) 2012, Lunar Workshop, Inc.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. All advertising materials mentioning features or use of this software must display the following acknowledgement:
+   This product includes software developed by Lunar Workshop, Inc.
+4. Neither the name of the Lunar Workshop nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY LUNAR WORKSHOP INC ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LUNAR WORKSHOP BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #ifndef LW_GEOMETRY_H
 #define LW_GEOMETRY_H
 
+#include "../common.h"
+#include "../tstring.h"
 #include "vector.h"
-#include <EASTL/vector.h>
+#include <tvector.h>
 
-class Rect
+template <class T>
+class TRect
 {
 public:
-	Rect()
+	TRect()
 	{
 		x = 0;
 		y = 0;
@@ -15,7 +35,7 @@ public:
 		h = 0;
 	}
 
-	Rect(int X, int Y, int W, int H)
+	TRect(T X, T Y, T W, T H)
 	{
 		x = X;
 		y = Y;
@@ -23,8 +43,83 @@ public:
 		h = H;
 	}
 
-	int x, y, w, h;
+public:
+	T		Size() const { return w*h; }
+
+	T		Right() const { return x + w; }
+	T		Bottom() const { return y + h; }
+
+	void	SetRight(float r);
+	void	SetBottom(float b);
+
+	bool	Intersects(const TRect<T>& F) const;
+	bool	Union(const TRect<T>& r);
+
+public:
+	T x, y, w, h;
 };
+
+template <class T>
+void TRect<T>::SetRight(float r)
+{
+	w = r - x;
+}
+
+template <class T>
+void TRect<T>::SetBottom(float b)
+{
+	h = b - y;
+}
+
+template <class T>
+bool TRect<T>::Intersects(const TRect<T>& r) const
+{
+	if (x > r.Right())
+		return false;
+
+	if (r.x > Right())
+		return false;
+
+	if (y > r.Bottom())
+		return false;
+
+	if (r.y > Bottom())
+		return false;
+
+	return true;
+}
+
+template <class T>
+bool TRect<T>::Union(const TRect<T>& r)
+{
+	if (!Intersects(r))
+		return false;
+
+	if (r.x > x)
+	{
+		T right = Right();
+		x = r.x;
+		SetRight(right);
+	}
+
+	if (r.y > y)
+	{
+		T bottom = Bottom();
+		y = r.y;
+		SetBottom(bottom);
+	}
+
+	if (Right() > r.Right())
+		SetRight(r.Right());
+
+	if (Bottom() > r.Bottom())
+		SetBottom(r.Bottom());
+
+	return true;
+}
+
+typedef TRect<int> Rect;
+typedef TRect<float> FRect;
 
 class Ray
 {
@@ -47,12 +142,21 @@ public:
 				AABB() {};
 				AABB(Vector vecMins, Vector vecMaxs);
 
+public:
 	Vector		Center() const;
 	Vector		Size() const;
 
 	bool		Inside(const AABB& oBox) const;
+	bool		Inside(const Vector& vecPoint) const;
+	bool		Inside2D(const Vector& vecPoint) const;
 	bool		Intersects(const AABB& oBox) const;
 
+	AABB		operator+(const AABB& oBox) const;
+	AABB		operator*(float s) const;
+	bool		operator==(const AABB& o) const;
+	AABB&       operator+=(const Vector& v);
+
+public:
 	Vector		m_vecMins;
 	Vector		m_vecMaxs;
 };
@@ -96,6 +200,34 @@ inline bool AABB::Inside(const AABB& oBox) const
 	return true;
 }
 
+inline bool AABB::Inside(const Vector& vecPoint) const
+{
+	const float flEpsilon = 1e-4f;
+
+	for (size_t i = 0; i < 3; i++)
+	{
+		float flVI = vecPoint[i];
+
+		if (flVI < m_vecMins[i] - flEpsilon || flVI > m_vecMaxs[i] + flEpsilon)
+			return false;
+	}
+
+	return true;
+}
+
+inline bool AABB::Inside2D(const Vector& vecPoint) const
+{
+	const float flEpsilon = 1e-4f;
+
+	if (vecPoint.x < m_vecMins.x - flEpsilon || vecPoint.x > m_vecMaxs.x + flEpsilon)
+		return false;
+
+	if (vecPoint.z < m_vecMins.z - flEpsilon || vecPoint.z > m_vecMaxs.z + flEpsilon)
+		return false;
+
+	return true;
+}
+
 inline bool AABB::Intersects(const AABB& oBox) const
 {
 	if (m_vecMins.x > oBox.m_vecMaxs.x)
@@ -119,9 +251,42 @@ inline bool AABB::Intersects(const AABB& oBox) const
 	return true;
 }
 
+inline AABB AABB::operator+(const AABB& oBox) const
+{
+	AABB r(*this);
+
+	r.m_vecMaxs += oBox.m_vecMaxs;
+	r.m_vecMins += oBox.m_vecMins;
+
+	return r;
+}
+
+inline AABB AABB::operator*(float s) const
+{
+	AABB r(*this);
+
+	r.m_vecMaxs *= s;
+	r.m_vecMins *= s;
+
+	return r;
+}
+
+inline bool AABB::operator==(const AABB& o) const
+{
+	return (m_vecMins == o.m_vecMins) && (m_vecMaxs == o.m_vecMaxs);
+}
+
+inline AABB& AABB::operator+=(const Vector& v)
+{
+	m_vecMaxs += v;
+	m_vecMins += v;
+
+	return *this;
+}
+
 // Geometry-related functions
 
-inline bool SameSide(Vector p1, Vector p2, Vector a, Vector b)
+inline bool SameSide(const Vector& p1, const Vector& p2, const Vector& a, const Vector& b)
 {
 	Vector ba = b-a;
     Vector cp1 = ba.Cross(p1-a);
@@ -129,12 +294,12 @@ inline bool SameSide(Vector p1, Vector p2, Vector a, Vector b)
     return (cp1.Dot(cp2) > 0);
 }
 
-inline bool PointInTriangle(Vector p, Vector a, Vector b, Vector c)
+inline bool PointInTriangle(const Vector& p, const Vector& a, const Vector& b, const Vector& c)
 {
 	return (SameSide(p, a, b, c) && SameSide(p, b, a, c) && SameSide(p, c, a, b));
 }
 
-inline float DistanceToLine(Vector p, Vector v1, Vector v2)
+inline float DistanceToLine(const Vector& p, const Vector& v1, const Vector& v2)
 {
 	Vector v = v2 - v1;
 	Vector w = p - v1;
@@ -148,7 +313,7 @@ inline float DistanceToLine(Vector p, Vector v1, Vector v2)
 	return (vb - p).Length();
 }
 
-inline float DistanceToLineSegment(Vector p, Vector v1, Vector v2, Vector* i = NULL)
+inline float DistanceToLineSegment(const Vector& p, const Vector& v1, const Vector& v2, Vector* i = NULL)
 {
 	Vector v = v2 - v1;
 	Vector w = p - v1;
@@ -183,7 +348,7 @@ inline float DistanceToLineSegment(Vector p, Vector v1, Vector v2, Vector* i = N
 	return (vb - p).Length();
 }
 
-inline float DistanceToPlane(Vector p, Vector v, Vector n)
+inline float DistanceToPlane(const Vector& p, const Vector& v, const Vector& n)
 {
 	float sb, sn, sd;
 
@@ -195,7 +360,7 @@ inline float DistanceToPlane(Vector p, Vector v, Vector n)
 	return (p - b).Length();
 }
 
-inline float DistanceToPolygon(Vector p, eastl::vector<Vector>& v, Vector n)
+inline float DistanceToPolygon(const Vector& p, tvector<Vector>& v, Vector n)
 {
 	float flPlaneDistance = DistanceToPlane(p, v[0], n);
 
@@ -235,12 +400,12 @@ inline float DistanceToPolygon(Vector p, eastl::vector<Vector>& v, Vector n)
 	return flClosestPoint;
 }
 
-inline float TriangleArea(Vector a, Vector b, Vector c)
+inline float TriangleArea(const Vector& a, const Vector& b, const Vector& c)
 {
 	return (a-b).Cross(a-c).Length()/2;
 }
 
-inline bool RayIntersectsTriangle(Ray vecRay, Vector v0, Vector v1, Vector v2, Vector* pvecHit = NULL)
+inline bool RayIntersectsTriangle(const Ray& vecRay, const Vector& v0, const Vector& v1, const Vector& v2, Vector* pvecHit = NULL)
 {
 	Vector u = v1 - v0;
 	Vector v = v2 - v0;
@@ -291,6 +456,66 @@ inline bool RayIntersectsTriangle(Ray vecRay, Vector v0, Vector v1, Vector v2, V
 	return true;
 }
 
+inline bool RayIntersectsPlane(const Ray& vecRay, const Vector& v0, const Vector& v1, const Vector& v2, Vector* pvecHit = NULL)
+{
+	Vector u = v1 - v0;
+	Vector v = v2 - v0;
+	Vector n = u.Cross(v);
+
+	Vector w0 = vecRay.m_vecPos - v0;
+
+	float a = -n.Dot(w0);
+	float b = n.Dot(vecRay.m_vecDir);
+
+	float ep = 1e-4f;
+
+	if (fabs(b) < ep)
+	{
+		if (a == 0)			// Ray is parallel
+			return false;	// Ray is inside plane
+		else
+			return false;	// Ray is somewhere else
+	}
+
+	float r = a/b;
+	if (r < 0)
+		return false;		// Ray goes away from the plane
+
+	Vector vecPoint = vecRay.m_vecPos + vecRay.m_vecDir*r;
+	if (pvecHit)
+		*pvecHit = vecPoint;
+
+	return true;
+}
+
+inline bool RayIntersectsPlane(const Ray& vecRay, const Vector& p, const Vector& n, Vector* pvecHit = NULL)
+{
+	Vector w0 = vecRay.m_vecPos - p;
+
+	float a = -n.Dot(w0);
+	float b = n.Dot(vecRay.m_vecDir);
+
+	float ep = 1e-4f;
+
+	if (fabs(b) < ep)
+	{
+		if (a == 0)			// Ray is parallel
+			return false;	// Ray is inside plane
+		else
+			return false;	// Ray is somewhere else
+	}
+
+	float r = a/b;
+	if (r < 0)
+		return false;		// Ray goes away from the plane
+
+	Vector vecPoint = vecRay.m_vecPos + vecRay.m_vecDir*r;
+	if (pvecHit)
+		*pvecHit = vecPoint;
+
+	return true;
+}
+
 inline bool ClipRay(float flMin, float flMax, float a, float d, float& tmin, float& tmax)
 {
 	const float flEpsilon = 1e-5f;
@@ -322,7 +547,7 @@ inline bool ClipRay(float flMin, float flMax, float a, float d, float& tmin, flo
 	return (tmax>tmin);
 }
 
-inline bool RayIntersectsAABB(const Ray& r, const AABB& b)
+inline bool RayIntersectsAABB(const Ray& r, const AABB& b, Vector& vecIntersection = Vector())
 {
 	float tmin = 0;
 	float tmax = b.Size().LengthSqr();	// It's a ray so make tmax effectively infinite.
@@ -341,6 +566,8 @@ inline bool RayIntersectsAABB(const Ray& r, const AABB& b)
 
 	if (!ClipRay(b.m_vecMins.z, b.m_vecMaxs.z, r.m_vecPos.z, r.m_vecDir.z, tmin, tmax))
 		return false;
+
+	vecIntersection = r.m_vecPos + r.m_vecDir * tmin;
 
 	return true;
 }
@@ -395,7 +622,7 @@ inline bool SegmentIntersectsAABB(const Vector& v1, const Vector& v2, const AABB
 	return true;
 }
 
-inline bool LineSegmentIntersectsTriangle(Vector s0, Vector s1, Vector v0, Vector v1, Vector v2, Vector* pvecHit = NULL)
+inline bool LineSegmentIntersectsTriangle(const Vector& s0, const Vector& s1, const Vector& v0, const Vector& v1, const Vector& v2, Vector* pvecHit = NULL)
 {
 	Vector u = v1 - v0;
 	Vector v = v2 - v0;
@@ -448,7 +675,7 @@ inline bool LineSegmentIntersectsTriangle(Vector s0, Vector s1, Vector v0, Vecto
 	return true;
 }
 
-inline bool LineSegmentIntersectsSphere(const Vector& v1, const Vector& v2, const Vector& s, float flRadius, Vector& vecPoint)
+inline bool LineSegmentIntersectsSphere(const Vector& v1, const Vector& v2, const Vector& s, float flRadius, Vector& vecPoint, Vector& vecNormal)
 {
 	Vector vecLine = v2 - v1;
 	Vector vecSphere = v1 - s;
@@ -486,29 +713,14 @@ inline bool LineSegmentIntersectsSphere(const Vector& v1, const Vector& v2, cons
 	return true;
 }
 
-inline bool PointInsideAABB( AABB oBox, Vector v )
-{
-	const float flEpsilon = 1e-4f;
-
-	for (size_t i = 0; i < 3; i++)
-	{
-		float flVI = v[i];
-
-		if (flVI < oBox.m_vecMins[i] - flEpsilon || flVI > oBox.m_vecMaxs[i] + flEpsilon)
-			return false;
-	}
-
-	return true;
-}
-
-inline bool	TriangleIntersectsAABB( AABB oBox, Vector v0, Vector v1, Vector v2)
+inline bool	TriangleIntersectsAABB(const AABB& oBox, const Vector& v0, const Vector& v1, const Vector& v2)
 {
 	// Trivial case rejection: If any of the points are inside the box, return true immediately.
-	if (PointInsideAABB(oBox, v0))
+	if (oBox.Inside(v0))
 		return true;
-	if (PointInsideAABB(oBox, v1))
+	if (oBox.Inside(v1))
 		return true;
-	if (PointInsideAABB(oBox, v2))
+	if (oBox.Inside(v2))
 		return true;
 
 	size_t i;
@@ -612,7 +824,32 @@ inline bool	TriangleIntersectsAABB( AABB oBox, Vector v0, Vector v1, Vector v2)
 	return false;
 }
 
-inline size_t FindEar(const eastl::vector<Vector>& avecPoints)
+inline bool	ConvexHullIntersectsAABB(const AABB& oBox, const tvector<Vector>& avecPoints, const tvector<size_t>& aiTriangles)
+{
+	TAssertNoMsg(aiTriangles.size()%3 == 0);
+
+	Vector vecCenter = oBox.Center();
+	Vector n;
+
+	for (size_t i = 0; i < aiTriangles.size(); i += 3)
+	{
+		const Vector& v1 = avecPoints[aiTriangles[i]];
+		const Vector& v2 = avecPoints[aiTriangles[i+1]];
+		const Vector& v3 = avecPoints[aiTriangles[i+2]];
+
+		n = (v2-v1).Cross(v3-v1).Normalized();
+
+		if (n.Dot(vecCenter-v1) < 0)
+			continue;
+
+		if (!TriangleIntersectsAABB(oBox, v1, v2, v3))
+			return false;
+	}
+
+	return true;
+}
+
+inline size_t FindEar(const tvector<Vector>& avecPoints)
 {
 	size_t iPoints = avecPoints.size();
 

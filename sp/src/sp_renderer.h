@@ -5,8 +5,8 @@
 
 #include <common.h>
 
-#include <tengine/game/baseentity.h>
-#include <renderer/renderer.h>
+#include <tengine/game/entities/baseentity.h>
+#include <tengine/renderer/game_renderer.h>
 
 #include "sp_common.h"
 #include "sp_entity.h"
@@ -14,26 +14,23 @@
 class CPlanet;
 class CStar;
 
-class CSPRenderer : public CRenderer
+class CSPRenderer : public CGameRenderer
 {
-	DECLARE_CLASS(CSPRenderer, CRenderer);
+	DECLARE_CLASS(CSPRenderer, CGameRenderer);
 
 public:
 					CSPRenderer();
 
 public:
-	virtual void	LoadShaders();
-
 	virtual void	PreFrame();
 
 	virtual void	BuildScaleFrustums();
-	virtual void	StartRendering();
-	virtual void	SetupLighting();
-	virtual void	DrawSkybox();
+	virtual void	StartRendering(class CRenderingContext* pContext);
+	virtual void	DrawSkybox(class CRenderingContext* c);
 	virtual void	ModifySkyboxContext(class CRenderingContext* c);
-	virtual void	FinishRendering();
+	virtual void	FinishRendering(class CRenderingContext* c);
 
-	void			RenderScale(scale_t eRenderScale);
+	void			RenderScale(scale_t eRenderScale, class CRenderingContext* pContext);
 	scale_t			GetRenderingScale() { return m_eRenderingScale; }
 
 	bool			IsInFrustumAtScale(scale_t eRenderScale, const Vector& vecCenter, float flRadius);

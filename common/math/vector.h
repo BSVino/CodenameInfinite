@@ -1,3 +1,20 @@
+/*
+Copyright (c) 2012, Lunar Workshop, Inc.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. All advertising materials mentioning features or use of this software must display the following acknowledgement:
+   This product includes software developed by Lunar Workshop, Inc.
+4. Neither the name of the Lunar Workshop nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY LUNAR WORKSHOP INC ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LUNAR WORKSHOP BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #ifndef LW_VECTOR_H
 #define LW_VECTOR_H
 
@@ -20,7 +37,7 @@ public:
 			TemplateVector();
 			TemplateVector(class Color c);
 			TemplateVector(unit_t x, unit_t y, unit_t z);
-			TemplateVector(unit_t* xyz);
+			TemplateVector(const unit_t* xyz);
 
 			// Conversions
 			TemplateVector(const TemplateVector<float>& v);
@@ -29,28 +46,43 @@ public:
 			TemplateVector(const class TemplateVector2D<double>& v);
 
 public:
-	TemplateVector<unit_t>	operator-(void) const;
+	const TemplateVector<unit_t>	operator-(void) const;
 
-	TemplateVector<unit_t>	operator+(const TemplateVector<unit_t>& v) const;
-	TemplateVector<unit_t>	operator-(const TemplateVector<unit_t>& v) const;
-	TemplateVector<unit_t>	operator*(unit_t s) const;
-	TemplateVector<unit_t>	operator/(unit_t s) const;
+	const TemplateVector<unit_t>	operator+(const TemplateVector<unit_t>& v) const;
+	const TemplateVector<unit_t>	operator-(const TemplateVector<unit_t>& v) const;
+	const TemplateVector<unit_t>	operator*(unit_t s) const;
+	const TemplateVector<unit_t>	operator/(unit_t s) const;
 
 	void	operator+=(const TemplateVector<unit_t> &v);
 	void	operator-=(const TemplateVector<unit_t> &v);
 	void	operator*=(unit_t s);
 	void	operator/=(unit_t s);
 
-	TemplateVector<unit_t>	operator*(const TemplateVector<unit_t>& v) const;
+	const TemplateVector<unit_t>	operator*(const TemplateVector<unit_t>& v) const;
+	const TemplateVector<unit_t>	operator/(const TemplateVector<unit_t>& v) const;
 
-	friend TemplateVector<unit_t> operator*( unit_t f, const TemplateVector<unit_t>& v )
+	friend const TemplateVector<unit_t> operator*( unit_t f, const TemplateVector<unit_t>& v )
 	{
 		return TemplateVector( v.x*f, v.y*f, v.z*f );
 	}
 
-	friend TemplateVector<unit_t> operator/( unit_t f, const TemplateVector<unit_t>& v )
+	friend const TemplateVector<unit_t> operator/( unit_t f, const TemplateVector<unit_t>& v )
 	{
 		return TemplateVector( f/v.x, f/v.y, f/v.z );
+	}
+
+	bool	operator==(const TemplateVector<unit_t>& v) const
+	{
+		float flEp = 0.000001f;
+		if (fabs(v.x - x) < flEp && fabs(v.y - y) < flEp && fabs(v.z - z) < flEp)
+			return true;
+		return false;
+	}
+
+	bool	operator!=(const TemplateVector<unit_t>& v) const
+	{
+		float flEp = 0.000001f;
+		return fabs(v.x - x) > flEp || fabs(v.y - y) > flEp || fabs(v.z - z) > flEp;
 	}
 
 	unit_t	Length() const;
@@ -58,13 +90,20 @@ public:
 	unit_t	Length2D() const;
 	unit_t	Length2DSqr() const;
 	void	Normalize();
-	TemplateVector<unit_t>	Normalized() const;
+	const TemplateVector<unit_t>	Normalized() const;
+	const TemplateVector<unit_t>	Flattened() const;
+	unit_t	Average() const;
 
 	unit_t	Distance(const TemplateVector<unit_t>& v) const;
 	unit_t	DistanceSqr(const TemplateVector<unit_t>& v) const;
 
 	unit_t	Dot(const TemplateVector<unit_t>& v) const;
-	TemplateVector<unit_t>	Cross(const TemplateVector<unit_t>& v) const;
+	const TemplateVector<unit_t>	Cross(const TemplateVector<unit_t>& v) const;
+
+	bool	IsZero() const
+	{
+		return x == 0 && y == 0 && z == 0;
+	}
 
 	operator unit_t*()
 	{
@@ -111,7 +150,7 @@ inline TemplateVector<unit_t>::TemplateVector(unit_t X, unit_t Y, unit_t Z)
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t>::TemplateVector(unit_t* xyz)
+inline TemplateVector<unit_t>::TemplateVector(const unit_t* xyz)
 	: x(*xyz), y(*(xyz+1)), z(*(xyz+2))
 {
 }
@@ -129,31 +168,31 @@ inline TemplateVector<unit_t>::TemplateVector(const TemplateVector<double>& v)
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::operator-() const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator-() const
 {
 	return TemplateVector(-x, -y, -z);
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::operator+(const TemplateVector<unit_t>& v) const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator+(const TemplateVector<unit_t>& v) const
 {
 	return TemplateVector(x+v.x, y+v.y, z+v.z);
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::operator-(const TemplateVector<unit_t>& v) const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator-(const TemplateVector<unit_t>& v) const
 {
 	return TemplateVector(x-v.x, y-v.y, z-v.z);
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::operator*(unit_t s) const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator*(unit_t s) const
 {
 	return TemplateVector(x*s, y*s, z*s);
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::operator/(unit_t s) const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator/(unit_t s) const
 {
 	return TemplateVector(x/s, y/s, z/s);
 }
@@ -191,9 +230,15 @@ inline void TemplateVector<unit_t>::operator/=(unit_t s)
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::operator*(const TemplateVector<unit_t>& v) const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator*(const TemplateVector<unit_t>& v) const
 {
 	return TemplateVector(x*v.x, y*v.y, z*v.z);
+}
+
+template <class unit_t>
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::operator/(const TemplateVector<unit_t>& v) const
+{
+	return TemplateVector(x/v.x, y/v.y, z/v.z);
 }
 
 template <class unit_t>
@@ -231,13 +276,27 @@ inline void TemplateVector<unit_t>::Normalize()
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::Normalized() const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::Normalized() const
 {
 	unit_t flLength = Length();
 	if (!flLength)
 		return TemplateVector(0,0,1);
 	else
 		return *this/flLength;
+}
+
+template <class unit_t>
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::Flattened() const
+{
+	TemplateVector<unit_t> vecResult(*this);
+	vecResult.y = 0;
+	return vecResult;
+}
+
+template <class unit_t>
+inline unit_t TemplateVector<unit_t>::Average() const
+{
+	return (x + y + z)/3;
 }
 
 template <class unit_t>
@@ -259,7 +318,7 @@ inline unit_t TemplateVector<unit_t>::Dot(const TemplateVector<unit_t>& v) const
 }
 
 template <class unit_t>
-inline TemplateVector<unit_t> TemplateVector<unit_t>::Cross(const TemplateVector<unit_t>& v) const
+inline const TemplateVector<unit_t> TemplateVector<unit_t>::Cross(const TemplateVector<unit_t>& v) const
 {
 	return TemplateVector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 }
@@ -289,22 +348,39 @@ inline unit_t TemplateVector<unit_t>::operator[](size_t i) const
 }
 
 // Euler angles
+// Positive pitch looks up, negative looks down.
+// Positive yaw rotates like a top to the right, negative to the left.
+// Positive roll banks to the right (right wing down, left wing up) negative roll to the left.
 class EAngle
 {
 public:
 			EAngle();
-			EAngle(float x, float y, float z);
-			EAngle(float* xyz);
+			EAngle(float p, float y, float r);
+			EAngle(float* pyr);
 
-	EAngle	operator+(const EAngle& v) const;
-	EAngle	operator-(const EAngle& v) const;
+	const EAngle	operator+(const EAngle& v) const;
+	const EAngle	operator-(const EAngle& v) const;
 
-	EAngle	operator*(float f) const;
-	EAngle	operator/(float f) const;
+	const EAngle	operator*(float f) const;
+	const EAngle	operator/(float f) const;
 
-	operator float*()
+	bool	operator==(const EAngle& v) const
 	{
-		return(&p);
+		float flEp = 0.000001f;
+		return fabs(AngleDifference(v.p, p)) < flEp && fabs(AngleDifference(v.y, y)) < flEp && fabs(AngleDifference(v.r, r)) < flEp;
+	}
+
+	bool	Equals(const EAngle& v, float flEp = 0.000001f) const
+	{
+		return fabs(AngleDifference(v.p, p)) < flEp && fabs(AngleDifference(v.y, y)) < flEp && fabs(AngleDifference(v.r, r)) < flEp;
+	}
+
+	// Can find equivalence even in dangerous situations such as Gimbal lock.
+	bool	EqualsExhaustive(const EAngle& v, float flEp = 0.000001f) const;
+
+	friend const EAngle operator*( float f, const EAngle& a )
+	{
+		return EAngle( a.p*f, a.y*f, a.r*f );
 	}
 
 	float	p, y, r;
@@ -325,27 +401,27 @@ inline EAngle::EAngle(float* pyr)
 {
 }
 
-inline EAngle EAngle::operator+(const EAngle& v) const
+inline const EAngle EAngle::operator+(const EAngle& v) const
 {
 	return EAngle(p+v.p, y+v.y, r+v.r);
 }
 
-inline EAngle EAngle::operator-(const EAngle& v) const
+inline const EAngle EAngle::operator-(const EAngle& v) const
 {
-	return EAngle(p-v.p, y-v.y, r-v.r);
+	return EAngle(AngleDifference(p, v.p), AngleDifference(y, v.y), AngleDifference(r, v.r));
 }
 
-inline EAngle EAngle::operator*(float f) const
+inline const EAngle EAngle::operator*(float f) const
 {
 	return EAngle(p*f, y*f, r*f);
 }
 
-inline EAngle EAngle::operator/(float f) const
+inline const EAngle EAngle::operator/(float f) const
 {
 	return EAngle(p/f, y/f, r/f);
 }
 
-inline Vector AngleVector(const EAngle& a)
+inline const Vector AngleVector(const EAngle& a)
 {
 	Vector vecResult;
 
@@ -365,49 +441,9 @@ inline Vector AngleVector(const EAngle& a)
 	return vecResult;
 }
 
-inline void AngleVectors(const EAngle& a, Vector* pvecF, Vector* pvecR, Vector* pvecU)
-{
-	float p = (float)(a.p * (M_PI*2 / 360));
-	float y = (float)(a.y * (M_PI*2 / 360));
-	float r = 0;
+void AngleVectors(const EAngle& a, Vector* pvecF, Vector* pvecU, Vector* pvecR);
 
-	float sp = sin(p);
-	float cp = cos(p);
-	float sy = sin(y);
-	float cy = cos(y);
-	float sr = 0;
-	float cr = 0;
-
-	if (pvecR || pvecU)
-	{
-		r = (float)(a.r * (M_PI*2 / 360));
-		sr = sin(r);
-		cr = cos(r);
-	}
-
-	if (pvecF)
-	{
-		pvecF->x = cp*cy;
-		pvecF->y = sp;
-		pvecF->z = cp*sy;
-	}
-
-	if (pvecR)
-	{
-		pvecR->x = -sr*sp*cy + cr*sy;
-		pvecR->y = sr*cp;
-		pvecR->z = -sr*sp*sy - cr*cy;
-	}
-
-	if (pvecU)
-	{
-		pvecU->x = cr*sp*cy + sr*sy;
-		pvecU->y = -cr*cp;
-		pvecU->z = cr*sp*sy - sr*cy;
-	}
-}
-
-inline EAngle VectorAngles( const Vector& vecForward )
+inline const EAngle VectorAngles( const Vector& vecForward )
 {
 	EAngle angReturn(0, 0, 0);
 
@@ -415,6 +451,17 @@ inline EAngle VectorAngles( const Vector& vecForward )
 	angReturn.y = atan2(vecForward.z, vecForward.x) * 180/M_PI;
 
 	return angReturn;
+}
+
+template <class T> const T LerpValue(const T& from, const T& to, float flLerp);
+
+template <>
+inline const EAngle LerpValue(const EAngle& from, const EAngle& to, float flLerp)
+{
+	float p = from.p + (AngleDifference(to.p, from.p) * flLerp);
+	float y = from.y + (AngleDifference(to.y, from.y) * flLerp);
+	float r = from.r + (AngleDifference(to.r, from.r) * flLerp);
+	return EAngle(p, y, r);
 }
 
 template <class unit_t>
@@ -430,12 +477,21 @@ public:
 				TemplateVector2D(const TemplateVector2D<double>& v);
 
 public:
+	float	Length() const;
 	float	LengthSqr() const;
 
-	TemplateVector2D<unit_t>	operator+(const TemplateVector2D<unit_t>& v) const;
-	TemplateVector2D<unit_t>	operator-(const TemplateVector2D<unit_t>& v) const;
-	TemplateVector2D<unit_t>	operator*(float s) const;
-	TemplateVector2D<unit_t>	operator/(float s) const;
+	const TemplateVector2D<unit_t>	operator+(const TemplateVector2D<unit_t>& v) const;
+	const TemplateVector2D<unit_t>	operator-(const TemplateVector2D<unit_t>& v) const;
+	const TemplateVector2D<unit_t>	operator*(float s) const;
+	const TemplateVector2D<unit_t>	operator/(float s) const;
+
+	bool	operator==(const TemplateVector2D<unit_t>& v) const
+	{
+		float flEp = 0.000001f;
+		if (fabs(v.x - x) < flEp && fabs(v.y - y) < flEp)
+			return true;
+		return false;
+	}
 
 	operator float*()
 	{
@@ -496,31 +552,37 @@ inline TemplateVector2D<unit_t>::TemplateVector2D(const TemplateVector2D<double>
 }
 
 template <class unit_t>
+inline float TemplateVector2D<unit_t>::Length() const
+{
+	return sqrt(x*x + y*y);
+}
+
+template <class unit_t>
 inline float TemplateVector2D<unit_t>::LengthSqr() const
 {
 	return x*x + y*y;
 }
 
 template <class unit_t>
-inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator+(const TemplateVector2D<unit_t>& v) const
+inline const TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator+(const TemplateVector2D<unit_t>& v) const
 {
 	return TemplateVector2D(x+v.x, y+v.y);
 }
 
 template <class unit_t>
-inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator-(const TemplateVector2D<unit_t>& v) const
+inline const TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator-(const TemplateVector2D<unit_t>& v) const
 {
 	return TemplateVector2D(x-v.x, y-v.y);
 }
 
 template <class unit_t>
-inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator*(float s) const
+inline const TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator*(float s) const
 {
 	return TemplateVector2D(x*s, y*s);
 }
 
 template <class unit_t>
-inline TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator/(float s) const
+inline const TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator/(float s) const
 {
 	return TemplateVector2D(x/s, y/s);
 }
@@ -533,12 +595,24 @@ public:
 				Vector4D(const Vector& v, float w);
 				Vector4D(const class Color& c);
 				Vector4D(float x, float y, float z, float w);
+				Vector4D(const float* xyzw);
 
 public:
-	Vector4D	operator+(const Vector4D& v) const;
-	Vector4D	operator-(const Vector4D& v) const;
+	const Vector4D	operator+(const Vector4D& v) const;
+	const Vector4D	operator-(const Vector4D& v) const;
+
+	bool	operator==(const Vector4D& v) const
+	{
+		float flEp = 0.000001f;
+		return fabs(v.x - x) < flEp && fabs(v.y - y) < flEp && fabs(v.z - z) < flEp && fabs(v.w - w) < flEp;
+	}
 
 	operator float*()
+	{
+		return(&x);
+	}
+
+	operator const float*() const
 	{
 		return(&x);
 	}
@@ -573,12 +647,17 @@ inline Vector4D::Vector4D(float X, float Y, float Z, float W)
 {
 }
 
-inline Vector4D Vector4D::operator+(const Vector4D& v) const
+inline Vector4D::Vector4D(const float* xyzw)
+	: x(*xyzw), y(*(xyzw+1)), z(*(xyzw+2)), w(*(xyzw+3))
+{
+}
+
+inline const Vector4D Vector4D::operator+(const Vector4D& v) const
 {
 	return Vector4D(x+v.x, y+v.y, z+v.z, w+v.w);
 }
 
-inline Vector4D Vector4D::operator-(const Vector4D& v) const
+inline const Vector4D Vector4D::operator-(const Vector4D& v) const
 {
 	return Vector4D(x-v.x, y-v.y, z-v.z, w-v.w);
 }

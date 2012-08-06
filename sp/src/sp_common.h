@@ -1,8 +1,7 @@
 #ifndef SP_COMMON_H
 #define SP_COMMON_H
 
-#include <EASTL/vector.h>
-
+#include <tvector.h>
 #include <vector.h>
 #include <common.h>
 #include <quaternion.h>
@@ -120,6 +119,7 @@ public:
 	bool					IsZero() const;
 	bool					IsZero();
 
+	void                    Normalize();
 	CScalableVector			Normalized() const { return CScalableVector(GetUnits(SCALE_METER).Normalized(), SCALE_METER); }
 	Vector					NormalizedVector() const { return GetUnits(SCALE_METER).Normalized(); }
 	CScalableFloat			Length() const;
@@ -137,6 +137,8 @@ public:
 
 	CScalableVector			operator*(float f) const;
 	CScalableVector			operator/(float f) const;
+
+	CScalableVector			operator*( const CScalableVector& v ) const;
 
 	friend CScalableVector operator*( float f, const CScalableVector& v )
 	{
@@ -164,7 +166,9 @@ class CScalableMatrix
 {
 public:
 							CScalableMatrix() { Identity(); }
-							CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition = CScalableVector());
+	explicit                CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition = CScalableVector());
+	explicit                CScalableMatrix(const EAngle& angDirection, const CScalableVector& vecPosition=CScalableVector(0,0,0));
+	explicit                CScalableMatrix(const Matrix4x4& mOther);
 
 public:
 	void					Identity();
@@ -182,12 +186,19 @@ public:
 	// Transform a vector
 	CScalableVector			operator*(const CScalableVector& v) const;
 
-	CScalableVector			TransformNoTranslate(const CScalableVector& v) const;
+	CScalableVector			TransformVector(const CScalableVector& v) const;
 
-	void					InvertTR();
+	bool                    operator!=(const CScalableMatrix& v) const;
+
+	void					InvertRT();
+	CScalableMatrix			InvertedRT() const;
 
 	void					SetColumn(int i, const Vector& vecColumn);
 	Vector					GetColumn(int i) const;
+
+	void                    SetForwardVector(const Vector& vecForward);
+	void                    SetUpVector(const Vector& vecUp);
+	void                    SetRightVector(const Vector& vecRight);
 	Vector					GetForwardVector() const { return GetColumn(0); }
 	Vector					GetUpVector() const { return GetColumn(1); }
 	Vector					GetRightVector() const { return GetColumn(2); }

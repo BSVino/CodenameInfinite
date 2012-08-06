@@ -1,6 +1,8 @@
 #include "star.h"
 
-#include <renderer/renderingcontext.h>
+#include <tengine/renderer/game_renderer.h>
+#include <tengine/renderer/game_renderingcontext.h>
+#include <tinker/textures/materialhandle.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"
@@ -20,7 +22,7 @@ INPUTS_TABLE_END();
 
 void CStar::Precache()
 {
-	PrecacheTexture("textures/star-yellow.png");
+	PrecacheMaterial("textures/star-yellow.mat");
 }
 
 void CStar::Spawn()
@@ -34,21 +36,19 @@ void CStar::Think()
 	BaseClass::Think();
 }
 
-void CStar::PostRender(bool bTransparent) const
+void CStar::PostRender() const
 {
-	BaseClass::PostRender(bTransparent);
+	BaseClass::PostRender();
 
-	if (!bTransparent)
+	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
-	CRenderingContext c(GameServer()->GetRenderer());
+	CGameRenderingContext c(GameServer()->GetRenderer());
 	c.Transform(GetRenderTransform());
 	c.SetBlend(BLEND_ADDITIVE);
 	c.SetColor(Color(255, 255, 255, 255));
-	c.SetLighting(false);
 
-	c.UseProgram("model");
-	c.RenderBillboard("textures/star-yellow.png", (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+	c.RenderBillboard("textures/star-yellow.mat", (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 }
 
 CScalableFloat CStar::GetCloseOrbit()

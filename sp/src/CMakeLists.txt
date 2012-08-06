@@ -1,15 +1,15 @@
 include_directories (
-	${PROJECT_SOURCE_DIR}/ext-deps/EASTL/include
-	${CMAKE_SOURCE_DIR}
+	${PROJECT_SOURCE_DIR}/../ext-deps/EASTL/include
+	${CMAKE_SOURCE_DIR}/
 	${CMAKE_SOURCE_DIR}/common
 	${CMAKE_SOURCE_DIR}/common/math
+	${CMAKE_SOURCE_DIR}/tinker
 	${CMAKE_SOURCE_DIR}/tengine
 	${CMAKE_SOURCE_DIR}/sp/src/
 )
 
 if (WIN32)
-	include_directories(${CMAKE_SOURCE_DIR}/ext-deps/glew/include)
-	include_directories(${CMAKE_SOURCE_DIR}/ext-deps/devil-1.7.8/include)
+	include_directories(${CMAKE_SOURCE_DIR}/../ext-deps/gl3w/include)
 endif (WIN32)
 
 set (SPINTRO_SOURCES

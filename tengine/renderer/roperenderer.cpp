@@ -1,28 +1,23 @@
 #include "roperenderer.h"
 
-#include <GL/glew.h>
-#include <IL/il.h>
-#include <IL/ilu.h>
-
 #include <maths.h>
 #include <simplex.h>
 
-#include <modelconverter/convmesh.h>
 #include <models/models.h>
 #include <renderer/shaders.h>
 #include <tinker/application.h>
 #include <tinker/cvar.h>
 #include <tinker/profiler.h>
 #include <game/gameserver.h>
-#include <models/texturelibrary.h>
+#include <textures/materiallibrary.h>
 #include <renderer/renderer.h>
 
-CRopeRenderer::CRopeRenderer(CRenderer *pRenderer, size_t iTexture, Vector vecStart, float flWidth)
+CRopeRenderer::CRopeRenderer(CRenderer *pRenderer, const CMaterialHandle& hMaterial, Vector vecStart, float flWidth)
 	: m_oContext(pRenderer)
 {
 	m_pRenderer = pRenderer;
 
-	m_oContext.BindTexture(iTexture);
+	m_oContext.UseMaterial(hMaterial);
 	m_vecLastLink = vecStart;
 	m_bFirstLink = true;
 

@@ -1,7 +1,7 @@
 #ifndef SP_ENTITY_H
 #define SP_ENTITY_H
 
-#include <tengine/game/baseentity.h>
+#include <game/entities/baseentity.h>
 
 #include "sp_common.h"
 
@@ -17,11 +17,8 @@ public:
 	virtual CScalableMatrix			GetScalableRenderTransform() const;
 	virtual CScalableVector			GetScalableRenderOrigin() const;
 
-	virtual Matrix4x4				GetRenderTransform() const;
-	virtual Vector					GetRenderOrigin() const;
-
-	virtual bool					CollideLocal(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
-	virtual bool					Collide(const TVector& v1, const TVector& v2, TVector& vecPoint, TVector& vecNormal);
+	virtual const Matrix4x4         GetRenderTransform() const;
+	virtual const Vector            GetRenderOrigin() const;
 
 	virtual bool					ShouldCollide() const { return true; }
 };

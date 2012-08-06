@@ -1,6 +1,7 @@
 #include "sp_renderer.h"
 
-#include <GL/glew.h>
+#include <GL3/gl3w.h>
+#include <GL/glu.h>
 
 #include <mtrand.h>
 
@@ -11,6 +12,7 @@
 #include <renderer/shaders.h>
 #include <renderer/renderingcontext.h>
 #include <tinker/profiler.h>
+#include <tengine/game/cameramanager.h>
 
 #include "sp_window.h"
 #include "sp_game.h"
@@ -20,21 +22,12 @@
 #include "sp_camera.h"
 
 CSPRenderer::CSPRenderer()
-	: CRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
+	: CGameRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
 {
-	size_t iSkybox = CTextureLibrary::AddTextureID(_T("textures/skybox/skymap.png"), 2);
-	SetSkybox(iSkybox, iSkybox, iSkybox, iSkybox, iSkybox, iSkybox);
+	CTextureHandle hSkybox("textures/skybox/skymap.png");
+	SetSkybox(hSkybox, hSkybox, hSkybox, hSkybox, hSkybox, hSkybox);
 
 	m_eRenderingScale = SCALE_NONE;
-}
-
-void CSPRenderer::LoadShaders()
-{
-	CShaderLibrary::AddShader("planet", "planet", "planet");
-	CShaderLibrary::AddShader("skybox", "skybox", "skybox");
-	CShaderLibrary::AddShader("brightpass", "pass", "brightpass");
-	CShaderLibrary::AddShader("model", "pass", "model");
-	CShaderLibrary::AddShader("blur", "pass", "blur");
 }
 
 void CSPRenderer::PreFrame()
@@ -46,17 +39,12 @@ void CSPRenderer::PreFrame()
 
 void CSPRenderer::BuildScaleFrustums()
 {
-	CSPCamera* pCamera = SPGame()->GetSPCamera();
+	CCameraManager* pCameraManager = GameServer()->GetCameraManager();
 
-	SetCameraUp(pCamera->GetCameraUp());
-	SetCameraFOV(pCamera->GetCameraFOV());
-	SetCameraNear(pCamera->GetCameraNear());
-	SetCameraFar(pCamera->GetCameraFar());
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
+	SetCameraUp(pCameraManager->GetCameraUp());
+	SetCameraFOV(pCameraManager->GetCameraFOV());
+	SetCameraNear(pCameraManager->GetCameraNear());
+	SetCameraFar(pCameraManager->GetCameraFar());
 
 	// Build frustums for each render scale.
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
@@ -64,52 +52,31 @@ void CSPRenderer::BuildScaleFrustums()
 		scale_t eScale = (scale_t)(i+1);
 		m_eRenderingScale = eScale;
 
-		SetCameraPosition(pCamera->GetCameraPosition().GetUnits(eScale));
-		SetCameraTarget(pCamera->GetCameraTarget().GetUnits(eScale));
+		SetCameraPosition(pCameraManager->GetCameraPosition().GetUnits(eScale));
+		SetCameraDirection(pCameraManager->GetCameraDirection());
 
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-
-		gluPerspective(
+		Matrix4x4 mProjection = Matrix4x4::ProjectPerspective(
 				m_flCameraFOV,
 				(float)m_iWidth/(float)m_iHeight,
 				m_flCameraNear,
 				m_flCameraFar
 			);
 
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
+		Matrix4x4 mView = Matrix4x4::ConstructCameraView(m_vecCameraPosition, m_vecCameraDirection, m_vecCameraUp);
 
-		gluLookAt(m_vecCameraPosition.x, m_vecCameraPosition.y, m_vecCameraPosition.z,
-			m_vecCameraTarget.x, m_vecCameraTarget.y, m_vecCameraTarget.z,
-			m_vecCameraUp.x, m_vecCameraUp.y, m_vecCameraUp.z);
+		for (size_t x = 0; x < 16; x++)
+		{
+			m_aiScaleModelViews[i][x] = ((float*)mView)[x];
+			m_aiScaleProjections[i][x] = ((float*)mProjection)[x];
+		}
 
-		glGetDoublev( GL_MODELVIEW_MATRIX, m_aiScaleModelViews[i] );
-		glGetDoublev( GL_PROJECTION_MATRIX, m_aiScaleProjections[i] );
-
-		Matrix4x4 mModelView, mProjection;
-		glGetFloatv( GL_MODELVIEW_MATRIX, mModelView );
-		glGetFloatv( GL_PROJECTION_MATRIX, mProjection );
-
-		m_aoScaleFrustums[i].CreateFrom(mModelView * mProjection);
-
-		// Momentarily return the viewport to the window size. This is because if the scene buffer is not the same as the window size,
-		// the viewport here will be the scene buffer size, but we need it to be the window size so we can do world/screen transformations.
-		glPushAttrib(GL_VIEWPORT_BIT);
-		glViewport(0, 0, (GLsizei)m_iWidth, (GLsizei)m_iHeight);
-		glGetIntegerv( GL_VIEWPORT, m_aiScaleViewports[i] );
-		glPopAttrib();
+		m_aoScaleFrustums[i].CreateFrom(mView * mProjection);
 	}
 
 	m_eRenderingScale = SCALE_NONE;
-
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
 }
 
-void CSPRenderer::StartRendering()
+void CSPRenderer::StartRendering(class CRenderingContext* pContext)
 {
 	TPROF("CSPRenderer::StartRendering");
 
@@ -143,59 +110,35 @@ void CSPRenderer::StartRendering()
 			m_hClosestStar = pStar;
 	}
 
-	RenderScale(SCALE_TERAMETER);
-	RenderScale(SCALE_GIGAMETER);
-	RenderScale(SCALE_MEGAMETER);
-	RenderScale(SCALE_KILOMETER);
-	RenderScale(SCALE_METER);
-	RenderScale(SCALE_MILLIMETER);
+	RenderScale(SCALE_TERAMETER, pContext);
+	RenderScale(SCALE_GIGAMETER, pContext);
+	RenderScale(SCALE_MEGAMETER, pContext);
+	RenderScale(SCALE_KILOMETER, pContext);
+	RenderScale(SCALE_METER, pContext);
+	RenderScale(SCALE_MILLIMETER, pContext);
 
 	m_eRenderingScale = SCALE_RENDER;
 
-	CCamera* pCamera = GameServer()->GetCamera();
+	CCameraManager* pCamera = GameServer()->GetCameraManager();
 
 	SetCameraPosition(pCamera->GetCameraPosition());
-	SetCameraTarget(pCamera->GetCameraTarget());
+	SetCameraDirection(pCamera->GetCameraDirection());
 	SetCameraUp(pCamera->GetCameraUp());
 	SetCameraFOV(pCamera->GetCameraFOV());
 	SetCameraNear(pCamera->GetCameraNear());
 	SetCameraFar(pCamera->GetCameraFar());
 
-	BaseClass::StartRendering();
+	BaseClass::StartRendering(pContext);
 }
 
 CVar r_star_constant_attenuation("r_star_constant_attenuation", "0.1");
 CVar r_star_linear_attenuation("r_star_linear_attenuation", "0.0");
 CVar r_star_quadratic_attenuation("r_star_quadratic_attenuation", "0.0");
 
-void CSPRenderer::SetupLighting()
-{
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_COLOR_MATERIAL);
-	glShadeModel(GL_SMOOTH);
-	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vector4D(Color(0, 0, 0)));
-
-	if (m_hClosestStar == NULL)
-		return;
-
-	CStar* pStar = m_hClosestStar;
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-
-	glLightfv(GL_LIGHT0, GL_POSITION, Vector4D(0, 0, 0, 1));
-	glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4D(Color(1, 2, 2)));
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4D(pStar->GetLightColor()));
-	glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4D(Color(15, 15, 15)));
-	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, r_star_constant_attenuation.GetFloat());
-	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, r_star_linear_attenuation.GetFloat());
-	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, r_star_quadratic_attenuation.GetFloat());
-}
-
-void CSPRenderer::DrawSkybox()
+void CSPRenderer::DrawSkybox(CRenderingContext* c)
 {
 	m_eRenderingScale = SCALE_METER;
-	BaseClass::DrawSkybox();
+	BaseClass::DrawSkybox(c);
 	m_eRenderingScale = SCALE_NONE;
 }
 
@@ -227,18 +170,18 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 	}
 }
 
-void CSPRenderer::FinishRendering()
+void CSPRenderer::FinishRendering(CRenderingContext* c)
 {
 	TPROF("CSPRenderer::FinishRendering");
 
-	BaseClass::FinishRendering();
+	BaseClass::FinishRendering(c);
 
 	m_eRenderingScale = SCALE_NONE;
 }
 
 CVar r_renderscale("r_renderscale", "0");
 
-void CSPRenderer::RenderScale(scale_t eRenderScale)
+void CSPRenderer::RenderScale(scale_t eRenderScale, CRenderingContext* pContext)
 {
 	m_eRenderingScale = eRenderScale;
 
@@ -246,51 +189,23 @@ void CSPRenderer::RenderScale(scale_t eRenderScale)
 	if (iEntities == 0)
 		return;
 
-	CSPCamera* pCamera = SPGame()->GetSPCamera();
+	CCameraManager* pCamera = GameServer()->GetCameraManager();
 
 	SetCameraPosition(pCamera->GetCameraPosition().GetUnits(m_eRenderingScale));
-	SetCameraTarget(pCamera->GetCameraTarget().GetUnits(m_eRenderingScale));
+	SetCameraDirection(pCamera->GetCameraDirection());
 	SetCameraUp(pCamera->GetCameraUp());
 	SetCameraFOV(pCamera->GetCameraFOV());
 	SetCameraNear(pCamera->GetCameraNear());
 	SetCameraFar(pCamera->GetCameraFar());
 
-	BaseClass::StartRendering();
+	BaseClass::StartRendering(pContext);
 
-	glClear(GL_DEPTH_BUFFER_BIT);
+	pContext->ClearDepth();
 
-	SetupLighting();
+	if (!r_renderscale.GetBool() || r_renderscale.GetInt() == eRenderScale)
+		RenderEverything();
 
-	bool bFrustumCulling = CVar::GetCVarBool("r_frustumculling");
-
-	eastl::vector<CSPEntity*> apRender;
-
-	// First render all opaque objects
-	for (size_t i = 0; i < iEntities; i++)
-	{
-		CSPEntity* pSPEntity = m_ahRenderList[i];
-
-		if (!pSPEntity->ShouldRenderAtScale(m_eRenderingScale))
-			continue;
-
-		if (bFrustumCulling && !IsSphereInFrustum(pSPEntity->GetScalableRenderOrigin().GetUnits(m_eRenderingScale), (float)pSPEntity->GetRenderRadius().GetUnits(m_eRenderingScale)))
-			continue;
-
-		apRender.push_back(pSPEntity);
-	}
-
-	size_t iRenderEntities = apRender.size();
-
-	if (r_renderscale.GetInt() && r_renderscale.GetInt() != eRenderScale)
-		iRenderEntities = 0;
-
-	for (size_t i = 0; i < iRenderEntities; i++)
-		apRender[i]->Render(false);
-
-	for (size_t i = 0; i < iRenderEntities; i++)
-		apRender[i]->Render(true);
-
-	BaseClass::FinishRendering();
+	BaseClass::FinishRendering(pContext);
 }
 
 bool CSPRenderer::IsInFrustumAtScale(scale_t eRenderScale, const Vector& vecCenter, float flRadius)

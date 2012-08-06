@@ -1,7 +1,7 @@
 #ifndef SP_CAMERA_H
 #define SP_CAMERA_H
 
-#include <game/camera.h>
+#include <game/entities/camera.h>
 #include <common.h>
 
 #include "sp_common.h"
@@ -16,7 +16,7 @@ public:
 public:
 	virtual CScalableVector		GetCameraPosition();
 	virtual CScalableVector		GetCameraTarget();
-	virtual TVector				GetCameraUp();
+	virtual TVector				GetUpVector();
 	virtual float				GetCameraFOV();
 
 	virtual float				GetCameraNear();

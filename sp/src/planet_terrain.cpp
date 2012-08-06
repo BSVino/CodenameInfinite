@@ -7,6 +7,7 @@
 #include <tinker/cvar.h>
 #include <tinker/application.h>
 #include <tinker/profiler.h>
+#include <tengine/renderer/game_renderer.h>
 
 #include "sp_game.h"
 #include "sp_renderer.h"
@@ -233,10 +234,10 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	{
 		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
 
-		svec1 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin);
-		svec2 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin);
-		svec3 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin);
-		svec4 = mPlanetTransform.TransformNoTranslate(CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin);
+		svec1 = mPlanetTransform.TransformVector(CScalableVector(pBranch->m_oData.vec1, ePlanet) - vecCharacterOrigin);
+		svec2 = mPlanetTransform.TransformVector(CScalableVector(pBranch->m_oData.vec2, ePlanet) - vecCharacterOrigin);
+		svec3 = mPlanetTransform.TransformVector(CScalableVector(pBranch->m_oData.vec3, ePlanet) - vecCharacterOrigin);
+		svec4 = mPlanetTransform.TransformVector(CScalableVector(pBranch->m_oData.vec4, ePlanet) - vecCharacterOrigin);
 	}
 	else
 	{

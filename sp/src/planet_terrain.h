@@ -30,8 +30,8 @@ public:
 	float				flScreenSize;
 	CScalableFloat		flGlobalRadius;
 	float				flRadiusMeters;
-	float				flLastScreenUpdate;
-	float				flLastPushPull;
+	double              flLastScreenUpdate;
+	double              flLastPushPull;
 	size_t				iShouldRenderLastFrame;
 	bool				bShouldRender;
 	size_t				iLocalCharacterDotLastFrame;

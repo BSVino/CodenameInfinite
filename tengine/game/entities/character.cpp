@@ -3,10 +3,11 @@
 #include <matrix.h>
 #include <tinker/application.h>
 #include <tinker/cvar.h>
-#include <tengine/game/game.h>
-
-#include <tengine/renderer/renderer.h>
-#include <tengine/renderer/renderingcontext.h>
+#include <game/entities/game.h>
+#include <renderer/renderer.h>
+#include <renderer/renderingcontext.h>
+#include <physics/physics.h>
+#include <renderer/game_renderer.h>
 
 #include "player.h"
 
@@ -19,37 +20,54 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, int, m_hControllingPlayer);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, int, m_hGround);
+	SAVEDATA_DEFINE_HANDLE(CSaveData::DATA_COPYTYPE, EAngle, m_angView, "ViewAngles");
+	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CBaseEntity>, m_hGround);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bNoClip);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bTransformMoveByView);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecGoalVelocity);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecMoveVelocity);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flMoveSimulationTime);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flLastAttack);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TFloat, m_flMaxStepSize);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CCharacter);
+	INPUT_DEFINE(SetViewAngles);
 INPUTS_TABLE_END();
+
+CCharacter::CCharacter()
+{
+	m_bTransformMoveByView = true;
+	m_bNoClip = false;
+
+	SetMass(60);
+}
 
 void CCharacter::Spawn()
 {
 	BaseClass::Spawn();
 
-	SetSimulated(false);
+	SetTotalHealth(100);
 
 	m_vecMoveVelocity = Vector(0,0,0);
 	m_vecGoalVelocity = Vector(0,0,0);
 
-	m_flMoveSimulationTime = 0;
+	m_flLastAttack = -1;
 
-	m_flMaxStepSize = 10;
+	m_bTakeDamage = true;
+
+	m_flMaxStepSize = 0.2f;
+
+	AddToPhysics(CT_CHARACTER);
 }
 
 void CCharacter::Think()
 {
-	FindGroundEntity();
-
 	BaseClass::Think();
 
-	MoveThink();
+	if (m_bNoClip)
+		MoveThink_NoClip();
+	else
+		MoveThink();
 }
 
 void CCharacter::Move(movetype_t eMoveType)
@@ -66,215 +84,188 @@ void CCharacter::Move(movetype_t eMoveType)
 
 void CCharacter::StopMove(movetype_t eMoveType)
 {
-	if (eMoveType == MOVE_FORWARD && m_vecGoalVelocity.x > 0)
+	if (eMoveType == MOVE_FORWARD && m_vecGoalVelocity.x > 0.0f)
 		m_vecGoalVelocity.x = 0;
-	else if (eMoveType == MOVE_BACKWARD && m_vecGoalVelocity.x < 0)
+	else if (eMoveType == MOVE_BACKWARD && m_vecGoalVelocity.x < 0.0f)
 		m_vecGoalVelocity.x = 0;
-	else if (eMoveType == MOVE_LEFT && m_vecGoalVelocity.z < 0)
+	else if (eMoveType == MOVE_LEFT && m_vecGoalVelocity.z < 0.0f)
 		m_vecGoalVelocity.z = 0;
-	else if (eMoveType == MOVE_RIGHT && m_vecGoalVelocity.z > 0)
+	else if (eMoveType == MOVE_RIGHT && m_vecGoalVelocity.z > 0.0f)
 		m_vecGoalVelocity.z = 0;
+}
+
+const TVector CCharacter::GetGoalVelocity()
+{
+	if (m_vecGoalVelocity.LengthSqr())
+		m_vecGoalVelocity.Normalize();
+
+	return m_vecGoalVelocity;
 }
 
 void CCharacter::MoveThink()
 {
-	if (!GetGroundEntity())
-		return;
-
-	if (m_vecGoalVelocity.LengthSqr())
-		m_vecGoalVelocity.Normalize();
-
-	m_vecMoveVelocity.x = Approach(m_vecGoalVelocity.x, m_vecMoveVelocity.x, GameServer()->GetFrameTime()*4);
-	m_vecMoveVelocity.y = 0;
-	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
-
-	if (m_vecMoveVelocity.LengthSqr() > 0)
-	{
-		TMatrix m = GetLocalTransform();
-
-		Vector vecUp = GetUpVector();
-		
-		if (HasMoveParent())
-		{
-			TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
-			vecUp = mGlobalToLocal.TransformNoTranslate(vecUp);
-		}
-
-		Vector vecRight = m.GetForwardVector().Cross(vecUp).Normalized();
-		Vector vecForward = vecUp.Cross(vecRight).Normalized();
-		m.SetColumn(0, vecForward);
-		m.SetColumn(1, vecUp);
-		m.SetColumn(2, vecRight);
-
-		TVector vecMove = m_vecMoveVelocity * CharacterSpeed();
-		TVector vecLocalVelocity = m.TransformNoTranslate(vecMove);
-
-		SetLocalVelocity(vecLocalVelocity);
-	}
-	else
-		SetLocalVelocity(TVector());
-
-	eastl::vector<CEntityHandle<CBaseEntity> > apCollisionList;
-
-	size_t iMaxEntities = GameServer()->GetMaxEntities();
-	for (size_t j = 0; j < iMaxEntities; j++)
-	{
-		CBaseEntity* pEntity2 = CBaseEntity::GetEntity(j);
-
-		if (!pEntity2)
-			continue;
-
-		if (pEntity2->IsDeleted())
-			continue;
-
-		if (pEntity2 == this)
-			continue;
-
-		if (!pEntity2->ShouldCollide())
-			continue;
-
-		apCollisionList.push_back(pEntity2);
-	}
-
-	TMatrix mGlobalToLocalRotation;
-	if (HasMoveParent())
-	{
-		mGlobalToLocalRotation = GetMoveParent()->GetGlobalToLocalTransform();
-		mGlobalToLocalRotation.SetTranslation(TVector());
-	}
-
 	float flSimulationFrameTime = 0.01f;
 
-	// Break simulations up into consistent small steps to preserve accuracy.
-	for (; m_flMoveSimulationTime < GameServer()->GetGameTime(); m_flMoveSimulationTime += flSimulationFrameTime)
+	TVector vecGoalVelocity = GetGoalVelocity();
+
+	m_vecMoveVelocity.x = Approach((float)vecGoalVelocity.x, (float)m_vecMoveVelocity.x, (float)GameServer()->GetFrameTime()*(float)CharacterAcceleration());
+	m_vecMoveVelocity.y = 0;
+	m_vecMoveVelocity.z = Approach((float)vecGoalVelocity.z, (float)m_vecMoveVelocity.z, (float)GameServer()->GetFrameTime()*(float)CharacterAcceleration());
+
+	if (m_vecMoveVelocity.LengthSqr() > 0.0f)
 	{
-		TVector vecVelocity = GetLocalVelocity();
+		TVector vecMove = m_vecMoveVelocity * CharacterSpeed();
+		TVector vecLocalVelocity;
 
-		TVector vecLocalOrigin = GetLocalOrigin();
-		TVector vecGlobalOrigin = GetGlobalOrigin();
-
-		vecVelocity = vecVelocity * flSimulationFrameTime;
-
-		TVector vecLocalDestination = vecLocalOrigin + vecVelocity;
-		TVector vecGlobalDestination = vecLocalDestination;
-		if (GetMoveParent())
-			vecGlobalDestination = GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
-
-		TVector vecNewLocalOrigin = vecLocalDestination;
-
-		size_t iTries = 0;
-		while (true)
+		if (m_bTransformMoveByView)
 		{
-			iTries++;
+			Vector vecUp = GetUpVector();
 
-			TVector vecPoint, vecNormal;
-
-			TVector vecLocalCollisionPoint, vecGlobalCollisionPoint;
-
-			bool bContact = false;
-			for (size_t i = 0; i < apCollisionList.size(); i++)
+			if (HasMoveParent() && GetMoveParent()->TransformsChildUp())
 			{
-				CBaseEntity* pEntity2 = apCollisionList[i];
-
-				if (GetMoveParent() == pEntity2)
-				{
-					if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, vecPoint, vecNormal))
-					{
-						bContact = true;
-						Touching(pEntity2);
-						vecLocalCollisionPoint = vecPoint;
-						vecGlobalCollisionPoint = GetMoveParent()->GetGlobalTransform() * vecPoint;
-					}
-				}
-				else
-				{
-					if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, vecPoint, vecNormal))
-					{
-						bContact = true;
-						Touching(pEntity2);
-						vecGlobalCollisionPoint = vecPoint;
-						if (GetMoveParent())
-						{
-							vecLocalCollisionPoint = GetMoveParent()->GetGlobalToLocalTransform() * vecPoint;
-							vecNormal = GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(vecNormal);
-						}
-						else
-							vecLocalCollisionPoint = vecGlobalCollisionPoint;
-					}
-				}
+				TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
+				vecUp = mGlobalToLocal.TransformVector(vecUp);
 			}
 
-			if (bContact)
-			{
-				vecNewLocalOrigin = vecLocalCollisionPoint;
-				vecVelocity -= vecLocalCollisionPoint - vecLocalOrigin;
-			}
+			TMatrix m = GetLocalTransform();
+			m.SetAngles(GetViewAngles());
 
-			if (!bContact)
-				break;
+			Vector vecRight = m.GetForwardVector().Cross(vecUp).Normalized();
+			Vector vecForward = vecUp.Cross(vecRight).Normalized();
 
-			if (iTries > 4)
-				break;
+			m.SetForwardVector(vecForward);
+			m.SetUpVector(vecUp);
+			m.SetRightVector(vecRight);
 
-			vecLocalOrigin = vecLocalCollisionPoint;
-			vecGlobalOrigin = vecGlobalCollisionPoint;
-
-			// Clip the velocity to the surface normal of whatever we hit.
-			TFloat flDistance = vecVelocity.Dot(vecNormal);
-
-			vecVelocity = vecVelocity - vecNormal * flDistance;
-
-			// Do it one more time just to make sure we're not headed towards the plane.
-			TFloat flAdjust = vecVelocity.Dot(vecNormal);
-			if (flAdjust < 0.0f)
-				vecVelocity -= (vecNormal * flAdjust);
-
-			vecLocalDestination = vecLocalOrigin + vecVelocity;
-
-			if (GetMoveParent())
-				vecGlobalDestination = GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
-			else
-				vecGlobalDestination = vecLocalDestination;
-
-			SetLocalVelocity(vecVelocity.Normalized() * GetLocalVelocity().Length());
+			vecLocalVelocity = m.TransformVector(vecMove);
 		}
+		else
+			vecLocalVelocity = vecMove;
 
-		SetLocalOrigin(vecNewLocalOrigin);
+		GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
+	}
+	else
+		GamePhysics()->SetControllerWalkVelocity(this, Vector(0, 0, 0));
+}
 
-		// Try to keep the player on the ground.
-		// Untested.
-		/*TVector vecStart = GetGlobalOrigin() + GetGlobalTransform().GetUpVector()*m_flMaxStepSize;
-		TVector vecEnd = GetGlobalOrigin() - GetGlobalTransform().GetUpVector()*m_flMaxStepSize;
+void CCharacter::MoveThink_NoClip()
+{
+	float flSimulationFrameTime = 0.01f;
 
-		// First go up a bit
-		TVector vecHit, vecNormal;
-		Game()->TraceLine(GetGlobalOrigin(), vecStart, vecHit, vecNormal, NULL);
-		vecStart = vecHit;
+	TVector vecGoalVelocity = GetGoalVelocity();
 
-		// Now see if there's ground underneath us.
-		bool bHit = Game()->TraceLine(vecStart, vecEnd, vecHit, vecNormal, NULL);
-		if (bHit && vecNormal.y >= TFloat(0.7f))
-			SetGlobalOrigin(vecHit);*/
+	m_vecMoveVelocity.x = Approach((float)vecGoalVelocity.x, (float)m_vecMoveVelocity.x, (float)GameServer()->GetFrameTime()*(float)CharacterAcceleration());
+	m_vecMoveVelocity.y = 0;
+	m_vecMoveVelocity.z = Approach((float)vecGoalVelocity.z, (float)m_vecMoveVelocity.z, (float)GameServer()->GetFrameTime()*(float)CharacterAcceleration());
 
-		m_flMoveSimulationTime += flSimulationFrameTime;
+	if (m_vecMoveVelocity.LengthSqr() > 0.0f)
+	{
+		TVector vecMove = m_vecMoveVelocity * CharacterSpeed();
+		TVector vecLocalVelocity;
+
+		if (m_bTransformMoveByView)
+		{
+			Vector vecUp = GetUpVector();
+
+			if (HasMoveParent() && GetMoveParent()->TransformsChildUp())
+			{
+				TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
+				vecUp = mGlobalToLocal.TransformVector(vecUp);
+			}
+
+			TMatrix m = GetLocalTransform();
+			m.SetAngles(GetViewAngles());
+
+			vecLocalVelocity = m.TransformVector(vecMove);
+		}
+		else
+			vecLocalVelocity = vecMove;
+
+		SetGlobalOrigin(GetGlobalOrigin() + (float)GameServer()->GetFrameTime()*vecLocalVelocity);
 	}
 }
 
 void CCharacter::Jump()
 {
-	if (!GetGroundEntity())
+	GamePhysics()->CharacterJump(this);
+}
+
+void CCharacter::SetNoClip(bool bOn)
+{
+	m_bNoClip = bOn;
+
+	GamePhysics()->SetControllerWalkVelocity(this, Vector(0, 0, 0));
+	GamePhysics()->SetControllerColliding(this, !m_bNoClip);
+}
+
+bool CCharacter::CanAttack() const
+{
+	if (m_flLastAttack >= 0 && GameServer()->GetGameTime() - m_flLastAttack < AttackTime())
+		return false;
+
+	return true;
+}
+
+void CCharacter::Attack()
+{
+	if (!CanAttack())
 		return;
 
-	SetGroundEntity(NULL);
+	m_flLastAttack = GameServer()->GetGameTime();
+	m_vecMoveVelocity = TVector();
 
-	Vector vecLocalUp = GetUpVector();
-	if (HasMoveParent())
+	TFloat flAttackSphereRadius = AttackSphereRadius();
+	TVector vecDamageSphereCenter = AttackSphereCenter();
+
+	size_t iMaxEntities = GameServer()->GetMaxEntities();
+	for (size_t j = 0; j < iMaxEntities; j++)
 	{
-		TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
-		vecLocalUp = mGlobalToLocal.TransformNoTranslate(vecLocalUp);
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(j);
+
+		if (!pEntity)
+			continue;
+
+		if (pEntity->IsDeleted())
+			continue;
+
+		if (!pEntity->TakesDamage())
+			continue;
+
+		if (pEntity == this)
+			continue;
+
+		TFloat flRadius = pEntity->GetBoundingRadius() + flAttackSphereRadius;
+		flRadius = flRadius*flRadius;
+		if ((vecDamageSphereCenter - pEntity->GetGlobalCenter()).LengthSqr() > flRadius)
+			continue;
+
+		pEntity->TakeDamage(this, this, DAMAGE_GENERIC, AttackDamage());
+	}
+}
+
+bool CCharacter::IsAttacking() const
+{
+	if (m_flLastAttack < 0)
+		return false;
+
+	return (GameServer()->GetGameTime() - m_flLastAttack < AttackTime());
+}
+
+void CCharacter::MoveToPlayerStart()
+{
+	CBaseEntity* pPlayerStart = CBaseEntity::GetEntityByName("*PlayerStart");
+
+	SetMoveParent(NULL);
+
+	if (!pPlayerStart)
+	{
+		SetGlobalOrigin(Vector(0, 0, 0));
+		SetGlobalAngles(EAngle(0, 0, 0));
+		return;
 	}
 
-	SetLocalVelocity(GetLocalVelocity() + vecLocalUp * JumpStrength());
+	SetGlobalOrigin(pPlayerStart->GetGlobalOrigin());
+	m_angView = pPlayerStart->GetGlobalAngles();
 }
 
 CVar debug_showplayervectors("debug_showplayervectors", "off");
@@ -288,21 +279,23 @@ void CCharacter::PostRender(bool bTransparent) const
 void CCharacter::ShowPlayerVectors() const
 {
 	TMatrix m = GetGlobalTransform();
+	m.SetAngles(m_angView);
 
 	Vector vecUp = GetUpVector();
 	Vector vecRight = m.GetForwardVector().Cross(vecUp).Normalized();
 	Vector vecForward = vecUp.Cross(vecRight).Normalized();
-	m.SetColumn(0, vecForward);
-	m.SetColumn(1, vecUp);
-	m.SetColumn(2, vecRight);
+	m.SetForwardVector(vecForward);
+	m.SetUpVector(vecUp);
+	m.SetRightVector(vecRight);
 
 	CCharacter* pLocalCharacter = Game()->GetLocalPlayer()->GetCharacter();
 
 	TVector vecEyeHeight = GetUpVector() * EyeHeight();
 
-	CRenderingContext c(GameServer()->GetRenderer());
+	CRenderingContext c(GameServer()->GetRenderer(), true);
 
-	c.Translate((GetGlobalOrigin() - pLocalCharacter->GetGlobalOrigin()));
+	c.UseProgram("model");
+	c.Translate((GetGlobalOrigin()));
 	c.SetColor(Color(255, 255, 255));
 	c.BeginRenderDebugLines();
 	c.Vertex(Vector(0,0,0));
@@ -334,15 +327,6 @@ void CCharacter::ShowPlayerVectors() const
 	c.Vertex(vecEyeHeight);
 	c.Vertex(vecEyeHeight + vecUp);
 	c.EndRender();
-
-	TVector vecPoint, vecNormal;
-	if (Game()->TraceLine(GetGlobalOrigin(), GetGlobalOrigin() - GetUpVector()*100, vecPoint, vecNormal, NULL))
-	{
-		c.Translate(vecPoint - GetGlobalOrigin());
-		c.Scale(0.1f, 0.1f, 0.1f);
-		c.SetColor(Color(255, 255, 255));
-		c.RenderSphere();
-	}
 }
 
 void CCharacter::SetControllingPlayer(CPlayer* pCharacter)
@@ -355,70 +339,32 @@ CPlayer* CCharacter::GetControllingPlayer() const
 	return m_hControllingPlayer;
 }
 
-TVector CCharacter::GetGlobalGravity() const
-{
-	if (GetGroundEntity())
-		return TVector();
+CVar sv_noclip_multiplier("sv_noclip_multiplier", "2");
 
-	return BaseClass::GetGlobalGravity();
+TFloat CCharacter::CharacterSpeed()
+{
+	if (m_bNoClip)
+		return BaseCharacterSpeed() * sv_noclip_multiplier.GetFloat();
+	else
+		return BaseCharacterSpeed();
 }
 
-void CCharacter::FindGroundEntity()
+void CCharacter::SetViewAngles(const tvector<tstring>& asArgs)
 {
-	TVector vecVelocity = GetGlobalVelocity();
-
-	if (vecVelocity.Dot(GetUpVector()) > JumpStrength()/2.0f)
+	if (asArgs.size() != 3)
 	{
-		SetGroundEntity(NULL);
-		SetSimulated(true);
+		TError("CCharacter::SetViewAngles with != 3 arguments. Was expecting \"p y r\"\n");
 		return;
 	}
 
-	TVector vecUp = GetUpVector() * m_flMaxStepSize;
+	SetViewAngles(EAngle((float)stof(asArgs[0]), (float)stof(asArgs[1]), (float)stof(asArgs[2])));
+}
 
-	size_t iMaxEntities = GameServer()->GetMaxEntities();
-	for (size_t j = 0; j < iMaxEntities; j++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(j);
+void CCharacter::SetGroundEntity(CBaseEntity* pEntity)
+{
+	if ((CBaseEntity*)m_hGround == pEntity)
+		return;
 
-		if (!pEntity)
-			continue;
-
-		if (pEntity->IsDeleted())
-			continue;
-
-		if (!pEntity->ShouldCollide())
-			continue;
-
-		if (pEntity == this)
-			continue;
-
-		TVector vecPoint, vecNormal;
-		if (GetMoveParent() == pEntity)
-		{
-			TMatrix mGlobalToLocal = GetMoveParent()->GetGlobalToLocalTransform();
-			Vector vecUpLocal = mGlobalToLocal.TransformNoTranslate(GetUpVector()) * m_flMaxStepSize;
-
-			if (pEntity->CollideLocal(GetLocalOrigin(), GetLocalOrigin() - vecUpLocal, vecPoint, vecNormal))
-			{
-				SetGroundEntity(pEntity);
-				SetSimulated(false);
-
-				return;
-			}
-		}
-		else
-		{
-			if (pEntity->Collide(GetGlobalOrigin(), GetGlobalOrigin() - vecUp, vecPoint, vecNormal))
-			{
-				SetGroundEntity(pEntity);
-				SetSimulated(false);
-
-				return;
-			}
-		}
-	}
-
-	SetGroundEntity(NULL);
-	SetSimulated(true);
+	m_hGround = pEntity;
+	SetMoveParent(pEntity);
 }

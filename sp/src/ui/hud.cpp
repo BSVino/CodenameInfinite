@@ -1,13 +1,15 @@
 #include "hud.h"
 
 #include <tengine/game/gameserver.h>
-#include <tengine/renderer/renderer.h>
+#include <tengine/renderer/game_renderer.h>
+#include <glgui/rootpanel.h>
+#include <glgui/label.h>
 
 #include "../planet.h"
 #include "../sp_character.h"
 
 CSPHUD::CSPHUD()
-	: glgui::CPanel(0, 0, glgui::CRootPanel::Get()->GetWidth(), glgui::CRootPanel::Get()->GetHeight())
+	: CHUDViewport()
 {
 }
 

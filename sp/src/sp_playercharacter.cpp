@@ -23,6 +23,13 @@ CPlayerCharacter::CPlayerCharacter()
 	m_bFlying = false;
 }
 
+void CPlayerCharacter::Spawn()
+{
+	m_aabbPhysBoundingBox = AABB(Vector(-0.35f, 0, -0.35f), Vector(0.35f, 2, 0.35f));
+
+	BaseClass::Spawn();
+}
+
 void CPlayerCharacter::Think()
 {
 	BaseClass::Think();
@@ -39,16 +46,16 @@ void CPlayerCharacter::MoveThink()
 	if (m_vecGoalVelocity.LengthSqr())
 		m_vecGoalVelocity.Normalize();
 
-	m_vecMoveVelocity.x = Approach(m_vecGoalVelocity.x, m_vecMoveVelocity.x, GameServer()->GetFrameTime()*4);
-	m_vecMoveVelocity.y = Approach(m_vecGoalVelocity.y, m_vecMoveVelocity.y, GameServer()->GetFrameTime()*4);
-	m_vecMoveVelocity.z = Approach(m_vecGoalVelocity.z, m_vecMoveVelocity.z, GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.x = Approach((float)m_vecGoalVelocity.x, (float)m_vecMoveVelocity.x, (float)GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.y = Approach((float)m_vecGoalVelocity.y, (float)m_vecMoveVelocity.y, (float)GameServer()->GetFrameTime()*4);
+	m_vecMoveVelocity.z = Approach((float)m_vecGoalVelocity.z, (float)m_vecMoveVelocity.z, (float)GameServer()->GetFrameTime()*4);
 
 #ifndef _DEBUG
 	if (m_bHyperdrive)
 		m_vecMoveVelocity.y = m_vecMoveVelocity.z = 0;
 #endif
 
-	if (m_vecMoveVelocity.LengthSqr() > 0)
+	if (m_vecMoveVelocity.LengthSqr() > 0.0f)
 	{
 		CScalableVector vecVelocity = GetLocalVelocity();
 
@@ -79,13 +86,15 @@ void CPlayerCharacter::StartFlying()
 
 	m_bFlying = true;
 	SetGroundEntity(NULL);
-	SetSimulated(true);
+	TUnimplemented();
+	//SetSimulated(true);
 }
 
 void CPlayerCharacter::StopFlying()
 {
 	m_bFlying = false;
-	SetSimulated(false);
+	TUnimplemented();
+	//SetSimulated(false);
 }
 
 CScalableFloat CPlayerCharacter::CharacterSpeed()
@@ -134,21 +143,10 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 		return flMaxSpeed;
 }
 
-CScalableVector CPlayerCharacter::GetGlobalGravity() const
+const CScalableVector CPlayerCharacter::GetGlobalGravity() const
 {
 	if (m_bFlying)
 		return CScalableVector();
 
 	return BaseClass::GetGlobalGravity();
-}
-
-void CPlayerCharacter::FindGroundEntity()
-{
-	if (m_bFlying)
-	{
-		SetGroundEntity(NULL);
-		return;
-	}
-
-	BaseClass::FindGroundEntity();
 }

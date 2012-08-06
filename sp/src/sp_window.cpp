@@ -2,19 +2,17 @@
 
 #include <time.h>
 
-#include <GL/glew.h>
-#include <IL/il.h>
-#include <IL/ilu.h>
-
 #include <mtrand.h>
 
 #include <tinker/keys.h>
 #include <game/gameserver.h>
-#include <game/game.h>
+#include <game/entities/game.h>
 #include <glgui/glgui.h>
 #include <renderer/renderer.h>
 #include <tinker/cvar.h>
-#include <game/camera.h>
+#include <game/entities/camera.h>
+#include <glgui/rootpanel.h>
+#include <renderer/renderingcontext.h>
 
 #include "sp_player.h"
 #include "sp_playercharacter.h"
@@ -26,6 +24,11 @@
 CSPWindow::CSPWindow(int argc, char** argv)
 	: CGameWindow(argc, argv)
 {
+}
+
+CRenderer* CSPWindow::CreateRenderer()
+{
+	return new CSPRenderer();
 }
 
 void CSPWindow::SetupEngine()
@@ -82,7 +85,9 @@ void CSPWindow::SetupSP()
 
 void CSPWindow::RenderLoading()
 {
-	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
+	CRenderingContext c(GetRenderer());
+	c.ClearDepth();
+	c.ClearColor();
 
 	SwapBuffers();
 }

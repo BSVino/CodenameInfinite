@@ -1,7 +1,7 @@
 #ifndef SP_GAME_H
 #define SP_GAME_H
 
-#include <game/game.h>
+#include <tengine/game/entities/game.h>
 
 class CSPGame : public CGame
 {
@@ -14,7 +14,6 @@ public:
 
 	class CSPCharacter*		GetLocalPlayerCharacter();
 	class CSPRenderer*		GetSPRenderer();
-	class CSPCamera*		GetSPCamera();
 };
 
 inline class CSPGame* SPGame()

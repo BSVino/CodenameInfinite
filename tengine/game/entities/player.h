@@ -1,7 +1,7 @@
 #ifndef TINKER_PLAYER_H
 #define TINKER_PLAYER_H
 
-#include <tengine/game/baseentity.h>
+#include <tengine/game/entities/baseentity.h>
 
 class CCharacter;
 
@@ -14,8 +14,12 @@ public:
 
 public:
 	virtual void					MouseMotion(int x, int y);
+	virtual void					MouseInput(int iButton, int iState) {};
 	virtual void					KeyPress(int c);
 	virtual void					KeyRelease(int c);
+	virtual void					JoystickButtonPress(int iJoystick, int c);
+	virtual void					JoystickButtonRelease(int iJoystick, int c) {};
+	virtual void					JoystickAxis(int iJoystick, int iAxis, float flValue, float flChange);
 
 	void							SetCharacter(CCharacter* pCharacter);
 	CCharacter*						GetCharacter() const;

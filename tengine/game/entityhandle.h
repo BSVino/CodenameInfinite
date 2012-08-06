@@ -15,7 +15,7 @@ public:
 		m_iHandle = ~0;
 	}
 
-	CEntityHandle(C* pEntity)
+	CEntityHandle(const C* pEntity)
 	{
 		if (!pEntity)
 			m_iHandle = ~0;

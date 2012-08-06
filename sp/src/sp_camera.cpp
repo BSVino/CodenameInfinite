@@ -3,7 +3,7 @@
 #include <matrix.h>
 
 #include <tinker/application.h>
-#include <tengine/game/game.h>
+#include <tengine/game/entities/game.h>
 #include <tinker/cvar.h>
 
 #include "sp_character.h"
@@ -18,9 +18,6 @@ CSPCamera::CSPCamera()
 
 CScalableVector CSPCamera::GetCameraPosition()
 {
-	if (m_bFreeMode)
-		return CScalableVector(BaseClass::GetCameraPosition(), SCALE_METER);
-
 	if (GetThirdPerson())
 		return GetThirdPersonCameraPosition();
 
@@ -38,9 +35,6 @@ CScalableVector CSPCamera::GetCameraPosition()
 
 CScalableVector CSPCamera::GetCameraTarget()
 {
-	if (m_bFreeMode)
-		return CScalableVector(BaseClass::GetCameraTarget(), SCALE_METER);
-
 	if (GetThirdPerson())
 		return GetThirdPersonCameraTarget();
 
@@ -58,13 +52,13 @@ CScalableVector CSPCamera::GetCameraTarget()
 	return GetCameraPosition() + CScalableVector(pCharacter->GetGlobalTransform().GetForwardVector(), eScale);
 }
 
-TVector CSPCamera::GetCameraUp()
+TVector CSPCamera::GetUpVector()
 {
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter)
 		return Vector(pCharacter->GetGlobalTransform().GetUpVector());
 
-	return BaseClass::GetCameraUp();
+	return BaseClass::GetUpVector();
 }
 
 float CSPCamera::GetCameraFOV()

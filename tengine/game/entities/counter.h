@@ -1,7 +1,7 @@
 #ifndef _COUNTER_H
 #define _COUNTER_H
 
-#include <game/baseentity.h>
+#include <game/entities/baseentity.h>
 
 class CCounter : public CBaseEntity
 {

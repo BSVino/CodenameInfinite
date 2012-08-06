@@ -1,59 +1,66 @@
-#include "game.h"
+#include "entities/game.h"
 
 #include <iostream>
 #include <fstream>
 
 #include <mtrand.h>
-#include <platform.h>
+#include <tinker_platform.h>
 #include <configfile.h>
 #include <strutils.h>
+#include <worklistener.h>
 
 #include <tinker/application.h>
 #include <tinker/profiler.h>
-#include <renderer/renderer.h>
+#include <renderer/game_renderer.h>
+#include <renderer/game_renderingcontext.h>
 #include <renderer/particles.h>
-#include <renderer/dissolver.h>
 #include <sound/sound.h>
 #include <network/network.h>
 #include <network/commands.h>
 #include <datamanager/data.h>
 #include <datamanager/dataserializer.h>
 #include <models/models.h>
-#include <models/texturelibrary.h>
-#include <tinker/portals/portal.h>
-#include <tinker/lobby/lobby_server.h>
+#include <textures/texturelibrary.h>
+#include <portals/portal.h>
+#include <lobby/lobby_server.h>
 #include <tinker/cvar.h>
-#include <tinker/gamewindow.h>
+#include <ui/gamewindow.h>
+#include <physics/physics.h>
+#include <tools/workbench.h>
+#include <textures/materiallibrary.h>
 
-#include "camera.h"
+#include "cameramanager.h"
 #include "level.h"
 
+tmap<tstring, CPrecacheItem> CGameServer::s_aPrecacheClasses;
 CGameServer* CGameServer::s_pGameServer = NULL;
 
-ConfigFile g_cfgEngine(_T("scripts/engine.cfg"));
+ConfigFile g_cfgEngine("scripts/engine.cfg");
 
 CGameServer::CGameServer(IWorkListener* pWorkListener)
 {
 	TAssert(!s_pGameServer);
 	s_pGameServer = this;
 
+	m_bAllowPrecaches = false;
+
 	GameNetwork()->SetCallbacks(this, CGameServer::ClientConnectCallback, CGameServer::ClientEnterGameCallback, CGameServer::ClientDisconnectCallback);
 
 	m_pWorkListener = pWorkListener;
 
-	m_iMaxEnts = g_cfgEngine.read(_T("MaxEnts"), 1024);
+	m_iMaxEnts = g_cfgEngine.read("MaxEnts", 1024);
 
 	CBaseEntity::s_apEntityList.resize(m_iMaxEnts);
 
-	m_pCamera = NULL;
+	m_pCameraManager = NULL;
 
 	m_iSaveCRC = 0;
 
 	m_bLoading = true;
+	m_bRestartLevel = false;
 
 	m_flHostTime = 0;
 	m_flGameTime = 0;
-	m_flSimulationTime = 0;
 	m_flFrameTime = 0;
 	m_flNextClientInfoUpdate = 0;
 	m_iFrame = 0;
@@ -63,13 +70,17 @@ CGameServer::CGameServer(IWorkListener* pWorkListener)
 	if (m_pWorkListener)
 		m_pWorkListener->BeginProgress();
 
-	TMsg(_T("Precaching entities... "));
+	TMsg("Creating physics model... ");
+	GamePhysics();	// Just make sure it exists.
+	TMsg("Done.\n");
+
+	TMsg("Registering entities... ");
 
 	if (m_pWorkListener)
-		m_pWorkListener->SetAction(_T("Loading polygons"), CBaseEntity::GetEntityRegistration().size());
+		m_pWorkListener->SetAction("Registering entities", CBaseEntity::GetEntityRegistration().size());
 
 	size_t i = 0;
-	for (eastl::map<tstring, CEntityRegistration>::iterator it = CBaseEntity::GetEntityRegistration().begin(); it != CBaseEntity::GetEntityRegistration().end(); it++)
+	for (tmap<tstring, CEntityRegistration>::iterator it = CBaseEntity::GetEntityRegistration().begin(); it != CBaseEntity::GetEntityRegistration().end(); it++)
 	{
 		CEntityRegistration* pRegistration = &it->second;
 		pRegistration->m_pfnRegisterCallback();
@@ -77,8 +88,7 @@ CGameServer::CGameServer(IWorkListener* pWorkListener)
 		if (m_pWorkListener)
 			m_pWorkListener->WorkProgress(++i);
 	}
-	TMsg(_T("Done.\n"));
-	TMsg(sprintf(tstring("%d models, %d textures, %d sounds and %d particle systems precached.\n"), CModelLibrary::GetNumModels(), CTextureLibrary::GetNumTextures(), CSoundLibrary::GetNumSounds(), CParticleSystemLibrary::GetNumParticleSystems()));
+	TMsg("Done.\n");
 
 	mtsrand(iPostSeed);
 
@@ -101,19 +111,96 @@ CGameServer::~CGameServer()
 		m_pWorkListener->BeginProgress();
 
 	if (m_pWorkListener)
-		m_pWorkListener->SetAction(_T("Scrubbing database"), CBaseEntity::GetEntityRegistration().size());
+		m_pWorkListener->SetAction("Scrubbing database", CBaseEntity::GetEntityRegistration().size());
+
+	DestroyAllEntities(tvector<tstring>());
+
+	GamePhysics()->RemoveAllEntities();
 
 	for (size_t i = 0; i < m_apLevels.size(); i++)
-		delete m_apLevels[i];
+		m_apLevels[i].reset();
 
-	if (m_pCamera)
-		delete m_pCamera;
+	if (m_pCameraManager)
+		delete m_pCameraManager;
 
 	if (m_pWorkListener)
 		m_pWorkListener->EndProgress();
 
 	TAssert(s_pGameServer == this);
 	s_pGameServer = NULL;
+}
+
+void CGameServer::AllowPrecaches()
+{
+	m_bAllowPrecaches = true;
+
+	for (tmap<tstring, CEntityRegistration>::iterator it = CBaseEntity::GetEntityRegistration().begin(); it != CBaseEntity::GetEntityRegistration().end(); it++)
+	{
+		CEntityRegistration* pRegistration = &it->second;
+		pRegistration->m_asPrecaches.clear();
+		pRegistration->m_ahMaterialPrecaches.clear();
+	}
+
+	CModelLibrary::ResetReferenceCounts();
+	CSoundLibrary::ResetReferenceCounts();
+	CParticleSystemLibrary::ResetReferenceCounts();
+}
+
+void CGameServer::AddToPrecacheList(const tstring& sClass)
+{
+	TAssert(m_bAllowPrecaches || IsLoading());
+
+	auto it = s_aPrecacheClasses.find(sClass);
+	if (it != s_aPrecacheClasses.end())
+		return;
+
+	auto it2 = CBaseEntity::GetEntityRegistration().find(sClass);
+	if (it2 == CBaseEntity::GetEntityRegistration().end())
+		return;
+
+	CPrecacheItem o;
+	o.m_sClass = sClass;
+
+	s_aPrecacheClasses[sClass] = o;
+
+	if (it2->second.m_pszParentClass)
+		AddToPrecacheList(it2->second.m_pszParentClass);
+}
+
+void CGameServer::PrecacheList()
+{
+	TMsg("Precaching entities... ");
+
+	size_t iPrecaches = s_aPrecacheClasses.size();
+	if (m_pWorkListener)
+		m_pWorkListener->SetAction("Precaching entities", iPrecaches);
+
+	size_t i = 0;
+
+	for (auto it = s_aPrecacheClasses.begin(); it != s_aPrecacheClasses.end(); it++)
+	{
+		CPrecacheItem* pPrecacheItem = &it->second;
+
+		CEntityRegistration* pRegistration = &CBaseEntity::GetEntityRegistration()[pPrecacheItem->m_sClass];
+		pRegistration->m_pfnPrecacheCallback();
+
+		if (m_pWorkListener)
+			m_pWorkListener->WorkProgress(++i);
+	}
+
+	s_aPrecacheClasses.clear();
+
+	// Do this in this order, dependencies matter
+	CParticleSystemLibrary::ClearUnreferenced();
+	CModelLibrary::ClearUnreferenced();
+	CTextureLibrary::ClearUnreferenced();
+	CMaterialLibrary::ClearUnreferenced();
+	CSoundLibrary::ClearUnreferenced();
+
+	TMsg("Done.\n");
+	TMsg(sprintf(tstring("%d models, %d materials, %d textures, %d sounds and %d particle systems precached.\n"), CModelLibrary::GetNumModelsLoaded(), CMaterialLibrary::GetNumMaterials(), CTextureLibrary::GetNumTextures(), CSoundLibrary::GetNumSoundsLoaded(), CParticleSystemLibrary::GetNumParticleSystemsLoaded()));
+
+	m_bAllowPrecaches = false;
 }
 
 CLIENT_GAME_COMMAND(SendNickname)
@@ -141,7 +228,7 @@ void CGameServer::Initialize()
 	m_bGotClientInfo = false;
 	m_bLoading = true;
 
-	TMsg(_T("Initializing game server\n"));
+	TMsg("Initializing game server\n");
 
 	ReadLevels();
 
@@ -149,84 +236,235 @@ void CGameServer::Initialize()
 
 	RegisterNetworkFunctions();
 
-	DestroyAllEntities(eastl::vector<eastl::string>(), true);
+	DestroyAllEntities(tvector<tstring>(), true);
 
 	CParticleSystemLibrary::ClearInstances();
 
-	if (!m_pCamera)
-		m_pCamera = CreateCamera();
+	if (!m_pCameraManager)
+		m_pCameraManager = new CCameraManager();
 
 	if (m_pWorkListener)
 		m_pWorkListener->EndProgress();
 
 	if (m_pWorkListener)
-		m_pWorkListener->SetAction(_T("Pending network actions"), 0);
+		m_pWorkListener->SetAction("Pending network actions", 0);
+}
+
+void CGameServer::LoadLevel(tstring sFile)
+{
+	CHandle<CLevel> pLevel = GetLevel(sFile);
+
+	if (pLevel.expired())
+		return;
+
+	if (m_bRestartLevel)
+		LoadLevel(pLevel);
+	else
+	{
+		std::basic_ifstream<tchar> f(sFile.c_str());
+
+		CData* pData = new CData();
+		CDataSerializer::Read(f, pData);
+
+		pLevel->CreateEntitiesFromData(pData);
+
+		LoadLevel(pLevel);
+
+		delete pData;
+	}
+}
+
+void CGameServer::LoadLevel(const CHandle<CLevel>& pLevel)
+{
+	// Create and name the entities first and add them to this array. This way we avoid a problem where
+	// one entity needs to connect to another entity which has not yet been created.
+	tmap<size_t, CBaseEntity*> apEntities;
+
+	auto aEntities = pLevel->GetEntityData();
+	for (size_t i = 0; i < aEntities.size(); i++)
+	{
+		CLevelEntity* pLevelEntity = &aEntities[i];
+
+		tstring sClass = "C" + pLevelEntity->GetClass();
+
+		auto it = CBaseEntity::GetEntityRegistration().find(sClass);
+		TAssert(it != CBaseEntity::GetEntityRegistration().end());
+		if (it == CBaseEntity::GetEntityRegistration().end())
+		{
+			TError("Unregistered entity '" + sClass + "'\n");
+			continue;
+		}
+
+		AddToPrecacheList(sClass);
+
+		CBaseEntity* pEntity = Create<CBaseEntity>(sClass.c_str());
+
+		apEntities[i] = pEntity;
+
+		pEntity->SetName(pLevelEntity->GetName());
+
+		// Process outputs here so that they exist when handle callbacks run.
+		for (size_t k = 0; k < pLevelEntity->GetOutputs().size(); k++)
+		{
+			auto pOutput = &pLevelEntity->GetOutputs()[k];
+			tstring sValue = pOutput->m_sOutput;
+
+			CSaveData* pSaveData = CBaseEntity::FindOutput(pEntity->GetClassName(), sValue);
+			TAssert(pSaveData);
+			if (!pSaveData)
+			{
+				TError("Unknown output '" + sValue + "'\n");
+				continue;
+			}
+
+			tstring sTarget = pOutput->m_sTargetName;
+			tstring sInput = pOutput->m_sInput;
+			tstring sArgs = pOutput->m_sArgs;
+			bool bKill = pOutput->m_bKill;
+
+			if (!sTarget.length())
+			{
+				TUnimplemented();
+				TError("Output '" + sValue + "' of entity '" + pEntity->GetName() + "' (" + pEntity->GetClassName() + ") is missing a target.\n");
+				continue;
+			}
+
+			if (!sInput.length())
+			{
+				TUnimplemented();
+				TError("Output '" + sValue + "' of entity '" + pEntity->GetName() + "' (" + pEntity->GetClassName() + ") is missing an input.\n");
+				continue;
+			}
+
+			pEntity->AddOutputTarget(sValue, sTarget, sInput, sArgs, bKill);
+		}
+	}
+
+	for (auto it = apEntities.begin(); it != apEntities.end(); it++)
+	{
+		auto pLevelEntity = &aEntities[it->first];
+		CBaseEntity* pEntity = it->second;
+
+		for (auto it = pLevelEntity->GetParameters().begin(); it != pLevelEntity->GetParameters().end(); it++)
+		{
+			tstring sHandle = it->first;
+			tstring sValue = it->second;
+
+			if (sHandle == "MoveParent")
+				continue;
+
+			CSaveData oSaveDataValues;
+			CSaveData* pSaveData = CBaseEntity::FindSaveDataValuesByHandle(pEntity->GetClassName(), sHandle.c_str(), &oSaveDataValues);
+			TAssert(pSaveData && pSaveData->m_pszHandle);
+			if (!pSaveData || !pSaveData->m_pszHandle)
+			{
+				TError("Unknown handle '" + sHandle + "'\n");
+				continue;
+			}
+
+			if (!pSaveData->m_pfnUnserializeString)
+				continue;
+
+			pSaveData->m_pfnUnserializeString(sValue, pSaveData, pEntity);
+		}
+
+		// Force MoveParent last so that global -> local conversion is performed.
+		if (pLevelEntity->GetParameters().find("MoveParent") != pLevelEntity->GetParameters().end())
+		{
+			tstring sHandle = "MoveParent";
+
+			CSaveData oSaveDataValues;
+			CSaveData* pSaveData = CBaseEntity::FindSaveDataValuesByHandle(pEntity->GetClassName(), sHandle.c_str(), &oSaveDataValues);
+			TAssert(pSaveData && pSaveData->m_pszHandle);
+			if (!pSaveData || !pSaveData->m_pszHandle)
+			{
+				TError("Unknown handle '" + sHandle + "'\n");
+				continue;
+			}
+
+			if (!pSaveData->m_pfnUnserializeString)
+				continue;
+
+			pSaveData->m_pfnUnserializeString(pLevelEntity->GetParameters()["MoveParent"], pSaveData, pEntity);
+		}
+	}
+}
+
+void CGameServer::RestartLevel()
+{
+	SetLoading(false);
+	AllowPrecaches();
+	DestroyAllEntities(tvector<tstring>(), true);
+	m_bRestartLevel = true;
+	Game()->SetupGame(CVar::GetCVarValue("game_mode"));
+	m_bRestartLevel = false;
+	SetLoading(false);
 }
 
 void CGameServer::ReadLevels()
 {
 	for (size_t i = 0; i < m_apLevels.size(); i++)
-		delete m_apLevels[i];
+		m_apLevels[i].reset();
 
 	m_apLevels.clear();
 
 	if (m_pWorkListener)
-		m_pWorkListener->SetAction(_T("Reading meta-structures"), 0);
+		m_pWorkListener->SetAction("Reading meta-structures", 0);
 
-	ReadLevels(_T("levels"));
+	ReadLevels("levels");
 
 	TMsg(sprintf(tstring("Read %d levels from disk.\n"), m_apLevels.size()));
 }
 
 void CGameServer::ReadLevels(tstring sDirectory)
 {
-	eastl::vector<tstring> asFiles = ListDirectory(sDirectory);
+	tvector<tstring> asFiles = ListDirectory(sDirectory);
 
 	for (size_t i = 0; i < asFiles.size(); i++)
 	{
-		tstring sFile = sDirectory + _T("/") + asFiles[i];
+		tstring sFile = sDirectory + "/" + asFiles[i];
 
-		if (IsFile(sFile) && sFile.substr(sFile.length()-4).compare(_T(".txt")) == 0)
-			ReadLevel(sFile);
+		if (IsFile(sFile) && sFile.endswith(".txt"))
+			ReadLevelInfo(sFile);
 
 		if (IsDirectory(sFile))
 			ReadLevels(sFile);
 	}
 }
 
-void CGameServer::ReadLevel(tstring sFile)
+void CGameServer::ReadLevelInfo(tstring sFile)
 {
-	std::basic_ifstream<tchar> f(convertstring<tchar, char>(sFile).c_str());
+	std::basic_ifstream<tchar> f(sFile.c_str());
 
 	CData* pData = new CData();
 	CDataSerializer::Read(f, pData);
 
-	CLevel* pLevel = CreateLevel();
-	pLevel->SetFile(str_replace(sFile, _T("\\"), _T("/")));
-	pLevel->ReadFromData(pData);
+	CResource<CLevel> pLevel = CreateLevel();
+	pLevel->SetFile(sFile.replace("\\", "/"));
+	pLevel->ReadInfoFromData(pData);
 	m_apLevels.push_back(pLevel);
 
 	delete pData;
 }
 
-CLevel* CGameServer::GetLevel(tstring sFile)
+CHandle<CLevel> CGameServer::GetLevel(tstring sFile)
 {
-	sFile = str_replace(sFile, _T("\\"), _T("/"));
+	sFile = sFile.replace("\\", "/");
 	for (size_t i = 0; i < m_apLevels.size(); i++)
 	{
-		CLevel* pLevel = m_apLevels[i];
+		CResource<CLevel>& pLevel = m_apLevels[i];
 		tstring sLevelFile = pLevel->GetFile();
 		if (sLevelFile == sFile)
 			return pLevel;
-		if (sLevelFile == sFile + _T(".txt"))
+		if (sLevelFile == sFile + ".txt")
 			return pLevel;
-		if (sLevelFile == tstring(_T("levels/")) + sFile)
+		if (sLevelFile == tstring("levels/") + sFile)
 			return pLevel;
-		if (sLevelFile == tstring(_T("levels/")) + sFile + _T(".txt"))
+		if (sLevelFile == tstring("levels/") + sFile + ".txt")
 			return pLevel;
 	}
 
-	return NULL;
+	return CHandle<CLevel>();
 }
 
 void CGameServer::Halt()
@@ -292,7 +530,7 @@ SERVER_GAME_COMMAND(CreateEntity)
 
 void CGameServer::ClientEnterGame(int iClient)
 {
-	TMsg(sprintf(tstring("Client %d (") + GameNetwork()->GetClientNickname(iClient) + _T(") entering game.\n"), iClient));
+	TMsg(sprintf(tstring("Client %d (") + GameNetwork()->GetClientNickname(iClient) + ") entering game.\n", iClient));
 
 	if (GetGame())
 		GetGame()->OnClientEnterGame(iClient);
@@ -329,11 +567,11 @@ void CGameServer::ClientDisconnect(int iClient)
 {
 	if (!GameNetwork()->IsHost() && iClient == GameNetwork()->GetClientID())
 	{
-		TMsg(_T("Disconnected from server.\n"));
+		TMsg("Disconnected from server.\n");
 	}
 	else
 	{
-		TMsg(sprintf(tstring("Client %d (") + GameNetwork()->GetClientNickname(iClient) + _T(") disconnected.\n"), iClient));
+		TMsg(sprintf(tstring("Client %d (") + GameNetwork()->GetClientNickname(iClient) + ") disconnected.\n", iClient));
 
 		CApplication::Get()->OnClientDisconnect(iClient);
 
@@ -362,7 +600,7 @@ void CGameServer::SetClientNickname(int iClient, const tstring& sNickname)
 	TMsg(sprintf(tstring("Can't find client %d to give nickname %s.\n"), iClient, sNickname.c_str()));
 }
 
-void CGameServer::Think(float flHostTime)
+void CGameServer::Think(double flHostTime)
 {
 	TPROF("CGameServer::Think");
 
@@ -407,9 +645,10 @@ void CGameServer::Think(float flHostTime)
 
 	m_ahDeletedEntities.clear();
 
-	CNetwork::Think();
+	if (CWorkbench::IsActive())
+		Workbench()->Think();
 
-	Simulate();
+	CNetwork::Think();
 
 	size_t iMaxEntities = GameServer()->GetMaxEntities();
 	for (size_t i = 0; i < iMaxEntities; i++)
@@ -423,6 +662,8 @@ void CGameServer::Think(float flHostTime)
 		if (m_bHalting)
 			break;
 	}
+
+	Simulate();
 
 	Think();
 
@@ -446,7 +687,6 @@ void CGameServer::Think(float flHostTime)
 	}
 
 	CParticleSystemLibrary::Simulate();
-	CModelDissolver::Simulate();
 
 	TPortal_Think();
 }
@@ -458,245 +698,19 @@ void CGameServer::Simulate()
 	if (!Game()->ShouldRunSimulation())
 		return;
 
-	float flSimulationFrameTime = 0.01f;
-
-	m_apSimulateList.reserve(CBaseEntity::GetNumEntities());
-	m_apSimulateList.clear();
-
-	size_t iMaxEntities = GameServer()->GetMaxEntities();
-	for (size_t i = 0; i < iMaxEntities; i++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		if (!pEntity)
-			continue;
-
-		if (pEntity->IsDeleted())
-			continue;
-
-		pEntity->SetLastLocalOrigin(pEntity->GetLocalOrigin());
-
-		if (!pEntity->ShouldSimulate())
-			continue;
-
-		m_apSimulateList.push_back(pEntity);
-	}
-
-	m_apCollisionList.reserve(CBaseEntity::GetNumEntities());
-
-	// Move all entities
-	for (size_t i = 0; i < m_apSimulateList.size(); i++)
-	{
-		CBaseEntity* pEntity = m_apSimulateList[i];
-		if (!pEntity)
-			continue;
-
-		m_apCollisionList.clear();
-
-		for (size_t j = 0; j < iMaxEntities; j++)
-		{
-			CBaseEntity* pEntity2 = CBaseEntity::GetEntity(j);
-
-			if (!pEntity2)
-				continue;
-
-			if (pEntity2->IsDeleted())
-				continue;
-
-			if (pEntity2 == pEntity)
-				continue;
-
-			if (!pEntity2->ShouldCollide())
-				continue;
-
-			m_apCollisionList.push_back(pEntity2);
-		}
-
-		TMatrix mGlobalToLocalRotation;
-		if (pEntity->HasMoveParent())
-		{
-			mGlobalToLocalRotation = pEntity->GetMoveParent()->GetGlobalToLocalTransform();
-			mGlobalToLocalRotation.SetTranslation(TVector());
-		}
-
-		// Break simulations up into very small steps in order to preserve accuracy.
-		// I think floating point precision causes this problem but I'm not sure. Anyway this works better for my projectiles.
-		for (float flCurrentSimulationTime = GameServer()->GetSimulationTime(); flCurrentSimulationTime < GameServer()->GetGameTime(); flCurrentSimulationTime += flSimulationFrameTime)
-		{
-			TVector vecVelocity = pEntity->GetLocalVelocity();
-
-			TVector vecGlobalGravity = pEntity->GetGlobalGravity();
-			TVector vecLocalGravity;
-			if (!vecGlobalGravity.IsZero())
-			{
-				if (pEntity->HasMoveParent())
-				{
-					TFloat flLength = vecGlobalGravity.Length();
-					vecLocalGravity = (mGlobalToLocalRotation * (vecGlobalGravity/flLength))*flLength;
-				}
-				else
-					vecLocalGravity = vecGlobalGravity;
-				pEntity->SetLocalVelocity(vecVelocity + vecLocalGravity * flSimulationFrameTime);
-			}
-			else
-				vecLocalGravity = TVector();
-
-			TVector vecLocalOrigin = pEntity->GetLocalOrigin();
-			TVector vecGlobalOrigin = pEntity->GetGlobalOrigin();
-
-			vecVelocity = vecVelocity * flSimulationFrameTime;
-
-			TVector vecLocalDestination = vecLocalOrigin + vecVelocity;
-			TVector vecGlobalDestination = vecLocalDestination;
-			if (pEntity->GetMoveParent())
-				vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
-
-			TVector vecNewLocalOrigin = vecLocalDestination;
-
-			size_t iTries = 0;
-			while (true)
-			{
-				iTries++;
-
-				TVector vecPoint, vecNormal;
-
-				TVector vecLocalCollisionPoint, vecGlobalCollisionPoint;
-
-				bool bContact = false;
-				for (size_t i = 0; i < m_apCollisionList.size(); i++)
-				{
-					CBaseEntity* pEntity2 = m_apCollisionList[i];
-
-					if (pEntity->GetMoveParent() == pEntity2)
-					{
-						if (pEntity2->CollideLocal(vecLocalOrigin, vecLocalDestination, vecPoint, vecNormal))
-						{
-							bContact = true;
-							pEntity->Touching(pEntity2);
-							vecLocalCollisionPoint = vecPoint;
-							vecGlobalCollisionPoint = pEntity->GetMoveParent()->GetGlobalTransform() * vecPoint;
-						}
-					}
-					else
-					{
-						if (pEntity2->Collide(vecGlobalOrigin, vecGlobalDestination, vecPoint, vecNormal))
-						{
-							bContact = true;
-							pEntity->Touching(pEntity2);
-							vecGlobalCollisionPoint = vecPoint;
-							if (pEntity->GetMoveParent())
-							{
-								vecLocalCollisionPoint = pEntity->GetMoveParent()->GetGlobalToLocalTransform() * vecPoint;
-								vecNormal = pEntity->GetMoveParent()->GetGlobalToLocalTransform().TransformNoTranslate(vecNormal);
-							}
-							else
-								vecLocalCollisionPoint = vecGlobalCollisionPoint;
-						}
-					}
-				}
-
-				if (bContact)
-				{
-					vecNewLocalOrigin = vecLocalCollisionPoint;
-					vecVelocity -= vecLocalCollisionPoint - vecLocalOrigin;
-				}
-
-				if (!bContact)
-					break;
-
-				if (iTries > 4)
-					break;
-
-				vecLocalOrigin = vecLocalCollisionPoint;
-				vecGlobalOrigin = vecGlobalCollisionPoint;
-
-				// Clip the velocity to the surface normal of whatever we hit.
-				TFloat flDistance = vecVelocity.Dot(vecNormal);
-
-				vecVelocity = vecVelocity - vecNormal * flDistance;
-
-				// Do it one more time just to make sure we're not headed towards the plane.
-				TFloat flAdjust = vecVelocity.Dot(vecNormal);
-				if (flAdjust < 0.0f)
-					vecVelocity -= (vecNormal * flAdjust);
-
-				vecLocalDestination = vecLocalOrigin + vecVelocity;
-
-				if (pEntity->GetMoveParent())
-					vecGlobalDestination = pEntity->GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
-				else
-					vecGlobalDestination = vecLocalDestination;
-
-				pEntity->SetLocalVelocity(vecVelocity.Normalized() * pEntity->GetLocalVelocity().Length());
-			}
-
-			pEntity->SetLocalOrigin(vecNewLocalOrigin);
-		}
-	}
-
-	while (GameServer()->GetSimulationTime() < GameServer()->GetGameTime())
-		GameServer()->AdvanceSimulationTime(flSimulationFrameTime);
+	GamePhysics()->Simulate();
 }
-
-CVar r_cullfrustum("r_frustumculling", "on");
 
 void CGameServer::Render()
 {
 	TPROF("CGameServer::Render");
 
-	if (!m_pCamera)
+	if (!GetCameraManager())
 		return;
 
-	m_pCamera->Think();
+	GetCameraManager()->Think();
 
-	GameWindow()->GetRenderer()->SetCameraPosition(m_pCamera->GetCameraPosition());
-	GameWindow()->GetRenderer()->SetCameraTarget(m_pCamera->GetCameraTarget());
-	GameWindow()->GetRenderer()->SetCameraUp(m_pCamera->GetCameraUp());
-	GameWindow()->GetRenderer()->SetCameraFOV(m_pCamera->GetCameraFOV());
-	GameWindow()->GetRenderer()->SetCameraNear(m_pCamera->GetCameraNear());
-	GameWindow()->GetRenderer()->SetCameraFar(m_pCamera->GetCameraFar());
-
-	GameWindow()->GetRenderer()->SetupFrame();
-	GameWindow()->GetRenderer()->StartRendering();
-
-	m_apRenderList.reserve(CBaseEntity::GetNumEntities());
-	m_apRenderList.clear();
-
-	bool bFrustumCulling = r_cullfrustum.GetBool();
-
-	// None of these had better get deleted while we're doing this since they're not handles.
-	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		if (!pEntity)
-			continue;
-
-		if (!pEntity->ShouldRender())
-			continue;
-
-		if (bFrustumCulling && !GameWindow()->GetRenderer()->IsSphereInFrustum(pEntity->GetRenderOrigin(), (float)pEntity->GetRenderRadius()))
-			continue;
-
-		m_apRenderList.push_back(pEntity);
-	}
-
-	GameWindow()->GetRenderer()->BeginBatching();
-
-	// First render all opaque objects
-	size_t iEntites = m_apRenderList.size();
-	for (size_t i = 0; i < iEntites; i++)
-		m_apRenderList[i]->Render(false);
-
-	GameWindow()->GetRenderer()->RenderBatches();
-
-	// Now render all transparent objects. Should really sort this back to front but meh for now.
-	for (size_t i = 0; i < iEntites; i++)
-		m_apRenderList[i]->Render(true);
-
-	CParticleSystemLibrary::Render();
-	CModelDissolver::Render();
-
-	GameWindow()->GetRenderer()->FinishRendering();
-	GameWindow()->GetRenderer()->FinishFrame();
+	GameWindow()->GetGameRenderer()->Render();
 }
 
 void CGameServer::GenerateSaveCRC(size_t iInput)
@@ -711,7 +725,7 @@ void CGameServer::SaveToFile(const tchar* pFileName)
 		return;
 
 	std::ofstream o;
-	o.open(convertstring<tchar, char>(pFileName).c_str(), std::ios_base::binary|std::ios_base::out);
+	o.open(pFileName, std::ios_base::binary|std::ios_base::out);
 
 	o.write("GameSave", 8);
 
@@ -720,9 +734,8 @@ void CGameServer::SaveToFile(const tchar* pFileName)
 	o.write((char*)&pGameServer->m_iSaveCRC, sizeof(pGameServer->m_iSaveCRC));
 
 	o.write((char*)&pGameServer->m_flGameTime, sizeof(pGameServer->m_flGameTime));
-	o.write((char*)&pGameServer->m_flSimulationTime, sizeof(pGameServer->m_flSimulationTime));
 
-	eastl::vector<CBaseEntity*> apSaveEntities;
+	tvector<CBaseEntity*> apSaveEntities;
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
@@ -755,7 +768,7 @@ bool CGameServer::LoadFromFile(const tchar* pFileName)
 	GameServer()->DestroyAllEntities();
 
 	std::ifstream i;
-	i.open(convertstring<tchar, char>(pFileName).c_str(), std::ios_base::binary|std::ios_base::in);
+	i.open(pFileName, std::ios_base::binary|std::ios_base::in);
 
 	char szTag[8];
 	i.read(szTag, 8);
@@ -771,7 +784,6 @@ bool CGameServer::LoadFromFile(const tchar* pFileName)
 		return false;
 
 	i.read((char*)&pGameServer->m_flGameTime, sizeof(pGameServer->m_flGameTime));
-	i.read((char*)&pGameServer->m_flSimulationTime, sizeof(pGameServer->m_flSimulationTime));
 
 	size_t iEntities;
 	i.read((char*)&iEntities, sizeof(iEntities));
@@ -793,7 +805,7 @@ bool CGameServer::LoadFromFile(const tchar* pFileName)
 	Game()->EnterGame();
 
 	if (GameServer()->GetWorkListener())
-		GameServer()->GetWorkListener()->SetAction(_T("Encountering resistance"), 0);
+		GameServer()->GetWorkListener()->SetAction("Encountering resistance", 0);
 
 	GameServer()->SetLoading(false);
 
@@ -809,7 +821,14 @@ CEntityHandle<CBaseEntity> CGameServer::Create(const char* pszEntityName)
 
 	CEntityHandle<CBaseEntity> hEntity(CreateEntity(pszEntityName));
 
-	::CreateEntity.RunCommand(sprintf(tstring("%s %d %d"), pszEntityName, hEntity->GetHandle(), hEntity->GetSpawnSeed()));
+	TAssert(!GameNetwork()->IsConnected());
+	// The below causes entities to be created twice on the server. Wasn't a
+	// problem with Digitanks, but is a problem now that I'm adding physics.
+	// If I ever go back to multiplayer, the code needs to be split into a
+	// client portion and a server portion to help minimize bugs like this.
+	//::CreateEntity.RunCommand(sprintf(tstring("%s %d %d"), pszEntityName, hEntity->GetHandle(), hEntity->GetSpawnSeed()));
+
+	AddToPrecacheList(pszEntityName);
 
 	return hEntity;
 }
@@ -819,12 +838,21 @@ size_t CGameServer::CreateEntity(const tstring& sClassName, size_t iHandle, size
 	if (CVar::GetCVarBool("net_debug"))
 		TMsg(tstring("Creating entity: ") + sClassName + "\n");
 
+	auto it = CBaseEntity::GetEntityRegistration().find(sClassName);
+	if (it == CBaseEntity::GetEntityRegistration().end())
+	{
+		TAssert(!"Entity does not exist. Did you forget to REGISTER_ENTITY ?");
+		return ~0;
+	}
+
 	CBaseEntity::s_iOverrideEntityListIndex = iHandle;
-	iHandle = CBaseEntity::GetEntityRegistration()[sClassName].m_pfnCreateCallback();
+	iHandle = it->second.m_pfnCreateCallback();
 	CBaseEntity::s_iOverrideEntityListIndex = ~0;
 
 	CEntityHandle<CBaseEntity> hEntity(iHandle);
 	hEntity->m_sClassName = sClassName;
+
+	hEntity->SetSaveDataDefaults();
 
 	size_t iPostSeed = mtrand();
 
@@ -888,13 +916,13 @@ void CGameServer::DestroyEntity(int iConnection, CNetworkParameters* p)
 	m_ahDeletedEntities.push_back(pEntity);
 }
 
-void CGameServer::DestroyAllEntities(const eastl::vector<eastl::string>& asSpare, bool bRemakeGame)
+void CGameServer::DestroyAllEntities(const tvector<tstring>& asSpare, bool bRemakeGame)
 {
 	if (!GameNetwork()->IsHost() && !IsLoading())
 		return;
 
 	if (m_pWorkListener)
-		m_pWorkListener->SetAction(_T("Locating dead nodes"), GameServer()->GetMaxEntities());
+		m_pWorkListener->SetAction("Locating dead nodes", GameServer()->GetMaxEntities());
 
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
@@ -922,7 +950,7 @@ void CGameServer::DestroyAllEntities(const eastl::vector<eastl::string>& asSpare
 	}
 
 	if (m_pWorkListener)
-		m_pWorkListener->SetAction(_T("Clearing buffers"), GameServer()->m_ahDeletedEntities.size());
+		m_pWorkListener->SetAction("Clearing buffers", GameServer()->m_ahDeletedEntities.size());
 
 	for (size_t i = 0; i < GameServer()->m_ahDeletedEntities.size(); i++)
 	{
@@ -948,7 +976,7 @@ void CGameServer::UpdateValue(int iConnection, CNetworkParameters* p)
 	if (!hEntity)
 		return;
 
-	CNetworkedVariableData* pVarData = hEntity->GetNetworkVariable((char*)p->m_pExtraData);
+	CNetworkedVariableData* pVarData = hEntity->FindNetworkVariable((char*)p->m_pExtraData);
 
 	if (!pVarData)
 		return;
@@ -975,7 +1003,7 @@ void CGameServer::ClientInfo(int iConnection, CNetworkParameters* p)
 	if (flNewGameTime - m_flGameTime > 0.1f)
 		TMsg(sprintf(tstring("New game time from server %.1f different!\n"), flNewGameTime - m_flGameTime));
 
-	m_flGameTime = m_flSimulationTime = flNewGameTime;
+	m_flGameTime = flNewGameTime;
 
 	// Can't send any client commands until we've gotten the client info because we need m_iClient filled out properly.
 	if (!m_bGotClientInfo)
@@ -987,9 +1015,17 @@ void CGameServer::ClientInfo(int iConnection, CNetworkParameters* p)
 	m_bGotClientInfo = true;
 }
 
-CRenderer* CGameServer::GetRenderer()
+CGameRenderer* CGameServer::GetRenderer()
 {
-	return GameWindow()->GetRenderer();
+	return static_cast<CGameRenderer*>(GameWindow()->GetRenderer());
+}
+
+CCameraManager* CGameServer::GetCameraManager()
+{
+	if (CWorkbench::IsActive())
+		return CWorkbench::GetCameraManager();
+
+	return m_pCameraManager;
 }
 
 CGame* CGameServer::GetGame()
@@ -997,10 +1033,10 @@ CGame* CGameServer::GetGame()
 	return m_hGame;
 }
 
-void ShowStatus(class CCommand* pCommand, eastl::vector<tstring>& asTokens, const tstring& sCommand)
+void ShowStatus(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
 {
-	TMsg(eastl::string("Level: ") + CVar::GetCVarValue("game_level") + "\n");
-	TMsg(convertstring<tchar, char>(sprintf(tstring("Clients: %d Entities: %d/%d\n"), GameNetwork()->GetClientsConnected(), CBaseEntity::GetNumEntities(), GameServer()->GetMaxEntities())));
+	TMsg(tstring("Level: ") + CVar::GetCVarValue("game_level") + "\n");
+	TMsg(sprintf(tstring("Clients: %d Entities: %d/%d\n"), GameNetwork()->GetClientsConnected(), CBaseEntity::GetNumEntities(), GameServer()->GetMaxEntities()));
 
 	for (size_t i = 0; i < Game()->GetNumPlayers(); i++)
 	{
@@ -1011,7 +1047,7 @@ void ShowStatus(class CCommand* pCommand, eastl::vector<tstring>& asTokens, cons
 		if (pPlayer->GetClient() < 0)
 			TMsg("Local: ");
 		else
-			TMsg(convertstring<tchar, char>(sprintf(tstring("%d: "), pPlayer->GetClient())));
+			TMsg(sprintf(tstring("%d: "), pPlayer->GetClient()));
 
 		TMsg(pPlayer->GetPlayerName());
 
@@ -1019,9 +1055,9 @@ void ShowStatus(class CCommand* pCommand, eastl::vector<tstring>& asTokens, cons
 	}
 }
 
-CCommand status(_T("status"), ::ShowStatus);
+CCommand status("status", ::ShowStatus);
 
-void KickPlayer(class CCommand* pCommand, eastl::vector<tstring>& asTokens, const tstring& sCommand)
+void KickPlayer(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
 {
 	if (!asTokens.size())
 		return;
@@ -1029,4 +1065,45 @@ void KickPlayer(class CCommand* pCommand, eastl::vector<tstring>& asTokens, cons
 	GameNetwork()->DisconnectClient(stoi(asTokens[0]));
 }
 
-CCommand kick(_T("kick"), ::KickPlayer);
+CCommand kick("kick", ::KickPlayer);
+
+void FireInput(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
+{
+	if (!CVar::GetCVarBool("cheats"))
+		return;
+
+	if (asTokens.size() < 3)
+	{
+		TMsg("Format: ent_input entityname input [optional args]\n");
+		return;
+	}
+
+	tvector<CBaseEntity*> apEntities;
+	CBaseEntity::FindEntitiesByName(asTokens[1], apEntities);
+
+	if (!apEntities.size())
+	{
+		if (CVar::GetCVarBool("debug_entity_outputs"))
+			TMsg("Console -> none\n");
+		else
+			TError("No entities found that match name \"" + asTokens[1] + "\".\n");
+
+		return;
+	}
+
+	tstring sArgs;
+	for (size_t i = 3; i < asTokens.size(); i++)
+		sArgs += asTokens[i] + " ";
+
+	for (size_t i = 0; i < apEntities.size(); i++)
+	{
+		CBaseEntity* pTargetEntity = apEntities[i];
+
+		if (CVar::GetCVarBool("debug_entity_outputs"))
+			TMsg("Console -> " + tstring(pTargetEntity->GetClassName()) + "(\"" + pTargetEntity->GetName() + "\")." + asTokens[2] + "(\"" + sArgs + "\")\n");
+
+		pTargetEntity->CallInput(asTokens[2], sArgs);
+	}
+}
+
+CCommand ent_input("ent_input", ::FireInput);

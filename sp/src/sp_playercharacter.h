@@ -11,6 +11,8 @@ public:
 								CPlayerCharacter();
 
 public:
+	virtual void				Spawn();
+
 	virtual void				Think();
 	virtual void				MoveThink();
 
@@ -23,8 +25,7 @@ public:
 
 	virtual CScalableFloat		CharacterSpeed();
 
-	virtual inline CScalableVector	GetGlobalGravity() const;
-	virtual void				FindGroundEntity();
+	virtual inline const CScalableVector	GetGlobalGravity() const;
 
 protected:
 	bool						m_bFlying;

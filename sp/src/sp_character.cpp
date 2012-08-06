@@ -71,7 +71,7 @@ void CSPCharacter::Think()
 	}
 }
 
-CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
+const CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
 {
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
@@ -82,19 +82,19 @@ CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
 	return mTransform;
 }
 
-CScalableVector CSPCharacter::GetScalableRenderOrigin() const
+const CScalableVector CSPCharacter::GetScalableRenderOrigin() const
 {
 	return GetScalableRenderTransform().GetTranslation();
 }
 
-Matrix4x4 CSPCharacter::GetRenderTransform() const
+const Matrix4x4 CSPCharacter::GetRenderTransform() const
 {
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetUnits(eScale);
 }
 
-Vector CSPCharacter::GetRenderOrigin() const
+const Vector CSPCharacter::GetRenderOrigin() const
 {
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
@@ -187,7 +187,7 @@ CPlanet* CSPCharacter::FindNearestPlanet() const
 	return pNearestPlanet;
 }
 
-TVector CSPCharacter::GetUpVector() const
+const TVector CSPCharacter::GetUpVector() const
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
@@ -214,7 +214,7 @@ void CSPCharacter::LockViewToPlanet()
 
 	Matrix4x4 mPlanet(vecPlanetForward, vecPlanetUp, vecPlanetRight);
 	Matrix4x4 mPlanetInverse = mPlanet;
-	mPlanetInverse.InvertTR();
+	mPlanetInverse.InvertRT();
 
 	// Bring our current view angles into that local space
 	Matrix4x4 mLocalRotation = mPlanetInverse * mGlobalRotation;
@@ -238,7 +238,7 @@ void CSPCharacter::LockViewToPlanet()
 	if (GameServer()->GetGameTime() - m_flLastEnteredAtmosphere > flTimeToLocked)
 		angNewLockedRotation.r = angOverloadRotation.r;
 	else
-		angNewLockedRotation.r = RemapValClamped(SLerp(GameServer()->GetGameTime() - m_flLastEnteredAtmosphere, 0.3f), 0, flTimeToLocked, m_flRollFromSpace, angOverloadRotation.r);
+		angNewLockedRotation.r = RemapValClamped(SLerp((float)(GameServer()->GetGameTime() - m_flLastEnteredAtmosphere), 0.3f), 0, flTimeToLocked, m_flRollFromSpace, angOverloadRotation.r);
 
 	SetGlobalAngles(angNewLockedRotation);
 }
@@ -255,8 +255,8 @@ void CSPCharacter::StandOnNearestPlanet()
 
 	SetMoveParent(pPlanet);
 
-	TVector vecPoint, vecNormal;
-	pPlanet->CollideLocal(vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), vecPoint, vecNormal);
+	TFloat flPlanetRadius = pPlanet->GetRadius();
+	TVector vecPoint = (vecCharacterOrigin - vecPlanetOrigin).Normalized() * flPlanetRadius;
 
 	SetLocalOrigin(vecPoint);
 }
