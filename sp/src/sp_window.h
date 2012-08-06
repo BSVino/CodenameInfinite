@@ -18,7 +18,6 @@ public:
 
 	void						SetScreenshot(size_t iScreenshot) { m_iScreenshot = iScreenshot; };
 	void						SetupEngine();
-	void						SetupSP();
 
 	virtual void				RenderLoading();
 

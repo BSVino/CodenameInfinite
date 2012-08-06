@@ -105,7 +105,7 @@ public:
 	bool					m_bOverride;
 	bool					m_bShowInEditor;
 	bool					m_bDefault;
-	char					m_oDefault[24];
+	char					m_oDefault[96];
 };
 
 typedef void (*EntityInputCallback)(const class CBaseEntity* pTarget, const tvector<tstring>& sArgs);
@@ -332,6 +332,7 @@ void entity::RegisterSaveData() \
 	pSaveData->m_pfnUnserializeString = &UnserializeString_##type; \
 	{ \
 		type iDefault = def; \
+		TAssert(sizeof(pSaveData->m_oDefault) >= sizeof(def)); \
 		memcpy(pSaveData->m_oDefault, &iDefault, sizeof(def)); \
 		pSaveData->m_bDefault = true; \
 	} \

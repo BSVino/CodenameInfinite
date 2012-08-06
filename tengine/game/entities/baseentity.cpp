@@ -100,7 +100,7 @@ SAVEDATA_TABLE_BEGIN(CBaseEntity);
 	SAVEDATA_DEFINE_HANDLE_DEFAULT(CSaveData::DATA_COPYTYPE, AABB, m_aabbVisBoundingBox, "BoundingBox", AABB(Vector(-0.5f, -0.5f, -0.5f), Vector(0.5f, 0.5f, 0.5f)));
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bGlobalTransformsDirty);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TMatrix, m_mGlobalTransform);
-	SAVEDATA_DEFINE_HANDLE_DEFAULT(CSaveData::DATA_NETVAR, TVector, m_vecGlobalGravity, "GlobalGravity", Vector(0, -9.8f, 0));
+	SAVEDATA_DEFINE_HANDLE_DEFAULT(CSaveData::DATA_NETVAR, TVector, m_vecGlobalGravity, "GlobalGravity", TVector(0, -9.8f, 0));
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TMatrix, m_mLocalTransform);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Quaternion, m_qLocalRotation);
 	SAVEDATA_DEFINE_HANDLE_FUNCTION(CSaveData::DATA_NETVAR, TVector, m_vecLocalOrigin, "Origin", UnserializeString_LocalOrigin);

@@ -433,7 +433,7 @@ public:
 
 	inline const CNetworkedVector& operator=(const TVector& v)
 	{
-		if ((m_oVariable - v).LengthSqr() > TFloat(0.0f))
+		if (!m_bInitialized || (m_oVariable - v).LengthSqr() > TFloat(0.0f))
 		{
 			m_bDirty = true;
 			m_oVariable = v;

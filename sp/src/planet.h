@@ -18,7 +18,7 @@ public:
 	virtual void				Spawn();
 
 	virtual void				Think();
-	virtual void				RenderUpdate();
+	void                        RenderUpdate();
 
 	virtual bool				ShouldRenderAtScale(scale_t eScale) const;
 

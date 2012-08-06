@@ -10,6 +10,8 @@ class CSPGame : public CGame
 public:
 	virtual void			Precache();
 
+	virtual void			SetupGame(tstring sType);
+
 	virtual void			Think();
 
 	class CSPCharacter*		GetLocalPlayerCharacter();
