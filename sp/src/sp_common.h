@@ -19,9 +19,10 @@ typedef enum
 	SCALE_HIGHEST = SCALE_TERAMETER,
 } scale_t;
 
-// The scale stack skips SCALE_NONE. SCALE_METER is 0. 
+// The scale stack skips SCALE_NONE. SCALE_MILLIMETER is 0. 
 #define SCALESTACK_SIZE (SCALE_HIGHEST)
 #define SCALESTACK_INDEX(x) (x-1)
+#define SCALESTACK_SCALE(x) ((scale_t)(x+1))
 
 class CScalableVector;
 class CScalableMatrix;
@@ -71,6 +72,7 @@ public:
 	void					CheckSanity();
 
 	bool					operator==(const CScalableFloat& u) const;
+	bool					operator!=(const CScalableFloat& u) const;
 	bool					operator<(const CScalableFloat& u) const;
 	bool					operator>(const CScalableFloat& u) const;
 	bool					operator<(float flMeters) const;
@@ -172,22 +174,37 @@ public:
 
 public:
 	void					Identity();
+	bool					IsIdentity();
 
 	void					SetTranslation(const CScalableVector& m) { mt = m; }
-	const CScalableVector&	GetTranslation() const { return mt; }
 
-	void					SetAngles(const EAngle& angDir);
-	EAngle					GetAngles() const;
+	void                    SetAngles(const EAngle& angDir);
+	void                    SetRotation(float flAngle, const Vector& vecAxis);		// Assumes the axis is a normalized vector.
+	void                    SetRotation(const Quaternion& q);
+	void                    SetOrientation(const Vector& vecDir, const Vector& vecUp = Vector(0, 1, 0));
 
-	void					SetRotation(const Quaternion& q);
+	// Add a transformation
+	CScalableMatrix         AddTranslation(const CScalableVector& v);
+	CScalableMatrix         AddAngles(const EAngle& a);
 
-	CScalableMatrix			operator*(const CScalableMatrix& t) const;
+	const CScalableVector&  GetTranslation() const { return mt; }
+	EAngle                  GetAngles() const;
+
+	// Add a translation
+	CScalableMatrix         operator+=(const CScalableVector& v);
+	// Add a rotation
+	CScalableMatrix         operator+=(const EAngle& a);
+
+	// Add a transformation
+	CScalableMatrix         operator*(const CScalableMatrix& t) const;
+	CScalableMatrix         operator*=(const CScalableMatrix& t);
 
 	// Transform a vector
 	CScalableVector			operator*(const CScalableVector& v) const;
 
 	CScalableVector			TransformVector(const CScalableVector& v) const;
 
+	bool                    operator==(const CScalableMatrix& v) const;
 	bool                    operator!=(const CScalableMatrix& v) const;
 
 	void					InvertRT();
@@ -196,12 +213,14 @@ public:
 	void					SetColumn(int i, const Vector& vecColumn);
 	Vector					GetColumn(int i) const;
 
+	Vector					GetRow(int i) const;
+
 	void                    SetForwardVector(const Vector& vecForward);
 	void                    SetUpVector(const Vector& vecUp);
 	void                    SetRightVector(const Vector& vecRight);
-	Vector					GetForwardVector() const { return GetColumn(0); }
-	Vector					GetUpVector() const { return GetColumn(1); }
-	Vector					GetRightVector() const { return GetColumn(2); }
+	Vector					GetForwardVector() const { return GetRow(0); }
+	Vector					GetUpVector() const { return GetRow(1); }
+	Vector					GetRightVector() const { return GetRow(2); }
 
 	class Matrix4x4			GetUnits(scale_t eScale) const;
 

@@ -73,7 +73,7 @@ void CScalableFloat::Construct(double flUnits, scale_t eScale)
 			i--;
 		}
 
-		while (flUnits > 1000)
+		while (flUnits >= 1000)
 		{
 			flUnits /= 1000;
 			i++;
@@ -116,7 +116,7 @@ void CScalableFloat::Construct(double flUnits, scale_t eScale)
 			i--;
 		}
 
-		while (flUnits < -1000)
+		while (flUnits <= -1000)
 		{
 			flUnits /= 1000;
 			i++;
@@ -1180,13 +1180,21 @@ bool CScalableFloat::operator==(const CScalableFloat& u) const
 	if (m_flOverflow != u.m_flOverflow)
 		return false;
 
+	double flDifference = 0;
 	for (int i = SCALESTACK_SIZE-1; i >= 0; i--)
 	{
 		if (m_aiScaleStack[i] != u.m_aiScaleStack[i])
-			return false;
+			flDifference += CScalableFloat::ConvertUnits(m_aiScaleStack[i] - u.m_aiScaleStack[i], SCALESTACK_SCALE(i), SCALE_METER);
 	}
 
-	return (m_flRemainder == u.m_flRemainder);
+	flDifference += (m_flRemainder - u.m_flRemainder)/1000;
+	float flEp = 0.001f;
+	return fabs(flDifference) < flEp;
+}
+
+bool CScalableFloat::operator!=(const CScalableFloat& u) const
+{
+	return (!(*this == u));
 }
 
 bool CScalableFloat::operator<(const CScalableFloat& u) const
@@ -1520,9 +1528,9 @@ CScalableVector::operator Vector() const
 
 CScalableMatrix::CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition)
 {
-	SetColumn(0, vecForward);
-	SetColumn(1, vecUp);
-	SetColumn(2, vecRight);
+	SetForwardVector(vecForward);
+	SetUpVector(vecUp);
+	SetRightVector(vecRight);
 	SetTranslation(vecPosition);
 }
 
@@ -1557,144 +1565,219 @@ void CScalableMatrix::Identity()
 	SetTranslation(CScalableVector());
 }
 
+bool CScalableMatrix::IsIdentity()
+{
+	if (CScalableMatrix() == *this)
+		return true;
+
+	return false;
+}
+
 void CScalableMatrix::SetAngles(const EAngle& angDir)
 {
-	float sp = sin(angDir.p * M_PI/180);
-	float sy = sin(angDir.y * M_PI/180);
-	float sr = sin(angDir.r * M_PI/180);
-	float cp = cos(angDir.p * M_PI/180);
-	float cy = cos(angDir.y * M_PI/180);
-	float cr = cos(angDir.r * M_PI/180);
+	Matrix4x4 t;
+	t.SetAngles(angDir);
 
-	m[0][0] = cy*cp;
-	m[0][1] = sr*sy-sp*cr*cy;
-	m[0][2] = sp*sr*cy+cr*sy;
-	m[1][0] = sp;
-	m[1][1] = cp*cr;
-	m[1][2] = -cp*sr;
-	m[2][0] = -sy*cp;
-	m[2][1] = sp*cr*sy+sr*cy;
-	m[2][2] = cr*cy-sy*sp*sr;
+	m[0][0] = t.m[0][0];
+	m[0][1] = t.m[0][1];
+	m[0][2] = t.m[0][2];
+	m[1][0] = t.m[1][0];
+	m[1][1] = t.m[1][1];
+	m[1][2] = t.m[1][2];
+	m[2][0] = t.m[2][0];
+	m[2][1] = t.m[2][1];
+	m[2][2] = t.m[2][2];
 }
 
 EAngle CScalableMatrix::GetAngles() const
 {
-	if (m[1][0] > 0.999999f)
-		return EAngle(90, atan2(m[0][2], m[2][2]) * 180/M_PI, 0);
-	else if (m[1][0] < -0.999999f)
-		return EAngle(-90, atan2(m[0][2], m[2][2]) * 180/M_PI, 0);
+	Matrix4x4 m(GetForwardVector(), GetUpVector(), GetRightVector());
 
-	// Clamp to [-1, 1] looping
-	float flPitch = fmod(m[1][0], 2);
-	if (flPitch > 1)
-		flPitch -= 2;
-	else if (flPitch < -1)
-		flPitch += 2;
+	return m.GetAngles();
+}
 
-	return EAngle(asin(flPitch) * 180/M_PI, atan2(-m[2][0], m[0][0]) * 180/M_PI, atan2(-m[1][2], m[1][1]) * 180/M_PI);
+void CScalableMatrix::SetRotation(float flAngle, const Vector& v)
+{
+	Matrix4x4 t;
+	t.SetRotation(flAngle, v);
+
+	m[0][0] = t.m[0][0];
+	m[0][1] = t.m[0][1];
+	m[0][2] = t.m[0][2];
+	m[1][0] = t.m[1][0];
+	m[1][1] = t.m[1][1];
+	m[1][2] = t.m[1][2];
+	m[2][0] = t.m[2][0];
+	m[2][1] = t.m[2][1];
+	m[2][2] = t.m[2][2];
 }
 
 void CScalableMatrix::SetRotation(const Quaternion& q)
 {
-	float x = q.x;
-	float y = q.y;
-	float z = q.z;
-	float w = q.w;
+	Matrix4x4 t;
+	t.SetRotation(q);
 
-	float x2 = 2*x*x;
-	float y2 = 2*y*y;
-	float z2 = 2*z*z;
+	m[0][0] = t.m[0][0];
+	m[0][1] = t.m[0][1];
+	m[0][2] = t.m[0][2];
+	m[1][0] = t.m[1][0];
+	m[1][1] = t.m[1][1];
+	m[1][2] = t.m[1][2];
+	m[2][0] = t.m[2][0];
+	m[2][1] = t.m[2][1];
+	m[2][2] = t.m[2][2];
+}
 
-	float xy2 = 2*x*y;
-	float xz2 = 2*x*z;
-	float yz2 = 2*y*z;
-	float xw2 = 2*x*w;
-	float zw2 = 2*z*w;
-	float yw2 = 2*y*w;
+void CScalableMatrix::SetOrientation(const Vector& v, const Vector& vecUp)
+{
+	Matrix4x4 t;
+	t.SetOrientation(v, vecUp);
 
-	m[0][0] = 1 - y2 - z2;
-	m[0][1] = xy2 - zw2;
-	m[0][2] = xz2 + yw2;
-	m[0][3] = 0;
+	m[0][0] = t.m[0][0];
+	m[0][1] = t.m[0][1];
+	m[0][2] = t.m[0][2];
+	m[1][0] = t.m[1][0];
+	m[1][1] = t.m[1][1];
+	m[1][2] = t.m[1][2];
+	m[2][0] = t.m[2][0];
+	m[2][1] = t.m[2][1];
+	m[2][2] = t.m[2][2];
+}
 
-	m[1][0] = xy2 + zw2;
-	m[1][1] = 1 - x2 - z2;
-	m[1][2] = yz2 - xw2;
-	m[1][3] = 0;
+CScalableMatrix CScalableMatrix::AddTranslation(const CScalableVector& v)
+{
+	CScalableMatrix r;
+	r.SetTranslation(v);
+	(*this) *= r;
 
-	m[2][0] = xz2 - yw2;
-	m[2][1] = yz2 + xw2;
-	m[2][2] = 1 - x2 - y2;
-	m[2][3] = 0;
+	return *this;
+}
 
-	m[3][0] = 0;
-	m[3][1] = 0;
-	m[3][2] = 0;
-	m[3][3] = 0;
+CScalableMatrix CScalableMatrix::AddAngles(const EAngle& a)
+{
+	CScalableMatrix r;
+	r.SetAngles(a);
+	(*this) *= r;
+
+	return *this;
+}
+
+CScalableMatrix CScalableMatrix::operator+=(const CScalableVector& v)
+{
+	mt[0] += v.x;
+	mt[1] += v.y;
+	mt[2] += v.z;
+
+	return *this;
+}
+
+CScalableMatrix CScalableMatrix::operator+=(const EAngle& a)
+{
+	CScalableMatrix r;
+	r.SetAngles(a);
+	(*this) *= r;
+
+	return *this;
 }
 
 CScalableMatrix CScalableMatrix::operator*(const CScalableMatrix& t) const
 {
 	CScalableMatrix r;
 
-	r.m[0][0] = m[0][0]*t.m[0][0] + m[0][1]*t.m[1][0] + m[0][2]*t.m[2][0];
-	r.m[0][1] = m[0][0]*t.m[0][1] + m[0][1]*t.m[1][1] + m[0][2]*t.m[2][1];
-	r.m[0][2] = m[0][0]*t.m[0][2] + m[0][1]*t.m[1][2] + m[0][2]*t.m[2][2];
+	// [a b c d][A B C D]   [aA+bE+cI+dM
+	// [e f g h][E F G H] = [eA+fE+gI+hM ...
+	// [i j k l][I J K L]
+	// [m n o p][M N O P]
 
-	r.m[1][0] = m[1][0]*t.m[0][0] + m[1][1]*t.m[1][0] + m[1][2]*t.m[2][0];
-	r.m[1][1] = m[1][0]*t.m[0][1] + m[1][1]*t.m[1][1] + m[1][2]*t.m[2][1];
-	r.m[1][2] = m[1][0]*t.m[0][2] + m[1][1]*t.m[1][2] + m[1][2]*t.m[2][2];
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+			r.m[i][j] = m[0][j]*t.m[i][0] + m[1][j]*t.m[i][1] + m[2][j]*t.m[i][2];
+	}
 
-	r.m[2][0] = m[2][0]*t.m[0][0] + m[2][1]*t.m[1][0] + m[2][2]*t.m[2][0];
-	r.m[2][1] = m[2][0]*t.m[0][1] + m[2][1]*t.m[1][1] + m[2][2]*t.m[2][1];
-	r.m[2][2] = m[2][0]*t.m[0][2] + m[2][1]*t.m[1][2] + m[2][2]*t.m[2][2];
-
-	r.mt[0] = t.mt[0]*m[0][0] + t.mt[1]*m[0][1] + t.mt[2]*m[0][2] + mt[0];
-	r.mt[1] = t.mt[0]*m[1][0] + t.mt[1]*m[1][1] + t.mt[2]*m[1][2] + mt[1];
-	r.mt[2] = t.mt[0]*m[2][0] + t.mt[1]*m[2][1] + t.mt[2]*m[2][2] + mt[2];
+	r.mt[0] = (t.mt[0]*m[0][0]).AddMultiple(t.mt[1]*m[1][0], t.mt[2]*m[2][0], mt[0]);
+	r.mt[1] = (t.mt[0]*m[0][1]).AddMultiple(t.mt[1]*m[1][1], t.mt[2]*m[2][1], mt[1]);
+	r.mt[2] = (t.mt[0]*m[0][2]).AddMultiple(t.mt[1]*m[1][2], t.mt[2]*m[2][2], mt[2]);
 
 	return r;
 }
 
+CScalableMatrix CScalableMatrix::operator*=(const CScalableMatrix& t)
+{
+	*this = (*this)*t;
+
+	return *this;
+}
+
 CScalableVector CScalableMatrix::operator*(const CScalableVector& v) const
 {
-	CScalableVector vecResult;
-	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[0][1], v.z * m[0][2], mt[0]);
-	vecResult.y = (v.x * m[1][0]).AddMultiple(v.y * m[1][1], v.z * m[1][2], mt[1]);
-	vecResult.z = (v.x * m[2][0]).AddMultiple(v.y * m[2][1], v.z * m[2][2], mt[2]);
+	// [a b c x][X] 
+	// [d e f y][Y] = [aX+bY+cZ+x dX+eY+fZ+y gX+hY+iZ+z]
+	// [g h i z][Z]
+	//          [1]
 
+	CScalableVector vecResult;
+	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[1][0], v.z * m[2][0], mt[0]);
+	vecResult.y = (v.x * m[0][1]).AddMultiple(v.y * m[1][1], v.z * m[2][1], mt[1]);
+	vecResult.z = (v.x * m[0][2]).AddMultiple(v.y * m[1][2], v.z * m[2][2], mt[2]);
 	return vecResult;
 }
 
 CScalableVector CScalableMatrix::TransformVector(const CScalableVector& v) const
 {
-	CScalableVector vecResult;
-	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[0][1], v.z * m[0][2]);
-	vecResult.y = (v.x * m[1][0]).AddMultiple(v.y * m[1][1], v.z * m[1][2]);
-	vecResult.z = (v.x * m[2][0]).AddMultiple(v.y * m[2][1], v.z * m[2][2]);
+	// [a b c][X] 
+	// [d e f][Y] = [aX+bY+cZ dX+eY+fZ gX+hY+iZ]
+	// [g h i][Z]
 
+	CScalableVector vecResult;
+	vecResult.x = (v.x * m[0][0]).AddMultiple(v.y * m[1][0], v.z * m[2][0]);
+	vecResult.y = (v.x * m[0][1]).AddMultiple(v.y * m[1][1], v.z * m[2][1]);
+	vecResult.z = (v.x * m[0][2]).AddMultiple(v.y * m[1][2], v.z * m[2][2]);
 	return vecResult;
 }
 
-bool CScalableMatrix::operator!=(const CScalableMatrix& o) const
+bool CScalableMatrix::operator==(const CScalableMatrix& t) const
 {
+	float flEp = 0.000001f;
 	for (size_t x = 0; x < 3; x++)
 	{
 		for (size_t y = 0; y < 3; y++)
 		{
-			if (m[x][y] != o.m[x][y])
+			if (fabs(m[x][y] - t.m[x][y]) > flEp)
 				return false;
 		}
 	}
 
-	if (mt.x != o.mt.x)
+	if (mt.x != t.mt.x)
 		return false;
-	if (mt.y != o.mt.y)
+	if (mt.y != t.mt.y)
 		return false;
-	if (mt.z != o.mt.z)
+	if (mt.z != t.mt.z)
 		return false;
 
 	return true;
+}
+
+bool CScalableMatrix::operator!=(const CScalableMatrix& t) const
+{
+	float flEp = 0.000001f;
+	for (size_t x = 0; x < 3; x++)
+	{
+		for (size_t y = 0; y < 3; y++)
+		{
+			if (fabs(m[x][y] - t.m[x][y]) > flEp)
+				return true;
+		}
+	}
+
+	if (mt.x != t.mt.x)
+		return true;
+	if (mt.y != t.mt.y)
+		return true;
+	if (mt.z != t.mt.z)
+		return true;
+
+	return false;
 }
 
 // Not a true inversion, only works if the matrix is a translation/rotation matrix.
@@ -1722,6 +1805,11 @@ CScalableMatrix CScalableMatrix::InvertedRT() const
 	t.InvertRT();
 
 	return t;
+}
+
+Vector CScalableMatrix::GetRow(int i) const
+{
+	return Vector(m[i][0], m[i][1], m[i][2]);
 }
 
 void CScalableMatrix::SetColumn(int i, const Vector& vecColumn)
