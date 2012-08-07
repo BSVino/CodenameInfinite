@@ -34,7 +34,7 @@ tstring GetStringDistance(const CScalableFloat& v)
 	return sprintf("%.2fkm", flDistance);
 }
 
-void CSPHUD::Paint(int x, int y, int w, int h)
+void CSPHUD::Paint(float x, float y, float w, float h)
 {
 	Vector vecUp;
 	Vector vecForward;

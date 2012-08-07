@@ -19,7 +19,7 @@ public:
 
 	virtual TVector	GetCameraPosition();
 	virtual Vector  GetCameraDirection();
-	virtual TVector	GetCameraUp();
+	virtual Vector  GetCameraUp();
 	virtual float	GetCameraFOV();
 	virtual float	GetCameraOrthoHeight();
 	virtual float	GetCameraNear() { return 1.0f; };

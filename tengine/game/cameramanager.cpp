@@ -114,7 +114,7 @@ Vector CCameraManager::GetCameraDirection()
 	return AngleVector(pCamera->GetGlobalAngles());
 }
 
-TVector CCameraManager::GetCameraUp()
+Vector CCameraManager::GetCameraUp()
 {
 	CCamera* pCamera = GetActiveCamera();
 	if (!pCamera)

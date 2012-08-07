@@ -11,50 +11,50 @@
 #include "planet.h"
 #include "sp_renderer.h"
 
+REGISTER_ENTITY(CSPCamera);
+
+NETVAR_TABLE_BEGIN(CSPCamera);
+NETVAR_TABLE_END();
+
+SAVEDATA_TABLE_BEGIN(CSPCamera);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bThirdPerson);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPCharacter, m_hCharacter);
+SAVEDATA_TABLE_END();
+
+INPUTS_TABLE_BEGIN(CSPCamera);
+INPUTS_TABLE_END();
+
 CSPCamera::CSPCamera()
 {
 	m_bThirdPerson = false;
 }
 
-CScalableVector CSPCamera::GetCameraPosition()
+void CSPCamera::CameraThink()
 {
-	if (GetThirdPerson())
-		return GetThirdPersonCameraPosition();
-
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CSPCharacter* pCharacter = m_hCharacter;
 	if (!pCharacter)
-		return CScalableVector(Vector(10,0,0), SCALE_METER);
+		return;
+
+	if (GetThirdPerson())
+	{
+		SetGlobalOrigin(GetThirdPersonCameraPosition());
+		SetGlobalAngles(VectorAngles(GetThirdPersonCameraDirection()));
+		return;
+	}
 
 	// Freeze transforms
 	pCharacter->GetGlobalTransform();
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
-	return vecEyeHeight;
+	SetGlobalOrigin(vecEyeHeight);
+
+	SetGlobalAngles(pCharacter->GetGlobalAngles());
 }
 
-CScalableVector CSPCamera::GetCameraTarget()
+const TVector CSPCamera::GetUpVector() const
 {
-	if (GetThirdPerson())
-		return GetThirdPersonCameraTarget();
-
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-
-	if (!pCharacter)
-		return CScalableVector();
-
-	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
-
-	// Make sure we don't lose data when working in millimeters
-	if (eScale < SCALE_METER)
-		eScale = SCALE_METER;
-
-	return GetCameraPosition() + CScalableVector(pCharacter->GetGlobalTransform().GetForwardVector(), eScale);
-}
-
-TVector CSPCamera::GetUpVector()
-{
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CSPCharacter* pCharacter = m_hCharacter;
 	if (pCharacter)
 		return Vector(pCharacter->GetGlobalTransform().GetUpVector());
 
@@ -87,7 +87,7 @@ CVar cam_third_right("cam_third_right", "0.2");
 
 CScalableVector CSPCamera::GetThirdPersonCameraPosition()
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CSPCharacter* pCharacter = m_hCharacter;
 	if (!pCharacter)
 		return CScalableVector(Vector(10,0,0), SCALE_METER);
 
@@ -102,17 +102,17 @@ CScalableVector CSPCamera::GetThirdPersonCameraPosition()
 	return vecThird;
 }
 
-CScalableVector CSPCamera::GetThirdPersonCameraTarget()
+Vector CSPCamera::GetThirdPersonCameraDirection()
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CSPCharacter* pCharacter = m_hCharacter;
 
 	if (!pCharacter)
-		return CScalableVector();
+		return Vector();
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 	vecEyeHeight += pCharacter->GetGlobalTransform().GetRightVector() * cam_third_right.GetFloat();
 
-	return vecEyeHeight;
+	return (vecEyeHeight - GetThirdPersonCameraPosition()).GetUnits(SCALE_METER);
 }
 
 void CSPCamera::KeyDown(int c)
@@ -124,4 +124,9 @@ void CSPCamera::KeyDown(int c)
 void CSPCamera::ToggleThirdPerson()
 {
 	SetThirdPerson(!GetThirdPerson());
+}
+
+void CSPCamera::SetCharacter(CSPCharacter* pCharacter)
+{
+	m_hCharacter = pCharacter;
 }

@@ -3,6 +3,7 @@
 #include <tinker/application.h>
 
 #include "planet.h"
+#include "sp_camera.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
 
@@ -12,6 +13,7 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CPlayerCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bFlying);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPCamera, m_hCamera);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlayerCharacter);
@@ -28,6 +30,9 @@ void CPlayerCharacter::Spawn()
 	m_aabbPhysBoundingBox = AABB(Vector(-0.35f, 0, -0.35f), Vector(0.35f, 2, 0.35f));
 
 	BaseClass::Spawn();
+
+	m_hCamera = GameServer()->Create<CSPCamera>("CSPCamera");
+	m_hCamera->SetCharacter(this);
 }
 
 void CPlayerCharacter::Think()

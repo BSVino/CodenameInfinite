@@ -3,6 +3,8 @@
 
 #include "sp_character.h"
 
+#include "sp_camera.h"
+
 class CPlayerCharacter : public CSPCharacter
 {
 	REGISTER_ENTITY_CLASS(CPlayerCharacter, CSPCharacter);
@@ -30,6 +32,8 @@ public:
 protected:
 	bool						m_bFlying;
 	bool						m_bHyperdrive;
+
+	CEntityHandle<CSPCamera>    m_hCamera;
 };
 
 #endif

@@ -22,12 +22,10 @@ public:
 	virtual void				RenderLoading();
 
 	class CSPRenderer*			GetRenderer();
-	class CSPHUD*				GetHUD() { return m_pSPHUD; };
+	class CSPHUD*				GetHUD();
 
 protected:
 	size_t						m_iScreenshot;
-
-	class CSPHUD*				m_pSPHUD;
 };
 
 inline CSPWindow* SPWindow()

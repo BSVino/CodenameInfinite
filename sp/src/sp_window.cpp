@@ -33,8 +33,6 @@ void CSPWindow::SetupEngine()
 
 	GameServer()->Initialize();
 
-	glgui::CRootPanel::Get()->AddControl(m_pSPHUD = new CSPHUD());
-
 	glgui::CRootPanel::Get()->SetLighting(false);
 	glgui::CRootPanel::Get()->Layout();
 
@@ -55,4 +53,9 @@ void CSPWindow::RenderLoading()
 CSPRenderer* CSPWindow::GetRenderer()
 {
 	return static_cast<CSPRenderer*>(GameServer()->GetRenderer());
+}
+
+CSPHUD* CSPWindow::GetHUD()
+{
+	return static_cast<CSPHUD*>(m_pHUD);
 }

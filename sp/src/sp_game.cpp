@@ -82,7 +82,7 @@ void CSPGame::SetupGame(tstring sType)
 		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
 		pStar->SetLightColor(Color(255, 242, 143));
 
-		pCharacter->StandOnNearestPlanet();
+		//pCharacter->StandOnNearestPlanet();
 
 		Application()->SetMouseCursorEnabled(false);
 	}

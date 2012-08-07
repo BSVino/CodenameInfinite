@@ -8,22 +8,22 @@
 
 class CSPCamera : public CCamera
 {
-	DECLARE_CLASS(CSPCamera, CCamera);
+	REGISTER_ENTITY_CLASS(CSPCamera, CCamera);
 
 public:
 								CSPCamera();
 
 public:
-	virtual CScalableVector		GetCameraPosition();
-	virtual CScalableVector		GetCameraTarget();
-	virtual TVector				GetUpVector();
+	virtual void                CameraThink();
+
+	virtual const TVector       GetUpVector() const;
 	virtual float				GetCameraFOV();
 
 	virtual float				GetCameraNear();
 	virtual float				GetCameraFar();
 
 	virtual CScalableVector		GetThirdPersonCameraPosition();
-	virtual CScalableVector		GetThirdPersonCameraTarget();
+	virtual Vector              GetThirdPersonCameraDirection();
 
 	virtual void				KeyDown(int c);
 
@@ -31,8 +31,12 @@ public:
 	void						SetThirdPerson(bool bOn) { m_bThirdPerson = bOn; };
 	bool						GetThirdPerson() { return m_bThirdPerson; };
 
+	void						SetCharacter(class CSPCharacter* pCharacter);
+
 protected:
 	bool						m_bThirdPerson;
+
+	CEntityHandle<CSPCharacter> m_hCharacter;
 };
 
 #endif
