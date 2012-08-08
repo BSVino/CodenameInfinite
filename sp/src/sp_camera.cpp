@@ -47,7 +47,7 @@ void CSPCamera::CameraThink()
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
-	SetGlobalOrigin(vecEyeHeight);
+	SetGlobalOrigin(pCharacter->GetGlobalOrigin() + vecEyeHeight);
 
 	SetGlobalAngles(pCharacter->GetGlobalAngles());
 }
