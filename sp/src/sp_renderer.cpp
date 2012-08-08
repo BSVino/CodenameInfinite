@@ -25,14 +25,8 @@ CSPRenderer::CSPRenderer()
 	: CGameRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())
 {
 	CTextureHandle hSkybox("textures/skybox/skymap.png");
-	CTextureHandle hSkyboxFT("textures/skybox/test-ft.png");
-	CTextureHandle hSkyboxLF("textures/skybox/test-lf.png");
-	CTextureHandle hSkyboxRT("textures/skybox/test-rt.png");
-	CTextureHandle hSkyboxBK("textures/skybox/test-bk.png");
-	CTextureHandle hSkyboxUP("textures/skybox/test-up.png");
-	CTextureHandle hSkyboxDN("textures/skybox/test-dn.png");
 
-	SetSkybox(hSkyboxFT, hSkyboxBK, hSkyboxLF, hSkyboxRT, hSkyboxUP, hSkyboxDN);
+	SetSkybox(hSkybox, hSkybox, hSkybox, hSkybox, hSkybox, hSkybox);
 
 	m_eRenderingScale = SCALE_NONE;
 }
@@ -151,8 +145,6 @@ void CSPRenderer::DrawSkybox(CRenderingContext* c)
 
 void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 {
-	c->UseProgram("skybox");
-
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (!pCharacter)
 		c->SetUniform("flAtmosphere", 0.0f);

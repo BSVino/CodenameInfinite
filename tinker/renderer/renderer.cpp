@@ -428,6 +428,7 @@ void CRenderer::RenderOffscreenBuffers(class CRenderingContext* pContext)
 				RenderMapToBuffer(m_oSceneBuffer.m_iMap, &m_oBloom1Buffers[i]);
 		}
 
+		// Blur it up! Oooooh darlin' blur it up! Come on baby
 		RenderBloomPass(m_oBloom1Buffers, m_oBloom2Buffers, true);
 		RenderBloomPass(m_oBloom2Buffers, m_oBloom1Buffers, false);
 

@@ -111,7 +111,7 @@ Vector CCameraManager::GetCameraDirection()
 		return AngleVector(pFrom->GetGlobalAngles() + angDifference*flLerp);
 	}
 
-	return AngleVector(pCamera->GetGlobalAngles());
+	return pCamera->GetGlobalTransform().GetForwardVector();
 }
 
 Vector CCameraManager::GetCameraUp()

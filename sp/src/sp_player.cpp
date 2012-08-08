@@ -24,12 +24,12 @@ void CSPPlayer::MouseMotion(int x, int y)
 		return;
 
 	float flSensitivity = CVar::GetCVarFloat("m_sensitivity");
-	float flYaw = (x/flSensitivity);
-	float flPitch = (y/flSensitivity);
+	float flYaw = (x*flSensitivity/20);
+	float flPitch = (y*flSensitivity/20);
 
 	EAngle angMouse;
 	angMouse.p = -flPitch;
-	angMouse.y = -flYaw;
+	angMouse.y = flYaw;
 	angMouse.r = 0;
 
 	CScalableMatrix mRotate;
@@ -41,6 +41,10 @@ void CSPPlayer::MouseMotion(int x, int y)
 	CScalableMatrix mNewTransform = mTransform * mRotate;
 
 	mNewTransform.SetTranslation(GetPlayerCharacter()->GetLocalOrigin());
+
+	mNewTransform.SetForwardVector(mNewTransform.GetForwardVector().Normalized());
+	mNewTransform.SetRightVector(mNewTransform.GetForwardVector().Cross(mNewTransform.GetUpVector()).Normalized());
+	mNewTransform.SetUpVector(mNewTransform.GetRightVector().Cross(mNewTransform.GetForwardVector()));
 
 	GetPlayerCharacter()->SetLocalTransform(mNewTransform);
 }
