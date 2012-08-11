@@ -41,6 +41,11 @@ void CSPCharacter::Think()
 
 	CPlanet* pPlanet = GetNearestPlanet();
 
+	if (pPlanet && !IsInPhysics())
+		AddToPhysics(CT_CHARACTER);
+	else if (IsInPhysics())
+		RemoveFromPhysics();
+
 	if (pPlanet && !HasMoveParent())
 	{
 		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();

@@ -85,6 +85,7 @@ protected:
 	bool							m_bTransformMoveByView;
 	TVector							m_vecGoalVelocity;
 	TVector							m_vecMoveVelocity;
+	double							m_flMoveSimulationTime;
 
 	double							m_flLastAttack;
 

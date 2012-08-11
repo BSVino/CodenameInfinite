@@ -26,6 +26,7 @@ SAVEDATA_TABLE_BEGIN(CCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bTransformMoveByView);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecGoalVelocity);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, Vector, m_vecMoveVelocity);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flMoveSimulationTime);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flLastAttack);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TFloat, m_flMaxStepSize);
 SAVEDATA_TABLE_END();
@@ -51,6 +52,8 @@ void CCharacter::Spawn()
 	m_vecMoveVelocity = Vector(0,0,0);
 	m_vecGoalVelocity = Vector(0,0,0);
 
+	m_flMoveSimulationTime = 0;
+
 	m_flLastAttack = -1;
 
 	m_bTakeDamage = true;
@@ -68,6 +71,37 @@ void CCharacter::Think()
 		MoveThink_NoClip();
 	else
 		MoveThink();
+
+	TMatrix mGlobalToLocalRotation;
+	if (HasMoveParent())
+	{
+		mGlobalToLocalRotation = GetMoveParent()->GetGlobalToLocalTransform();
+		mGlobalToLocalRotation.SetTranslation(TVector());
+	}
+
+	float flSimulationFrameTime = 0.01f;
+
+	// Break simulations up into consistent small steps to preserve accuracy.
+	for (; m_flMoveSimulationTime < GameServer()->GetGameTime(); m_flMoveSimulationTime += flSimulationFrameTime)
+	{
+		TVector vecVelocity = GetLocalVelocity();
+
+		TVector vecLocalOrigin = GetLocalOrigin();
+		TVector vecGlobalOrigin = GetGlobalOrigin();
+
+		vecVelocity = vecVelocity * flSimulationFrameTime;
+
+		TVector vecLocalDestination = vecLocalOrigin + vecVelocity;
+		TVector vecGlobalDestination = vecLocalDestination;
+		if (GetMoveParent())
+			vecGlobalDestination = GetMoveParent()->GetGlobalTransform() * vecLocalDestination;
+
+		TVector vecNewLocalOrigin = vecLocalDestination;
+
+		SetLocalOrigin(vecNewLocalOrigin);
+
+		m_flMoveSimulationTime += flSimulationFrameTime;
+	}
 }
 
 void CCharacter::Move(movetype_t eMoveType)
@@ -112,10 +146,11 @@ void CCharacter::MoveThink()
 	m_vecMoveVelocity.y = 0;
 	m_vecMoveVelocity.z = Approach((float)vecGoalVelocity.z, (float)m_vecMoveVelocity.z, (float)GameServer()->GetFrameTime()*(float)CharacterAcceleration());
 
+	TVector vecLocalVelocity;
+
 	if (m_vecMoveVelocity.LengthSqr() > 0.0f)
 	{
 		TVector vecMove = m_vecMoveVelocity * CharacterSpeed();
-		TVector vecLocalVelocity;
 
 		if (m_bTransformMoveByView)
 		{
@@ -141,11 +176,14 @@ void CCharacter::MoveThink()
 		}
 		else
 			vecLocalVelocity = vecMove;
-
-		GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
 	}
 	else
-		GamePhysics()->SetControllerWalkVelocity(this, Vector(0, 0, 0));
+		vecLocalVelocity = TVector();
+
+	if (IsInPhysics())
+		GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
+	else
+		SetLocalVelocity(vecLocalVelocity);
 }
 
 void CCharacter::MoveThink_NoClip()

@@ -91,15 +91,11 @@ void CPlayerCharacter::StartFlying()
 
 	m_bFlying = true;
 	SetGroundEntity(NULL);
-	TUnimplemented();
-	//SetSimulated(true);
 }
 
 void CPlayerCharacter::StopFlying()
 {
 	m_bFlying = false;
-	TUnimplemented();
-	//SetSimulated(false);
 }
 
 CScalableFloat CPlayerCharacter::CharacterSpeed()
