@@ -254,7 +254,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 	Vector vec3 = svec3.GetUnits(eRender);
 	Vector vec4 = svec4.GetUnits(eRender);
 
-	c->BeginRenderQuads();
+	c->BeginRenderTriFan();
 	c->TexCoord(pBranch->m_vecMin, 0);
 	c->TexCoord(pBranch->m_oData.vecDetailMin, 1);
 	c->Normal(pBranch->m_oData.vec1n);

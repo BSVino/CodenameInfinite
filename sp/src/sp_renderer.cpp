@@ -72,6 +72,8 @@ void CSPRenderer::BuildScaleFrustums()
 		}
 
 		m_aoScaleFrustums[i].CreateFrom(mView * mProjection);
+
+		glGetIntegerv( GL_VIEWPORT, m_aiScaleViewports[i] );
 	}
 
 	m_eRenderingScale = SCALE_NONE;
