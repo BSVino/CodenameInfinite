@@ -58,7 +58,7 @@ void CSPGame::SetupGame(tstring sType)
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
 		pCharacter->SetGlobalOrigin(CScalableVector(Vector(50, 0, 50), SCALE_MEGAMETER));
-		pCharacter->SetGlobalAngles(EAngle(10, 80, 90));
+		pCharacter->SetGlobalAngles(EAngle(0, -120, 0));
 		pPlayer->SetCharacter(pCharacter);
 
 		CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
@@ -83,6 +83,9 @@ void CSPGame::SetupGame(tstring sType)
 		pStar->SetLightColor(Color(255, 242, 143));
 
 		//pCharacter->StandOnNearestPlanet();
+
+		if (!pCharacter->GetNearestPlanet())
+			pCharacter->StartFlying();
 
 		Application()->SetMouseCursorEnabled(false);
 	}

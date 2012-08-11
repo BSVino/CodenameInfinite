@@ -14,10 +14,11 @@ public:
 								CSPCamera();
 
 public:
+	void                        Spawn();
+
 	virtual void                CameraThink();
 
 	virtual const TVector       GetUpVector() const;
-	virtual float				GetCameraFOV();
 
 	virtual float				GetCameraNear();
 	virtual float				GetCameraFar();

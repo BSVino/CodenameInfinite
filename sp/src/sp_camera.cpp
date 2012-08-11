@@ -29,6 +29,13 @@ CSPCamera::CSPCamera()
 	m_bThirdPerson = false;
 }
 
+void CSPCamera::Spawn()
+{
+	BaseClass::Spawn();
+
+	m_flFOV = 60;
+}
+
 void CSPCamera::CameraThink()
 {
 	CSPCharacter* pCharacter = m_hCharacter;
@@ -59,11 +66,6 @@ const TVector CSPCamera::GetUpVector() const
 		return Vector(pCharacter->GetGlobalTransform().GetUpVector());
 
 	return BaseClass::GetUpVector();
-}
-
-float CSPCamera::GetCameraFOV()
-{
-	return 60;
 }
 
 float CSPCamera::GetCameraNear()
