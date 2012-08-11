@@ -43,6 +43,8 @@ public:
 
 	float			BloomBrightnessCutoff() const { return 1.25f; }
 
+	virtual bool    ShouldCullByFrustum() const { return false; }
+
 protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 

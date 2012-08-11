@@ -20,6 +20,7 @@ public:
 	virtual void				Think();
 	void                        RenderUpdate();
 
+	virtual bool                ShouldRender() const { return true; }
 	virtual bool				ShouldRenderAtScale(scale_t eScale) const;
 
 	virtual const CScalableFloat GetRenderRadius() const;

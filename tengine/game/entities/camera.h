@@ -19,6 +19,8 @@ public:
 
 	virtual float	GetFOV() const { return m_flFOV; }
 	virtual float	GetOrthoHeight() const { return m_flOrthoHeight; }
+	virtual float	GetCameraNear() const { return 1; }
+	virtual float	GetCameraFar() const { return 10000; }
 	virtual bool	ShouldRenderOrthographic() const { return m_bOrtho; }
 
 protected:

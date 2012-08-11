@@ -69,7 +69,7 @@ CPlanet::~CPlanet()
 
 void CPlanet::Precache()
 {
-	PrecacheMaterial("textures/grass.mat");
+	PrecacheMaterial("textures/earth.mat");
 }
 
 void CPlanet::Spawn()
@@ -230,7 +230,7 @@ void CPlanet::PostRender() const
 
 	CRenderingContext c(GameServer()->GetRenderer());
 
-	c.UseMaterial("textures/grass.mat");
+	c.UseMaterial("textures/earth.mat");
 
 	c.SetUniform("bDetail", eScale <= SCALE_METER);
 	c.SetUniform("vecStarLightPosition", vecStarLightPosition);

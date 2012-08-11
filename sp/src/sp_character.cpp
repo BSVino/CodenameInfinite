@@ -192,11 +192,11 @@ CPlanet* CSPCharacter::FindNearestPlanet() const
 	return pNearestPlanet;
 }
 
-const TVector CSPCharacter::GetUpVector() const
+const Vector CSPCharacter::GetUpVector() const
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return (GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).Normalized();
+		return Vector(GetGlobalOrigin() - pNearestPlanet->GetGlobalOrigin()).Normalized();
 
 	return Vector(0, 1, 0);
 }

@@ -118,7 +118,7 @@ Vector CCameraManager::GetCameraUp()
 {
 	CCamera* pCamera = GetActiveCamera();
 	if (!pCamera)
-		return TVector(0, 1, 0);
+		return Vector(0, 1, 0);
 
 	if (ShouldTransition())
 	{
@@ -167,6 +167,40 @@ float CCameraManager::GetCameraOrthoHeight()
 	}
 
 	return pCamera->GetOrthoHeight();
+}
+
+float CCameraManager::GetCameraNear()
+{
+	CCamera* pCamera = GetActiveCamera();
+	if (!pCamera)
+		return 1;
+
+	if (ShouldTransition())
+	{
+		CCamera* pFrom = m_ahCameras[m_iLastCamera];
+		CCamera* pTo = m_ahCameras[m_iCurrentCamera];
+		float flLerp = GetTransitionLerp();
+		return RemapVal(flLerp, 0, 1, pFrom->GetCameraNear(), pTo->GetCameraNear());
+	}
+
+	return pCamera->GetCameraNear();
+}
+
+float CCameraManager::GetCameraFar()
+{
+	CCamera* pCamera = GetActiveCamera();
+	if (!pCamera)
+		return 10000;
+
+	if (ShouldTransition())
+	{
+		CCamera* pFrom = m_ahCameras[m_iLastCamera];
+		CCamera* pTo = m_ahCameras[m_iCurrentCamera];
+		float flLerp = GetTransitionLerp();
+		return RemapVal(flLerp, 0, 1, pFrom->GetCameraFar(), pTo->GetCameraFar());
+	}
+
+	return pCamera->GetCameraFar();
 }
 
 bool CCameraManager::ShouldRenderOrthographic()

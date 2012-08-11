@@ -35,7 +35,7 @@ public:
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE) const;
 	CPlanet*					FindNearestPlanet() const;
 
-	virtual const TVector       GetUpVector() const;
+	virtual const Vector        GetUpVector() const;
 
 	void						LockViewToPlanet();
 

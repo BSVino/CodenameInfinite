@@ -46,6 +46,7 @@ void CSPRenderer::BuildScaleFrustums()
 	SetCameraFOV(pCameraManager->GetCameraFOV());
 	SetCameraNear(pCameraManager->GetCameraNear());
 	SetCameraFar(pCameraManager->GetCameraFar());
+	SetCameraDirection(pCameraManager->GetCameraDirection());
 
 	// Build frustums for each render scale.
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
@@ -54,7 +55,6 @@ void CSPRenderer::BuildScaleFrustums()
 		m_eRenderingScale = eScale;
 
 		SetCameraPosition(pCameraManager->GetCameraPosition().GetUnits(eScale));
-		SetCameraDirection(pCameraManager->GetCameraDirection());
 
 		Matrix4x4 mProjection = Matrix4x4::ProjectPerspective(
 				m_flCameraFOV,

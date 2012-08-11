@@ -1590,7 +1590,14 @@ void CBaseEntity::PrecacheMaterial(const tstring& sMaterial)
 			return;
 	}
 
-	pReg->m_ahMaterialPrecaches.push_back(CMaterialLibrary::AddMaterial(sMaterial));
+	CMaterialHandle hMaterial = CMaterialLibrary::AddMaterial(sMaterial);
+	if (!hMaterial.IsValid())
+	{
+		TError("PrecacheMaterial(): Couldn't load material " + sMaterial + "\n");
+		return;
+	}
+
+	pReg->m_ahMaterialPrecaches.push_back(hMaterial);
 	pReg->m_asPrecaches.push_back(sMaterial);
 }
 

@@ -54,21 +54,21 @@ void CSPCamera::CameraThink()
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
-	SetGlobalOrigin(pCharacter->GetGlobalOrigin() + vecEyeHeight);
+	SetGlobalOrigin(vecEyeHeight);
 
 	SetGlobalAngles(pCharacter->GetGlobalAngles());
 }
 
-const TVector CSPCamera::GetUpVector() const
+const Vector CSPCamera::GetUpVector() const
 {
 	CSPCharacter* pCharacter = m_hCharacter;
 	if (pCharacter)
-		return Vector(pCharacter->GetGlobalTransform().GetUpVector());
+		return pCharacter->GetGlobalTransform().GetUpVector();
 
 	return BaseClass::GetUpVector();
 }
 
-float CSPCamera::GetCameraNear()
+float CSPCamera::GetCameraNear() const
 {
 	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER)
 		return 0.05f;
@@ -76,7 +76,7 @@ float CSPCamera::GetCameraNear()
 	return 1;
 }
 
-float CSPCamera::GetCameraFar()
+float CSPCamera::GetCameraFar() const
 {
 	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER)
 		return 500;

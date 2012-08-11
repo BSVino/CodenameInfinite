@@ -55,6 +55,7 @@ public:
 
 	const class CBaseEntity*	GetRenderingEntity() { return m_pRendering; }
 
+	virtual bool    ShouldCullByFrustum() const { return true; }
 	virtual bool	ShouldRenderPhysicsDebug() const { return true; };
 
 protected:

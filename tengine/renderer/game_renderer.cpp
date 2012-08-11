@@ -87,7 +87,7 @@ void CGameRenderer::RenderEverything()
 	m_apRenderList.reserve(CBaseEntity::GetNumEntities());
 	m_apRenderList.clear();
 
-	bool bFrustumCulling = r_cullfrustum.GetBool();
+	bool bFrustumCulling = r_cullfrustum.GetBool() && ShouldCullByFrustum();
 
 	// None of these had better get deleted while we're doing this since they're not handles.
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)

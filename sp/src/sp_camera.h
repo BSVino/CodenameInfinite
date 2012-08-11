@@ -18,10 +18,10 @@ public:
 
 	virtual void                CameraThink();
 
-	virtual const TVector       GetUpVector() const;
+	virtual const Vector        GetUpVector() const;
 
-	virtual float				GetCameraNear();
-	virtual float				GetCameraFar();
+	virtual float				GetCameraNear() const;
+	virtual float				GetCameraFar() const;
 
 	virtual CScalableVector		GetThirdPersonCameraPosition();
 	virtual Vector              GetThirdPersonCameraDirection();

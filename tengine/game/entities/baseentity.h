@@ -562,7 +562,7 @@ public:
 
 	inline const Vector						GetScale() const { return m_vecScale.Get(); }
 
-	virtual const TVector					GetUpVector() const { return TVector(0, 1, 0); };
+	virtual const Vector					GetUpVector() const { return Vector(0, 1, 0); };
 
 	virtual bool							TransformsChildUp() const { return false; };
 
