@@ -275,7 +275,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 	if (r_showquaddebugoutlines.GetBool())
 	{
-		CRenderingContext c(GameServer()->GetRenderer());
+		CRenderingContext c(GameServer()->GetRenderer(), true);
 		c.BindTexture(0);
 		c.SetColor(Color(255, 255, 255));
 		c.BeginRenderDebugLines();
@@ -288,7 +288,7 @@ void CPlanetTerrain::RenderBranch(const CTerrainQuadTreeBranch* pBranch, class C
 
 	if (r_showquadnormals.GetBool())
 	{
-		CRenderingContext c(GameServer()->GetRenderer());
+		CRenderingContext c(GameServer()->GetRenderer(), true);
 		c.BindTexture(0);
 		c.SetColor(Color(255, 255, 255));
 		c.BeginRenderDebugLines();
