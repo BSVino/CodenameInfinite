@@ -57,8 +57,8 @@ void CSPGame::SetupGame(tstring sType)
 		Game()->AddPlayer(pPlayer);
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
-		pCharacter->SetGlobalOrigin(CScalableVector(Vector(50, 0, 50), SCALE_MEGAMETER));
-		pCharacter->SetGlobalAngles(EAngle(0, -120, 0));
+		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0, 0, 0), SCALE_MEGAMETER));
+		pCharacter->SetGlobalAngles(EAngle(0, 140, 0));
 		pPlayer->SetCharacter(pCharacter);
 
 		CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");

@@ -41,9 +41,9 @@ void CSPCharacter::Think()
 
 	CPlanet* pPlanet = GetNearestPlanet();
 
-	if (pPlanet && !IsInPhysics())
+/*	if (pPlanet && !IsInPhysics())
 		AddToPhysics(CT_CHARACTER);
-	else if (IsInPhysics())
+	else*/ if (IsInPhysics())
 		RemoveFromPhysics();
 
 	if (pPlanet && !HasMoveParent())

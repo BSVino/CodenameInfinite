@@ -354,6 +354,10 @@ bool CPlanetTerrain::ShouldRenderBranch(CTerrainQuadTreeBranch* pBranch)
 	if (r_terrainbackfacecull.GetBool() && flDot >= 0.4f)
 		return false;
 
+	// Wouldn't it be cool if some planets were like, cubeworld?
+	//if (pBranch->m_iDepth > 0)
+	//	return false;
+
 	if (pBranch->m_iDepth > m_pPlanet->GetMinQuadRenderDepth())
 	{
 		float flScale = RemapValClamped(flDot, -1, 1, 0.1f, 1);

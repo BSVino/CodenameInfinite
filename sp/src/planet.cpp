@@ -228,7 +228,9 @@ void CPlanet::PostRender() const
 
 	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
 
-	CRenderingContext c(GameServer()->GetRenderer());
+	CRenderingContext c(GameServer()->GetRenderer(), true);
+
+	c.ResetTransformations();
 
 	c.UseMaterial("textures/earth.mat");
 

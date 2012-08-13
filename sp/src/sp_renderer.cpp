@@ -48,6 +48,13 @@ void CSPRenderer::BuildScaleFrustums()
 	SetCameraFar(pCameraManager->GetCameraFar());
 	SetCameraDirection(pCameraManager->GetCameraDirection());
 
+	Matrix4x4 mProjection = Matrix4x4::ProjectPerspective(
+			m_flCameraFOV,
+			(float)m_iWidth/(float)m_iHeight,
+			m_flCameraNear,
+			m_flCameraFar
+		);
+
 	// Build frustums for each render scale.
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
@@ -55,13 +62,6 @@ void CSPRenderer::BuildScaleFrustums()
 		m_eRenderingScale = eScale;
 
 		SetCameraPosition(pCameraManager->GetCameraPosition().GetUnits(eScale));
-
-		Matrix4x4 mProjection = Matrix4x4::ProjectPerspective(
-				m_flCameraFOV,
-				(float)m_iWidth/(float)m_iHeight,
-				m_flCameraNear,
-				m_flCameraFar
-			);
 
 		Matrix4x4 mView = Matrix4x4::ConstructCameraView(m_vecCameraPosition, m_vecCameraDirection, m_vecCameraUp);
 
@@ -71,7 +71,7 @@ void CSPRenderer::BuildScaleFrustums()
 			m_aiScaleProjections[i][x] = ((float*)mProjection)[x];
 		}
 
-		m_aoScaleFrustums[i].CreateFrom(mView * mProjection);
+		m_aoScaleFrustums[i].CreateFrom(mProjection * mView);
 
 		glGetIntegerv( GL_VIEWPORT, m_aiScaleViewports[i] );
 	}
