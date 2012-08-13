@@ -13,6 +13,8 @@ public:
 
 	virtual void				Think();
 
+	virtual bool                ShouldRender() const { return true; }
+
 	virtual void				PostRender() const;
 
 	virtual const TFloat        GetBoundingRadius() const { return GetRadius(); };

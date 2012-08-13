@@ -43,10 +43,10 @@ void CStar::PostRender() const
 	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
-	CGameRenderingContext c(GameServer()->GetRenderer());
+	CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+	c.ResetTransformations();
 	c.Transform(GetRenderTransform());
-	c.SetBlend(BLEND_ADDITIVE);
-	c.SetColor(Color(255, 255, 255, 255));
 
 	c.RenderBillboard("textures/star-yellow.mat", (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 }
