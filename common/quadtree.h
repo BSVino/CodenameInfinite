@@ -21,6 +21,14 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 #include <tvector.h>
 #include <vector.h>
 
+typedef enum
+{
+	QUADSIDE_LEFT,
+	QUADSIDE_RIGHT,
+	QUADSIDE_TOP,
+	QUADSIDE_BOTTOM,
+} quadside_t;
+
 template <class T, typename F> class CQuadTree;
 template <class T, typename F> class CQuadTreeBranch;
 
@@ -38,14 +46,18 @@ public:
 	virtual TemplateVector2D<F>		WorldToQuadTree(CQuadTree<T, F>* pTree, const TemplateVector<F>& vecWorld)=0;
 	virtual TemplateVector<F>		QuadTreeToWorld(CQuadTree<T, F>* pTree, const TemplateVector2D<F>& vecTree)=0;
 
-	virtual bool				ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
+	virtual TemplateVector<F>		GetBranchCenter(CQuadTreeBranch<T, F>* pBranch)=0;
+
+	virtual bool					ShouldBuildBranch(CQuadTreeBranch<T, F>* pBranch, bool& bDelete)=0;
+
+	virtual bool					IsLeaf(CQuadTreeBranch<T, F>* pBranch)=0;
 };
 
 template <class T, typename F=float>
 class CQuadTreeBranch
 {
 public:
-	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TemplateVector2D<F> vecMin, TemplateVector2D<F> vecMax, unsigned short iDepth, const T& oData = T())
+	CQuadTreeBranch(CQuadTreeDataSource<T, F>* pSource, CQuadTreeBranch<T, F>* pParent, CQuadTree<T, F>* pTree, TemplateVector2D<F> vecMin, TemplateVector2D<F> vecMax, unsigned short iDepth, unsigned char iParentIndex, const T& oData = T())
 	{
 		m_pDataSource = pSource;
 		m_pParent = pParent;
@@ -60,6 +72,7 @@ public:
 		m_vecMax = vecMax;
 
 		m_iDepth = iDepth;
+		m_iParentIndex = iParentIndex;
 
 		m_oData = oData;
 
@@ -67,7 +80,7 @@ public:
 	}
 
 public:
-	void						BuildBranch(bool bAndChildren = true);
+	void						BuildBranch(bool bAndChildren = true, bool bForce = false);
 
 	void						InitPathfinding();
 	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, tvector<CQuadTreeBranch<T, F>*>& apNeighbors);
@@ -75,7 +88,6 @@ public:
 	void						SetGScore(float flGScore);
 	float						GetFScore();
 	TemplateVector<F>			GetCenter();
-	TemplateVector<F>			GetCenter() const;
 
 	void						DebugRender();
 
@@ -88,14 +100,15 @@ public:
 	TemplateVector2D<F>			m_vecMax;
 
 	unsigned short				m_iDepth;
+	unsigned char				m_iParentIndex;
 
 	union
 	{
 		struct
 		{
 			CQuadTreeBranch<T, F>*	m_pBranchxy;
-			CQuadTreeBranch<T, F>*	m_pBranchxY;
 			CQuadTreeBranch<T, F>*	m_pBranchXy;
+			CQuadTreeBranch<T, F>*	m_pBranchxY;
 			CQuadTreeBranch<T, F>*	m_pBranchXY;
 		};
 		CQuadTreeBranch<T, F>*		m_pBranches[4];
@@ -140,6 +153,7 @@ public:
 
 	class CQuadTreeBranch<T, F>*FindLeaf(const TemplateVector<F>& vecPoint);
 	void						FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, tvector<CQuadTreeBranch<T, F>*>& apNeighbors);
+	CQuadTreeBranch<T, F>*		FindNeighbor(CQuadTreeBranch<T, F>* pLeaf, quadside_t eSide);
 
 protected:
 	CQuadTreeDataSource<T, F>*	m_pDataSource;
@@ -150,7 +164,7 @@ template <class T, typename F>
 void CQuadTree<T, F>::Init(CQuadTreeDataSource<T, F>* pSource, const T& oData)
 {
 	m_pDataSource = pSource;
-	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TemplateVector2D<F>(0, 0), TemplateVector2D<F>(1, 1), 0, oData);
+	m_pQuadTreeHead = new CQuadTreeBranch<T, F>(pSource, NULL, this, TemplateVector2D<F>(0, 0), TemplateVector2D<F>(1, 1), 0, 0, oData);
 }
 
 template <class T, typename F>
@@ -212,20 +226,161 @@ void CQuadTree<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, tvector<
 }
 
 template <class T, typename F>
-void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren)
+CQuadTreeBranch<T, F>* CQuadTree<T, F>::FindNeighbor(CQuadTreeBranch<T, F>* pLeaf, quadside_t eSide)
+{
+	if (!pLeaf)
+		return NULL;
+
+	int iOriginalDepth = pLeaf->m_iDepth;
+
+	CQuadTreeBranch<T, F>* pCurrent = pLeaf;
+	if (eSide == QUADSIDE_LEFT || eSide == QUADSIDE_RIGHT)
+	{
+		if (eSide == QUADSIDE_LEFT)
+		{
+			while (pCurrent->m_iParentIndex == 0 || pCurrent->m_iParentIndex == 2)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+		else
+		{
+			while (pCurrent->m_iParentIndex == 1 || pCurrent->m_iParentIndex == 3)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+
+		if (!pCurrent->m_pParent)
+			return NULL;
+
+		pCurrent = pCurrent->m_pParent;
+
+		while (pCurrent->m_pBranches[0])
+		{
+			if (pCurrent->m_iDepth == pLeaf->m_iDepth)
+				break;
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				if (pCurrent->m_pBranches[i] == pLeaf)
+					continue;
+
+				if (pLeaf->m_vecMin.y < pCurrent->m_pBranches[i]->m_vecMin.y)
+					continue;
+
+				if (pLeaf->m_vecMax.y > pCurrent->m_pBranches[i]->m_vecMax.y)
+					continue;
+
+				if (eSide == QUADSIDE_LEFT)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMax.x < pLeaf->m_vecMin.x || pCurrent->m_pBranches[i]->m_vecMax.x > pLeaf->m_vecMax.x)
+						continue;
+				}
+
+				if (eSide == QUADSIDE_RIGHT)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMin.x > pLeaf->m_vecMax.x || pCurrent->m_pBranches[i]->m_vecMin.x < pLeaf->m_vecMin.x)
+						continue;
+				}
+
+				pCurrent = pCurrent->m_pBranches[i];
+				break;
+			}
+		}
+	}
+	else if (eSide == QUADSIDE_TOP || eSide == QUADSIDE_BOTTOM)
+	{
+		if (eSide == QUADSIDE_TOP)
+		{
+			while (pCurrent->m_iParentIndex == 0 || pCurrent->m_iParentIndex == 1)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+		else
+		{
+			while (pCurrent->m_iParentIndex == 2 || pCurrent->m_iParentIndex == 3)
+			{
+				if (!pCurrent->m_pParent)
+					return NULL;
+
+				pCurrent = pCurrent->m_pParent;
+			}
+		}
+
+		if (!pCurrent->m_pParent)
+			return NULL;
+
+		pCurrent = pCurrent->m_pParent;
+
+		while (pCurrent->m_pBranches[0])
+		{
+			if (pCurrent->m_iDepth == pLeaf->m_iDepth)
+				break;
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				if (pCurrent->m_pBranches[i] == pLeaf)
+					continue;
+
+				if (pLeaf->m_vecMin.x < pCurrent->m_pBranches[i]->m_vecMin.x)
+					continue;
+
+				if (pLeaf->m_vecMax.x > pCurrent->m_pBranches[i]->m_vecMax.x)
+					continue;
+
+				if (eSide == QUADSIDE_TOP)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMax.y < pLeaf->m_vecMin.y || pCurrent->m_pBranches[i]->m_vecMax.y > pLeaf->m_vecMax.y)
+						continue;
+				}
+
+				if (eSide == QUADSIDE_BOTTOM)
+				{
+					if (pCurrent->m_pBranches[i]->m_vecMin.y > pLeaf->m_vecMax.y || pCurrent->m_pBranches[i]->m_vecMin.y < pLeaf->m_vecMin.y)
+						continue;
+				}
+
+				pCurrent = pCurrent->m_pBranches[i];
+				break;
+			}
+		}
+	}
+
+	if (pCurrent->m_iDepth != pLeaf->m_iDepth)
+		return NULL;
+
+	if (pCurrent == pLeaf)
+		return NULL;
+
+	return pCurrent;
+}
+
+template <class T, typename F>
+void CQuadTreeBranch<T, F>::BuildBranch(bool bAndChildren, bool bForce)
 {
 	bool bDelete;
-	bool bBuildBranch = m_pDataSource->ShouldBuildBranch(this, bDelete);
+	bool bBuildBranch = bForce || m_pDataSource->ShouldBuildBranch(this, bDelete);
 
 	if (bBuildBranch)
 	{
 		if (!m_pBranches[0])
 		{
 			F flSize = (m_vecMax.x - m_vecMin.x)/2;
-			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, 0), m_vecMin + TemplateVector2D<F>(flSize, flSize), m_iDepth+1);
-			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, flSize), m_vecMin + TemplateVector2D<F>(flSize, flSize+flSize), m_iDepth+1);
-			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, 0), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize), m_iDepth+1);
-			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, flSize), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1);
+			m_pBranchxy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, 0), m_vecMin + TemplateVector2D<F>(flSize, flSize), m_iDepth+1, 0);
+			m_pBranchXy = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, 0), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize), m_iDepth+1, 1);
+			m_pBranchxY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(0, flSize), m_vecMin + TemplateVector2D<F>(flSize, flSize+flSize), m_iDepth+1, 2);
+			m_pBranchXY = new CQuadTreeBranch<T, F>(m_pDataSource, this, m_pTree, m_vecMin + TemplateVector2D<F>(flSize, flSize), m_vecMin + TemplateVector2D<F>(flSize+flSize, flSize+flSize), m_iDepth+1, 3);
 		}
 
 		if (bAndChildren)
@@ -273,7 +428,26 @@ void CQuadTreeBranch<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, tv
 	if (!pLeaf)
 		return;
 
-	if (m_pBranches[0])
+	if (pLeaf == this)
+		return;
+
+	if (m_pDataSource->IsLeaf(this))
+	{
+		if (pLeaf->m_vecMin.x > m_vecMax.x)
+			return;
+
+		if (pLeaf->m_vecMin.y > m_vecMax.y)
+			return;
+
+		if (pLeaf->m_vecMax.x < m_vecMin.x)
+			return;
+
+		if (pLeaf->m_vecMax.y < m_vecMin.y)
+			return;
+
+		apNeighbors.push_back(this);
+	}
+	else if (m_pBranches[0])
 	{
 		for (size_t i = 0; i < 4; i++)
 		{
@@ -291,22 +465,6 @@ void CQuadTreeBranch<T, F>::FindNeighbors(const CQuadTreeBranch<T, F>* pLeaf, tv
 
 			m_pBranches[i]->FindNeighbors(pLeaf, apNeighbors);
 		}
-	}
-	else
-	{
-		if (pLeaf->m_vecMin.x > m_vecMax.x)
-			return;
-
-		if (pLeaf->m_vecMin.y > m_vecMax.y)
-			return;
-
-		if (pLeaf->m_vecMax.x < m_vecMin.x)
-			return;
-
-		if (pLeaf->m_vecMax.y < m_vecMin.y)
-			return;
-
-		apNeighbors.push_back(this);
 	}
 }
 
@@ -371,20 +529,9 @@ TemplateVector<F> CQuadTreeBranch<T, F>::GetCenter()
 {
 	if (!m_bCenterCalculated)
 	{
-		m_vecCenter = (m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMin) + m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMax))/2;
+		m_vecCenter = m_pDataSource->GetBranchCenter(this);
 		m_bCenterCalculated = true;
 	}
-
-	return m_vecCenter;
-}
-
-template <class T, typename F>
-TemplateVector<F> CQuadTreeBranch<T, F>::GetCenter() const
-{
-	TAssert(m_bCenterCalculated);
-
-	if (!m_bCenterCalculated)
-		return (m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMin) + m_pDataSource->QuadTreeToWorld(m_pTree, m_vecMax))/2;
 
 	return m_vecCenter;
 }

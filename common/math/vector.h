@@ -493,6 +493,9 @@ public:
 		return false;
 	}
 
+	void	operator+=(const TemplateVector2D<unit_t> &v);
+	void	operator-=(const TemplateVector2D<unit_t> &v);
+
 	operator float*()
 	{
 		return(&x);
@@ -585,6 +588,20 @@ template <class unit_t>
 inline const TemplateVector2D<unit_t> TemplateVector2D<unit_t>::operator/(float s) const
 {
 	return TemplateVector2D(x/s, y/s);
+}
+
+template <class unit_t>
+inline void TemplateVector2D<unit_t>::operator+=(const TemplateVector2D<unit_t>& v)
+{
+	x += v.x;
+	y += v.y;
+}
+
+template <class unit_t>
+inline void TemplateVector2D<unit_t>::operator-=(const TemplateVector2D<unit_t>& v)
+{
+	x -= v.x;
+	y -= v.y;
 }
 
 class Vector4D

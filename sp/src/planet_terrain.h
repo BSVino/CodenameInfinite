@@ -5,6 +5,8 @@
 
 #include <quadtree.h>
 
+#include <tengine/game/entities/baseentity.h>
+
 #include "sp_common.h"
 
 class CBranchData
@@ -12,7 +14,6 @@ class CBranchData
 public:
 	CBranchData()
 	{
-		flHeight = 0;
 		bRender = false;
 		flScreenSize = 1;
 		flLastScreenUpdate = -1;
@@ -22,10 +23,10 @@ public:
 		iRenderVectorsLastFrame = ~0;
 		flRadiusMeters = 0;
 		bCompletelyInsideFrustum = false;
+		iSplitSides = 0;
 	}
 
 public:
-	float				flHeight;
 	bool				bRender;
 	float				flScreenSize;
 	CScalableFloat		flGlobalRadius;
@@ -37,19 +38,23 @@ public:
 	size_t				iLocalCharacterDotLastFrame;
 	float				flLocalCharacterDot;
 	bool				bCompletelyInsideFrustum;
+	char				iSplitSides;
 
 	size_t				iRenderVectorsLastFrame;
 	CScalableVector		vecGlobalQuadCenter;
+	DoubleVector		vecCenter;
 	DoubleVector		vec1;
 	DoubleVector		vec2;
 	DoubleVector		vec3;
 	DoubleVector		vec4;
-	Vector				vec1n;
-	Vector				vec2n;
-	Vector				vec3n;
-	Vector				vec4n;
+	Vector				avecNormals[9];
 	DoubleVector2D		vecDetailMin;
 	DoubleVector2D		vecDetailMax;
+	DoubleVector		vecOffsetCenter;
+	DoubleVector		vecOffset1;
+	DoubleVector		vecOffset2;
+	DoubleVector		vecOffset3;
+	DoubleVector		vecOffset4;
 };
 
 typedef CQuadTree<CBranchData, double> CTerrainQuadTree;
@@ -61,12 +66,7 @@ class CPlanetTerrain : public CTerrainQuadTree, public CTerrainQuadTreeDataSourc
 	friend class CPlanet;
 
 public:
-	CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
-		: CTerrainQuadTree()
-	{
-		m_pPlanet = pPlanet;
-		m_vecDirection = vecDirection;
-	};
+								CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection);
 
 public:
 	void						Init();
@@ -75,6 +75,10 @@ public:
 	void						ThinkBranch(CTerrainQuadTreeBranch* pBranch);
 	bool						ShouldPush(CTerrainQuadTreeBranch* pBranch);
 	bool						ShouldPull(CTerrainQuadTreeBranch* pBranch);
+	void						BuildBranch(CTerrainQuadTreeBranch* pBranch, bool bForce = false);
+	void						BuildBranchToDepth(CTerrainQuadTreeBranch* pBranch, size_t iDepth);
+	void						PushBranch(CTerrainQuadTreeBranch* pBranch);
+	void						PullBranch(CTerrainQuadTreeBranch* pBranch);
 	void						ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch);
 
 	void						Render(class CRenderingContext* c) const;
@@ -86,19 +90,24 @@ public:
 	void						CalcRenderVectors(CTerrainQuadTreeBranch* pBranch);
 	float						GetLocalCharacterDot(CTerrainQuadTreeBranch* pBranch);
 
-	virtual TemplateVector2D<double>	WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
+	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
+
+	virtual DoubleVector2D		WorldToQuadTree(const CTerrainQuadTree* pTree, const DoubleVector& vecWorld) const;
 	virtual DoubleVector		QuadTreeToWorld(const CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree) const;
-	virtual TemplateVector2D<double>	WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
+	virtual DoubleVector2D		WorldToQuadTree(CTerrainQuadTree* pTree, const DoubleVector& vecWorld);
 	virtual DoubleVector		QuadTreeToWorld(CTerrainQuadTree* pTree, const TemplateVector2D<double>& vecTree);
+	virtual DoubleVector		GetBranchCenter(CTerrainQuadTreeBranch* pBranch);
 	virtual bool				ShouldBuildBranch(CTerrainQuadTreeBranch* pBranch, bool& bDelete);
+	virtual bool				IsLeaf(CTerrainQuadTreeBranch* pBranch);
 
 	Vector						GetDirection() const { return m_vecDirection; }
+	class CPlanet*				GetPlanet() const { return m_pPlanet; }
 
 protected:
 	class CPlanet*				m_pPlanet;
 	Vector						m_vecDirection;
 	int							m_iBuildsThisFrame;
-	eastl::map<scale_t, eastl::vector<CTerrainQuadTreeBranch*> >	m_apRenderBranches;
+	tmap<scale_t, tvector<CTerrainQuadTreeBranch*> >	m_apRenderBranches;
 	bool						m_bOneQuad;
 };
 

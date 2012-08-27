@@ -74,7 +74,7 @@ CTextureSheet::~CTextureSheet()
 
 const Rect& CTextureSheet::GetArea(const tstring& sArea) const
 {
-	eastl::map<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
+	tmap<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
 
 	if (it == m_aAreas.end())
 	{
@@ -87,7 +87,7 @@ const Rect& CTextureSheet::GetArea(const tstring& sArea) const
 
 size_t CTextureSheet::GetSheet(const tstring& sArea) const
 {
-	eastl::map<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
+	tmap<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
 
 	if (it == m_aAreas.end())
 		return 0;
@@ -101,7 +101,7 @@ size_t CTextureSheet::GetSheet(const tstring& sArea) const
 
 size_t CTextureSheet::GetSheetWidth(const tstring& sArea) const
 {
-	eastl::map<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
+	tmap<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
 
 	if (it == m_aAreas.end())
 		return 0;
@@ -115,7 +115,7 @@ size_t CTextureSheet::GetSheetWidth(const tstring& sArea) const
 
 size_t CTextureSheet::GetSheetHeight(const tstring& sArea) const
 {
-	eastl::map<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
+	tmap<tstring, CTextureArea>::const_iterator it = m_aAreas.find(sArea);
 
 	if (it == m_aAreas.end())
 		return 0;

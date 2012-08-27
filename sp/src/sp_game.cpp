@@ -104,9 +104,9 @@ void CSPGame::Think()
 	BaseClass::Think();
 }
 
-CSPCharacter* CSPGame::GetLocalPlayerCharacter()
+CPlayerCharacter* CSPGame::GetLocalPlayerCharacter()
 {
-	return static_cast<CSPCharacter*>(GetLocalPlayer()->GetCharacter());
+	return static_cast<CPlayerCharacter*>(GetLocalPlayer()->GetCharacter());
 }
 
 CSPRenderer* CSPGame::GetSPRenderer()

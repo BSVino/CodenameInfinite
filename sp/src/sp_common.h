@@ -104,6 +104,28 @@ inline double RemapVal(const CScalableFloat& flInput, const CScalableFloat& flIn
 	return (f.GetUnits(SCALE_METER) * (flOutHi-flOutLo)) + flOutLo;
 }
 
+inline CScalableFloat RemapValClamped(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)
+{
+	if (flInput < flInLo)
+		return flOutLo;
+
+	if (flInput > flInHi)
+		return flOutHi;
+
+	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
+}
+
+inline double RemapValClamped(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, double flOutLo, double flOutHi)
+{
+	if (flInput < flInLo)
+		return flOutLo;
+
+	if (flInput > flInHi)
+		return flOutHi;
+
+	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
+}
+
 class CScalableVector
 {
 	friend class CScalableMatrix;
@@ -237,6 +259,25 @@ inline CScalableVector operator*( Vector v, const CScalableFloat& f )
 	return CScalableVector( f*v.x, f*v.y, f*v.z );
 }
 
-bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableVector& vecPoint, CScalableVector& vecNormal);
+class CScalableCollisionResult
+{
+public:
+	CScalableCollisionResult()
+	{
+		flFraction = 1;
+		bHit = false;
+		bStartInside = false;
+	}
+
+public:
+	bool				bHit;
+	bool				bStartInside;
+	double				flFraction;
+	CScalableVector		vecHit;
+	CScalableVector		vecNormal;
+};
+
+bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableCollisionResult& tr);
+bool LineSegmentIntersectsTriangle(const CScalableVector& s0, const CScalableVector& s1, const CScalableVector& v0, const CScalableVector& v1, const CScalableVector& v2, CScalableCollisionResult& tr);
 
 #endif

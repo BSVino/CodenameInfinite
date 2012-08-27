@@ -23,6 +23,24 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 #include "vector.h"
 #include <tvector.h>
 
+class CCollisionResult
+{
+public:
+	CCollisionResult()
+	{
+		flFraction = 1;
+		bHit = false;
+		bStartInside = false;
+	}
+
+public:
+	bool	bHit;
+	bool	bStartInside;
+	double	flFraction;
+	Vector	vecHit;
+	Vector	vecNormal;
+};
+
 template <class T>
 class TRect
 {
@@ -136,48 +154,55 @@ inline Ray::Ray(Vector vecPos, Vector vecDir)
 	m_vecDir = vecDir;
 }
 
-class AABB
+template <class F>
+class TemplateAABB
 {
 public:
-				AABB() {};
-				AABB(Vector vecMins, Vector vecMaxs);
+						TemplateAABB() {};
+						TemplateAABB(const TemplateVector<F>& vecMins, const TemplateVector<F>& vecMaxs);
 
 public:
-	Vector		Center() const;
-	Vector		Size() const;
+	TemplateVector<F>		Center() const;
+	TemplateVector<F>		Size() const;
 
-	bool		Inside(const AABB& oBox) const;
-	bool		Inside(const Vector& vecPoint) const;
-	bool		Inside2D(const Vector& vecPoint) const;
-	bool		Intersects(const AABB& oBox) const;
+	bool		Inside(const TemplateAABB<F>& oBox) const;
+	bool		Inside(const TemplateVector<F>& vecPoint) const;
+	bool		Inside2D(const TemplateVector<F>& vecPoint) const;
+	bool		Intersects(const TemplateAABB<F>& oBox) const;
 
-	AABB		operator+(const AABB& oBox) const;
-	AABB		operator*(float s) const;
-	bool		operator==(const AABB& o) const;
-	AABB&       operator+=(const Vector& v);
+	TemplateAABB<F>		operator+(const TemplateAABB<F>& oBox) const;
+	TemplateAABB<F>		operator*(float s) const;
+	bool		operator==(const TemplateAABB<F>& o) const;
+	TemplateAABB<F>&       operator+=(const Vector& v);
 
 public:
-	Vector		m_vecMins;
-	Vector		m_vecMaxs;
+	TemplateVector<F>		m_vecMins;
+	TemplateVector<F>		m_vecMaxs;
 };
 
-inline AABB::AABB(Vector vecMins, Vector vecMaxs)
+typedef TemplateAABB<float> AABB;
+
+template <class F>
+inline TemplateAABB<F>::TemplateAABB(const TemplateVector<F>& vecMins, const TemplateVector<F>& vecMaxs)
 {
 	m_vecMins = vecMins;
 	m_vecMaxs = vecMaxs;
 }
 
-inline Vector AABB::Center() const
+template <class F>
+inline TemplateVector<F> TemplateAABB<F>::Center() const
 {
 	return (m_vecMins + m_vecMaxs)/2;
 }
 
-inline Vector AABB::Size() const
+template <class F>
+inline TemplateVector<F> TemplateAABB<F>::Size() const
 {
 	return m_vecMaxs - m_vecMins;
 }
 
-inline bool AABB::Inside(const AABB& oBox) const
+template <class F>
+inline bool TemplateAABB<F>::Inside(const TemplateAABB<F>& oBox) const
 {
 	if (m_vecMins.x < oBox.m_vecMins.x)
 		return false;
@@ -200,7 +225,8 @@ inline bool AABB::Inside(const AABB& oBox) const
 	return true;
 }
 
-inline bool AABB::Inside(const Vector& vecPoint) const
+template <class F>
+inline bool TemplateAABB<F>::Inside(const TemplateVector<F>& vecPoint) const
 {
 	const float flEpsilon = 1e-4f;
 
@@ -215,7 +241,8 @@ inline bool AABB::Inside(const Vector& vecPoint) const
 	return true;
 }
 
-inline bool AABB::Inside2D(const Vector& vecPoint) const
+template <class F>
+inline bool TemplateAABB<F>::Inside2D(const TemplateVector<F>& vecPoint) const
 {
 	const float flEpsilon = 1e-4f;
 
@@ -228,7 +255,8 @@ inline bool AABB::Inside2D(const Vector& vecPoint) const
 	return true;
 }
 
-inline bool AABB::Intersects(const AABB& oBox) const
+template <class F>
+inline bool TemplateAABB<F>::Intersects(const TemplateAABB<F>& oBox) const
 {
 	if (m_vecMins.x > oBox.m_vecMaxs.x)
 		return false;
@@ -572,9 +600,10 @@ inline bool RayIntersectsAABB(const Ray& r, const AABB& b, Vector& vecIntersecti
 	return true;
 }
 
-inline bool ClipSegment(float flMin, float flMax, float a, float b, float d, float& tmin, float& tmax)
+template <class F>
+inline bool ClipSegment(F flMin, F flMax, F a, F b, F d, F& tmin, F& tmax)
 {
-	const float flEpsilon = 1e-5f;
+	const F flEpsilon = 1e-5f;
 
 	if (fabs(d) < flEpsilon)
 	{
@@ -584,12 +613,12 @@ inline bool ClipSegment(float flMin, float flMax, float a, float b, float d, flo
 			return !(a < flMin || b > flMax);
 	}
 
-	float umin = (flMin - a)/d;
-	float umax = (flMax - a)/d;
+	F umin = (flMin - a)/d;
+	F umax = (flMax - a)/d;
 
 	if (umin > umax)
 	{
-		float yar = umin;
+		F yar = umin;
 		umin = umax;
 		umax = yar;
 	}
@@ -603,12 +632,13 @@ inline bool ClipSegment(float flMin, float flMax, float a, float b, float d, flo
 	return (tmax>tmin);
 }
 
-inline bool SegmentIntersectsAABB(const Vector& v1, const Vector& v2, const AABB& b)
+template <class F>
+inline bool SegmentIntersectsAABB(const TemplateVector<F>& v1, const TemplateVector<F>& v2, const TemplateAABB<F>& b, CCollisionResult& tr)
 {
-	float tmin = 0;
-	float tmax = 1;
+	F tmin = 0;
+	F tmax = 1;
 
-	Vector vecDir = v2 - v1;
+	TemplateVector<F> vecDir = v2 - v1;
 
 	if (!ClipSegment(b.m_vecMins.x, b.m_vecMaxs.x, v1.x, v2.x, vecDir.x, tmin, tmax))
 		return false;
@@ -619,21 +649,32 @@ inline bool SegmentIntersectsAABB(const Vector& v1, const Vector& v2, const AABB
 	if (!ClipSegment(b.m_vecMins.z, b.m_vecMaxs.z, v1.z, v2.z, vecDir.z, tmin, tmax))
 		return false;
 
+	F flFraction = (tmin < 0) ? 0 : tmin;
+	if (flFraction > tr.flFraction)
+		return false;
+
+	tr.bHit = true;
+	tr.bStartInside = tmin < 0;
+	tr.flFraction = (float)flFraction;
+	//tr.vecHit not set and not used.
+	//tr.vecNormal not set and not used.
+
 	return true;
 }
 
-inline bool LineSegmentIntersectsTriangle(const Vector& s0, const Vector& s1, const Vector& v0, const Vector& v1, const Vector& v2, Vector* pvecHit = NULL)
+template <class F>
+inline bool LineSegmentIntersectsTriangle(const TemplateVector<F>& s0, const TemplateVector<F>& s1, const TemplateVector<F>& v0, const TemplateVector<F>& v1, const TemplateVector<F>& v2, CCollisionResult& tr)
 {
-	Vector u = v1 - v0;
-	Vector v = v2 - v0;
+	TemplateVector<F> u = v1 - v0;
+	TemplateVector<F> v = v2 - v0;
 	Vector n = u.Cross(v);
 
-	Vector w0 = s0 - v0;
+	TemplateVector<F> w0 = s0 - v0;
 
-	float a = -n.Dot(w0);
-	float b = n.Dot(s1-s0);
+	F a = -n.Dot(w0);
+	F b = n.Dot(s1-s0);
 
-	float ep = 1e-4f;
+	F ep = 1e-4f;
 
 	if (fabs(b) < ep)
 	{
@@ -643,26 +684,27 @@ inline bool LineSegmentIntersectsTriangle(const Vector& s0, const Vector& s1, co
 			return false;	// Segment is somewhere else
 	}
 
-	float r = a/b;
+	F r = a/b;
 	if (r < 0)
 		return false;		// Segment goes away from the triangle
 	if (r > 1)
 		return false;		// Segment goes away from the triangle
 
-	Vector vecPoint = s0 + (s1-s0)*r;
-	if (pvecHit)
-		*pvecHit = vecPoint;
+	if (tr.flFraction < r)
+		return false;
 
-	float uu = u.Dot(u);
-	float uv = u.Dot(v);
-	float vv = v.Dot(v);
-	Vector w = vecPoint - v0;
-	float wu = w.Dot(u);
-	float wv = w.Dot(v);
+	TemplateVector<F> vecPoint = s0 + (s1-s0)*r;
 
-	float D = uv * uv - uu * vv;
+	F uu = u.Dot(u);
+	F uv = u.Dot(v);
+	F vv = v.Dot(v);
+	TemplateVector<F> w = vecPoint - v0;
+	F wu = w.Dot(u);
+	F wv = w.Dot(v);
 
-	float s, t;
+	F D = uv * uv - uu * vv;
+
+	F s, t;
 
 	s = (uv * wv - vv * wu) / D;
 	if (s <= ep || s >= 1)		// Intersection point is outside the triangle
@@ -671,6 +713,11 @@ inline bool LineSegmentIntersectsTriangle(const Vector& s0, const Vector& s1, co
 	t = (uv * wu - uu * wv) / D;
 	if (t <= ep || (s+t) >= 1)	// Intersection point is outside the triangle
 		return false;
+
+	tr.bHit = true;
+	tr.flFraction = r;
+	tr.vecHit = vecPoint;
+	tr.vecNormal = (v1-v0).Normalized().Cross((v2-v0).Normalized()).Normalized();
 
 	return true;
 }
@@ -713,7 +760,24 @@ inline bool LineSegmentIntersectsSphere(const Vector& v1, const Vector& v2, cons
 	return true;
 }
 
-inline bool	TriangleIntersectsAABB(const AABB& oBox, const Vector& v0, const Vector& v1, const Vector& v2)
+template <class F>
+inline bool PointInsideAABB( const TemplateAABB<F>& oBox, const TemplateVector<F>& v )
+{
+	const F flEpsilon = 1e-4f;
+
+	for (size_t i = 0; i < 3; i++)
+	{
+		F flVI = v[i];
+
+		if (flVI < oBox.m_vecMins[i] - flEpsilon || flVI > oBox.m_vecMaxs[i] + flEpsilon)
+			return false;
+	}
+
+	return true;
+}
+
+template <class F>
+inline bool	TriangleIntersectsAABB( const TemplateAABB<F>& oBox, const TemplateVector<F>& v0, const TemplateVector<F>& v1, const TemplateVector<F>& v2)
 {
 	// Trivial case rejection: If any of the points are inside the box, return true immediately.
 	if (oBox.Inside(v0))
@@ -728,12 +792,12 @@ inline bool	TriangleIntersectsAABB(const AABB& oBox, const Vector& v0, const Vec
 	// Trivial case rejection: If all three points are on one side of the box then the triangle must be outside of it.
 	for (i = 0; i < 3; i++)
 	{
-		float flBoxMax = oBox.m_vecMaxs[i];
-		float flBoxMin = oBox.m_vecMins[i];
+		F flBoxMax = oBox.m_vecMaxs[i];
+		F flBoxMin = oBox.m_vecMins[i];
 
-		float flV0 = v0[i];
-		float flV1 = v1[i];
-		float flV2 = v2[i];
+		F flV0 = v0[i];
+		F flV1 = v1[i];
+		F flV2 = v2[i];
 
 		if (flV0 > flBoxMax && flV1 > flBoxMax && flV2 > flBoxMax)
 			return false;
@@ -741,26 +805,29 @@ inline bool	TriangleIntersectsAABB(const AABB& oBox, const Vector& v0, const Vec
 			return false;
 	}
 
-	if (SegmentIntersectsAABB(v0, v1, oBox))
+	CCollisionResult tr1;
+	if (SegmentIntersectsAABB(v0, v1, oBox, tr1))
 		return true;
 
-	if (SegmentIntersectsAABB(v1, v2, oBox))
+	CCollisionResult tr2;
+	if (SegmentIntersectsAABB(v1, v2, oBox, tr2))
 		return true;
 
-	if (SegmentIntersectsAABB(v0, v2, oBox))
+	CCollisionResult tr3;
+	if (SegmentIntersectsAABB(v0, v2, oBox, tr3))
 		return true;
 
-	Vector c0 = oBox.m_vecMins;
-	Vector c1 = Vector(oBox.m_vecMins.x, oBox.m_vecMins.y, oBox.m_vecMaxs.z);
-	Vector c2 = Vector(oBox.m_vecMins.x, oBox.m_vecMaxs.y, oBox.m_vecMins.z);
-	Vector c3 = Vector(oBox.m_vecMins.x, oBox.m_vecMaxs.y, oBox.m_vecMaxs.z);
-	Vector c4 = Vector(oBox.m_vecMaxs.x, oBox.m_vecMins.y, oBox.m_vecMins.z);
-	Vector c5 = Vector(oBox.m_vecMaxs.x, oBox.m_vecMins.y, oBox.m_vecMaxs.z);
-	Vector c6 = Vector(oBox.m_vecMaxs.x, oBox.m_vecMaxs.y, oBox.m_vecMins.z);
-	Vector c7 = oBox.m_vecMaxs;
+	TemplateVector<F> c0 = oBox.m_vecMins;
+	TemplateVector<F> c1 = TemplateVector<F>(oBox.m_vecMins.x, oBox.m_vecMins.y, oBox.m_vecMaxs.z);
+	TemplateVector<F> c2 = TemplateVector<F>(oBox.m_vecMins.x, oBox.m_vecMaxs.y, oBox.m_vecMins.z);
+	TemplateVector<F> c3 = TemplateVector<F>(oBox.m_vecMins.x, oBox.m_vecMaxs.y, oBox.m_vecMaxs.z);
+	TemplateVector<F> c4 = TemplateVector<F>(oBox.m_vecMaxs.x, oBox.m_vecMins.y, oBox.m_vecMins.z);
+	TemplateVector<F> c5 = TemplateVector<F>(oBox.m_vecMaxs.x, oBox.m_vecMins.y, oBox.m_vecMaxs.z);
+	TemplateVector<F> c6 = TemplateVector<F>(oBox.m_vecMaxs.x, oBox.m_vecMaxs.y, oBox.m_vecMins.z);
+	TemplateVector<F> c7 = oBox.m_vecMaxs;
 
 	// Build a list of line segments in the cube to test against the triangle.
-	Vector aLines[32];
+	TemplateVector<F> aLines[32];
 
 	// Bottom four
 	aLines[0] = c0;
@@ -815,9 +882,10 @@ inline bool	TriangleIntersectsAABB(const AABB& oBox, const Vector& v0, const Vec
 	aLines[31] = c5;
 
 	// If any of the segments intersects with the triangle then we have a winner.
+	CCollisionResult tr;
 	for (i = 0; i < 32; i+=2)
 	{
-		if (LineSegmentIntersectsTriangle(aLines[i], aLines[i+1], v0, v1, v2))
+		if (LineSegmentIntersectsTriangle(aLines[i], aLines[i+1], v0, v1, v2, tr))
 			return true;
 	}
 

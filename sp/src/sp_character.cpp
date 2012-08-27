@@ -5,6 +5,7 @@
 #include "planet.h"
 #include "sp_game.h"
 #include "sp_renderer.h"
+#include "sp_playercharacter.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -78,7 +79,7 @@ void CSPCharacter::Think()
 
 const CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
 	CScalableMatrix mTransform = GetGlobalTransform();
@@ -254,16 +255,25 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
-	CScalableVector vecPlanetOrigin = pPlanet->GetGlobalOrigin();
-	CScalableVector vecCharacterOrigin = GetGlobalOrigin();
+	SetMoveParent(pPlanet);
+
+	CScalableVector vecPlanetOrigin = pPlanet->GetLocalOrigin();
+	CScalableVector vecCharacterOrigin = GetLocalOrigin();
 	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
 
-	SetMoveParent(pPlanet);
+	TUnimplemented();
+
+	/*
+	CTraceResult tr;
+	pPlanet->CollideLocalAccurate(this, true, vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), tr);
 
 	TFloat flPlanetRadius = pPlanet->GetRadius();
 	TVector vecPoint = (vecCharacterOrigin - vecPlanetOrigin).Normalized() * flPlanetRadius;
 
-	SetLocalOrigin(vecPoint);
+	TAssert(tr.bHit);
+
+	SetLocalOrigin(tr.vecHit);
+	*/
 }
 
 CScalableFloat CSPCharacter::EyeHeight() const

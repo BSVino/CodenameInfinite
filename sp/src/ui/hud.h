@@ -9,7 +9,9 @@ public:
 					CSPHUD();
 
 public:
-	virtual void	Paint(float x, float y, float w, float h);
+	virtual void    Paint(float x, float y, float w, float h);
+
+	virtual void    Debug_Paint();
 };
 
 #endif

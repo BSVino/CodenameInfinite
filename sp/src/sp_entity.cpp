@@ -5,43 +5,48 @@
 
 #include "sp_game.h"
 #include "sp_renderer.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
+#include "planet.h"
+#include "star.h"
 
-REGISTER_ENTITY(CSPEntity);
-
-NETVAR_TABLE_BEGIN(CSPEntity);
-NETVAR_TABLE_END();
-
-SAVEDATA_TABLE_BEGIN(CSPEntity);
-SAVEDATA_TABLE_END();
-
-INPUTS_TABLE_BEGIN(CSPEntity);
-INPUTS_TABLE_END();
-
-CScalableMatrix CSPEntity::GetScalableRenderTransform() const
+bool CSPEntityData::ShouldRenderAtScale(scale_t eScale) const
 {
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	// Preferably should do this in some way that doesn't require dynamic_cast.
+	CPlanet* pPlanet = dynamic_cast<CPlanet*>(m_pEntity);
+
+	if (pPlanet)
+		return pPlanet->ShouldRenderAtScale(eScale);
+
+	if (dynamic_cast<CStar*>(m_pEntity))
+		return true;
+
+	return (eScale == GetScale());
+}
+
+CScalableMatrix CSPEntityData::GetScalableRenderTransform() const
+{
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
-	CScalableMatrix mTransform = GetGlobalTransform();
+	CScalableMatrix mTransform = m_pEntity->GetGlobalTransform();
 	mTransform.SetTranslation(mTransform.GetTranslation() - vecCharacterOrigin);
 
 	return mTransform;
 }
 
-CScalableVector CSPEntity::GetScalableRenderOrigin() const
+CScalableVector CSPEntityData::GetScalableRenderOrigin() const
 {
 	return GetScalableRenderTransform().GetTranslation();
 }
 
-const Matrix4x4 CSPEntity::GetRenderTransform() const
+const Matrix4x4 CSPEntityData::GetRenderTransform() const
 {
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetUnits(eScale);
 }
 
-const Vector CSPEntity::GetRenderOrigin() const
+const Vector CSPEntityData::GetRenderOrigin() const
 {
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);

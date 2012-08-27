@@ -1,13 +1,92 @@
 #ifndef SP_PLANET_H
 #define SP_PLANET_H
 
-#include "sp_entity.h"
+#include <simplex.h>
+#include <geometry.h>
+
+#include <tengine/game/entities/baseentity.h>
+
+#define TERRAIN_NOISE_ARRAY_SIZE 15
 
 class CPlanetTerrain;
 
-class CPlanet : public CSPEntity
+template <class T, class F>
+class COctree;
+template <class T, class F>
+class COctreeBranch;
+template <class T, class F>
+class CQuadTreeBranch;
+class CBranchData;
+class CTerrainChunk;
+
+class CChunkOrQuad
 {
-	REGISTER_ENTITY_CLASS(CPlanet, CSPEntity);
+public:
+	CChunkOrQuad()
+	{
+		m_pPlanet = NULL;
+		m_iChunk = ~0;
+		m_pQuad = NULL;
+	}
+
+	CChunkOrQuad(class CPlanet* pPlanet, size_t iChunk)
+	{
+		m_pPlanet = pPlanet;
+		m_iChunk = iChunk;
+		m_pQuad = NULL;
+	}
+
+	CChunkOrQuad(class CPlanet* pPlanet, CQuadTreeBranch<CBranchData, double>* pQuad)
+	{
+		m_pPlanet = pPlanet;
+		m_iChunk = ~0;
+		m_pQuad = pQuad;
+	}
+
+public:
+	bool Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr);
+
+	bool operator == (const CChunkOrQuad& r)
+	{
+		if (m_iChunk != ~0 && m_iChunk == r.m_iChunk)
+			return true;
+
+		if (m_pQuad && m_pQuad == r.m_pQuad)
+			return true;
+
+		return false;
+	}
+
+public:
+	class CPlanet*							m_pPlanet;
+	size_t									m_iChunk;
+	CQuadTreeBranch<CBranchData, double>*	m_pQuad;
+};
+
+inline bool operator < (const CChunkOrQuad& l, const CChunkOrQuad& r)
+{
+	if (l.m_iChunk != ~0 && r.m_iChunk != ~0)
+		return l.m_iChunk < r.m_iChunk;
+
+	if (l.m_pQuad && r.m_pQuad)
+		return l.m_pQuad < r.m_pQuad;
+
+	else if (l.m_iChunk != ~0 && r.m_pQuad)
+		return true;
+
+	else if (l.m_pQuad && r.m_iChunk != ~0)
+		return false;
+
+	TAssert(false);
+	return false;
+}
+
+class CPlanet : public CBaseEntity
+{
+	friend class CPlanetTerrain;
+	friend class CTerrainChunkManager;
+	friend class CChunkOrQuad;
+	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
 
 public:
 								CPlanet();
@@ -28,11 +107,13 @@ public:
 
 	virtual const TFloat        GetBoundingRadius() const { return GetRadius(); };
 
-	void						SetRadius(const CScalableFloat& flRadius) { m_flRadius = flRadius; }
+	void						SetRandomSeed(size_t iSeed);
+
+	void						SetRadius(const CScalableFloat& flRadius);
 	CScalableFloat				GetRadius() const { return m_flRadius; }
 
 	void						SetAtmosphereThickness(const CScalableFloat& flAtmosphereThickness) { m_flAtmosphereThickness = flAtmosphereThickness; }
-	const CScalableFloat&		GetAtmosphereThickness() { return m_flAtmosphereThickness; }
+	const CScalableFloat&		GetAtmosphereThickness() const { return m_flAtmosphereThickness; }
 
 	void						SetPlanetName(const tstring& sName) { m_sPlanetName = sName; }
 	tstring						GetPlanetName() const { return m_sPlanetName; }
@@ -50,11 +131,21 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
+	const class CTerrainChunkManager* GetTerrainChunkManager() { return m_pTerrainChunkManager; }
+	size_t						ChunkSize() { return 7; };
+
+	void						Debug_RebuildTerrain();
+	void						Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
+	void						Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
+
 protected:
+	size_t						m_iRandomSeed;
+
 	CScalableFloat				m_flRadius;
 	CScalableFloat				m_flAtmosphereThickness;
 	float						m_flMinutesPerRevolution;
 	int							m_iMinQuadRenderDepth;
+	int							m_iChunkDepth;
 
 	bool						m_bOneSurface;
 
@@ -74,6 +165,12 @@ protected:
 		};
 		CPlanetTerrain*			m_pTerrain[6];
 	};
+
+	class CTerrainChunkManager*	m_pTerrainChunkManager;
+	COctree<CChunkOrQuad, double>* m_pOctree;
+
+	// 10 levels deep, 3 channels (x, y, z)
+	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];
 
 	static DoubleVector			s_vecCharacterLocalOrigin;
 };

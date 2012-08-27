@@ -32,6 +32,7 @@ set (TENGINE_GAME_SOURCES
 
 set (TENGINE_GAME_ENTITY_SOURCES
 	game/entities/baseentity.cpp
+	game/entities/baseentitydata.cpp
 	game/entities/beam.cpp
 	game/entities/camera.cpp
 	game/entities/counter.cpp

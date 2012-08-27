@@ -63,8 +63,8 @@ public:
 	void						PassTriList();
 	void						Build();
 
-	bool						Raytrace(const Ray& rayTrace, CTraceResult* pTR = NULL);
-	bool						Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResult* pTR = NULL);
+	bool						Raytrace(const Ray& rayTrace, CCollisionResult& tr);
+	bool						Raytrace(const Vector& vecStart, const Vector& vecEnd, CCollisionResult& tr);
 	float						Closest(const Vector& vecPoint);
 
 	const CKDNode*				GetLeftChild() const { return m_pLeft; };
@@ -109,8 +109,8 @@ public:
 
 	void						BuildTree();
 
-	bool						Raytrace(const Ray& rayTrace, CTraceResult* pTR = NULL);
-	bool						Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResult* pTR = NULL);
+	bool						Raytrace(const Ray& rayTrace, CCollisionResult& tr);
+	bool						Raytrace(const Vector& vecStart, const Vector& vecEnd, CCollisionResult& tr);
 	float						Closest(const Vector& vecPoint);
 
 	const CKDNode*				GetTopNode() const { return m_pTop; };
@@ -118,6 +118,7 @@ public:
 	bool						IsBuilt() { return m_bBuilt; };
 
 	size_t						GetMaxDepth() { return m_iMaxDepth; };
+	void						SetMaxDepth(size_t iMaxDepth) { m_iMaxDepth = iMaxDepth; };
 
 protected:
 	class CRaytracer*			m_pRaytracer;
@@ -137,9 +138,8 @@ public:
 								~CRaytracer();
 
 public:
-	bool						Raytrace(const Ray& rayTrace, CTraceResult* pTR = NULL);
-	bool						Raytrace(const Vector& vecStart, const Vector& vecEnd, CTraceResult* pTR = NULL);
-	bool						RaytraceBruteForce(const Ray& rayTrace, CTraceResult* pTR = NULL);
+	bool						Raytrace(const Ray& rayTrace, CCollisionResult& tr);
+	bool						Raytrace(const Vector& vecStart, const Vector& vecEnd, CCollisionResult& tr);
 
 	float						Closest(const Vector& vecPoint);
 
@@ -150,6 +150,8 @@ public:
 	void						RemoveArea(const AABB& oBox);
 
 	const CKDTree*				GetTree() const { return m_pTree; };
+
+	void						SetMaxDepth(size_t iMaxDepth);
 
 protected:
 	CConversionScene*			m_pScene;

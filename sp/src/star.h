@@ -1,11 +1,11 @@
 #ifndef SP_STAR_H
 #define SP_STAR_H
 
-#include "sp_entity.h"
+#include <tengine/game/entities/baseentity.h>
 
-class CStar : public CSPEntity
+class CStar : public CBaseEntity
 {
-	REGISTER_ENTITY_CLASS(CStar, CSPEntity);
+	REGISTER_ENTITY_CLASS(CStar, CBaseEntity);
 
 public:
 	virtual void				Precache();

@@ -28,7 +28,7 @@ public:
 	size_t					GetSheetHeight(const tstring& sArea) const;
 
 protected:
-	eastl::map<tstring, CTextureArea>	m_aAreas;
+	tmap<tstring, CTextureArea>	m_aAreas;
 	size_t					m_iDefaultSheet;
 	size_t					m_iDefaultSheetWidth;
 	size_t					m_iDefaultSheetHeight;

@@ -148,6 +148,8 @@ CBaseEntity::CBaseEntity()
 	if (g_bAutoImporting)
 		return;
 
+	m_oGameData.SetEntity(this);
+
 	if (s_iOverrideEntityListIndex == ~0)
 		m_iHandle = s_iNextEntityListIndex;
 	else

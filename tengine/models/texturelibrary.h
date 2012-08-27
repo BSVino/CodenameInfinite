@@ -37,7 +37,7 @@ public:
 	static CTextureLibrary*	Get() { return s_pTextureLibrary; };
 
 protected:
-	eastl::map<tstring, CTexture>	m_aTextures;
+	tmap<tstring, CTexture>	m_aTextures;
 
 private:
 	static CTextureLibrary*	s_pTextureLibrary;

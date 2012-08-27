@@ -10,6 +10,7 @@
 #include <common.h>
 
 #include <tengine_config.h>
+#include <tengine_config_data.h>
 
 #include <network/network.h>
 #include <game/entityhandle.h>
@@ -483,6 +484,9 @@ public:
 	void									SetName(const tstring& sName) { m_sName = sName; };
 	tstring									GetName() const { return m_sName; };
 
+	CGameEntityData&						GameData() { return m_oGameData; }
+	const CGameEntityData&					GameData() const { return m_oGameData; }
+
 	void									SetMass(float flMass) { m_flMass = flMass; };
 	float									GetMass() const { return m_flMass; };
 
@@ -499,6 +503,9 @@ public:
 	size_t									GetModelID() const { return m_iModel; };
 	class CModel*							GetModel() const;
 	virtual void							OnSetModel() {};
+
+	Matrix4x4								BaseGetRenderTransform() const { return m_oGameData.GetRenderTransform(); };
+	Vector									BaseGetRenderOrigin() const { return m_oGameData.GetRenderOrigin(); };
 
 	void									SetMaterialModel(const CMaterialHandle& hMaterial) { m_hMaterialModel = hMaterial; }
 	const CMaterialHandle&					GetMaterialModel() const { return m_hMaterialModel; };
@@ -625,6 +632,7 @@ public:
 	void									SetDeleted() { m_bDeleted = true; }
 	DECLARE_ENTITY_INPUT(Delete);
 
+	void									BaseThink() { m_oGameData.Think(); };
 	virtual void							Think() {};
 
 	virtual void							Touching(CBaseEntity* pOther) {};
@@ -769,6 +777,8 @@ protected:
 
 	size_t									m_iSpawnSeed;
 	CNetworkedVariable<double>				m_flSpawnTime;
+
+	CGameEntityData							m_oGameData;
 
 private:
 	static tvector<CBaseEntity*>			s_apEntityList;

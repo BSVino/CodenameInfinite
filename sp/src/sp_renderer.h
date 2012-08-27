@@ -49,7 +49,7 @@ protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 
 	// A list of objects to render at which scales.
-	eastl::vector<CEntityHandle<CSPEntity> >	m_ahRenderList;
+	tvector<CEntityHandle<CBaseEntity> >	m_ahRenderList;
 
 	scale_t			m_eRenderingScale;
 	Frustum			m_aoScaleFrustums[SCALESTACK_SIZE];

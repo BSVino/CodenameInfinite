@@ -46,7 +46,7 @@ void CStar::PostRender() const
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
 	c.ResetTransformations();
-	c.Transform(GetRenderTransform());
+	c.Transform(BaseGetRenderTransform());
 
 	c.RenderBillboard("textures/star-yellow.mat", (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 }

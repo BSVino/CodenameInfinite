@@ -16,7 +16,7 @@
 
 #include "sp_window.h"
 #include "sp_game.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "planet.h"
 #include "star.h"
 #include "sp_camera.h"
@@ -91,11 +91,10 @@ void CSPRenderer::StartRendering(class CRenderingContext* pContext)
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		CSPEntity* pSPEntity = dynamic_cast<CSPEntity*>(pEntity);
-		if (pSPEntity)
-			m_ahRenderList.push_back(pSPEntity);
+		if (pEntity && pEntity->ShouldRender())
+			m_ahRenderList.push_back(pEntity);
 
-		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pSPEntity);
+		CPlanet* pPlanet = dynamic_cast<CPlanet*>(pEntity);
 		if (pPlanet)
 			pPlanet->RenderUpdate();
 
@@ -162,7 +161,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 			c->SetUniform("clrSky", pPlanet->GetAtmosphereColor());
 			if (GetClosestStar())
 			{
-				c->SetUniform("vecStar", GetClosestStar()->GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
+				c->SetUniform("vecStar", GetClosestStar()->GameData().GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
 				c->SetUniform("clrStar", GetClosestStar()->GetLightColor());
 			}
 		}

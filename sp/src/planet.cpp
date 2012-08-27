@@ -1,6 +1,7 @@
 #include "planet.h"
 
 #include <geometry.h>
+#include <octree.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -12,9 +13,10 @@
 #include "sp_game.h"
 #include "sp_renderer.h"
 #include "sp_camera.h"
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "star.h"
 #include "planet_terrain.h"
+#include "terrain_chunks.h"
 
 REGISTER_ENTITY(CPlanet);
 
@@ -22,6 +24,7 @@ NETVAR_TABLE_BEGIN(CPlanet);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CPlanet);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iRandomSeed);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableFloat, m_flRadius);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CScalableFloat, m_flAtmosphereThickness);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flMinutesPerRevolution);
@@ -35,6 +38,7 @@ SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_OMIT(m_pTerrainLf);
 	SAVEDATA_OMIT(m_pTerrainUp);
 	SAVEDATA_OMIT(m_pTerrainDn);
+	SAVEDATA_OMIT(m_aNoiseArray);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlanet);
@@ -54,15 +58,26 @@ Vector g_vecTerrainDirections[] =
 
 CPlanet::CPlanet()
 {
+	m_iRandomSeed = 0;
+
 	for (size_t i = 0; i < 6; i++)
 	{
 		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
 		m_pTerrain[i]->Init();
 	}
+
+	m_pOctree = NULL;
+
+	m_pTerrainChunkManager = new CTerrainChunkManager(this);
 }
 
 CPlanet::~CPlanet()
 {
+	delete m_pTerrainChunkManager;
+
+	if (m_pOctree)
+		delete m_pOctree;
+
 	for (size_t i = 0; i < 6; i++)
 		delete m_pTerrain[i];
 }
@@ -95,6 +110,8 @@ void CPlanet::Think()
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
 
+CVar r_minquadrenderdepth("r_minquadrenderdepth", "-1");
+
 void CPlanet::RenderUpdate()
 {
 	TPROF("CPlanet::RenderUpdate");
@@ -106,7 +123,7 @@ void CPlanet::RenderUpdate()
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter->GetMoveParent() == this)
 	{
-		s_vecCharacterLocalOrigin = DoubleVector(pCharacter->GetLocalOrigin().GetUnits(GetScale()));
+		s_vecCharacterLocalOrigin = pCharacter->GetLocalOrigin().GetUnits(GetScale());
 	}
 	else
 	{
@@ -114,9 +131,8 @@ void CPlanet::RenderUpdate()
 
 		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
 		// Instead, transform the player to the planet's local once and do the math in local space.
-		CScalableMatrix mPlanetGlobalToLocal = GetGlobalTransform();
-		mPlanetGlobalToLocal.InvertRT();
-		s_vecCharacterLocalOrigin = DoubleVector((mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale()));
+		CScalableMatrix mPlanetGlobalToLocal = GetGlobalToLocalTransform();
+		s_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
 	}
 
 	Vector vecOrigin = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
@@ -134,6 +150,11 @@ void CPlanet::RenderUpdate()
 	else
 		m_iMinQuadRenderDepth = 3;
 
+	if (r_minquadrenderdepth.GetInt() >= 0)
+		m_iMinQuadRenderDepth = r_minquadrenderdepth.GetInt();
+
+	m_pTerrainChunkManager->Think();
+
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_pTerrain[i]->Think();
 }
@@ -149,11 +170,14 @@ bool CPlanet::ShouldRenderAtScale(scale_t eScale) const
 
 const CScalableFloat CPlanet::GetRenderRadius() const
 {
-	return m_flRadius;
+	return m_flRadius + GetAtmosphereThickness();
 }
 
 CVar r_colorcodescales("r_colorcodescales", "off");
 CVar debug_showplanetcollision("debug_showplanetcollision", "off");
+CVar r_planetoctree("r_planetoctree", "off");
+CVar r_planetcollision("r_planetcollision", "off");
+CVar r_planets("r_planets", "on");
 
 void CPlanet::PostRender() const
 {
@@ -166,40 +190,62 @@ void CPlanet::PostRender() const
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 
+	if (r_planetoctree.GetBool() && eScale == SCALE_MEGAMETER)
+		Debug_RenderOctree(m_pOctree->GetHead());
+
+	if (r_planetcollision.GetBool())
+		Debug_RenderCollision(m_pOctree->GetHead());
+
 	if (debug_showplanetcollision.GetBool())
 	{
 		CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
-		CScalableVector vecPoint, vecNormal;
 		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
 		CScalableVector vecUp = pLocalCharacter->GetUpVector();
-		bool bIntersect;
+
+#if 0
+		CTraceResult tr;
 		
 		if (pLocalCharacter->GetMoveParent() == this)
 		{
+			// For the debug rendering code in the octree.
+			CRenderingContext c(GameServer()->GetRenderer());
+
+			CScalableMatrix mGlobal = GetGlobalTransform();
+			mGlobal.SetTranslation(CScalableVector());
+			c.Transform(mGlobal);
+
+			c.Translate(-pLocalCharacter->GetLocalOrigin().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+
 			CScalableMatrix mGlobalToLocal = GetGlobalToLocalTransform();
 			vecUp = mGlobalToLocal.TransformVector(vecUp);
 			vecForward = mGlobalToLocal.TransformVector(vecForward);
 			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), CScalableVector(), GetRadius(), vecPoint, vecNormal);
-			vecPoint = GetGlobalTransform() * vecPoint;
-			vecNormal = GetGlobalTransform() * vecNormal;
+			// I would normally never use const_cast if this weren't a block of debug code.
+			const_cast<CPlanet*>(this)->CollideLocal(const_cast<CPlanet*>(this), vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
+			tr.vecHit = GetGlobalTransform() * tr.vecHit;
+			tr.vecNormal = GetGlobalTransform().TransformNoTranslate(tr.vecNormal);
 		}
 		else
 		{
+			// For the debug rendering code in the octree.
+			CRenderingContext c(GameServer()->GetRenderer());
+			c.Translate(-pLocalCharacter->GetGlobalOrigin().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+			c.Transform(GetGlobalTransform().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+
 			CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			bIntersect = LineSegmentIntersectsSphere(vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_KILOMETER), GetGlobalOrigin(), GetRadius(), vecPoint, vecNormal);
+			const_cast<CPlanet*>(this)->Collide(const_cast<CPlanet*>(this), vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
 		}
 
-		if (bIntersect)
+		if (tr.bHit)
 		{
 			CRenderingContext c(GameServer()->GetRenderer());
 
-			CScalableVector vecRender = vecPoint - pLocalCharacter->GetGlobalOrigin();
-			c.Translate((vecPoint - pLocalCharacter->GetGlobalOrigin()).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+			CScalableVector vecRender = tr.vecHit - pLocalCharacter->GetGlobalOrigin();
+			c.Translate(vecRender.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
 			c.SetColor(Color(255, 255, 255));
 			c.BeginRenderDebugLines();
-			c.Vertex(vecNormal*-10000);
-			c.Vertex(vecNormal*10000);
+			c.Vertex(tr.vecNormal*-10000);
+			c.Vertex(tr.vecNormal*10000);
 			c.EndRender();
 			c.SetColor(Color(255, 0, 0));
 			c.BeginRenderDebugLines();
@@ -217,16 +263,21 @@ void CPlanet::PostRender() const
 			c.Vertex(Vector(0, 0, 10000));
 			c.EndRender();
 			c.SetColor(Color(255, 255, 255));
+			c.Scale(0.1f, 0.1f, 0.1f);
 			c.RenderSphere();
 		}
+#endif
 	}
+
+	if (!r_planets.GetBool())
+		return;
 
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
 	mPlanetToLocal.InvertRT();
 
-	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GetScalableRenderOrigin())).GetUnits(eScale);
+	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eScale);
 
 	CRenderingContext c(GameServer()->GetRenderer(), true);
 
@@ -256,10 +307,210 @@ void CPlanet::PostRender() const
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_pTerrain[i]->Render(&c);
+
+	m_pTerrainChunkManager->Render();
+}
+
+void CPlanet::SetRandomSeed(size_t iSeed)
+{
+	m_iRandomSeed = iSeed;
+
+	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
+	{
+		for (size_t j = 0; j < 3; j++)
+			m_aNoiseArray[i][j].Init(iSeed+i*3+j);
+	}
+}
+
+void CPlanet::SetRadius(const CScalableFloat& flRadius)
+{
+	m_flRadius = flRadius;
+
+	if (m_pOctree)
+		delete m_pOctree;
+
+	m_pOctree = new COctree<CChunkOrQuad, double>((flRadius*2.0f).GetUnits(GetScale()));
+
+	m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters = 0;
+	m_pTerrain[0]->InitRenderVectors(m_pTerrain[0]->m_pQuadTreeHead);
+	int iMeterDepth = (int)(log(m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters)/log(2.0f));
+	m_iChunkDepth = iMeterDepth - ChunkSize();
 }
 
 CScalableFloat CPlanet::GetCloseOrbit()
 {
 	// For Earth values this resolves to about 600km above the ground, or about twice the altitude of the ISS.
 	return GetRadius()/10.0f;
+}
+
+
+void Planet_RebuildTerrain(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
+{
+	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
+	CPlanet* pNearestPlanet = pLocalPlayer->GetNearestPlanet(FINDPLANET_ANY);
+
+	pNearestPlanet->Debug_RebuildTerrain();
+}
+
+CCommand planet_terrainrebuild("planet_terrainrebuild", Planet_RebuildTerrain);
+
+void CPlanet::Debug_RebuildTerrain()
+{
+	for (size_t i = 0; i < 6; i++)
+		delete m_pTerrain[i];
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
+		m_pTerrain[i]->Init();
+	}
+}
+
+void CPlanet::Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const
+{
+	if (!pBranch)
+		return;
+
+	if (r_planetoctree.GetInt() >= 0 && pBranch->m_iDepth > r_planetoctree.GetInt())
+		return;
+
+	if (pBranch->m_pBranches[0])
+	{
+		for (size_t i = 0; i < 8; i++)
+			Debug_RenderOctree(pBranch->m_pBranches[i]);
+		return;
+	}
+
+	if (r_planetoctree.GetInt() >= 0 && pBranch->m_iDepth != r_planetoctree.GetInt())
+		return;
+
+	if (!pBranch->m_aObjects.size())
+		return;
+
+	Matrix4x4 mPlanetTransform = GetGlobalTransform().GetUnits(GetScale());
+	mPlanetTransform.SetTranslation(Vector());
+
+	CRenderingContext c(GameServer()->GetRenderer());
+
+	double flMinX = pBranch->m_oBounds.m_vecMins.x;
+	double flMinY = pBranch->m_oBounds.m_vecMins.y;
+	double flMinZ = pBranch->m_oBounds.m_vecMins.z;
+	double flMaxX = pBranch->m_oBounds.m_vecMaxs.x;
+	double flMaxY = pBranch->m_oBounds.m_vecMaxs.y;
+	double flMaxZ = pBranch->m_oBounds.m_vecMaxs.z;
+
+	DoubleVector vecxyz = mPlanetTransform * DoubleVector(flMinX, flMinY, flMinZ);
+	DoubleVector vecXyz = mPlanetTransform * DoubleVector(flMaxX, flMinY, flMinZ);
+	DoubleVector vecxYz = mPlanetTransform * DoubleVector(flMinX, flMaxY, flMinZ);
+	DoubleVector vecXYz = mPlanetTransform * DoubleVector(flMaxX, flMaxY, flMinZ);
+	DoubleVector vecxyZ = mPlanetTransform * DoubleVector(flMinX, flMinY, flMaxZ);
+	DoubleVector vecXyZ = mPlanetTransform * DoubleVector(flMaxX, flMinY, flMaxZ);
+	DoubleVector vecxYZ = mPlanetTransform * DoubleVector(flMinX, flMaxY, flMaxZ);
+	DoubleVector vecXYZ = mPlanetTransform * DoubleVector(flMaxX, flMaxY, flMaxZ);
+
+	CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+	CScalableVector vecRender = GetGlobalOrigin() - pLocalCharacter->GetGlobalOrigin();
+	c.Translate(vecRender.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
+	c.BeginRenderDebugLines();
+		c.Vertex(vecxyZ);
+		c.Vertex(vecxyz);
+		c.Vertex(vecxYz);
+		c.Vertex(vecXYz);
+		c.Vertex(vecXyz);
+		c.Vertex(vecxyz);
+	c.EndRender();
+	c.BeginRenderDebugLines();
+		c.Vertex(vecxyZ);
+		c.Vertex(vecxYZ);
+		c.Vertex(vecxYz);
+		c.Vertex(vecxYZ);
+		c.Vertex(vecXYZ);
+		c.Vertex(vecXyZ);
+	c.EndRender();
+	c.BeginRenderDebugLines();
+		c.Vertex(vecXyz);
+		c.Vertex(vecXyZ);
+	c.EndRender();
+	c.BeginRenderDebugLines();
+		c.Vertex(vecXYz);
+		c.Vertex(vecXYZ);
+	c.EndRender();
+}
+
+void CPlanet::Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* pBranch) const
+{
+	if (!pBranch)
+		return;
+
+	CScalableMatrix mPlanetTransform = GetGlobalTransform();
+
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+	CSPRenderer* pRenderer = SPGame()->GetSPRenderer();
+	CScalableVector vecDistanceToBranch = mPlanetTransform * CScalableVector(pBranch->m_oBounds.Center(), GetScale()) - pLocalCharacter->GetGlobalOrigin();
+	float flGlobalRadius = (float)CScalableFloat(pBranch->m_oBounds.Size().Length(), GetScale()).GetUnits(eScale);
+	if (!pRenderer->IsInFrustumAtScale(eScale, vecDistanceToBranch.GetUnits(eScale), flGlobalRadius))
+		return;
+
+	mPlanetTransform.SetTranslation(Vector());
+
+	if (pBranch->m_pBranches[0])
+	{
+		for (size_t i = 0; i < 8; i++)
+			Debug_RenderCollision(pBranch->m_pBranches[i]);
+		return;
+	}
+
+	if (!pBranch->m_aObjects.size())
+		return;
+
+	CRenderingContext c(GameServer()->GetRenderer());
+	CScalableVector vecRender = GetGlobalOrigin() - pLocalCharacter->GetGlobalOrigin();
+	c.Translate(vecRender.GetUnits(eScale));
+
+	for (size_t i = 0; i < pBranch->m_aObjects.size(); i++)
+	{
+		CQuadTreeBranch<CBranchData, double>* pQuad = pBranch->m_aObjects[i].m_oData.m_pQuad;
+		if (!pQuad)
+			continue;
+
+		DoubleVector vec1 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec1, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[0]*1, SCALE_METER))).GetUnits(eScale);
+		DoubleVector vec2 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec2, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[2]*1, SCALE_METER))).GetUnits(eScale);
+		DoubleVector vec4 = (mPlanetTransform * (CScalableVector(pQuad->m_oData.vec4, GetScale()) + CScalableVector(pQuad->m_oData.avecNormals[8]*1, SCALE_METER))).GetUnits(eScale);
+
+		c.BeginRenderDebugLines();
+			c.Vertex(vec1);
+			c.Vertex(vec2);
+			c.Vertex(vec4);
+		c.EndRender();
+	}
+}
+
+bool CChunkOrQuad::Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr)
+{
+	if (m_pQuad)
+	{
+		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.vec1, m_pQuad->m_oData.vec2, m_pQuad->m_oData.vec3, tr))
+			return true;
+		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.vec2, m_pQuad->m_oData.vec4, m_pQuad->m_oData.vec3, tr))
+			return true;
+
+		return false;
+	}
+	else if (m_iChunk != ~0)
+	{
+		CTerrainChunk* pChunk = m_pPlanet->m_pTerrainChunkManager->GetChunk(m_iChunk);
+		if (!pChunk)
+			return false;
+
+		TUnimplemented();
+		//return pChunk->Raytrace(vecStart, vecEnd, tr);
+
+		return false;
+	}
+	else
+	{
+		TAssert(m_pQuad || m_iChunk != ~0);
+		return false;
+	}
 }

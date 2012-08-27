@@ -6,7 +6,7 @@
 #include <tengine/game/entities/game.h>
 #include <tinker/cvar.h>
 
-#include "sp_character.h"
+#include "sp_playercharacter.h"
 #include "sp_game.h"
 #include "planet.h"
 #include "sp_renderer.h"
@@ -48,9 +48,6 @@ void CSPCamera::CameraThink()
 		SetGlobalAngles(VectorAngles(GetThirdPersonCameraDirection()));
 		return;
 	}
-
-	// Freeze transforms
-	pCharacter->GetGlobalTransform();
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
