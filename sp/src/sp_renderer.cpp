@@ -159,11 +159,11 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 			float flAtmosphere = (float)RemapVal(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1, 0);
 			c->SetUniform("flAtmosphere", flAtmosphere);
 			c->SetUniform("vecUp", pCharacter->GetUpVector());
-			c->SetUniform("clrSky", pPlanet->GetAtmosphereColor());
+			c->SetUniform("clrSky", Vector(pPlanet->GetAtmosphereColor()));
 			if (GetClosestStar())
 			{
 				c->SetUniform("vecStar", GetClosestStar()->GameData().GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
-				c->SetUniform("clrStar", GetClosestStar()->GetLightColor());
+				c->SetUniform("clrStar", Vector(GetClosestStar()->GetLightColor()));
 			}
 		}
 		else
