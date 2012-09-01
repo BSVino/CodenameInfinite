@@ -863,6 +863,7 @@ void CRenderingContext::SetPositionBuffer(float* pflBuffer, size_t iStride)
 
 void CRenderingContext::SetPositionBuffer(size_t iOffset, size_t iStride)
 {
+	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
 	TAssert(m_pShader->m_iPositionAttribute != ~0);
 	glEnableVertexAttribArray(m_pShader->m_iPositionAttribute);
 	glVertexAttribPointer(m_pShader->m_iPositionAttribute, 3, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
@@ -882,6 +883,7 @@ void CRenderingContext::SetNormalsBuffer(size_t iOffset, size_t iStride)
 	if (m_pShader->m_iNormalAttribute == ~0)
 		return;
 
+	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
 	glEnableVertexAttribArray(m_pShader->m_iNormalAttribute);
 	glVertexAttribPointer(m_pShader->m_iNormalAttribute, 3, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
 }
@@ -900,6 +902,7 @@ void CRenderingContext::SetTangentsBuffer(size_t iOffset, size_t iStride)
 	if (m_pShader->m_iTangentAttribute == ~0)
 		return;
 
+	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
 	glEnableVertexAttribArray(m_pShader->m_iTangentAttribute);
 	glVertexAttribPointer(m_pShader->m_iTangentAttribute, 3, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
 }
@@ -918,6 +921,7 @@ void CRenderingContext::SetBitangentsBuffer(size_t iOffset, size_t iStride)
 	if (m_pShader->m_iBitangentAttribute == ~0)
 		return;
 
+	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
 	glEnableVertexAttribArray(m_pShader->m_iBitangentAttribute);
 	glVertexAttribPointer(m_pShader->m_iBitangentAttribute, 3, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
 }
@@ -936,6 +940,7 @@ void CRenderingContext::SetTexCoordBuffer(size_t iOffset, size_t iStride)
 	if (m_pShader->m_iTexCoordAttribute == ~0)
 		return;
 
+	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
 	glEnableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
 	glVertexAttribPointer(m_pShader->m_iTexCoordAttribute, 2, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
 }
@@ -948,6 +953,7 @@ void CRenderingContext::SetCustomIntBuffer(const char* pszName, size_t iSize, si
 	if (iAttribute == ~0)
 		return;
 
+	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
 	glEnableVertexAttribArray(iAttribute);
 	glVertexAttribIPointer(iAttribute, iSize, GL_INT, iStride, BUFFER_OFFSET(iOffset));
 }

@@ -42,19 +42,10 @@ public:
 
 	size_t				iRenderVectorsLastFrame;
 	CScalableVector		vecGlobalQuadCenter;
-	DoubleVector		vecCenter;
-	DoubleVector		vec1;
-	DoubleVector		vec2;
-	DoubleVector		vec3;
-	DoubleVector		vec4;
-	Vector				avecNormals[9];
-	DoubleVector2D		vecDetailMin;
-	DoubleVector2D		vecDetailMax;
-	DoubleVector		vecOffsetCenter;
-	DoubleVector		vecOffset1;
-	DoubleVector		vecOffset2;
-	DoubleVector		vecOffset3;
-	DoubleVector		vecOffset4;
+	DoubleVector		avecVerts[4];
+	Vector				avecNormals[4];
+	DoubleVector2D		avecDetails[4];
+	DoubleVector		avecOffsets[4];
 };
 
 typedef CQuadTree<CBranchData, double> CTerrainQuadTree;
@@ -80,6 +71,8 @@ public:
 	void						PushBranch(CTerrainQuadTreeBranch* pBranch);
 	void						PullBranch(CTerrainQuadTreeBranch* pBranch);
 	void						ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch);
+
+	void						CreateHighLevelsVBO();
 
 	void						Render(class CRenderingContext* c) const;
 	void						RenderBranch(const CTerrainQuadTreeBranch* pBranch, class CRenderingContext* c) const;
@@ -109,6 +102,11 @@ protected:
 	int							m_iBuildsThisFrame;
 	tmap<scale_t, tvector<CTerrainQuadTreeBranch*> >	m_apRenderBranches;
 	bool						m_bOneQuad;
+
+	size_t                      m_iShell1VBO;
+	size_t                      m_iShell1VBOSize;
+	size_t                      m_iShell2VBO;
+	size_t                      m_iShell2VBOSize;
 };
 
 #endif

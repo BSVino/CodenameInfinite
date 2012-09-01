@@ -167,7 +167,6 @@ protected:
 	};
 
 	class CTerrainChunkManager*	m_pTerrainChunkManager;
-	COctree<CChunkOrQuad, double>* m_pOctree;
 
 	// 10 levels deep, 3 channels (x, y, z)
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];

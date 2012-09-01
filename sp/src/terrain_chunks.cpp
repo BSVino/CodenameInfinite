@@ -37,9 +37,6 @@ void CTerrainChunkManager::AddChunk(CTerrainQuadTreeBranch* pBranch)
 
 	m_apChunks[iIndex] = new CTerrainChunk(this, pBranch);
 
-	double flRadius = pBranch->m_oData.flGlobalRadius.GetUnits(m_pPlanet->GetScale());
-	m_pPlanet->m_pOctree->AddObject(CChunkOrQuad(m_pPlanet, iIndex), TemplateAABB<double>(pBranch->GetCenter() - DoubleVector(flRadius, flRadius, flRadius), pBranch->GetCenter() + DoubleVector(flRadius, flRadius, flRadius)));
-
 	m_apBranchChunks[pBranch] = iIndex;
 }
 
@@ -52,11 +49,6 @@ void CTerrainChunkManager::RemoveChunk(CTerrainQuadTreeBranch* pBranch)
 		TAssert(i != ~0);
 		return;
 	}
-
-	m_pPlanet->m_pOctree->RemoveObject(CChunkOrQuad(m_pPlanet, i));
-
-	double flRadius = pBranch->m_oData.flGlobalRadius.GetUnits(m_pPlanet->GetScale());
-	m_pPlanet->m_pOctree->AddObject(CChunkOrQuad(m_pPlanet, pBranch), TemplateAABB<double>(pBranch->GetCenter() - DoubleVector(flRadius, flRadius, flRadius), pBranch->GetCenter() + DoubleVector(flRadius, flRadius, flRadius)));
 
 	delete m_apChunks[i];
 	m_apChunks[i] = NULL;
