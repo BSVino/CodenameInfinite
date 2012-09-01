@@ -1,7 +1,7 @@
 #include "planet.h"
 
 #include <geometry.h>
-#include <octree.h>
+#include <parallelize.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -45,6 +45,7 @@ INPUTS_TABLE_BEGIN(CPlanet);
 INPUTS_TABLE_END();
 
 DoubleVector CPlanet::s_vecCharacterLocalOrigin;
+CParallelizer* CPlanet::s_pShell2Generator = nullptr;
 
 Vector g_vecTerrainDirections[] =
 {
@@ -56,8 +57,21 @@ Vector g_vecTerrainDirections[] =
 	Vector(0, -1, 0),
 };
 
+void GenerateShell2Callback(void* pJob)
+{
+	CShell2GenerationJob* pShellJob = reinterpret_cast<CShell2GenerationJob*>(pJob);
+
+	pShellJob->pTerrain->CreateShell2VBO();
+}
+
 CPlanet::CPlanet()
 {
+	if (!s_pShell2Generator)
+	{
+		s_pShell2Generator = new CParallelizer(GenerateShell2Callback);
+		s_pShell2Generator->Start();
+	}
+
 	m_iRandomSeed = 0;
 
 	for (size_t i = 0; i < 6; i++)

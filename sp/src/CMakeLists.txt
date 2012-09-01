@@ -10,6 +10,7 @@ include_directories (
 
 if (WIN32)
 	include_directories(${CMAKE_SOURCE_DIR}/../ext-deps/gl3w/include)
+	include_directories(${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release)
 endif (WIN32)
 
 set (SPINTRO_SOURCES
@@ -36,3 +37,9 @@ set (SPINTRO_SOURCES
 )
 add_executable (sp ${SPINTRO_SOURCES})
 target_link_libraries (sp tinker tengine)
+
+if (WIN32)
+	target_link_libraries(sp debug ${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release/Debug/pthread.lib)
+
+	target_link_libraries(sp optimized ${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release/Release/pthread.lib)
+endif (WIN32)

@@ -2,6 +2,7 @@
 
 #include <geometry.h>
 #include <mtrand.h>
+#include <parallelize.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -22,12 +23,45 @@ CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 
 	m_iShell1VBO = 0;
 	m_iShell2VBO = 0;
+
+	m_bGeneratingShell2 = false;
 }
 
 void CPlanetTerrain::Think()
 {
 	if (!m_iShell1VBO)
-		CreateHighLevelsVBO();
+		CreateShell1VBO();
+
+	if (m_bGeneratingShell2)
+	{
+		m_pPlanet->s_pShell2Generator->LockData();
+		if (m_aflShell2Drop.size())
+		{
+			m_iShell2VBO = CRenderer::LoadVertexDataIntoGL(m_aflShell2Drop.size() * sizeof(float), m_aflShell2Drop.data());
+			m_bGeneratingShell2 = false;
+			m_aflShell2Drop.set_capacity(0);
+		}
+		m_pPlanet->s_pShell2Generator->UnlockData();
+	}
+	else if (!m_iShell2VBO && !m_bGeneratingShell2)
+	{
+		if (m_pPlanet->GameData().GetScalableRenderOrigin().LengthSqr() < CScalableFloat(100.0f, SCALE_MEGAMETER)*CScalableFloat(100.0f, SCALE_MEGAMETER))
+		{
+			m_bGeneratingShell2 = true;
+
+			CShell2GenerationJob oJob;
+			oJob.pTerrain = this;
+			m_pPlanet->s_pShell2Generator->AddJob(&oJob, sizeof(oJob));
+		}
+	}
+	else if (m_iShell2VBO)
+	{
+		if (m_pPlanet->GameData().GetScalableRenderOrigin().LengthSqr() > CScalableFloat(1.0f, SCALE_GIGAMETER)*CScalableFloat(1.0f, SCALE_GIGAMETER))
+		{
+			CRenderer::UnloadVertexDataFromGL(m_iShell2VBO);
+			m_iShell2VBO = 0;
+		}
+	}
 }
 
 size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const Vector2D& vecMin, const Vector2D vecMax)
@@ -74,36 +108,21 @@ void PushVert(tvector<float>& aflVerts, const CTerrainPoint& vecPoint)
 	aflVerts.push_back((float)vecPoint.vec2DPosition.y);
 }
 
-void CPlanetTerrain::CreateHighLevelsVBO()
+size_t BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
 {
-	if (m_iShell1VBO)
-		CRenderer::UnloadVertexDataFromGL(m_iShell1VBO);
-
-	m_iShell1VBO = 0;
-
-	// Wouldn't it be cool if some planets were like, cubeworld?
-	//int iHighLevels = 0;
-
-	int iHighLevels = 5;
-
-	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
-
 	size_t iVertSize = 8;	// texture coords, one normal, one vert. 2 + 3 + 3 = 8
 
-	tvector<float> aflVerts;
-
-	size_t iTriangles = (int)pow(4.0f, (float)iHighLevels) * 2;
+	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
 	aflVerts.reserve(iVertSize * iTriangles * 3);
 
 	for (size_t x = 0; x < iRows-1; x++)
 	{
 		for (size_t y = 0; y < iRows-1; y++)
 		{
-			CTerrainPoint& vecTerrain1 = avecTerrain[y*iRows + x];
-			CTerrainPoint& vecTerrain2 = avecTerrain[y*iRows + (x+1)];
-			CTerrainPoint& vecTerrain3 = avecTerrain[(y+1)*iRows + (x+1)];
-			CTerrainPoint& vecTerrain4 = avecTerrain[(y+1)*iRows + x];
+			const CTerrainPoint& vecTerrain1 = avecTerrain[y*iRows + x];
+			const CTerrainPoint& vecTerrain2 = avecTerrain[y*iRows + (x+1)];
+			const CTerrainPoint& vecTerrain3 = avecTerrain[(y+1)*iRows + (x+1)];
+			const CTerrainPoint& vecTerrain4 = avecTerrain[(y+1)*iRows + x];
 
 			PushVert(aflVerts, vecTerrain1);
 			PushVert(aflVerts, vecTerrain2);
@@ -115,17 +134,88 @@ void CPlanetTerrain::CreateHighLevelsVBO()
 		}
 	}
 
+	return iTriangles;
+}
+
+void CPlanetTerrain::CreateShell1VBO()
+{
+	if (m_iShell1VBO)
+		CRenderer::UnloadVertexDataFromGL(m_iShell1VBO);
+
+	m_iShell1VBO = 0;
+
+	// Wouldn't it be cool if some planets were like, cubeworld?
+	//int iHighLevels = 0;
+
+	int iHighLevels = 3;
+
+	tvector<CTerrainPoint> avecTerrain;
+	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
+
+	tvector<float> aflVerts;
+	size_t iTriangles = BuildVerts(aflVerts, avecTerrain, iHighLevels, iRows);
+
 	m_iShell1VBO = CRenderer::LoadVertexDataIntoGL(aflVerts.size() * sizeof(float), aflVerts.data());
 	m_iShell1VBOSize = iTriangles * 3;
 }
 
+void CPlanetTerrain::CreateShell2VBO()
+{
+	if (m_iShell2VBO)
+		CRenderer::UnloadVertexDataFromGL(m_iShell2VBO);
+
+	m_iShell2VBO = 0;
+
+	int iHighLevels = 7;
+
+	tvector<CTerrainPoint> avecTerrain;
+	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
+
+	tvector<float> aflVerts;
+	size_t iTriangles = BuildVerts(aflVerts, avecTerrain, iHighLevels, iRows);
+	m_iShell2VBOSize = iTriangles * 3;
+
+	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
+	m_pPlanet->s_pShell2Generator->LockData();
+	TAssert(!m_aflShell2Drop.size());
+	swap(m_aflShell2Drop, aflVerts);
+	m_pPlanet->s_pShell2Generator->UnlockData();
+}
+
 void CPlanetTerrain::Render(class CRenderingContext* c) const
 {
-	c->BeginRenderVertexArray(m_iShell1VBO);
-	c->SetPositionBuffer(0u, 8*sizeof(float));
-	c->SetNormalsBuffer(3*sizeof(float), 8*sizeof(float));
-	c->SetTexCoordBuffer(6*sizeof(float), 8*sizeof(float));
-	c->EndRenderVertexArray(m_iShell1VBOSize);
+	Vector vecPlayerDirection = m_pPlanet->s_vecCharacterLocalOrigin.Normalized();
+
+	float flPlayerDot = vecPlayerDirection.Dot(GetDirection());
+	if (flPlayerDot < -0.60f)
+		return;
+
+	double flDistance = m_pPlanet->s_vecCharacterLocalOrigin.LengthSqr();
+	bool bLowRes = flDistance > 100.0*1000.0;	// 100*1000 - not a mistake. Switch to low at sqrt(100000)
+
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	if (pCharacter->GetNearestPlanet())
+	{
+		if (flPlayerDot < 0.45f)
+			return;
+	}
+
+	if (!m_bGeneratingShell2 && m_iShell2VBO && !bLowRes)
+	{
+		c->BeginRenderVertexArray(m_iShell2VBO);
+		c->SetPositionBuffer(0u, 8*sizeof(float));
+		c->SetNormalsBuffer(3*sizeof(float), 8*sizeof(float));
+		c->SetTexCoordBuffer(6*sizeof(float), 8*sizeof(float));
+		c->EndRenderVertexArray(m_iShell2VBOSize);
+	}
+	else
+	{
+		c->BeginRenderVertexArray(m_iShell1VBO);
+		c->SetPositionBuffer(0u, 8*sizeof(float));
+		c->SetNormalsBuffer(3*sizeof(float), 8*sizeof(float));
+		c->SetTexCoordBuffer(6*sizeof(float), 8*sizeof(float));
+		c->EndRenderVertexArray(m_iShell1VBOSize);
+	}
 }
 
 DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)

@@ -15,7 +15,6 @@ class CPlanet : public CBaseEntity
 {
 	friend class CPlanetTerrain;
 	friend class CTerrainChunkManager;
-	friend class CChunkOrQuad;
 	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
 
 public:
@@ -100,6 +99,7 @@ protected:
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];
 
 	static DoubleVector			s_vecCharacterLocalOrigin;
+	static class CParallelizer*	s_pShell2Generator;
 };
 
 #endif
