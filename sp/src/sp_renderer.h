@@ -1,7 +1,7 @@
 #ifndef SP_RENDERER_H
 #define SP_RENDERER_H
 
-#include <EASTL/vector.h>
+#include <tvector.h>
 
 #include <common.h>
 

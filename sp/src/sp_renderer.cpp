@@ -7,7 +7,8 @@
 
 #include <tinker/application.h>
 #include <tinker/cvar.h>
-#include <models/texturelibrary.h>
+#include <textures/materiallibrary.h>
+#include <textures/texturelibrary.h>
 #include <game/gameserver.h>
 #include <renderer/shaders.h>
 #include <renderer/renderingcontext.h>
