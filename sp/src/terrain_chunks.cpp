@@ -17,9 +17,9 @@ CTerrainChunkManager::CTerrainChunkManager(CPlanet* pPlanet)
 	m_pPlanet = pPlanet;
 }
 
-void CTerrainChunkManager::AddChunk(CTerrainQuadTreeBranch* pBranch)
+void CTerrainChunkManager::AddChunk()
 {
-	size_t iIndex = ~0;
+/*	size_t iIndex = ~0;
 	for (size_t i = 0; i < m_apChunks.size(); i++)
 	{
 		if (!m_apChunks[i])
@@ -37,12 +37,12 @@ void CTerrainChunkManager::AddChunk(CTerrainQuadTreeBranch* pBranch)
 
 	m_apChunks[iIndex] = new CTerrainChunk(this, pBranch);
 
-	m_apBranchChunks[pBranch] = iIndex;
+	m_apBranchChunks[pBranch] = iIndex;*/
 }
 
-void CTerrainChunkManager::RemoveChunk(CTerrainQuadTreeBranch* pBranch)
+void CTerrainChunkManager::RemoveChunk()
 {
-	size_t i = FindChunk(pBranch);
+/*	size_t i = FindChunk(pBranch);
 
 	if (i == ~0)
 	{
@@ -51,17 +51,18 @@ void CTerrainChunkManager::RemoveChunk(CTerrainQuadTreeBranch* pBranch)
 	}
 
 	delete m_apChunks[i];
-	m_apChunks[i] = NULL;
+	m_apChunks[i] = NULL;*/
 }
 
-size_t CTerrainChunkManager::FindChunk(CTerrainQuadTreeBranch* pBranch) const
+size_t CTerrainChunkManager::FindChunk() const
 {
-	tmap<CTerrainQuadTreeBranch*, size_t>::const_iterator it = m_apBranchChunks.find(pBranch);
+/*	tmap<CTerrainQuadTreeBranch*, size_t>::const_iterator it = m_apBranchChunks.find(pBranch);
 
 	if (it == m_apBranchChunks.end())
 		return ~0;
 
-	return it->second;
+	return it->second;*/
+	return ~0;
 }
 
 CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
@@ -86,9 +87,9 @@ void CTerrainChunkManager::Think()
 	}
 }
 
-void CTerrainChunkManager::ProcessChunkRendering(CTerrainQuadTreeBranch* pBranch)
+void CTerrainChunkManager::ProcessChunkRendering()
 {
-	size_t iChunk = FindChunk(pBranch);
+/*	size_t iChunk = FindChunk(pBranch);
 
 	if (iChunk == ~0)
 	{
@@ -127,7 +128,7 @@ void CTerrainChunkManager::ProcessChunkRendering(CTerrainQuadTreeBranch* pBranch
 			if (iPushes == 1)
 				return;
 		}
-	}
+	}*/
 }
 
 CVar r_markchunks("r_markchunks", "off");
@@ -163,21 +164,10 @@ void CTerrainChunkManager::Render()
 		aRenderChunks[i]->Render(&c);
 }
 
-CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, CTerrainQuadTreeBranch* pBranch)
+CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager)
 {
 	m_pManager = pManager;
-	m_pBranch = pBranch;
 	m_iDepth = m_iMaxDepth = 0;
-
-	DoubleVector vecCenter = pBranch->GetCenter();
-
-	/*
-	m_pRaytracer = new raytrace::CRaytracer();
-	m_pRaytracer->SetMaxDepth(7);
-	m_pRaytracer->AddTriangle(pBranch->m_oData.vec1 - vecCenter, pBranch->m_oData.vec2 - vecCenter, pBranch->m_oData.vec3 - vecCenter);
-	m_pRaytracer->AddTriangle(pBranch->m_oData.vec2 - vecCenter, pBranch->m_oData.vec3 - vecCenter, pBranch->m_oData.vec4 - vecCenter);
-	m_pRaytracer->BuildTree();
-	*/
 }
 
 CTerrainChunk::~CTerrainChunk()
@@ -186,7 +176,7 @@ CTerrainChunk::~CTerrainChunk()
 
 void CTerrainChunk::Think()
 {
-	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+/*	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
 
 	CScalableVector vecBranchCenter = m_pManager->m_pPlanet->GetGlobalTransform() * CScalableVector(m_pBranch->GetCenter(), m_pManager->m_pPlanet->GetScale());
 	vecBranchCenter -= pLocalCharacter->GetGlobalOrigin();
@@ -197,18 +187,11 @@ void CTerrainChunk::Think()
 	m_iDepth = (int)flDepth;
 
 	if (m_iDepth > m_iMaxDepth)
-		BuildBranchToDepth();
-}
-
-void CTerrainChunk::BuildBranchToDepth()
-{
-	static_cast<CPlanetTerrain*>(m_pBranch->m_pTree)->BuildBranchToDepth(m_pBranch, m_pBranch->m_iDepth+m_iDepth);
-
-	m_iMaxDepth = m_iDepth;
+		BuildBranchToDepth();*/
 }
 
 void CTerrainChunk::Render(class CRenderingContext* c)
 {
-	CPlanetTerrain* pTree = static_cast<CPlanetTerrain*>(m_pBranch->m_pTree);
-	pTree->RenderBranch(m_pBranch, c);
+//	CPlanetTerrain* pTree = static_cast<CPlanetTerrain*>(m_pBranch->m_pTree);
+//	pTree->RenderBranch(m_pBranch, c);
 }

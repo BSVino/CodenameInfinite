@@ -74,8 +74,6 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 	Debug_Paint();
 }
 
-CVar r_chunkdepth("r_chunkdepth", "off");
-
 void CSPHUD::Debug_Paint()
 {
 	Vector vecUp;
@@ -83,35 +81,4 @@ void CSPHUD::Debug_Paint()
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
 	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
-
-	if (r_chunkdepth.GetBool() && pLocalCharacter)
-	{
-		CPlanet* pPlanet = pLocalCharacter->GetNearestPlanet();
-		if (pPlanet)
-		{
-			const CTerrainChunkManager* pChunks = pPlanet->GetTerrainChunkManager();
-			size_t iChunks = pChunks->GetNumChunks();
-			for (size_t i = 0; i < iChunks; i++)
-			{
-				CTerrainChunk* pChunk = pChunks->GetChunk(i);
-				if (!pChunk)
-					continue;
-
-				CScalableVector vecBranchCenter = pPlanet->GetGlobalTransform() * CScalableVector(pChunk->GetBranch()->GetCenter(), pPlanet->GetScale());
-				vecBranchCenter -= pLocalCharacter->GetGlobalOrigin();
-
-				Vector vecPlanet = vecBranchCenter.GetUnits(SCALE_METER);
-
-				if (vecForward.Dot((vecPlanet).Normalized()) < 0)
-					continue;
-
-				Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
-				CScalableFloat flDistance = vecBranchCenter.Length();
-
-				tstring sLabel = GetStringDistance(flDistance) + " - " + sprintf("%d", pChunk->GetDepth());
-
-				glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
-			}
-		}
-	}
 }

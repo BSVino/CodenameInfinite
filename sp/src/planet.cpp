@@ -61,10 +61,7 @@ CPlanet::CPlanet()
 	m_iRandomSeed = 0;
 
 	for (size_t i = 0; i < 6; i++)
-	{
 		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
-		m_pTerrain[i]->Init();
-	}
 
 	m_pTerrainChunkManager = new CTerrainChunkManager(this);
 
@@ -158,8 +155,9 @@ void CPlanet::RenderUpdate()
 
 bool CPlanet::ShouldRenderAtScale(scale_t eScale) const
 {
-	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
-		if (m_pTerrain[i]->m_apRenderBranches.find(eScale) != m_pTerrain[i]->m_apRenderBranches.end())
+	if (eScale >= SCALE_MEGAMETER)
+//	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
+//		if (m_pTerrain[i]->m_apRenderBranches.find(eScale) != m_pTerrain[i]->m_apRenderBranches.end())
 			return true;
 
 	return false;
@@ -328,13 +326,35 @@ void CPlanet::SetRadius(const CScalableFloat& flRadius)
 {
 	m_flRadius = flRadius;
 
-	for (size_t i = 0; i < 6; i++)
-	{
-		m_pTerrain[i]->m_pQuadTreeHead->m_oData.flRadiusMeters = 0;
-		m_pTerrain[i]->InitRenderVectors(m_pTerrain[i]->m_pQuadTreeHead);
-	}
+	DoubleVector vec1 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(0, 0));
+	DoubleVector vec2 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(1, 0));
+	DoubleVector vec3 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(1, 1));
+	DoubleVector vec4 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(0, 1));
 
-	int iMeterDepth = (int)(log(m_pTerrain[0]->m_pQuadTreeHead->m_oData.flRadiusMeters)/log(2.0f));
+	DoubleVector vecCenter = (vec1 + vec2 + vec3 + vec4)/4;
+
+	CScalableVector vecQuadCenter(vecCenter, GetScale());
+
+	CScalableVector vecQuadMax1(vec1, GetScale());
+	CScalableFloat flRadius1 = (vecQuadCenter - vecQuadMax1).Length();
+	CScalableVector vecQuadMax2(vec2, GetScale());
+	CScalableFloat flRadius2 = (vecQuadCenter - vecQuadMax2).Length();
+	CScalableVector vecQuadMax3(vec3, GetScale());
+	CScalableFloat flRadius3 = (vecQuadCenter - vecQuadMax3).Length();
+	CScalableVector vecQuadMax4(vec4, GetScale());
+	CScalableFloat flRadius4 = (vecQuadCenter - vecQuadMax4).Length();
+
+	CScalableFloat flTerrainRadius = flRadius1;
+	if (flRadius2 > flRadius)
+		flTerrainRadius = flRadius2;
+	if (flRadius3 > flRadius)
+		flTerrainRadius = flRadius3;
+	if (flRadius4 > flRadius)
+		flTerrainRadius = flRadius4;
+
+	float flRadiusMeters = (float)flTerrainRadius.GetUnits(SCALE_METER);
+
+	int iMeterDepth = (int)(log(flRadiusMeters)/log(2.0f));
 	m_iChunkDepth = iMeterDepth - ChunkSize();
 }
 
@@ -361,37 +381,5 @@ void CPlanet::Debug_RebuildTerrain()
 		delete m_pTerrain[i];
 
 	for (size_t i = 0; i < 6; i++)
-	{
 		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
-		m_pTerrain[i]->Init();
-	}
-}
-
-bool CChunkOrQuad::Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr)
-{
-	if (m_pQuad)
-	{
-		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.avecVerts[0], m_pQuad->m_oData.avecVerts[1], m_pQuad->m_oData.avecVerts[2], tr))
-			return true;
-		if (LineSegmentIntersectsTriangle(vecStart, vecEnd, m_pQuad->m_oData.avecVerts[0], m_pQuad->m_oData.avecVerts[2], m_pQuad->m_oData.avecVerts[3], tr))
-			return true;
-
-		return false;
-	}
-	else if (m_iChunk != ~0)
-	{
-		CTerrainChunk* pChunk = m_pPlanet->m_pTerrainChunkManager->GetChunk(m_iChunk);
-		if (!pChunk)
-			return false;
-
-		TUnimplemented();
-		//return pChunk->Raytrace(vecStart, vecEnd, tr);
-
-		return false;
-	}
-	else
-	{
-		TAssert(m_pQuad || m_iChunk != ~0);
-		return false;
-	}
 }

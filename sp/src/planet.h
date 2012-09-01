@@ -9,77 +9,7 @@
 #define TERRAIN_NOISE_ARRAY_SIZE 15
 
 class CPlanetTerrain;
-
-template <class T, class F>
-class COctree;
-template <class T, class F>
-class COctreeBranch;
-template <class T, class F>
-class CQuadTreeBranch;
-class CBranchData;
 class CTerrainChunk;
-
-class CChunkOrQuad
-{
-public:
-	CChunkOrQuad()
-	{
-		m_pPlanet = NULL;
-		m_iChunk = ~0;
-		m_pQuad = NULL;
-	}
-
-	CChunkOrQuad(class CPlanet* pPlanet, size_t iChunk)
-	{
-		m_pPlanet = pPlanet;
-		m_iChunk = iChunk;
-		m_pQuad = NULL;
-	}
-
-	CChunkOrQuad(class CPlanet* pPlanet, CQuadTreeBranch<CBranchData, double>* pQuad)
-	{
-		m_pPlanet = pPlanet;
-		m_iChunk = ~0;
-		m_pQuad = pQuad;
-	}
-
-public:
-	bool Raytrace(const DoubleVector& vecStart, const DoubleVector& vecEnd, CCollisionResult& tr);
-
-	bool operator == (const CChunkOrQuad& r)
-	{
-		if (m_iChunk != ~0 && m_iChunk == r.m_iChunk)
-			return true;
-
-		if (m_pQuad && m_pQuad == r.m_pQuad)
-			return true;
-
-		return false;
-	}
-
-public:
-	class CPlanet*							m_pPlanet;
-	size_t									m_iChunk;
-	CQuadTreeBranch<CBranchData, double>*	m_pQuad;
-};
-
-inline bool operator < (const CChunkOrQuad& l, const CChunkOrQuad& r)
-{
-	if (l.m_iChunk != ~0 && r.m_iChunk != ~0)
-		return l.m_iChunk < r.m_iChunk;
-
-	if (l.m_pQuad && r.m_pQuad)
-		return l.m_pQuad < r.m_pQuad;
-
-	else if (l.m_iChunk != ~0 && r.m_pQuad)
-		return true;
-
-	else if (l.m_pQuad && r.m_iChunk != ~0)
-		return false;
-
-	TAssert(false);
-	return false;
-}
 
 class CPlanet : public CBaseEntity
 {
@@ -135,8 +65,6 @@ public:
 	size_t						ChunkSize() { return 7; };
 
 	void						Debug_RebuildTerrain();
-	void						Debug_RenderOctree(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
-	void						Debug_RenderCollision(const COctreeBranch<CChunkOrQuad, double>* pBranch) const;
 
 protected:
 	size_t						m_iRandomSeed;
