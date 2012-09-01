@@ -494,16 +494,46 @@ void CPlanetTerrain::ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch)
 	}
 }
 
-void PushVert(tvector<float>& aflVerts, size_t i, Vector2D* avecTex, const CTerrainQuadTreeBranch* pBranch)
+size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const Vector2D& vecMin, const Vector2D vecMax)
 {
-	aflVerts.push_back((float)pBranch->m_oData.avecVerts[i].x);
-	aflVerts.push_back((float)pBranch->m_oData.avecVerts[i].y);
-	aflVerts.push_back((float)pBranch->m_oData.avecVerts[i].z);
-	aflVerts.push_back(pBranch->m_oData.avecNormals[i].x);
-	aflVerts.push_back(pBranch->m_oData.avecNormals[i].y);
-	aflVerts.push_back(pBranch->m_oData.avecNormals[i].z);
-	aflVerts.push_back(avecTex[i].x);
-	aflVerts.push_back(avecTex[i].y);
+	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iDepth);
+	size_t iVertsPerRow = iQuadsPerRow + 1;
+	avecTerrain.resize(iVertsPerRow*iVertsPerRow);
+
+	for (size_t x = 0; x < iVertsPerRow; x++)
+	{
+		float flX = RemapVal((float)x, 0, (float)iVertsPerRow-1, vecMin.x, vecMax.x);
+
+		for (size_t y = 0; y < iVertsPerRow; y++)
+		{
+			float flY = RemapVal((float)y, 0, (float)iVertsPerRow-1, vecMin.y, vecMax.y);
+
+			Vector2D vecPoint(flX, flY);
+
+			CTerrainPoint& vecTerrain = avecTerrain[y*iVertsPerRow + x];
+
+			vecTerrain.vec2DPosition = vecPoint;
+
+			vecTerrain.vecOffset = GenerateOffset(vecPoint);
+
+			// Offsets are generated in planet space, add them right onto the quad position.
+			vecTerrain.vec3DPosition = m_pDataSource->QuadTreeToWorld(this, vecPoint) + vecTerrain.vecOffset;
+		}
+	}
+
+	return iVertsPerRow;
+}
+
+void PushVert(tvector<float>& aflVerts, const CTerrainPoint& vecPoint)
+{
+	aflVerts.push_back((float)vecPoint.vec3DPosition.x);
+	aflVerts.push_back((float)vecPoint.vec3DPosition.y);
+	aflVerts.push_back((float)vecPoint.vec3DPosition.z);
+	aflVerts.push_back(vecPoint.vecNormal.x);
+	aflVerts.push_back(vecPoint.vecNormal.y);
+	aflVerts.push_back(vecPoint.vecNormal.z);
+	aflVerts.push_back((float)vecPoint.vec2DPosition.x);	// 2D position acts as the texture coordinate
+	aflVerts.push_back((float)vecPoint.vec2DPosition.y);
 }
 
 void CPlanetTerrain::CreateHighLevelsVBO()
@@ -513,9 +543,10 @@ void CPlanetTerrain::CreateHighLevelsVBO()
 
 	m_iShell1VBO = 0;
 
-	int iHighLevels = 3;
+	int iHighLevels = 5;
 
-	BuildBranchToDepth(m_pQuadTreeHead, iHighLevels);
+	tvector<CTerrainPoint> avecTerrain;
+	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
 
 	size_t iVertSize = 8;	// texture coords, one normal, one vert. 2 + 3 + 3 = 8
 
@@ -524,59 +555,23 @@ void CPlanetTerrain::CreateHighLevelsVBO()
 	size_t iTriangles = (int)pow(4.0f, (float)iHighLevels) * 2;
 	aflVerts.reserve(iVertSize * iTriangles * 3);
 
-	tvector<char> aiQuad;
-	aiQuad.reserve(iHighLevels);
-	if (iHighLevels)
-		aiQuad.push_back(0);
-
-	// Run through the tree and build a vertex buffer from the highest quad levels.
-	while (true)
+	for (size_t x = 0; x < iRows-1; x++)
 	{
-		if (aiQuad.size() == iHighLevels)
+		for (size_t y = 0; y < iRows-1; y++)
 		{
-			const CTerrainQuadTreeBranch* pBranch = m_pQuadTreeHead;
-			for (int i = 0; i < iHighLevels; i++)
-			{
-				TAssert(pBranch->m_pBranches[0]);
-				pBranch = pBranch->m_pBranches[aiQuad[i]];
-			}
+			CTerrainPoint& vecTerrain1 = avecTerrain[y*iRows + x];
+			CTerrainPoint& vecTerrain2 = avecTerrain[y*iRows + (x+1)];
+			CTerrainPoint& vecTerrain3 = avecTerrain[(y+1)*iRows + (x+1)];
+			CTerrainPoint& vecTerrain4 = avecTerrain[(y+1)*iRows + x];
 
-			Vector2D avecTex[4];
-			avecTex[0] = pBranch->m_vecMin;
-			avecTex[1] = DoubleVector2D(pBranch->m_vecMax.x, pBranch->m_vecMin.y);
-			avecTex[2] = pBranch->m_vecMax;
-			avecTex[3] = DoubleVector2D(pBranch->m_vecMin.x, pBranch->m_vecMax.y);
+			PushVert(aflVerts, vecTerrain1);
+			PushVert(aflVerts, vecTerrain2);
+			PushVert(aflVerts, vecTerrain3);
 
-			PushVert(aflVerts, 0, avecTex, pBranch);
-			PushVert(aflVerts, 1, avecTex, pBranch);
-			PushVert(aflVerts, 2, avecTex, pBranch);
-
-			PushVert(aflVerts, 0, avecTex, pBranch);
-			PushVert(aflVerts, 2, avecTex, pBranch);
-			PushVert(aflVerts, 3, avecTex, pBranch);
+			PushVert(aflVerts, vecTerrain1);
+			PushVert(aflVerts, vecTerrain3);
+			PushVert(aflVerts, vecTerrain4);
 		}
-		else
-		{
-			// Descend as far as possible
-			while (aiQuad.size() < (size_t)iHighLevels)
-				aiQuad.push_back(0);
-
-			continue;
-		}
-
-		if (!aiQuad.size())
-			break;
-
-		// If we're done with all four branches here, head up to the next higher level
-		while (++aiQuad.back() >= 4)
-		{
-			aiQuad.pop_back();
-			if (!aiQuad.size())
-				break;
-		}
-
-		if (!aiQuad.size())
-			break;
 	}
 
 	m_iShell1VBO = CRenderer::LoadVertexDataIntoGL(aflVerts.size() * sizeof(float), aflVerts.data());

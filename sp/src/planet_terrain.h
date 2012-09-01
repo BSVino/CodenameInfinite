@@ -48,6 +48,16 @@ public:
 	DoubleVector		avecOffsets[4];
 };
 
+class CTerrainPoint
+{
+public:
+	DoubleVector		vec3DPosition;
+	DoubleVector2D		vec2DPosition;
+	Vector				vecNormal;
+	DoubleVector2D		vecDetail;
+	DoubleVector		vecOffset;
+};
+
 typedef CQuadTree<CBranchData, double> CTerrainQuadTree;
 typedef CQuadTreeBranch<CBranchData, double> CTerrainQuadTreeBranch;
 typedef CQuadTreeDataSource<CBranchData, double> CTerrainQuadTreeDataSource;
@@ -72,6 +82,7 @@ public:
 	void						PullBranch(CTerrainQuadTreeBranch* pBranch);
 	void						ProcessBranchRendering(CTerrainQuadTreeBranch* pBranch);
 
+	size_t						BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const Vector2D& vecMin, const Vector2D vecMax);
 	void						CreateHighLevelsVBO();
 
 	void						Render(class CRenderingContext* c) const;
