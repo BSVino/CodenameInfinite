@@ -152,6 +152,7 @@ public:
 
 public:
 	static size_t	LoadVertexDataIntoGL(size_t iSizeInBytes, float* aflVertices);
+	static size_t	LoadIndexDataIntoGL(size_t iSizeInBytes, unsigned short* aiIndices);
 	static void		UnloadVertexDataFromGL(size_t iBuffer);
 	static size_t	LoadTextureIntoGL(tstring sFilename, int iClamp = 0);
 	static size_t	LoadTextureIntoGL(Color* pclrData, int w, int h, int iClamp = 0);

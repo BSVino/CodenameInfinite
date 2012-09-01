@@ -147,6 +147,7 @@ public:
 	void					SetCustomIntBuffer(const char* pszName, size_t iSize, size_t iOffset, size_t iStride);
 	void					EndRenderVertexArray(size_t iVertices, bool bWireframe = false);
 	void					EndRenderVertexArrayTriangles(size_t iTriangles, int* piIndices);
+	void					EndRenderVertexArrayIndexed(size_t iBuffer, size_t iVertices);
 
 	void					RenderText(const tstring& sText, unsigned iLength, const tstring& sFontName, int iFontFaceSize);
 	void					RenderText(const tstring& sText, unsigned iLength, class FTFont* pFont);

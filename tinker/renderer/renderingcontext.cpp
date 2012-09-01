@@ -1010,6 +1010,31 @@ void CRenderingContext::EndRenderVertexArrayTriangles(size_t iTriangles, int* pi
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void CRenderingContext::EndRenderVertexArrayIndexed(size_t iBuffer, size_t iVertices)
+{
+	SetUniform("mProjection", GetContext().m_mProjection);
+	SetUniform("mView", GetContext().m_mView);
+	SetUniform("mGlobal", GetContext().m_mTransformations);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iBuffer);
+	glDrawElements(GL_TRIANGLES, iVertices, GL_UNSIGNED_SHORT, nullptr);
+
+	glDisableVertexAttribArray(m_pShader->m_iPositionAttribute);
+	if (m_pShader->m_iTexCoordAttribute != ~0)
+		glDisableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
+	if (m_pShader->m_iNormalAttribute != ~0)
+		glDisableVertexAttribArray(m_pShader->m_iNormalAttribute);
+	if (m_pShader->m_iTangentAttribute != ~0)
+		glDisableVertexAttribArray(m_pShader->m_iTangentAttribute);
+	if (m_pShader->m_iBitangentAttribute != ~0)
+		glDisableVertexAttribArray(m_pShader->m_iBitangentAttribute);
+	if (m_pShader->m_iColorAttribute != ~0)
+		glDisableVertexAttribArray(m_pShader->m_iColorAttribute);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 void CRenderingContext::RenderText(const tstring& sText, unsigned iLength, const tstring& sFontName, int iFontFaceSize)
 {
 	FTFont* pFont = glgui::CLabel::GetFont(sFontName, iFontFaceSize);

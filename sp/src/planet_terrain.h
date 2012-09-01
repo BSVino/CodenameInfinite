@@ -51,10 +51,12 @@ protected:
 	size_t                      m_iShell1VBO;
 	size_t                      m_iShell1VBOSize;
 	size_t                      m_iShell2VBO;
-	size_t                      m_iShell2VBOSize;
+	size_t                      m_iShell2IBO;
+	size_t                      m_iShell2IBOSize;
 
 	bool						m_bGeneratingShell2;
 	tvector<float>				m_aflShell2Drop;
+	tvector<unsigned short>     m_aiShell2Drop;
 };
 
 #endif

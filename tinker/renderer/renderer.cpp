@@ -771,6 +771,29 @@ size_t CRenderer::LoadVertexDataIntoGL(size_t iSizeInBytes, float* aflVertices)
 	return iVBO;
 }
 
+size_t CRenderer::LoadIndexDataIntoGL(size_t iSizeInBytes, unsigned short* aiIndices)
+{
+	GLuint iVBO;
+	glGenBuffers(1, &iVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iVBO);
+
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, iSizeInBytes, 0, GL_STATIC_DRAW);
+
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, iSizeInBytes, aiIndices);
+
+    int iSize = 0;
+    glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &iSize);
+    if(iSizeInBytes != iSize)
+    {
+        glDeleteBuffers(1, &iVBO);
+		TAssert(false);
+        TError("CRenderer::LoadVertexDataIntoGL(): Data size is mismatch with input array\n");
+		return 0;
+    }
+
+	return iVBO;
+}
+
 void CRenderer::UnloadVertexDataFromGL(size_t iBuffer)
 {
 	glDeleteBuffers(1, (GLuint*)&iBuffer);

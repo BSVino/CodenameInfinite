@@ -38,8 +38,10 @@ void CPlanetTerrain::Think()
 		if (m_aflShell2Drop.size())
 		{
 			m_iShell2VBO = CRenderer::LoadVertexDataIntoGL(m_aflShell2Drop.size() * sizeof(float), m_aflShell2Drop.data());
+			m_iShell2IBO = CRenderer::LoadIndexDataIntoGL(m_aiShell2Drop.size() * sizeof(unsigned short), m_aiShell2Drop.data());
 			m_bGeneratingShell2 = false;
 			m_aflShell2Drop.set_capacity(0);
+			m_aiShell2Drop.set_capacity(0);
 		}
 		m_pPlanet->s_pShell2Generator->UnlockData();
 	}
@@ -137,6 +139,41 @@ size_t BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTe
 	return iTriangles;
 }
 
+size_t BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned short>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
+{
+	size_t iVertSize = 8;	// texture coords, one normal, one vert. 2 + 3 + 3 = 8
+
+	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
+	aiIndices.reserve(iTriangles * 3);
+
+	aflVerts.reserve(avecTerrain.size());
+
+	size_t iTerrainSize = avecTerrain.size();
+	for (size_t x = 0; x < iTerrainSize; x++)
+		PushVert(aflVerts, avecTerrain[x]);
+
+	for (size_t x = 0; x < iRows-1; x++)
+	{
+		for (size_t y = 0; y < iRows-1; y++)
+		{
+			unsigned short i1 = y*iRows + x;
+			unsigned short i2 = y*iRows + (x+1);
+			unsigned short i3 = (y+1)*iRows + (x+1);
+			unsigned short i4 = (y+1)*iRows + x;
+
+			aiIndices.push_back(i1);
+			aiIndices.push_back(i2);
+			aiIndices.push_back(i3);
+
+			aiIndices.push_back(i1);
+			aiIndices.push_back(i3);
+			aiIndices.push_back(i4);
+		}
+	}
+
+	return iTriangles;
+}
+
 void CPlanetTerrain::CreateShell1VBO()
 {
 	if (m_iShell1VBO)
@@ -172,13 +209,15 @@ void CPlanetTerrain::CreateShell2VBO()
 	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
 
 	tvector<float> aflVerts;
-	size_t iTriangles = BuildVerts(aflVerts, avecTerrain, iHighLevels, iRows);
-	m_iShell2VBOSize = iTriangles * 3;
+	tvector<unsigned short> aiVerts;
+	size_t iTriangles = BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iHighLevels, iRows);
+	m_iShell2IBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	m_pPlanet->s_pShell2Generator->LockData();
 	TAssert(!m_aflShell2Drop.size());
 	swap(m_aflShell2Drop, aflVerts);
+	swap(m_aiShell2Drop, aiVerts);
 	m_pPlanet->s_pShell2Generator->UnlockData();
 }
 
@@ -206,7 +245,7 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 		c->SetPositionBuffer(0u, 8*sizeof(float));
 		c->SetNormalsBuffer(3*sizeof(float), 8*sizeof(float));
 		c->SetTexCoordBuffer(6*sizeof(float), 8*sizeof(float));
-		c->EndRenderVertexArray(m_iShell2VBOSize);
+		c->EndRenderVertexArrayIndexed(m_iShell2IBO, m_iShell2IBOSize);
 	}
 	else
 	{
