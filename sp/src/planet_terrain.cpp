@@ -72,6 +72,8 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 	size_t iVertsPerRow = iQuadsPerRow + 1;
 	avecTerrain.resize(iVertsPerRow*iVertsPerRow);
 
+	size_t iDetailLevel = (size_t)pow(2.0, (double)iDepth);
+
 	for (size_t x = 0; x < iVertsPerRow; x++)
 	{
 		float flX = RemapVal((float)x, 0, (float)iVertsPerRow-1, vecMin.x, vecMax.x);
@@ -92,6 +94,8 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + vecTerrain.vecOffset;
 
 			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
+
+			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (float)iDetailLevel;
 		}
 	}
 
@@ -108,11 +112,13 @@ void PushVert(tvector<float>& aflVerts, const CTerrainPoint& vecPoint)
 	aflVerts.push_back(vecPoint.vecNormal.z);
 	aflVerts.push_back((float)vecPoint.vec2DPosition.x);	// 2D position acts as the texture coordinate
 	aflVerts.push_back((float)vecPoint.vec2DPosition.y);
+	aflVerts.push_back((float)vecPoint.vecDetail.x);
+	aflVerts.push_back((float)vecPoint.vecDetail.y);
 }
 
 size_t BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
 {
-	size_t iVertSize = 8;	// texture coords, one normal, one vert. 2 + 3 + 3 = 8
+	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
 	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
 	aflVerts.reserve(iVertSize * iTriangles * 3);
@@ -141,7 +147,7 @@ size_t BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTe
 
 size_t BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned short>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
 {
-	size_t iVertSize = 8;	// texture coords, one normal, one vert. 2 + 3 + 3 = 8
+	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
 	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
 	aiIndices.reserve(iTriangles * 3);
@@ -242,17 +248,19 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 	if (!m_bGeneratingShell2 && m_iShell2VBO && !bLowRes)
 	{
 		c->BeginRenderVertexArray(m_iShell2VBO);
-		c->SetPositionBuffer(0u, 8*sizeof(float));
-		c->SetNormalsBuffer(3*sizeof(float), 8*sizeof(float));
-		c->SetTexCoordBuffer(6*sizeof(float), 8*sizeof(float));
+		c->SetPositionBuffer(0u, 10*sizeof(float));
+		c->SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
+		c->SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
+		c->SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
 		c->EndRenderVertexArrayIndexed(m_iShell2IBO, m_iShell2IBOSize);
 	}
 	else
 	{
 		c->BeginRenderVertexArray(m_iShell1VBO);
-		c->SetPositionBuffer(0u, 8*sizeof(float));
-		c->SetNormalsBuffer(3*sizeof(float), 8*sizeof(float));
-		c->SetTexCoordBuffer(6*sizeof(float), 8*sizeof(float));
+		c->SetPositionBuffer(0u, 10*sizeof(float));
+		c->SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
+		c->SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
+		c->SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
 		c->EndRenderVertexArray(m_iShell1VBOSize);
 	}
 }

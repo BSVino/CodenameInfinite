@@ -142,8 +142,8 @@ public:
 	void					SetTangentsBuffer(size_t iOffsetBytes, size_t iStrideBytes);
 	void					SetBitangentsBuffer(float* pflBuffer, size_t iStrideBytes=0);
 	void					SetBitangentsBuffer(size_t iOffsetBytes, size_t iStrideBytes);
-	void					SetTexCoordBuffer(float* pflBuffer, size_t iStrideBytes=0);
-	void					SetTexCoordBuffer(size_t iOffsetBytes, size_t iStrideBytes);
+	void					SetTexCoordBuffer(float* pflBuffer, size_t iStrideBytes=0, size_t iChannel=0);
+	void					SetTexCoordBuffer(size_t iOffsetBytes, size_t iStrideBytes, size_t iChannel=0);
 	void					SetCustomIntBuffer(const char* pszName, size_t iSize, size_t iOffset, size_t iStride);
 	void					EndRenderVertexArray(size_t iVertices, bool bWireframe = false);
 	void					EndRenderVertexArrayTriangles(size_t iTriangles, int* piIndices);

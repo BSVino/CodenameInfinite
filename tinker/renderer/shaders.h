@@ -24,6 +24,8 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 #include <tstring.h>
 #include <vector.h>
 
+#define MAX_TEXTURE_CHANNELS 2
+
 class CShader
 {
 public:
@@ -49,7 +51,7 @@ public:
 	size_t					m_iNormalAttribute;
 	size_t					m_iTangentAttribute;
 	size_t					m_iBitangentAttribute;
-	size_t					m_iTexCoordAttribute;
+	size_t					m_aiTexCoordAttributes[MAX_TEXTURE_CHANNELS];
 	size_t					m_iColorAttribute;
 
 	class CParameter

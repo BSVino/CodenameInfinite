@@ -813,10 +813,16 @@ void CRenderingContext::EndRender()
 	SetUniform("mView", GetContext().m_mView);
 	SetUniform("mGlobal", GetContext().m_mTransformations);
 
-	if (m_bTexCoord && m_pShader->m_iTexCoordAttribute != ~0)
+	if (m_bTexCoord)
 	{
-		glEnableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
-		glVertexAttribPointer(m_pShader->m_iTexCoordAttribute, 2, GL_FLOAT, false, 0, m_aavecTexCoords[0].data());
+		for (size_t i = 0; i < MAX_TEXTURE_CHANNELS; i++)
+		{
+			if (m_pShader->m_aiTexCoordAttributes[i] != ~0)
+			{
+				glEnableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[i]);
+				glVertexAttribPointer(m_pShader->m_aiTexCoordAttributes[i], 2, GL_FLOAT, false, 0, m_aavecTexCoords[0].data());
+			}
+		}
 	}
 
 	if (m_bNormal && m_pShader->m_iNormalAttribute != ~0)
@@ -838,8 +844,11 @@ void CRenderingContext::EndRender()
 	glDrawArrays(m_iDrawMode, 0, m_avecVertices.size());
 
 	glDisableVertexAttribArray(m_pShader->m_iPositionAttribute);
-	if (m_pShader->m_iTexCoordAttribute != ~0)
-		glDisableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
+	for (size_t i = 0; i < MAX_TEXTURE_CHANNELS; i++)
+	{
+		if (m_pShader->m_aiTexCoordAttributes[i] != ~0)
+			glDisableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[i]);
+	}
 	if (m_pShader->m_iNormalAttribute != ~0)
 		glDisableVertexAttribArray(m_pShader->m_iNormalAttribute);
 	if (m_pShader->m_iColorAttribute != ~0)
@@ -926,23 +935,27 @@ void CRenderingContext::SetBitangentsBuffer(size_t iOffset, size_t iStride)
 	glVertexAttribPointer(m_pShader->m_iBitangentAttribute, 3, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
 }
 
-void CRenderingContext::SetTexCoordBuffer(float* pflBuffer, size_t iStride)
+void CRenderingContext::SetTexCoordBuffer(float* pflBuffer, size_t iStride, size_t iChannel)
 {
-	if (m_pShader->m_iTexCoordAttribute == ~0)
+	TAssert(iChannel >= 0 && iChannel < MAX_TEXTURE_CHANNELS);
+
+	if (m_pShader->m_aiTexCoordAttributes[iChannel] == ~0)
 		return;
 
-	glEnableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
-	glVertexAttribPointer(m_pShader->m_iTexCoordAttribute, 2, GL_FLOAT, false, iStride, pflBuffer);
+	glEnableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[iChannel]);
+	glVertexAttribPointer(m_pShader->m_aiTexCoordAttributes[iChannel], 2, GL_FLOAT, false, iStride, pflBuffer);
 }
 
-void CRenderingContext::SetTexCoordBuffer(size_t iOffset, size_t iStride)
+void CRenderingContext::SetTexCoordBuffer(size_t iOffset, size_t iStride, size_t iChannel)
 {
-	if (m_pShader->m_iTexCoordAttribute == ~0)
+	TAssert(iChannel >= 0 && iChannel < MAX_TEXTURE_CHANNELS);
+
+	if (m_pShader->m_aiTexCoordAttributes[iChannel] == ~0)
 		return;
 
 	TAssert(iOffset%4 == 0);	// Should be multiples of four because it's offsets in bytes and we're always working with floats or doubles
-	glEnableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
-	glVertexAttribPointer(m_pShader->m_iTexCoordAttribute, 2, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
+	glEnableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[iChannel]);
+	glVertexAttribPointer(m_pShader->m_aiTexCoordAttributes[iChannel], 2, GL_FLOAT, false, iStride, BUFFER_OFFSET(iOffset));
 }
 
 void CRenderingContext::SetCustomIntBuffer(const char* pszName, size_t iSize, size_t iOffset, size_t iStride)
@@ -973,8 +986,11 @@ void CRenderingContext::EndRenderVertexArray(size_t iVertices, bool bWireframe)
 		glDrawArrays(GL_TRIANGLES, 0, iVertices);
 
 	glDisableVertexAttribArray(m_pShader->m_iPositionAttribute);
-	if (m_pShader->m_iTexCoordAttribute != ~0)
-		glDisableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
+	for (size_t i = 0; i < MAX_TEXTURE_CHANNELS; i++)
+	{
+		if (m_pShader->m_aiTexCoordAttributes[i] != ~0)
+			glDisableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[i]);
+	}
 	if (m_pShader->m_iNormalAttribute != ~0)
 		glDisableVertexAttribArray(m_pShader->m_iNormalAttribute);
 	if (m_pShader->m_iTangentAttribute != ~0)
@@ -996,8 +1012,11 @@ void CRenderingContext::EndRenderVertexArrayTriangles(size_t iTriangles, int* pi
 	glDrawElements(GL_TRIANGLES, iTriangles*3, GL_UNSIGNED_INT, piIndices);
 
 	glDisableVertexAttribArray(m_pShader->m_iPositionAttribute);
-	if (m_pShader->m_iTexCoordAttribute != ~0)
-		glDisableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
+	for (size_t i = 0; i < MAX_TEXTURE_CHANNELS; i++)
+	{
+		if (m_pShader->m_aiTexCoordAttributes[i] != ~0)
+			glDisableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[i]);
+	}
 	if (m_pShader->m_iNormalAttribute != ~0)
 		glDisableVertexAttribArray(m_pShader->m_iNormalAttribute);
 	if (m_pShader->m_iTangentAttribute != ~0)
@@ -1020,8 +1039,11 @@ void CRenderingContext::EndRenderVertexArrayIndexed(size_t iBuffer, size_t iVert
 	glDrawElements(GL_TRIANGLES, iVertices, GL_UNSIGNED_SHORT, nullptr);
 
 	glDisableVertexAttribArray(m_pShader->m_iPositionAttribute);
-	if (m_pShader->m_iTexCoordAttribute != ~0)
-		glDisableVertexAttribArray(m_pShader->m_iTexCoordAttribute);
+	for (size_t i = 0; i < MAX_TEXTURE_CHANNELS; i++)
+	{
+		if (m_pShader->m_aiTexCoordAttributes[i] != ~0)
+			glDisableVertexAttribArray(m_pShader->m_aiTexCoordAttributes[i]);
+	}
 	if (m_pShader->m_iNormalAttribute != ~0)
 		glDisableVertexAttribArray(m_pShader->m_iNormalAttribute);
 	if (m_pShader->m_iTangentAttribute != ~0)
@@ -1055,7 +1077,7 @@ void CRenderingContext::RenderText(const tstring& sText, unsigned iLength, FTFon
 		return;
 
 	TAssert(m_pShader->m_iPositionAttribute >= 0);
-	TAssert(m_pShader->m_iTexCoordAttribute >= 0);
+	TAssert(m_pShader->m_aiTexCoordAttributes[0] >= 0);
 
 	SetUniform("mProjection", GetContext().m_mProjection);
 	SetUniform("mView", GetContext().m_mView);
@@ -1066,7 +1088,7 @@ void CRenderingContext::RenderText(const tstring& sText, unsigned iLength, FTFon
 	mTransformations.SetTranslation(Vector());
 	SetUniform("mGlobal", mTransformations);
 
-	ftglSetAttributeLocations(m_pShader->m_iPositionAttribute, m_pShader->m_iTexCoordAttribute);
+	ftglSetAttributeLocations(m_pShader->m_iPositionAttribute, m_pShader->m_aiTexCoordAttributes[0]);
 	pFont->Render(sText.c_str(), iLength, FTPoint(vecPosition.x, vecPosition.y, vecPosition.z));
 }
 
