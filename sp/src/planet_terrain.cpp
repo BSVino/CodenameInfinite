@@ -54,6 +54,8 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 
 			// Offsets are generated in planet space, add them right onto the quad position.
 			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + vecTerrain.vecOffset;
+
+			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
 		}
 	}
 
