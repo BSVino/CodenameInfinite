@@ -44,7 +44,6 @@ SAVEDATA_TABLE_END();
 INPUTS_TABLE_BEGIN(CPlanet);
 INPUTS_TABLE_END();
 
-DoubleVector CPlanet::s_vecCharacterLocalOrigin;
 CParallelizer* CPlanet::s_pShell2Generator = nullptr;
 
 Vector g_vecTerrainDirections[] =
@@ -131,7 +130,7 @@ void CPlanet::RenderUpdate()
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter->GetMoveParent() == this)
 	{
-		s_vecCharacterLocalOrigin = pCharacter->GetLocalOrigin().GetUnits(GetScale());
+		m_vecCharacterLocalOrigin = pCharacter->GetLocalOrigin().GetUnits(GetScale());
 	}
 	else
 	{
@@ -140,7 +139,7 @@ void CPlanet::RenderUpdate()
 		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
 		// Instead, transform the player to the planet's local once and do the math in local space.
 		CScalableMatrix mPlanetGlobalToLocal = GetGlobalToLocalTransform();
-		s_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
+		m_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
 	}
 
 	Vector vecOrigin = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
@@ -368,8 +367,8 @@ void CPlanet::SetRadius(const CScalableFloat& flRadius)
 
 	float flRadiusMeters = (float)flTerrainRadius.GetUnits(SCALE_METER);
 
-	int iMeterDepth = (int)(log(flRadiusMeters)/log(2.0f));
-	m_iChunkDepth = iMeterDepth - ChunkSize();
+	m_iMeterDepth = (int)(log(flRadiusMeters)/log(2.0f));
+	m_iChunkDepth = 7;
 }
 
 CScalableFloat CPlanet::GetCloseOrbit()

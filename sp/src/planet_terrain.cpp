@@ -166,7 +166,7 @@ void CPlanetTerrain::CreateShell2VBO()
 
 	m_iShell2VBO = 0;
 
-	int iHighLevels = 7;
+	int iHighLevels = m_pPlanet->ChunkDepth();
 
 	tvector<CTerrainPoint> avecTerrain;
 	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
@@ -184,14 +184,14 @@ void CPlanetTerrain::CreateShell2VBO()
 
 void CPlanetTerrain::Render(class CRenderingContext* c) const
 {
-	Vector vecPlayerDirection = m_pPlanet->s_vecCharacterLocalOrigin.Normalized();
+	double flDistance = m_pPlanet->m_vecCharacterLocalOrigin.Length();
+	Vector vecPlayerDirection = m_pPlanet->m_vecCharacterLocalOrigin / flDistance;
 
 	float flPlayerDot = vecPlayerDirection.Dot(GetDirection());
 	if (flPlayerDot < -0.60f)
 		return;
 
-	double flDistance = m_pPlanet->s_vecCharacterLocalOrigin.LengthSqr();
-	bool bLowRes = flDistance > 100.0*1000.0;	// 100*1000 - not a mistake. Switch to low at sqrt(100000)
+	bool bLowRes = flDistance > 300;
 
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter->GetNearestPlanet())

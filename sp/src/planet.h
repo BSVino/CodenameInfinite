@@ -56,12 +56,13 @@ public:
 
 	void						SetMinutesPerRevolution(float f) { m_flMinutesPerRevolution = f; }
 
-	const DoubleVector&			GetCharacterLocalOrigin() { return s_vecCharacterLocalOrigin; }
+	const DoubleVector&			GetCharacterLocalOrigin() { return m_vecCharacterLocalOrigin; }
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
 	const class CTerrainChunkManager* GetTerrainChunkManager() { return m_pTerrainChunkManager; }
-	size_t						ChunkSize() { return 7; };
+	size_t						ChunkSize() { return m_iMeterDepth-m_iChunkDepth; };
+	size_t						ChunkDepth() { return m_iChunkDepth; };
 
 	void						Debug_RebuildTerrain();
 
@@ -73,6 +74,9 @@ protected:
 	float						m_flMinutesPerRevolution;
 	int							m_iMinQuadRenderDepth;
 	int							m_iChunkDepth;
+	int							m_iMeterDepth;
+
+	DoubleVector				m_vecCharacterLocalOrigin;
 
 	bool						m_bOneSurface;
 
@@ -98,7 +102,6 @@ protected:
 	// 10 levels deep, 3 channels (x, y, z)
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];
 
-	static DoubleVector			s_vecCharacterLocalOrigin;
 	static class CParallelizer*	s_pShell2Generator;
 };
 
