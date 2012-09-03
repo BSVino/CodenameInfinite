@@ -242,7 +242,7 @@ size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsig
 	return iTriangles;
 }
 
-size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CLumpCoordinate>& aiExclude, size_t iLevels, size_t iRows)
+size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows)
 {
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
@@ -343,17 +343,17 @@ void CPlanetTerrain::RebuildShell2Indices()
 
 	int iHighLevels = m_pPlanet->LumpDepth();
 
-	tvector<CLumpCoordinate> aiLumpCoordinates;
-	for (size_t i = 0; i < m_pPlanet->m_pTerrainLumpManager->GetNumLumps(); i++)
+	tvector<CTerrainCoordinate> aiLumpCoordinates;
+	for (size_t i = 0; i < m_pPlanet->m_pLumpManager->GetNumLumps(); i++)
 	{
-		CTerrainLump* pLump = m_pPlanet->m_pTerrainLumpManager->GetLump(i);
+		CTerrainLump* pLump = m_pPlanet->m_pLumpManager->GetLump(i);
 		if (!pLump)
 			continue;
 
 		if (m_pPlanet->m_apTerrain[pLump->GetTerrain()] != this)
 			continue;
 
-		CLumpCoordinate& oCoord = aiLumpCoordinates.push_back();
+		CTerrainCoordinate& oCoord = aiLumpCoordinates.push_back();
 		pLump->GetCoordinates(oCoord.x, oCoord.y);
 	}
 
@@ -443,15 +443,14 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	return vecOffset;
 }
 
-bool CPlanetTerrain::FindLumpNearestToPlayer(DoubleVector2D& vecLumpMin, DoubleVector2D& vecLumpMax)
+bool CPlanetTerrain::FindAreaNearestToPlayer(size_t iAreaDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, DoubleVector2D& vecLumpMin, DoubleVector2D& vecLumpMax)
 {
-	size_t iLumpDepth = m_pPlanet->LumpDepth();
 	DoubleVector vecLocalPlayer = m_pPlanet->m_vecCharacterLocalOrigin;
 
-	DoubleVector2D vecMinCoord(0, 0);
-	DoubleVector2D vecMaxCoord(1, 1);
+	DoubleVector2D vecMinCoord = vecSearchMin;
+	DoubleVector2D vecMaxCoord = vecSearchMax;
 
-	for (size_t i = 0; i < iLumpDepth; i++)
+	for (size_t i = 0; i < iAreaDepth; i++)
 	{
 		bool bFound = false;
 		double flLowestDistanceSqr = FLT_MAX;

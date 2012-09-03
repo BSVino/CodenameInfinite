@@ -15,6 +15,7 @@ class CPlanet : public CBaseEntity
 {
 	friend class CPlanetTerrain;
 	friend class CTerrainLumpManager;
+	friend class CTerrainChunkManager;
 	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
 
 public:
@@ -60,10 +61,11 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
-	const class CTerrainLumpManager* GetTerrainLumpManager() { return m_pTerrainLumpManager; }
-	size_t						LumpSize() { return m_iMeterDepth-m_iLumpDepth; };
-	size_t						LumpDepth() { return m_iLumpDepth; };
-	size_t						PhysicsDepth() { return m_iMeterDepth-7; };
+	const class CTerrainLumpManager* GetLumpManager() { return m_pLumpManager; }
+	const class CTerrainChunkManager* GetChunkManager() { return m_pChunkManager; }
+	size_t						LumpDepth() { return m_iLumpDepth; };      // The depth at which lumps first appear.
+	size_t						ChunkDepth() { return m_iMeterDepth-7; };  // The depth at which chunks first appear.
+	size_t						MeterDepth() { return m_iMeterDepth; };    // The deepest depth.
 
 	class CPlanetTerrain*       GetTerrain(size_t iTerrain) { return m_apTerrain[iTerrain]; }
 
@@ -100,7 +102,8 @@ protected:
 		CPlanetTerrain*         m_apTerrain[6];
 	};
 
-	class CTerrainLumpManager*	m_pTerrainLumpManager;
+	class CTerrainLumpManager*  m_pLumpManager;
+	class CTerrainChunkManager* m_pChunkManager;
 
 	// 10 levels deep, 3 channels (x, y, z)
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];

@@ -17,6 +17,7 @@
 #include "star.h"
 #include "planet_terrain.h"
 #include "terrain_lumps.h"
+#include "terrain_chunks.h"
 
 REGISTER_ENTITY(CPlanet);
 
@@ -76,14 +77,16 @@ CPlanet::CPlanet()
 	for (size_t i = 0; i < 6; i++)
 		m_apTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
 
-	m_pTerrainLumpManager = new CTerrainLumpManager(this);
+	m_pLumpManager = new CTerrainLumpManager(this);
+	m_pChunkManager = new CTerrainChunkManager(this);
 
 	m_iMinQuadRenderDepth = 3;
 }
 
 CPlanet::~CPlanet()
 {
-	delete m_pTerrainLumpManager;
+	delete m_pLumpManager;
+	delete m_pChunkManager;
 
 	for (size_t i = 0; i < 6; i++)
 		delete m_apTerrain[i];
@@ -160,7 +163,8 @@ void CPlanet::RenderUpdate()
 	if (r_minquadrenderdepth.GetInt() >= 0)
 		m_iMinQuadRenderDepth = r_minquadrenderdepth.GetInt();
 
-	m_pTerrainLumpManager->Think();
+	m_pLumpManager->Think();
+	m_pChunkManager->Think();
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 		m_apTerrain[i]->Think();
@@ -185,7 +189,8 @@ CVar r_colorcodescales("r_colorcodescales", "off");
 CVar debug_showplanetcollision("debug_showplanetcollision", "off");
 CVar r_planets("r_planets", "on");
 CVar r_planet_shells("r_planet_shells", "on");
-CVar r_planet_Lumps("r_planet_Lumps", "on");
+CVar r_planet_lumps("r_planet_lumps", "on");
+CVar r_planet_chunks("r_planet_chunks", "on");
 
 void CPlanet::PostRender() const
 {
@@ -324,8 +329,11 @@ void CPlanet::PostRender() const
 			m_apTerrain[i]->Render(&c);
 	}
 
-	if (r_planet_Lumps.GetBool())
-		m_pTerrainLumpManager->Render();
+	if (r_planet_lumps.GetBool())
+		m_pLumpManager->Render();
+
+	if (r_planet_chunks.GetBool())
+		m_pChunkManager->Render();
 }
 
 void CPlanet::SetRandomSeed(size_t iSeed)

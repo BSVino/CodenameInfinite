@@ -1,0 +1,446 @@
+#include "terrain_chunks.h"
+
+#include <parallelize.h>
+
+#include <renderer/renderingcontext.h>
+#include <tinker/cvar.h>
+
+#include "sp_game.h"
+#include "sp_playercharacter.h"
+#include "sp_renderer.h"
+#include "star.h"
+#include "planet.h"
+#include "planet_terrain.h"
+#include "terrain_lumps.h"
+
+CParallelizer* CTerrainChunkManager::s_pChunkGenerator = nullptr;
+
+void GenerateChunkCallback(void* pJob)
+{
+	CChunkGenerationJob* pChunkJob = reinterpret_cast<CChunkGenerationJob*>(pJob);
+
+	pChunkJob->pManager->GenerateChunk(pChunkJob->iChunk);
+}
+
+CTerrainChunkManager::CTerrainChunkManager(CPlanet* pPlanet)
+{
+	if (!s_pChunkGenerator)
+	{
+		s_pChunkGenerator = new CParallelizer(GenerateChunkCallback, 1);
+		s_pChunkGenerator->Start();
+	}
+
+	m_pPlanet = pPlanet;
+
+	m_flNextChunkCheck = 0;
+}
+
+void CTerrainChunkManager::AddChunk(size_t iLump, const DoubleVector2D& vecChunkMin, const DoubleVector2D& vecChunkMax)
+{
+	CTerrainLump* pLump = m_pPlanet->GetLumpManager()->GetLump(iLump);
+	TAssert(pLump);
+	if (!pLump)
+		return;
+
+	size_t iIndex = ~0;
+	for (size_t i = 0; i < m_apChunks.size(); i++)
+	{
+		CTerrainChunk* pChunk = m_apChunks[i];
+		if (pChunk)
+		{
+			if (pChunk->m_iTerrain == pLump->m_iTerrain && pChunk->m_iLump == iLump && pChunk->m_vecMin == vecChunkMin && pChunk->m_vecMax == vecChunkMax)
+				return;
+		}
+		else if (!pChunk)
+			iIndex = i;
+	}
+
+	if (iIndex == ~0)
+	{
+		iIndex = m_apChunks.size();
+		m_apChunks.push_back();
+	}
+
+	m_apChunks[iIndex] = new CTerrainChunk(this, iIndex, pLump->m_iTerrain, iLump, vecChunkMin, vecChunkMax);
+	m_apChunks[iIndex]->Initialize();
+}
+
+void CTerrainChunkManager::RemoveChunk(size_t iChunk)
+{
+	if (iChunk == ~0)
+	{
+		TAssert(iChunk != ~0);
+		return;
+	}
+
+	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	oLock.Lock();
+	RemoveChunkNoLock(iChunk);
+}
+
+void CTerrainChunkManager::LumpRemoved(size_t iLump)
+{
+	for (size_t i = 0; i < m_apChunks.size(); i++)
+	{
+		if (!m_apChunks[i])
+			continue;
+
+		if (m_apChunks[i]->GetLump() == iLump)
+			RemoveChunk(i);
+	}
+}
+
+void CTerrainChunkManager::RemoveChunkNoLock(size_t iChunk)
+{
+	if (m_apChunks[iChunk] && m_apChunks[iChunk]->m_bGeneratingLowRes)
+		return;
+
+	delete m_apChunks[iChunk];
+	m_apChunks[iChunk] = NULL;
+}
+
+CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
+{
+	if (iChunk >= m_apChunks.size())
+		return NULL;
+
+	return m_apChunks[iChunk];
+}
+
+CVar terrain_chunkcheck("terrain_chunkcheck", "0.3");
+
+void CTerrainChunkManager::Think()
+{
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	if (pCharacter->GetNearestPlanet() != m_pPlanet)
+	{
+		CMutexLocker oLock = s_pChunkGenerator->GetLock();
+		if (oLock.TryLock())
+		{
+			size_t iChunksRemaining = 0;
+			tvector<size_t> aiRebuildLumps;
+
+			for (size_t i = 0; i < m_apChunks.size(); i++)
+			{
+				if (m_apChunks[i])
+				{
+					if (m_apChunks[i]->m_bGeneratingLowRes)
+					{
+						iChunksRemaining++;
+						continue;
+					}
+
+					bool bAdd = true;
+					for (size_t j = 0; j < aiRebuildLumps.size(); j++)
+					{
+						if (aiRebuildLumps[j] == m_apChunks[i]->GetLump())
+						{
+							bAdd = false;
+							break;
+						}
+					}
+
+					if (bAdd)
+						aiRebuildLumps.push_back(m_apChunks[i]->GetLump());
+
+					RemoveChunkNoLock(i);
+				}
+			}
+
+			for (size_t i = 0; i < aiRebuildLumps.size(); i++)
+			{
+				if (m_pPlanet->GetLumpManager()->GetLump(aiRebuildLumps[i]))
+					m_pPlanet->GetLumpManager()->GetLump(aiRebuildLumps[i])->RebuildIndices();
+			}
+
+			if (iChunksRemaining == 0)
+				m_apChunks.set_capacity(0);
+		}
+		return;
+	}
+
+	if (GameServer()->GetGameTime() > m_flNextChunkCheck)
+	{
+		AddNearbyChunks();
+
+		m_flNextChunkCheck = GameServer()->GetGameTime() + terrain_chunkcheck.GetFloat();
+	}
+
+	tvector<size_t> aiRebuildLumps;
+	for (size_t i = 0; i < m_apChunks.size(); i++)
+	{
+		CTerrainChunk* pChunk = m_apChunks[i];
+		if (!pChunk)
+			continue;
+
+		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr())
+		{
+			bool bAdd = true;
+			for (size_t j = 0; j < aiRebuildLumps.size(); j++)
+			{
+				if (aiRebuildLumps[j] == m_apChunks[i]->GetLump())
+				{
+					bAdd = false;
+					break;
+				}
+			}
+
+			if (bAdd)
+				aiRebuildLumps.push_back(m_apChunks[i]->GetLump());
+
+			RemoveChunk(i);
+		}
+
+		// If the chunk wasn't removed, let it think.
+		pChunk = m_apChunks[i];
+		if (!pChunk)
+			continue;
+
+		pChunk->Think();
+	}
+
+	for (size_t i = 0; i < aiRebuildLumps.size(); i++)
+	{
+		if (m_pPlanet->GetLumpManager()->GetLump(aiRebuildLumps[i]))
+			m_pPlanet->GetLumpManager()->GetLump(aiRebuildLumps[i])->RebuildIndices();
+	}
+}
+
+void CTerrainChunkManager::AddNearbyChunks()
+{
+	DoubleVector2D vecChunkMin;
+	DoubleVector2D vecChunkMax;
+
+	for (size_t j = 0; j < m_pPlanet->m_pLumpManager->GetNumLumps(); j++)
+	{
+		CTerrainLump* pLump = m_pPlanet->m_pLumpManager->GetLump(j);
+		if (!pLump)
+			continue;
+
+		for (size_t i = 0; i < 6; i++)
+		{
+			if (!m_pPlanet->m_apTerrain[i]->FindAreaNearestToPlayer(m_pPlanet->ChunkDepth()-m_pPlanet->LumpDepth(), pLump->m_vecMin, pLump->m_vecMax, vecChunkMin, vecChunkMax))
+				continue;
+
+			AddChunk(j, vecChunkMin, vecChunkMax);
+		}
+	}
+}
+
+void CTerrainChunkManager::GenerateChunk(size_t iChunk)
+{
+	CMutexLocker oLock = s_pChunkGenerator->GetLock();
+	oLock.Lock();
+		TAssert(iChunk >= 0 && iChunk < m_apChunks.size());
+		TAssert(m_apChunks[iChunk]);
+
+		if (iChunk >= m_apChunks.size() || !m_apChunks[iChunk])
+			return;
+
+		m_apChunks[iChunk]->m_bGeneratingLowRes = true;
+	oLock.Unlock();
+
+	m_apChunks[iChunk]->GenerateTerrain();
+}
+
+CVar r_markchunks("r_markchunks", "off");
+
+void CTerrainChunkManager::Render()
+{
+	if (r_markchunks.GetBool() && SPGame()->GetLocalPlayerCharacter()->GetNearestPlanet() == m_pPlanet)
+	{
+		for (size_t i = 0; i < m_apChunks.size(); i++)
+		{
+			CTerrainChunk* pChunk = m_apChunks[i];
+			if (!pChunk)
+				continue;
+
+			DoubleVector vecMinWorld = m_pPlanet->m_apTerrain[pChunk->m_iTerrain]->CoordToWorld(pChunk->m_vecMin) + m_pPlanet->m_apTerrain[pChunk->m_iTerrain]->GenerateOffset(pChunk->m_vecMin);
+			DoubleVector vecMaxWorld = m_pPlanet->m_apTerrain[pChunk->m_iTerrain]->CoordToWorld(pChunk->m_vecMax) + m_pPlanet->m_apTerrain[pChunk->m_iTerrain]->GenerateOffset(pChunk->m_vecMax);
+
+			CRenderingContext c(GameServer()->GetRenderer(), true);
+
+			c.SetDepthTest(false);
+			c.RenderWireBox(AABB(vecMinWorld, vecMaxWorld));
+		}
+	}
+
+	for (size_t i = 0; i < m_apChunks.size(); i++)
+	{
+		if (!m_apChunks[i])
+			continue;
+		
+		m_apChunks[i]->Render();
+	}
+}
+
+CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size_t iTerrain, size_t iLump, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax)
+{
+	m_pManager = pManager;
+	m_iChunk = iChunk;
+	m_iTerrain = iTerrain;
+	m_iLump = iLump;
+	m_vecMin = vecMin;
+	m_vecMax = vecMax;
+
+	CTerrainLump* pLump = m_pManager->m_pPlanet->GetLumpManager()->GetLump(m_iLump);
+	TAssert(pLump);
+
+	CPlanetTerrain* pTerrain = m_pManager->m_pPlanet->GetTerrain(m_iTerrain);
+
+	DoubleVector vecWorldMin = pTerrain->CoordToWorld(m_vecMin) + pTerrain->GenerateOffset(m_vecMin);
+	DoubleVector vecWorldMax = pTerrain->CoordToWorld(m_vecMax) + pTerrain->GenerateOffset(m_vecMax);
+	m_aabbBounds = TemplateAABB<double>(vecWorldMin, vecWorldMax);
+
+	m_iLowResTerrainVBO = 0;
+
+	size_t iResolution = (size_t)pow(2.0f, (float)m_pManager->m_pPlanet->ChunkDepth()-m_pManager->m_pPlanet->LumpDepth());
+	m_iX = (size_t)RemapVal((vecMin.x+vecMax.x)/2, pLump->m_vecMin.x, pLump->m_vecMax.x, 0, iResolution);
+	m_iY = (size_t)RemapVal((vecMin.y+vecMax.y)/2, pLump->m_vecMin.y, pLump->m_vecMax.y, 0, iResolution);
+}
+
+CTerrainChunk::~CTerrainChunk()
+{
+	if (m_iLowResTerrainVBO)
+	{
+		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainVBO);
+		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainIBO);
+	}
+}
+
+void CTerrainChunk::Initialize()
+{
+	CChunkGenerationJob oJob;
+	oJob.pManager = m_pManager;
+	oJob.iChunk = m_iChunk;
+	m_pManager->s_pChunkGenerator->AddJob(&oJob, sizeof(oJob));
+}
+
+void CTerrainChunk::Think()
+{
+	if (m_bGeneratingLowRes)
+	{
+		bool bUpdateTerrain = false;
+		CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
+		if (oLock.TryLock())
+		{
+			if (m_aflLowResDrop.size())
+			{
+				m_iLowResTerrainVBO = CRenderer::LoadVertexDataIntoGL(m_aflLowResDrop.size() * sizeof(float), m_aflLowResDrop.data());
+				m_iLowResTerrainIBO = CRenderer::LoadIndexDataIntoGL(m_aiLowResDrop.size() * sizeof(unsigned int), m_aiLowResDrop.data());
+				m_bGeneratingLowRes = false;
+				m_aflLowResDrop.set_capacity(0);
+				m_aiLowResDrop.set_capacity(0);
+				bUpdateTerrain = true;
+			}
+		}
+		oLock.Unlock();
+
+		if (bUpdateTerrain)
+		{
+			if (m_pManager->m_pPlanet->GetLumpManager()->GetLump(m_iLump))
+				m_pManager->m_pPlanet->GetLumpManager()->GetLump(m_iLump)->RebuildIndices();
+		}
+	}
+}
+
+void CTerrainChunk::GenerateTerrain()
+{
+	if (m_iLowResTerrainVBO)
+	{
+		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainVBO);
+		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainIBO);
+	}
+
+	m_iLowResTerrainVBO = 0;
+
+	int iHighestLevel = m_pManager->m_pPlanet->MeterDepth();
+	int iLowestLevel = m_pManager->m_pPlanet->ChunkDepth();
+
+	int iResolution = iHighestLevel-iLowestLevel;
+
+	CPlanetTerrain* pTerrain = m_pManager->m_pPlanet->GetTerrain(m_iTerrain);
+
+	DoubleVector2D vecCoordCenter = (m_vecMin + m_vecMax)/2;
+	m_vecLocalCenter = pTerrain->CoordToWorld(vecCoordCenter) + pTerrain->GenerateOffset(vecCoordCenter);
+
+	tvector<CTerrainPoint> avecTerrain;
+	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
+
+	tvector<float> aflVerts;
+	tvector<unsigned int> aiVerts;
+	size_t iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows);
+	m_iLowResTerrainIBOSize = iTriangles*3;
+
+	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
+	CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
+	oLock.Lock();
+		TAssert(!m_aflLowResDrop.size());
+		swap(m_aflLowResDrop, aflVerts);
+		swap(m_aiLowResDrop, aiVerts);
+}
+
+void CTerrainChunk::Render()
+{
+	if (!m_iLowResTerrainVBO)
+		return;
+
+	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eRenderScale >= SCALE_MEGAMETER)
+		return;
+
+	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlanet* pPlanet = m_pManager->m_pPlanet;
+	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
+	scale_t ePlanetScale = pPlanet->GetScale();
+	CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+	CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
+
+	CScalableVector vecChunkCenter = mPlanetTransform.TransformVector(CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin);
+
+	CScalableMatrix mChunkTransform = mPlanetTransform;
+	mChunkTransform.SetTranslation(vecChunkCenter);
+
+	Matrix4x4 mChunkTransformMeters = mChunkTransform.GetUnits(eRenderScale);
+
+	float flScale;
+	if (eRenderScale == SCALE_RENDER)
+		flScale = (float)CScalableFloat::ConvertUnits(1, ePlanetScale, SCALE_METER);
+	else
+		flScale = (float)CScalableFloat::ConvertUnits(1, ePlanetScale, eRenderScale);
+
+	CScalableMatrix mPlanetToLocal = mPlanetTransform.InvertedRT();
+	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eRenderScale);
+
+	CRenderingContext r(GameServer()->GetRenderer(), true);
+
+	r.ResetTransformations();
+
+	r.Transform(mChunkTransformMeters);
+	r.Scale(flScale, flScale, flScale);
+
+	r.SetUniform("vecStarLightPosition", vecStarLightPosition);
+
+	r.BeginRenderVertexArray(m_iLowResTerrainVBO);
+	r.SetPositionBuffer(0u, 10*sizeof(float));
+	r.SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
+	r.SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
+	r.SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
+	r.EndRenderVertexArrayIndexed(m_iLowResTerrainIBO, m_iLowResTerrainIBOSize);
+}
+
+void CTerrainChunk::GetCoordinates(unsigned short& x, unsigned short& y) const
+{
+	x = m_iX;
+	y = m_iY;
+}
+
+size_t CTerrainChunk::GetTerrain() const
+{
+	return m_iTerrain;
+}
+
+size_t CTerrainChunk::GetLump() const
+{
+	return m_iLump;
+}
