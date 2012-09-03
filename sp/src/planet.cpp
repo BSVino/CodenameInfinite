@@ -201,84 +201,10 @@ void CPlanet::PostRender() const
 
 	TPROF("CPlanet::PostRender");
 
-	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
-
-	if (debug_showplanetcollision.GetBool())
-	{
-		CSPCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
-		Vector vecForward = GameServer()->GetRenderer()->GetCameraVector();
-		CScalableVector vecUp = pLocalCharacter->GetUpVector();
-
-#if 0
-		CTraceResult tr;
-		
-		if (pLocalCharacter->GetMoveParent() == this)
-		{
-			// For the debug rendering code in the octree.
-			CRenderingContext c(GameServer()->GetRenderer());
-
-			CScalableMatrix mGlobal = GetGlobalTransform();
-			mGlobal.SetTranslation(CScalableVector());
-			c.Transform(mGlobal);
-
-			c.Translate(-pLocalCharacter->GetLocalOrigin().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
-
-			CScalableMatrix mGlobalToLocal = GetGlobalToLocalTransform();
-			vecUp = mGlobalToLocal.TransformVector(vecUp);
-			vecForward = mGlobalToLocal.TransformVector(vecForward);
-			CScalableVector vecCharacter = pLocalCharacter->GetLocalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			// I would normally never use const_cast if this weren't a block of debug code.
-			const_cast<CPlanet*>(this)->CollideLocal(const_cast<CPlanet*>(this), vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
-			tr.vecHit = GetGlobalTransform() * tr.vecHit;
-			tr.vecNormal = GetGlobalTransform().TransformNoTranslate(tr.vecNormal);
-		}
-		else
-		{
-			// For the debug rendering code in the octree.
-			CRenderingContext c(GameServer()->GetRenderer());
-			c.Translate(-pLocalCharacter->GetGlobalOrigin().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
-			c.Transform(GetGlobalTransform().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
-
-			CScalableVector vecCharacter = pLocalCharacter->GetGlobalOrigin() + vecUp * pLocalCharacter->EyeHeight();
-			const_cast<CPlanet*>(this)->Collide(const_cast<CPlanet*>(this), vecCharacter, vecCharacter + vecForward * CScalableFloat(100.0f, SCALE_GIGAMETER), tr);
-		}
-
-		if (tr.bHit)
-		{
-			CRenderingContext c(GameServer()->GetRenderer());
-
-			CScalableVector vecRender = tr.vecHit - pLocalCharacter->GetGlobalOrigin();
-			c.Translate(vecRender.GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
-			c.SetColor(Color(255, 255, 255));
-			c.BeginRenderDebugLines();
-			c.Vertex(tr.vecNormal*-10000);
-			c.Vertex(tr.vecNormal*10000);
-			c.EndRender();
-			c.SetColor(Color(255, 0, 0));
-			c.BeginRenderDebugLines();
-			c.Vertex(Vector(-10000, 0, 0));
-			c.Vertex(Vector(10000, 0, 0));
-			c.EndRender();
-			c.SetColor(Color(0, 255, 0));
-			c.BeginRenderDebugLines();
-			c.Vertex(Vector(0, -10000, 0));
-			c.Vertex(Vector(0, 10000, 0));
-			c.EndRender();
-			c.SetColor(Color(0, 0, 255));
-			c.BeginRenderDebugLines();
-			c.Vertex(Vector(0, 0, -10000));
-			c.Vertex(Vector(0, 0, 10000));
-			c.EndRender();
-			c.SetColor(Color(255, 255, 255));
-			c.Scale(0.1f, 0.1f, 0.1f);
-			c.RenderSphere();
-		}
-#endif
-	}
-
 	if (!r_planets.GetBool())
 		return;
 
+	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
