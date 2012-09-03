@@ -1,9 +1,11 @@
 #include "sp_playercharacter.h"
 
 #include <tinker/application.h>
+#include <tinker/cvar.h>
 
 #include "planet.h"
 #include "sp_camera.h"
+#include "planet_terrain.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
 
@@ -15,6 +17,8 @@ SAVEDATA_TABLE_BEGIN(CPlayerCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bWalkSpeedOverride);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bHyperdrive);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPCamera, m_hCamera);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextApproximateElevation);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flApproximateElevation);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlayerCharacter);
@@ -35,10 +39,17 @@ void CPlayerCharacter::Spawn()
 
 	m_hCamera = GameServer()->Create<CSPCamera>("CSPCamera");
 	m_hCamera->SetCharacter(this);
+
+	m_flNextApproximateElevation = 0;
 }
+
+CVar sv_approximateelevation("sv_approximateelevation", "1");
 
 void CPlayerCharacter::Think()
 {
+	if (GameServer()->GetGameTime() > m_flNextApproximateElevation)
+		ApproximateElevation();
+
 	BaseClass::Think();
 }
 
@@ -100,6 +111,13 @@ void CPlayerCharacter::StopFlying()
 	m_bFlying = false;
 }
 
+void CPlayerCharacter::EnteredAtmosphere()
+{
+	BaseClass::EnteredAtmosphere();
+
+	ApproximateElevation();
+}
+
 CScalableFloat CPlayerCharacter::CharacterSpeed()
 {
 	if (!m_bFlying || m_bWalkSpeedOverride)
@@ -127,7 +145,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 		if (flDistance < flAtmosphere)
 		{
 			CScalableFloat flGroundSpeed = CScalableFloat(0.5f, SCALE_KILOMETER);
-			return RemapValClamped(flDistance, pPlanet->GetRadius(), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
+			return RemapValClamped(flDistance, CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
 		if (flDistance > flCloseOrbit)
@@ -144,6 +162,27 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 	}
 	else
 		return flMaxSpeed;
+}
+
+void CPlayerCharacter::ApproximateElevation()
+{
+	CPlanet* pPlanet = FindNearestPlanet();
+	if (!pPlanet)
+		return;
+
+	m_flNextApproximateElevation = GameServer()->GetGameTime() + sv_approximateelevation.GetFloat();
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		DoubleVector2D vecLumpMin;
+		DoubleVector2D vecLumpMax;
+
+		if (!pPlanet->GetTerrain(i)->FindAreaNearestToPlayer(pPlanet->LumpDepth(), DoubleVector2D(0, 0), DoubleVector2D(1, 1), vecLumpMin, vecLumpMax))
+			continue;
+
+		m_flApproximateElevation = (pPlanet->GetTerrain(i)->CoordToWorld((vecLumpMin + vecLumpMax)/2) + pPlanet->GetTerrain(i)->GenerateOffset((vecLumpMin + vecLumpMax)/2)).Length();
+		return;
+	}
 }
 
 const CScalableVector CPlayerCharacter::GetGlobalGravity() const

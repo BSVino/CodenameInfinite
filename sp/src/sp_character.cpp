@@ -51,6 +51,8 @@ void CSPCharacter::Think()
 	{
 		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
 		m_flRollFromSpace = GetGlobalAngles().r;
+
+		EnteredAtmosphere();
 	}
 
 	SetMoveParent(pPlanet);

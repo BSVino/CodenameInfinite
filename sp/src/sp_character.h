@@ -41,6 +41,8 @@ public:
 
 	void						StandOnNearestPlanet();
 
+	virtual void                EnteredAtmosphere() {};
+
 	virtual const TFloat        GetBoundingRadius() const { return 2.0f; };
 	virtual CScalableFloat		EyeHeight() const;
 	virtual TFloat				JumpStrength();
