@@ -96,7 +96,7 @@ void CParallelizeThread::Process()
 	}
 }
 
-CParallelizer::CParallelizer(JobCallback pfnCallback)
+CParallelizer::CParallelizer(JobCallback pfnCallback, int iThreads)
 {
 	pthread_mutex_init(&m_iDataMutex, NULL);
 	pthread_mutex_init(&m_iJobsMutex, NULL);
@@ -104,10 +104,13 @@ CParallelizer::CParallelizer(JobCallback pfnCallback)
 	m_iJobsGiven = 0;
 	m_iJobsDone = 0;
 
-	// Insert all first so that reallocations are all done before we pass the pointers to the threads.
-	m_aThreads.insert(m_aThreads.begin(), GetNumberOfProcessors(), CParallelizeThread());
+	if (iThreads <= 0)
+		iThreads = GetNumberOfProcessors();
 
-	for (size_t i = 0; i < GetNumberOfProcessors(); i++)
+	// Insert all first so that reallocations are all done before we pass the pointers to the threads.
+	m_aThreads.insert(m_aThreads.begin(), iThreads, CParallelizeThread());
+
+	for (size_t i = 0; i < (size_t)iThreads; i++)
 	{
 		CParallelizeThread* pThread = &m_aThreads[i];
 
@@ -219,6 +222,11 @@ void CParallelizer::RestartJobs()
 void CParallelizer::LockData()
 {
 	pthread_mutex_lock(&m_iDataMutex);
+}
+
+bool CParallelizer::TryLockData()
+{
+	return pthread_mutex_trylock(&m_iDataMutex) == 0;
 }
 
 void CParallelizer::UnlockData()

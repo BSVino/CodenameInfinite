@@ -771,7 +771,7 @@ size_t CRenderer::LoadVertexDataIntoGL(size_t iSizeInBytes, float* aflVertices)
 	return iVBO;
 }
 
-size_t CRenderer::LoadIndexDataIntoGL(size_t iSizeInBytes, unsigned short* aiIndices)
+size_t CRenderer::LoadIndexDataIntoGL(size_t iSizeInBytes, unsigned int* aiIndices)
 {
 	GLuint iVBO;
 	glGenBuffers(1, &iVBO);

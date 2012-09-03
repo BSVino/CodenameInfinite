@@ -63,6 +63,9 @@ public:
 	const class CTerrainChunkManager* GetTerrainChunkManager() { return m_pTerrainChunkManager; }
 	size_t						ChunkSize() { return m_iMeterDepth-m_iChunkDepth; };
 	size_t						ChunkDepth() { return m_iChunkDepth; };
+	size_t						PhysicsDepth() { return m_iMeterDepth-7; };
+
+	class CPlanetTerrain*       GetTerrain(size_t iTerrain) { return m_apTerrain[iTerrain]; }
 
 	void						Debug_RebuildTerrain();
 
@@ -94,7 +97,7 @@ protected:
 			CPlanetTerrain*		m_pTerrainUp;
 			CPlanetTerrain*		m_pTerrainDn;
 		};
-		CPlanetTerrain*			m_pTerrain[6];
+		CPlanetTerrain*         m_apTerrain[6];
 	};
 
 	class CTerrainChunkManager*	m_pTerrainChunkManager;

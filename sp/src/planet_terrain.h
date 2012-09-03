@@ -12,7 +12,6 @@ public:
 	DoubleVector2D		vec2DPosition;
 	Vector				vecNormal;
 	DoubleVector2D		vecDetail;
-	DoubleVector		vecOffset;
 };
 
 class CShell2GenerationJob
@@ -30,7 +29,8 @@ public:
 
 public:
 	void						Think();
-	size_t						BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const Vector2D& vecMin, const Vector2D vecMax);
+	static size_t               BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows);
+	size_t						BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();
 
@@ -38,7 +38,8 @@ public:
 
 	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
 
-	virtual DoubleVector2D		WorldToCoord(const DoubleVector& vecWorld) const;
+	bool                        FindChunkNearestToPlayer(DoubleVector2D& vecChunkMin, DoubleVector2D& vecChunkMax);
+
 	virtual DoubleVector		CoordToWorld(const TemplateVector2D<double>& vecTree) const;
 
 	Vector						GetDirection() const { return m_vecDirection; }
@@ -56,7 +57,7 @@ protected:
 
 	bool						m_bGeneratingShell2;
 	tvector<float>				m_aflShell2Drop;
-	tvector<unsigned short>     m_aiShell2Drop;
+	tvector<unsigned int>       m_aiShell2Drop;
 };
 
 #endif

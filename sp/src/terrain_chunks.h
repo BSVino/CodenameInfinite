@@ -9,25 +9,49 @@
 #include "planet_terrain.h"
 #include "sp_common.h"
 
-class CTerrainChunk
+class CChunkGenerationJob
 {
 public:
-										CTerrainChunk(class CTerrainChunkManager* pManager);
+	class CTerrainChunkManager*	pManager;
+	size_t                      iChunk;
+};
+
+class CTerrainChunk
+{
+	friend class CTerrainChunkManager;
+
+public:
+										CTerrainChunk(class CTerrainChunkManager* pManager, size_t iChunk, size_t iTerrain, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax);
 										~CTerrainChunk();
 
 public:
+	void								Initialize();
+
 	void								Think();
-	void								BuildBranchToDepth();
+	void								GenerateTerrain();
 
-	void								Render(class CRenderingContext* c);
-
-	size_t								GetDepth() { return m_iDepth; }
+	void								Render();
 
 protected:
 	class CTerrainChunkManager*			m_pManager;
+	size_t                              m_iChunk;
 
-	size_t								m_iDepth;
-	size_t								m_iMaxDepth;
+	size_t                              m_iTerrain;
+
+	DoubleVector2D                      m_vecMin;
+	DoubleVector2D                      m_vecMax;
+
+	DoubleVector                        m_vecLocalCenter;	// Center in planet space
+
+	TemplateAABB<double>				m_aabbBounds;
+
+	size_t								m_iLowResTerrainVBO;
+	size_t								m_iLowResTerrainIBO;
+	size_t								m_iLowResTerrainIBOSize;
+
+	bool                                m_bGeneratingLowRes;
+	tvector<float>                      m_aflLowResDrop;
+	tvector<unsigned int>               m_aiLowResDrop;
 };
 
 class CTerrainChunkManager
@@ -38,21 +62,27 @@ public:
 										CTerrainChunkManager(class CPlanet* pPlanet);
 
 public:
-	void								AddChunk();
-	void								RemoveChunk();
-	size_t								FindChunk() const;
+	void								AddChunk(size_t iTerrain, const DoubleVector2D& vecChunkMin, const DoubleVector2D& vecChunkMax);
+	void								RemoveChunk(size_t iChunk);
+
 	CTerrainChunk*						GetChunk(size_t iChunk) const;
 	size_t								GetNumChunks() const { return m_apChunks.size(); }
 
 	void								Think();
-	void								ProcessChunkRendering();
+	void                                AddNearbyChunks();
+	void								GenerateChunk(size_t iChunk);
 	void								Render();
+
+private:
+	void								RemoveChunkNoLock(size_t iChunk);
 
 protected:
 	class CPlanet*						m_pPlanet;
 	tvector<CTerrainChunk*>             m_apChunks;
-	tmap<void*, size_t> m_apBranchChunks;
-	tmap<scale_t, tvector<CTerrainChunk*> > m_apRenderChunks;
+
+	double								m_flNextChunkCheck;
+
+	static class CParallelizer*         s_pChunkGenerator;
 };
 
 #endif

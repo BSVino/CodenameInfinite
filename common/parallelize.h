@@ -52,7 +52,7 @@ public:
 	friend class CParallelizeThread;
 
 public:
-									CParallelizer(JobCallback pfnCallback);
+									CParallelizer(JobCallback pfnCallback, int iThreads = 0);
 									~CParallelizer();
 
 public:
@@ -66,6 +66,7 @@ public:
 	void							RestartJobs();
 
 	void							LockData();
+	bool                            TryLockData();
 	void							UnlockData();
 
 	size_t							GetJobsTotal() { return m_iJobsGiven; };

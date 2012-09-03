@@ -1029,6 +1029,8 @@ void CRenderingContext::EndRenderVertexArrayTriangles(size_t iTriangles, int* pi
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+CVar r_wireframe("r_wireframe", "off");
+
 void CRenderingContext::EndRenderVertexArrayIndexed(size_t iBuffer, size_t iVertices)
 {
 	SetUniform("mProjection", GetContext().m_mProjection);
@@ -1036,7 +1038,7 @@ void CRenderingContext::EndRenderVertexArrayIndexed(size_t iBuffer, size_t iVert
 	SetUniform("mGlobal", GetContext().m_mTransformations);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iBuffer);
-	glDrawElements(GL_TRIANGLES, iVertices, GL_UNSIGNED_SHORT, nullptr);
+	glDrawElements(r_wireframe.GetBool()?GL_LINES:GL_TRIANGLES, iVertices, GL_UNSIGNED_INT, nullptr);
 
 	glDisableVertexAttribArray(m_pShader->m_iPositionAttribute);
 	for (size_t i = 0; i < MAX_TEXTURE_CHANNELS; i++)

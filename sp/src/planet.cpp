@@ -67,14 +67,14 @@ CPlanet::CPlanet()
 {
 	if (!s_pShell2Generator)
 	{
-		s_pShell2Generator = new CParallelizer(GenerateShell2Callback);
+		s_pShell2Generator = new CParallelizer(GenerateShell2Callback, 1);
 		s_pShell2Generator->Start();
 	}
 
 	m_iRandomSeed = 0;
 
 	for (size_t i = 0; i < 6; i++)
-		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
+		m_apTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
 
 	m_pTerrainChunkManager = new CTerrainChunkManager(this);
 
@@ -86,7 +86,7 @@ CPlanet::~CPlanet()
 	delete m_pTerrainChunkManager;
 
 	for (size_t i = 0; i < 6; i++)
-		delete m_pTerrain[i];
+		delete m_apTerrain[i];
 }
 
 void CPlanet::Precache()
@@ -163,14 +163,14 @@ void CPlanet::RenderUpdate()
 	m_pTerrainChunkManager->Think();
 
 	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
-		m_pTerrain[i]->Think();
+		m_apTerrain[i]->Think();
 }
 
 bool CPlanet::ShouldRenderAtScale(scale_t eScale) const
 {
 	if (eScale >= SCALE_MEGAMETER)
 //	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
-//		if (m_pTerrain[i]->m_apRenderBranches.find(eScale) != m_pTerrain[i]->m_apRenderBranches.end())
+//		if (m_apTerrain[i]->m_apRenderBranches.find(eScale) != m_apTerrain[i]->m_apRenderBranches.end())
 			return true;
 
 	return false;
@@ -183,9 +183,9 @@ const CScalableFloat CPlanet::GetRenderRadius() const
 
 CVar r_colorcodescales("r_colorcodescales", "off");
 CVar debug_showplanetcollision("debug_showplanetcollision", "off");
-CVar r_planetoctree("r_planetoctree", "off");
-CVar r_planetcollision("r_planetcollision", "off");
 CVar r_planets("r_planets", "on");
+CVar r_planet_shells("r_planet_shells", "on");
+CVar r_planet_chunks("r_planet_chunks", "on");
 
 void CPlanet::PostRender() const
 {
@@ -318,10 +318,14 @@ void CPlanet::PostRender() const
 	else
 		c.SetColor(Color(255, 255, 255));
 
-	for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
-		m_pTerrain[i]->Render(&c);
+	if (r_planet_shells.GetBool())
+	{
+		for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
+			m_apTerrain[i]->Render(&c);
+	}
 
-	m_pTerrainChunkManager->Render();
+	if (r_planet_chunks.GetBool())
+		m_pTerrainChunkManager->Render();
 }
 
 void CPlanet::SetRandomSeed(size_t iSeed)
@@ -339,10 +343,10 @@ void CPlanet::SetRadius(const CScalableFloat& flRadius)
 {
 	m_flRadius = flRadius;
 
-	DoubleVector vec1 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(0, 0));
-	DoubleVector vec2 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(1, 0));
-	DoubleVector vec3 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(1, 1));
-	DoubleVector vec4 = m_pTerrain[0]->CoordToWorld(DoubleVector2D(0, 1));
+	DoubleVector vec1 = m_apTerrain[0]->CoordToWorld(DoubleVector2D(0, 0));
+	DoubleVector vec2 = m_apTerrain[0]->CoordToWorld(DoubleVector2D(1, 0));
+	DoubleVector vec3 = m_apTerrain[0]->CoordToWorld(DoubleVector2D(1, 1));
+	DoubleVector vec4 = m_apTerrain[0]->CoordToWorld(DoubleVector2D(0, 1));
 
 	DoubleVector vecCenter = (vec1 + vec2 + vec3 + vec4)/4;
 
@@ -391,8 +395,8 @@ CCommand planet_terrainrebuild("planet_terrainrebuild", Planet_RebuildTerrain);
 void CPlanet::Debug_RebuildTerrain()
 {
 	for (size_t i = 0; i < 6; i++)
-		delete m_pTerrain[i];
+		delete m_apTerrain[i];
 
 	for (size_t i = 0; i < 6; i++)
-		m_pTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
+		m_apTerrain[i] = new CPlanetTerrain(this, g_vecTerrainDirections[i]);
 }

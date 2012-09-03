@@ -38,7 +38,7 @@ void CPlanetTerrain::Think()
 		if (m_aflShell2Drop.size())
 		{
 			m_iShell2VBO = CRenderer::LoadVertexDataIntoGL(m_aflShell2Drop.size() * sizeof(float), m_aflShell2Drop.data());
-			m_iShell2IBO = CRenderer::LoadIndexDataIntoGL(m_aiShell2Drop.size() * sizeof(unsigned short), m_aiShell2Drop.data());
+			m_iShell2IBO = CRenderer::LoadIndexDataIntoGL(m_aiShell2Drop.size() * sizeof(unsigned int), m_aiShell2Drop.data());
 			m_bGeneratingShell2 = false;
 			m_aflShell2Drop.set_capacity(0);
 			m_aiShell2Drop.set_capacity(0);
@@ -66,34 +66,34 @@ void CPlanetTerrain::Think()
 	}
 }
 
-size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const Vector2D& vecMin, const Vector2D vecMax)
+size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter)
 {
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iDepth);
 	size_t iVertsPerRow = iQuadsPerRow + 1;
 	avecTerrain.resize(iVertsPerRow*iVertsPerRow);
 
-	size_t iDetailLevel = (size_t)pow(2.0, (double)iDepth);
+	size_t iDetailLevel = (size_t)pow(2.0, (double)m_pPlanet->m_iMeterDepth);
 
 	for (size_t x = 0; x < iVertsPerRow; x++)
 	{
-		float flX = RemapVal((float)x, 0, (float)iVertsPerRow-1, vecMin.x, vecMax.x);
+		double flX = RemapVal((double)x, 0, (double)iVertsPerRow-1, vecMin.x, vecMax.x);
 
 		for (size_t y = 0; y < iVertsPerRow; y++)
 		{
-			float flY = RemapVal((float)y, 0, (float)iVertsPerRow-1, vecMin.y, vecMax.y);
+			double flY = RemapVal((double)y, 0, (double)iVertsPerRow-1, vecMin.y, vecMax.y);
 
-			Vector2D vecPoint(flX, flY);
+			DoubleVector2D vecPoint(flX, flY);
 
 			CTerrainPoint& vecTerrain = avecTerrain[y*iVertsPerRow + x];
 
 			vecTerrain.vec2DPosition = vecPoint;
 
-			vecTerrain.vecOffset = GenerateOffset(vecPoint);
-
 			// Offsets are generated in planet space, add them right onto the quad position.
-			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + vecTerrain.vecOffset;
+			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + GenerateOffset(vecPoint);
 
 			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
+
+			vecTerrain.vec3DPosition -= vecCenter;
 
 			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (float)iDetailLevel;
 		}
@@ -145,14 +145,14 @@ size_t BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTe
 	return iTriangles;
 }
 
-size_t BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned short>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
+size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
 {
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
 	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
 	aiIndices.reserve(iTriangles * 3);
 
-	aflVerts.reserve(avecTerrain.size());
+	aflVerts.reserve(avecTerrain.size()*iVertSize);
 
 	size_t iTerrainSize = avecTerrain.size();
 	for (size_t x = 0; x < iTerrainSize; x++)
@@ -162,10 +162,15 @@ size_t BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned short>& aiIn
 	{
 		for (size_t y = 0; y < iRows-1; y++)
 		{
-			unsigned short i1 = y*iRows + x;
-			unsigned short i2 = y*iRows + (x+1);
-			unsigned short i3 = (y+1)*iRows + (x+1);
-			unsigned short i4 = (y+1)*iRows + x;
+			unsigned int i1 = y*iRows + x;
+			unsigned int i2 = y*iRows + (x+1);
+			unsigned int i3 = (y+1)*iRows + (x+1);
+			unsigned int i4 = (y+1)*iRows + x;
+
+			TAssert(i1 < iTerrainSize);
+			TAssert(i2 < iTerrainSize);
+			TAssert(i3 < iTerrainSize);
+			TAssert(i4 < iTerrainSize);
 
 			aiIndices.push_back(i1);
 			aiIndices.push_back(i2);
@@ -193,7 +198,7 @@ void CPlanetTerrain::CreateShell1VBO()
 	int iHighLevels = 3;
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
+	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
 
 	tvector<float> aflVerts;
 	size_t iTriangles = BuildVerts(aflVerts, avecTerrain, iHighLevels, iRows);
@@ -205,17 +210,20 @@ void CPlanetTerrain::CreateShell1VBO()
 void CPlanetTerrain::CreateShell2VBO()
 {
 	if (m_iShell2VBO)
+	{
 		CRenderer::UnloadVertexDataFromGL(m_iShell2VBO);
+		CRenderer::UnloadVertexDataFromGL(m_iShell2IBO);
+	}
 
 	m_iShell2VBO = 0;
 
 	int iHighLevels = m_pPlanet->ChunkDepth();
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1));
+	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
 
 	tvector<float> aflVerts;
-	tvector<unsigned short> aiVerts;
+	tvector<unsigned int> aiVerts;
 	size_t iTriangles = BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iHighLevels, iRows);
 	m_iShell2IBOSize = iTriangles*3;
 
@@ -302,54 +310,75 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	return vecOffset;
 }
 
-DoubleVector2D CPlanetTerrain::WorldToCoord(const DoubleVector& v) const
+bool CPlanetTerrain::FindChunkNearestToPlayer(DoubleVector2D& vecChunkMin, DoubleVector2D& vecChunkMax)
 {
-	// This hasn't been updated to match QuadToWorldTree()
-	TAssert(false);
+	size_t iChunkDepth = m_pPlanet->ChunkDepth();
+	DoubleVector vecLocalPlayer = m_pPlanet->m_vecCharacterLocalOrigin;
 
-	// Find the spot on the planet's surface that this point is closest to.
-	DoubleVector vecPlanetOrigin = m_pPlanet->GetGlobalOrigin();
-	DoubleVector vecPointDirection = (v - vecPlanetOrigin).Normalized();
+	DoubleVector2D vecMinCoord(0, 0);
+	DoubleVector2D vecMaxCoord(1, 1);
 
-	DoubleVector vecDirection = GetDirection();
-
-	if (vecPointDirection.Dot(vecDirection) <= 0)
-		return DoubleVector2D(-1, -1);
-
-	int iBig;
-	int iX;
-	int iY;
-	if (vecDirection[0] != 0)
+	for (size_t i = 0; i < iChunkDepth; i++)
 	{
-		iBig = 0;
-		iX = 1;
-		iY = 2;
+		bool bFound = false;
+		double flLowestDistanceSqr = FLT_MAX;
+		DoubleVector2D vecNearestQuadMin;
+		DoubleVector2D vecNearestQuadMax;
+
+		for (size_t j = 0; j < 4; j++)
+		{
+			DoubleVector2D vecQuadMin;
+			DoubleVector2D vecQuadMax;
+
+			if (j == 0)
+			{
+				vecQuadMin = vecMinCoord;
+				vecQuadMax = (vecMinCoord + vecMaxCoord)/2;
+			}
+			else if (j == 1)
+			{
+				vecQuadMin = DoubleVector2D(vecMinCoord.x, (vecMinCoord.y + vecMaxCoord.y)/2);
+				vecQuadMax = DoubleVector2D((vecMinCoord.x + vecMaxCoord.x)/2, vecMaxCoord.y);
+			}
+			else if (j == 2)
+			{
+				vecQuadMin = DoubleVector2D((vecMinCoord.x + vecMaxCoord.x)/2, vecMinCoord.y);
+				vecQuadMax = DoubleVector2D(vecMaxCoord.x, (vecMinCoord.y + vecMaxCoord.y)/2);
+			}
+			else
+			{
+				vecQuadMin = (vecMinCoord + vecMaxCoord)/2;
+				vecQuadMax = vecMaxCoord;
+			}
+
+			DoubleVector vecMinWorld = CoordToWorld(vecQuadMin) + GenerateOffset(vecQuadMin);
+			DoubleVector vecMaxWorld = CoordToWorld(vecQuadMax) + GenerateOffset(vecQuadMax);
+
+			TemplateAABB<double> aabbWorld(vecMinWorld, vecMaxWorld);
+
+			double flDistanceSqr = aabbWorld.Center().DistanceSqr(vecLocalPlayer);
+			if (flDistanceSqr < flLowestDistanceSqr && flDistanceSqr < aabbWorld.Size().LengthSqr())
+			{
+				bFound = true;
+
+				flLowestDistanceSqr = flDistanceSqr;
+
+				vecNearestQuadMin = vecQuadMin;
+				vecNearestQuadMax = vecQuadMax;
+			}
+		}
+
+		if (!bFound)
+			return false;
+
+		vecMinCoord = vecNearestQuadMin;
+		vecMaxCoord = vecNearestQuadMax;
 	}
-	else if (vecDirection[1] != 0)
-	{
-		iBig = 1;
-		iX = 0;
-		iY = 2;
-	}
-	else
-	{
-		iBig = 2;
-		iX = 0;
-		iY = 1;
-	}
 
-	// Shoot a ray from (0,0,0) through (a,b,c) until it hits a face of the bounding cube.
-	// The faces of the bounding cube are specified by GetDirection() above.
-	// If the ray hits the +z face at (x,y,z) then (x,y,1) is a scalar multiple of (a,b,c).
-	// (x,y,1) = r*(a,b,c), so 1 = r*c and r = 1/c
-	// Then we can figure x and y with x = a*r and y = b*r
+	vecChunkMin = vecMinCoord;
+	vecChunkMax = vecMaxCoord;
 
-	double r = 1/vecPointDirection[iBig];
-
-	double x = RemapVal(vecPointDirection[iX]*r, -1, 1, 0, 1);
-	double y = RemapVal(vecPointDirection[iY]*r, -1, 1, 0, 1);
-
-	return DoubleVector2D(x, y);
+	return true;
 }
 
 DoubleVector CPlanetTerrain::CoordToWorld(const DoubleVector2D& v) const
