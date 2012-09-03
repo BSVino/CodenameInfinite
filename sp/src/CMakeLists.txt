@@ -18,7 +18,7 @@ set (SPINTRO_SOURCES
 
 	planet.cpp
 	planet_terrain.cpp
-	terrain_chunks.cpp
+	terrain_lumps.cpp
 	star.cpp
 
 	sp_common.cpp

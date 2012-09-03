@@ -20,7 +20,7 @@ public:
 	class CPlanetTerrain*	pTerrain;
 };
 
-class CChunkCoordinate
+class CLumpCoordinate
 {
 public:
 	unsigned short  x;
@@ -37,7 +37,7 @@ public:
 public:
 	void						Think();
 	static size_t               BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows);
-	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CChunkCoordinate>& aiExclude, size_t iLevels, size_t iRows);
+	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CLumpCoordinate>& aiExclude, size_t iLevels, size_t iRows);
 	size_t						BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();
@@ -47,7 +47,7 @@ public:
 
 	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
 
-	bool                        FindChunkNearestToPlayer(DoubleVector2D& vecChunkMin, DoubleVector2D& vecChunkMax);
+	bool                        FindLumpNearestToPlayer(DoubleVector2D& vecLumpMin, DoubleVector2D& vecLumpMax);
 
 	virtual DoubleVector		CoordToWorld(const TemplateVector2D<double>& vecTree) const;
 

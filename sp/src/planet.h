@@ -9,12 +9,12 @@
 #define TERRAIN_NOISE_ARRAY_SIZE 15
 
 class CPlanetTerrain;
-class CTerrainChunk;
+class CTerrainLump;
 
 class CPlanet : public CBaseEntity
 {
 	friend class CPlanetTerrain;
-	friend class CTerrainChunkManager;
+	friend class CTerrainLumpManager;
 	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
 
 public:
@@ -60,9 +60,9 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
-	const class CTerrainChunkManager* GetTerrainChunkManager() { return m_pTerrainChunkManager; }
-	size_t						ChunkSize() { return m_iMeterDepth-m_iChunkDepth; };
-	size_t						ChunkDepth() { return m_iChunkDepth; };
+	const class CTerrainLumpManager* GetTerrainLumpManager() { return m_pTerrainLumpManager; }
+	size_t						LumpSize() { return m_iMeterDepth-m_iLumpDepth; };
+	size_t						LumpDepth() { return m_iLumpDepth; };
 	size_t						PhysicsDepth() { return m_iMeterDepth-7; };
 
 	class CPlanetTerrain*       GetTerrain(size_t iTerrain) { return m_apTerrain[iTerrain]; }
@@ -76,7 +76,7 @@ protected:
 	CScalableFloat				m_flAtmosphereThickness;
 	float						m_flMinutesPerRevolution;
 	int							m_iMinQuadRenderDepth;
-	int							m_iChunkDepth;
+	int							m_iLumpDepth;
 	int							m_iMeterDepth;
 
 	DoubleVector				m_vecCharacterLocalOrigin;
@@ -100,7 +100,7 @@ protected:
 		CPlanetTerrain*         m_apTerrain[6];
 	};
 
-	class CTerrainChunkManager*	m_pTerrainChunkManager;
+	class CTerrainLumpManager*	m_pTerrainLumpManager;
 
 	// 10 levels deep, 3 channels (x, y, z)
 	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];

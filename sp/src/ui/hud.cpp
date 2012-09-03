@@ -7,7 +7,6 @@
 #include <tinker/cvar.h>
 
 #include "../planet.h"
-#include "../terrain_chunks.h"
 #include "../sp_playercharacter.h"
 #include "../sp_game.h"
 

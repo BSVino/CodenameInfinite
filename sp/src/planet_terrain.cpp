@@ -14,7 +14,7 @@
 #include "sp_renderer.h"
 #include "sp_playercharacter.h"
 #include "planet.h"
-#include "terrain_chunks.h"
+#include "terrain_lumps.h"
 
 CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 {
@@ -242,7 +242,7 @@ size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsig
 	return iTriangles;
 }
 
-size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CChunkCoordinate>& aiExclude, size_t iLevels, size_t iRows)
+size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CLumpCoordinate>& aiExclude, size_t iLevels, size_t iRows)
 {
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
@@ -318,7 +318,7 @@ void CPlanetTerrain::CreateShell2VBO()
 
 	m_iShell2VBO = 0;
 
-	int iHighLevels = m_pPlanet->ChunkDepth();
+	int iHighLevels = m_pPlanet->LumpDepth();
 
 	tvector<CTerrainPoint> avecTerrain;
 	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
@@ -341,26 +341,26 @@ void CPlanetTerrain::RebuildShell2Indices()
 {
 	TAssert(m_iShell2IBO);
 
-	int iHighLevels = m_pPlanet->ChunkDepth();
+	int iHighLevels = m_pPlanet->LumpDepth();
 
-	tvector<CChunkCoordinate> aiChunkCoordinates;
-	for (size_t i = 0; i < m_pPlanet->m_pTerrainChunkManager->GetNumChunks(); i++)
+	tvector<CLumpCoordinate> aiLumpCoordinates;
+	for (size_t i = 0; i < m_pPlanet->m_pTerrainLumpManager->GetNumLumps(); i++)
 	{
-		CTerrainChunk* pChunk = m_pPlanet->m_pTerrainChunkManager->GetChunk(i);
-		if (!pChunk)
+		CTerrainLump* pLump = m_pPlanet->m_pTerrainLumpManager->GetLump(i);
+		if (!pLump)
 			continue;
 
-		if (m_pPlanet->m_apTerrain[pChunk->GetTerrain()] != this)
+		if (m_pPlanet->m_apTerrain[pLump->GetTerrain()] != this)
 			continue;
 
-		CChunkCoordinate& oCoord = aiChunkCoordinates.push_back();
-		pChunk->GetCoordinates(oCoord.x, oCoord.y);
+		CLumpCoordinate& oCoord = aiLumpCoordinates.push_back();
+		pLump->GetCoordinates(oCoord.x, oCoord.y);
 	}
 
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iHighLevels);
 
 	tvector<unsigned int> aiVerts;
-	size_t iTriangles = BuildMeshIndices(aiVerts, aiChunkCoordinates, iHighLevels, iQuadsPerRow);
+	size_t iTriangles = BuildMeshIndices(aiVerts, aiLumpCoordinates, iHighLevels, iQuadsPerRow);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
@@ -443,15 +443,15 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	return vecOffset;
 }
 
-bool CPlanetTerrain::FindChunkNearestToPlayer(DoubleVector2D& vecChunkMin, DoubleVector2D& vecChunkMax)
+bool CPlanetTerrain::FindLumpNearestToPlayer(DoubleVector2D& vecLumpMin, DoubleVector2D& vecLumpMax)
 {
-	size_t iChunkDepth = m_pPlanet->ChunkDepth();
+	size_t iLumpDepth = m_pPlanet->LumpDepth();
 	DoubleVector vecLocalPlayer = m_pPlanet->m_vecCharacterLocalOrigin;
 
 	DoubleVector2D vecMinCoord(0, 0);
 	DoubleVector2D vecMaxCoord(1, 1);
 
-	for (size_t i = 0; i < iChunkDepth; i++)
+	for (size_t i = 0; i < iLumpDepth; i++)
 	{
 		bool bFound = false;
 		double flLowestDistanceSqr = FLT_MAX;
@@ -508,8 +508,8 @@ bool CPlanetTerrain::FindChunkNearestToPlayer(DoubleVector2D& vecChunkMin, Doubl
 		vecMaxCoord = vecNearestQuadMax;
 	}
 
-	vecChunkMin = vecMinCoord;
-	vecChunkMax = vecMaxCoord;
+	vecLumpMin = vecMinCoord;
+	vecLumpMax = vecMaxCoord;
 
 	return true;
 }

@@ -1,5 +1,4 @@
-#ifndef SP_TERRAIN_CHUNKS_H
-#define SP_TERRAIN_CHUNKS_H
+#pragma once
 
 #include <tvector.h>
 #include <tmap.h>
@@ -9,20 +8,20 @@
 #include "planet_terrain.h"
 #include "sp_common.h"
 
-class CChunkGenerationJob
+class CLumpGenerationJob
 {
 public:
-	class CTerrainChunkManager*	pManager;
-	size_t                      iChunk;
+	class CTerrainLumpManager*	pManager;
+	size_t                      iLump;
 };
 
-class CTerrainChunk
+class CTerrainLump
 {
-	friend class CTerrainChunkManager;
+	friend class CTerrainLumpManager;
 
 public:
-										CTerrainChunk(class CTerrainChunkManager* pManager, size_t iChunk, size_t iTerrain, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax);
-										~CTerrainChunk();
+										CTerrainLump(class CTerrainLumpManager* pManager, size_t iLump, size_t iTerrain, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax);
+										~CTerrainLump();
 
 public:
 	void								Initialize();
@@ -36,8 +35,8 @@ public:
 	size_t                              GetTerrain() const;
 
 protected:
-	class CTerrainChunkManager*			m_pManager;
-	size_t                              m_iChunk;
+	class CTerrainLumpManager*			m_pManager;
+	size_t                              m_iLump;
 
 	size_t                              m_iTerrain;
 
@@ -59,35 +58,33 @@ protected:
 	tvector<unsigned int>               m_aiLowResDrop;
 };
 
-class CTerrainChunkManager
+class CTerrainLumpManager
 {
-	friend class CTerrainChunk;
+	friend class CTerrainLump;
 
 public:
-										CTerrainChunkManager(class CPlanet* pPlanet);
+										CTerrainLumpManager(class CPlanet* pPlanet);
 
 public:
-	void								AddChunk(size_t iTerrain, const DoubleVector2D& vecChunkMin, const DoubleVector2D& vecChunkMax);
-	void								RemoveChunk(size_t iChunk);
+	void								AddLump(size_t iTerrain, const DoubleVector2D& vecLumpMin, const DoubleVector2D& vecLumpMax);
+	void								RemoveLump(size_t iLump);
 
-	CTerrainChunk*						GetChunk(size_t iChunk) const;
-	size_t								GetNumChunks() const { return m_apChunks.size(); }
+	CTerrainLump*						GetLump(size_t iLump) const;
+	size_t								GetNumLumps() const { return m_apLumps.size(); }
 
 	void								Think();
-	void                                AddNearbyChunks();
-	void								GenerateChunk(size_t iChunk);
+	void                                AddNearbyLumps();
+	void								GenerateLump(size_t iLump);
 	void								Render();
 
 private:
-	void								RemoveChunkNoLock(size_t iChunk);
+	void								RemoveLumpNoLock(size_t iLump);
 
 protected:
 	class CPlanet*						m_pPlanet;
-	tvector<CTerrainChunk*>             m_apChunks;
+	tvector<CTerrainLump*>             m_apLumps;
 
-	double								m_flNextChunkCheck;
+	double								m_flNextLumpCheck;
 
-	static class CParallelizer*         s_pChunkGenerator;
+	static class CParallelizer*         s_pLumpGenerator;
 };
-
-#endif
