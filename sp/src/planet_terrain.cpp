@@ -350,6 +350,9 @@ void CPlanetTerrain::RebuildShell2Indices()
 		if (!pLump)
 			continue;
 
+		if (pLump->IsGeneratingLowRes())
+			continue;
+
 		if (m_pPlanet->m_apTerrain[pLump->GetTerrain()] != this)
 			continue;
 

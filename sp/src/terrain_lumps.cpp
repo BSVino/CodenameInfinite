@@ -372,6 +372,9 @@ void CTerrainLump::RebuildIndices()
 		if (!pChunk)
 			continue;
 
+		if (pChunk->IsGeneratingLowRes())
+			continue;
+
 		if (pChunk->GetTerrain() != m_iTerrain)
 			continue;
 

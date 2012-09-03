@@ -34,6 +34,7 @@ public:
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
 	size_t                              GetLump() const;
+	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
 
 protected:
 	class CTerrainChunkManager*			m_pManager;

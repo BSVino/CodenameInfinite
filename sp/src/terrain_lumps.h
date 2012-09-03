@@ -36,6 +36,7 @@ public:
 
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
+	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
 
 protected:
 	class CTerrainLumpManager*			m_pManager;
