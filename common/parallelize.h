@@ -21,6 +21,29 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 #include <tvector.h>
 #include <pthread.h>
 
+class CMutexLocker
+{
+	friend class CParallelizer;
+
+public:
+	CMutexLocker(class CParallelizer* pParallelizer);
+	CMutexLocker(CMutexLocker&&);
+	~CMutexLocker();
+
+private:
+	CMutexLocker();
+	CMutexLocker(const CMutexLocker&);
+
+public:
+	void        Lock();
+	bool        TryLock();
+	void        Unlock();
+
+private:
+	class CParallelizer*  m_pParallelizer;
+	bool                  m_bHaveLock;
+};
+
 class CParallelizeThread
 {
 public:
@@ -50,6 +73,7 @@ class CParallelizer
 {
 public:
 	friend class CParallelizeThread;
+	friend class CMutexLocker;
 
 public:
 									CParallelizer(JobCallback pfnCallback, int iThreads = 0);
@@ -65,12 +89,15 @@ public:
 	void							Stop() { m_bStopped = true; };
 	void							RestartJobs();
 
-	void							LockData();
-	bool                            TryLockData();
-	void							UnlockData();
+	CMutexLocker                    GetLock();
 
 	size_t							GetJobsTotal() { return m_iJobsGiven; };
 	size_t							GetJobsDone() { return m_iJobsDone; };	// GetJobsDone: What I like to say
+
+private:
+	void							LockData();
+	bool                            TryLockData();
+	void							UnlockData();
 
 private:
 	void							DispatchJob(void* pJobData);

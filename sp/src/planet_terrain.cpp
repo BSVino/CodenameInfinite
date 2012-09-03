@@ -33,7 +33,8 @@ void CPlanetTerrain::Think()
 	if (!m_iShell1VBO)
 		CreateShell1VBO();
 
-	m_pPlanet->s_pShell2Generator->LockData();
+	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	oLock.Lock();
 	if (m_aiShell2Drop.size())
 	{
 		if (m_iShell2IBO)
@@ -42,18 +43,18 @@ void CPlanetTerrain::Think()
 		m_iShell2IBOSize = m_aiShell2Drop.size();
 		m_aiShell2Drop.set_capacity(0);
 	}
-	m_pPlanet->s_pShell2Generator->UnlockData();
+	oLock.Unlock();
 
 	if (m_bGeneratingShell2)
 	{
-		m_pPlanet->s_pShell2Generator->LockData();
+		CMutexLocker oLock2 = m_pPlanet->s_pShell2Generator->GetLock();
+		oLock2.Lock();
 		if (m_aflShell2Drop.size())
 		{
 			m_iShell2VBO = CRenderer::LoadVertexDataIntoGL(m_aflShell2Drop.size() * sizeof(float), m_aflShell2Drop.data());
 			m_aflShell2Drop.set_capacity(0);
 			m_bGeneratingShell2 = false;
 		}
-		m_pPlanet->s_pShell2Generator->UnlockData();
 	}
 	else if (!m_iShell2VBO && !m_bGeneratingShell2)
 	{
@@ -328,11 +329,11 @@ void CPlanetTerrain::CreateShell2VBO()
 	m_iShell2IBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
-	m_pPlanet->s_pShell2Generator->LockData();
+	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	oLock.Lock();
 	TAssert(!m_aflShell2Drop.size());
 	swap(m_aflShell2Drop, aflVerts);
 	swap(m_aiShell2Drop, aiVerts);
-	m_pPlanet->s_pShell2Generator->UnlockData();
 }
 
 // This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
@@ -362,9 +363,9 @@ void CPlanetTerrain::RebuildShell2Indices()
 	size_t iTriangles = BuildMeshIndices(aiVerts, aiChunkCoordinates, iHighLevels, iQuadsPerRow);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
-	m_pPlanet->s_pShell2Generator->LockData();
+	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	oLock.Lock();
 	swap(m_aiShell2Drop, aiVerts);
-	m_pPlanet->s_pShell2Generator->UnlockData();
 }
 
 void CPlanetTerrain::Render(class CRenderingContext* c) const

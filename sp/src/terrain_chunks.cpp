@@ -67,18 +67,15 @@ void CTerrainChunkManager::RemoveChunk(size_t iChunk)
 		return;
 	}
 
-	s_pChunkGenerator->LockData();
+	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	oLock.Lock();
 	RemoveChunkNoLock(iChunk);
-	s_pChunkGenerator->UnlockData();
 }
 
 void CTerrainChunkManager::RemoveChunkNoLock(size_t iChunk)
 {
 	if (m_apChunks[iChunk] && m_apChunks[iChunk]->m_bGeneratingLowRes)
-	{
-		s_pChunkGenerator->UnlockData();
 		return;
-	}
 
 	delete m_apChunks[iChunk];
 	m_apChunks[iChunk] = NULL;
@@ -99,7 +96,8 @@ void CTerrainChunkManager::Think()
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	if (pCharacter->GetNearestPlanet() != m_pPlanet)
 	{
-		if (s_pChunkGenerator->TryLockData())
+		CMutexLocker oLock = s_pChunkGenerator->GetLock();
+		if (oLock.TryLock())
 		{
 			size_t iChunksRemaining = 0;
 			tvector<size_t> aiRebuildTerrains;
@@ -136,7 +134,6 @@ void CTerrainChunkManager::Think()
 
 			if (iChunksRemaining == 0)
 				m_apChunks.set_capacity(0);
-			s_pChunkGenerator->UnlockData();
 		}
 		return;
 	}
@@ -201,18 +198,16 @@ void CTerrainChunkManager::AddNearbyChunks()
 
 void CTerrainChunkManager::GenerateChunk(size_t iChunk)
 {
-	s_pChunkGenerator->LockData();
+	CMutexLocker oLock = s_pChunkGenerator->GetLock();
+	oLock.Lock();
 		TAssert(iChunk >= 0 && iChunk < m_apChunks.size());
 		TAssert(m_apChunks[iChunk]);
 
 		if (iChunk >= m_apChunks.size() || !m_apChunks[iChunk])
-		{
-			s_pChunkGenerator->UnlockData();
 			return;
-		}
 
 		m_apChunks[iChunk]->m_bGeneratingLowRes = true;
-	s_pChunkGenerator->UnlockData();
+	oLock.Unlock();
 
 	m_apChunks[iChunk]->GenerateTerrain();
 }
@@ -291,7 +286,8 @@ void CTerrainChunk::Think()
 	if (m_bGeneratingLowRes)
 	{
 		bool bUpdateTerrain = false;
-		if (m_pManager->s_pChunkGenerator->TryLockData())
+		CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
+		if (oLock.TryLock())
 		{
 			if (m_aflLowResDrop.size())
 			{
@@ -302,8 +298,8 @@ void CTerrainChunk::Think()
 				m_aiLowResDrop.set_capacity(0);
 				bUpdateTerrain = true;
 			}
-			m_pManager->s_pChunkGenerator->UnlockData();
 		}
+		oLock.Unlock();
 
 		if (bUpdateTerrain)
 			m_pManager->m_pPlanet->GetTerrain(m_iTerrain)->RebuildShell2Indices();
@@ -339,11 +335,11 @@ void CTerrainChunk::GenerateTerrain()
 	m_iLowResTerrainIBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
-	m_pManager->s_pChunkGenerator->LockData();
+	CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
+	oLock.Lock();
 		TAssert(!m_aflLowResDrop.size());
 		swap(m_aflLowResDrop, aflVerts);
 		swap(m_aiLowResDrop, aiVerts);
-	m_pManager->s_pChunkGenerator->UnlockData();
 }
 
 void CTerrainChunk::Render()
