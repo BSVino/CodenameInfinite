@@ -91,11 +91,57 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 			// Offsets are generated in planet space, add them right onto the quad position.
 			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + GenerateOffset(vecPoint);
 
-			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
+//			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
 
 			vecTerrain.vec3DPosition -= vecCenter;
 
 			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (float)iDetailLevel;
+		}
+	}
+
+	for (size_t x = 0; x < iVertsPerRow; x++)
+	{
+		for (size_t y = 0; y < iVertsPerRow; y++)
+		{
+			CTerrainPoint& vecTerrain = avecTerrain[y*iVertsPerRow + x];
+
+			Vector vecNormal(0, 0, 0);
+
+			Vector vecUp = (vecTerrain.vec3DPosition + vecCenter).Normalized();
+
+			if (x > 0)
+			{
+				CTerrainPoint& vecNeighbor = avecTerrain[y*iVertsPerRow + (x-1)];
+				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecRight = -vecToNeighbor.Cross(vecUp);
+				vecNormal += vecToNeighbor.Cross(vecRight);
+			}
+
+			if (x < iVertsPerRow-1)
+			{
+				CTerrainPoint& vecNeighbor = avecTerrain[y*iVertsPerRow + (x+1)];
+				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecRight = -vecToNeighbor.Cross(vecUp);
+				vecNormal += vecToNeighbor.Cross(vecRight);
+			}
+
+			if (y > 0)
+			{
+				CTerrainPoint& vecNeighbor = avecTerrain[(y-1)*iVertsPerRow + x];
+				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecRight = -vecToNeighbor.Cross(vecUp);
+				vecNormal += vecToNeighbor.Cross(vecRight);
+			}
+
+			if (y < iVertsPerRow-1)
+			{
+				CTerrainPoint& vecNeighbor = avecTerrain[(y+1)*iVertsPerRow + x];
+				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecRight = -vecToNeighbor.Cross(vecUp);
+				vecNormal += vecToNeighbor.Cross(vecRight);
+			}
+
+			vecTerrain.vecNormal = vecNormal.Normalized();
 		}
 	}
 
