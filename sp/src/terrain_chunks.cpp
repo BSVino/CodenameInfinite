@@ -102,6 +102,8 @@ void CTerrainChunkManager::Think()
 		if (s_pChunkGenerator->TryLockData())
 		{
 			size_t iChunksRemaining = 0;
+			tvector<size_t> aiRebuildTerrains;
+
 			for (size_t i = 0; i < m_apChunks.size(); i++)
 			{
 				if (m_apChunks[i])
@@ -112,9 +114,25 @@ void CTerrainChunkManager::Think()
 						continue;
 					}
 
+					bool bAdd = true;
+					for (size_t j = 0; j < aiRebuildTerrains.size(); j++)
+					{
+						if (aiRebuildTerrains[j] == m_apChunks[i]->GetTerrain())
+						{
+							bAdd = false;
+							break;
+						}
+					}
+
+					if (bAdd)
+						aiRebuildTerrains.push_back(m_apChunks[i]->GetTerrain());
+
 					RemoveChunkNoLock(i);
 				}
 			}
+
+			for (size_t i = 0; i < aiRebuildTerrains.size(); i++)
+				m_pPlanet->GetTerrain(aiRebuildTerrains[i])->RebuildShell2Indices();
 
 			if (iChunksRemaining == 0)
 				m_apChunks.set_capacity(0);
@@ -130,6 +148,7 @@ void CTerrainChunkManager::Think()
 		m_flNextChunkCheck = GameServer()->GetGameTime() + terrain_chunkcheck.GetFloat();
 	}
 
+	tvector<size_t> aiRebuildTerrains;
 	for (size_t i = 0; i < m_apChunks.size(); i++)
 	{
 		CTerrainChunk* pChunk = m_apChunks[i];
@@ -137,7 +156,22 @@ void CTerrainChunkManager::Think()
 			continue;
 
 		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr())
+		{
+			bool bAdd = true;
+			for (size_t j = 0; j < aiRebuildTerrains.size(); j++)
+			{
+				if (aiRebuildTerrains[j] == m_apChunks[i]->GetTerrain())
+				{
+					bAdd = false;
+					break;
+				}
+			}
+
+			if (bAdd)
+				aiRebuildTerrains.push_back(m_apChunks[i]->GetTerrain());
+
 			RemoveChunk(i);
+		}
 
 		// If the chunk wasn't removed, let it think.
 		pChunk = m_apChunks[i];
@@ -146,6 +180,9 @@ void CTerrainChunkManager::Think()
 
 		pChunk->Think();
 	}
+
+	for (size_t i = 0; i < aiRebuildTerrains.size(); i++)
+		m_pPlanet->GetTerrain(aiRebuildTerrains[i])->RebuildShell2Indices();
 }
 
 void CTerrainChunkManager::AddNearbyChunks()
@@ -226,6 +263,10 @@ CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size
 	m_aabbBounds = TemplateAABB<double>(vecWorldMin, vecWorldMax);
 
 	m_iLowResTerrainVBO = 0;
+
+	size_t iResolution = (size_t)pow(2.0f, (float)m_pManager->m_pPlanet->ChunkDepth());
+	m_iX = (size_t)RemapVal((vecMin.x+vecMax.x)/2, 0, 1, 0, iResolution);
+	m_iY = (size_t)RemapVal((vecMin.y+vecMax.y)/2, 0, 1, 0, iResolution);
 }
 
 CTerrainChunk::~CTerrainChunk()
@@ -249,6 +290,7 @@ void CTerrainChunk::Think()
 {
 	if (m_bGeneratingLowRes)
 	{
+		bool bUpdateTerrain = false;
 		if (m_pManager->s_pChunkGenerator->TryLockData())
 		{
 			if (m_aflLowResDrop.size())
@@ -258,9 +300,13 @@ void CTerrainChunk::Think()
 				m_bGeneratingLowRes = false;
 				m_aflLowResDrop.set_capacity(0);
 				m_aiLowResDrop.set_capacity(0);
+				bUpdateTerrain = true;
 			}
 			m_pManager->s_pChunkGenerator->UnlockData();
 		}
+
+		if (bUpdateTerrain)
+			m_pManager->m_pPlanet->GetTerrain(m_iTerrain)->RebuildShell2Indices();
 	}
 }
 
@@ -347,4 +393,15 @@ void CTerrainChunk::Render()
 	r.SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
 	r.SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
 	r.EndRenderVertexArrayIndexed(m_iLowResTerrainIBO, m_iLowResTerrainIBOSize);
+}
+
+void CTerrainChunk::GetCoordinates(unsigned short& x, unsigned short& y) const
+{
+	x = m_iX;
+	y = m_iY;
+}
+
+size_t CTerrainChunk::GetTerrain() const
+{
+	return m_iTerrain;
 }

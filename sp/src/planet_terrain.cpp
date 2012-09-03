@@ -23,6 +23,7 @@ CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 
 	m_iShell1VBO = 0;
 	m_iShell2VBO = 0;
+	m_iShell2IBO = 0;
 
 	m_bGeneratingShell2 = false;
 }
@@ -32,16 +33,25 @@ void CPlanetTerrain::Think()
 	if (!m_iShell1VBO)
 		CreateShell1VBO();
 
+	m_pPlanet->s_pShell2Generator->LockData();
+	if (m_aiShell2Drop.size())
+	{
+		if (m_iShell2IBO)
+			CRenderer::UnloadVertexDataFromGL(m_iShell2IBO);
+		m_iShell2IBO = CRenderer::LoadIndexDataIntoGL(m_aiShell2Drop.size() * sizeof(unsigned int), m_aiShell2Drop.data());
+		m_iShell2IBOSize = m_aiShell2Drop.size();
+		m_aiShell2Drop.set_capacity(0);
+	}
+	m_pPlanet->s_pShell2Generator->UnlockData();
+
 	if (m_bGeneratingShell2)
 	{
 		m_pPlanet->s_pShell2Generator->LockData();
 		if (m_aflShell2Drop.size())
 		{
 			m_iShell2VBO = CRenderer::LoadVertexDataIntoGL(m_aflShell2Drop.size() * sizeof(float), m_aflShell2Drop.data());
-			m_iShell2IBO = CRenderer::LoadIndexDataIntoGL(m_aiShell2Drop.size() * sizeof(unsigned int), m_aiShell2Drop.data());
-			m_bGeneratingShell2 = false;
 			m_aflShell2Drop.set_capacity(0);
-			m_aiShell2Drop.set_capacity(0);
+			m_bGeneratingShell2 = false;
 		}
 		m_pPlanet->s_pShell2Generator->UnlockData();
 	}
@@ -231,6 +241,50 @@ size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsig
 	return iTriangles;
 }
 
+size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CChunkCoordinate>& aiExclude, size_t iLevels, size_t iRows)
+{
+	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
+
+	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
+	aiIndices.reserve(iTriangles * 3);
+
+	size_t iVertsPerRow = iRows+1;
+
+	for (size_t x = 0; x < iRows; x++)
+	{
+		for (size_t y = 0; y < iRows; y++)
+		{
+			bool bSkip = false;
+			for (size_t i = 0; i < aiExclude.size(); i++)
+			{
+				if (x == aiExclude[i].x && y == aiExclude[i].y)
+					bSkip = true;
+			}
+
+			if (bSkip)
+			{
+				iTriangles--;
+				continue;
+			}
+
+			unsigned int i1 = y*iVertsPerRow + x;
+			unsigned int i2 = y*iVertsPerRow + (x+1);
+			unsigned int i3 = (y+1)*iVertsPerRow + (x+1);
+			unsigned int i4 = (y+1)*iVertsPerRow + x;
+
+			aiIndices.push_back(i1);
+			aiIndices.push_back(i2);
+			aiIndices.push_back(i3);
+
+			aiIndices.push_back(i1);
+			aiIndices.push_back(i3);
+			aiIndices.push_back(i4);
+		}
+	}
+
+	return iTriangles;
+}
+
 void CPlanetTerrain::CreateShell1VBO()
 {
 	if (m_iShell1VBO)
@@ -277,6 +331,38 @@ void CPlanetTerrain::CreateShell2VBO()
 	m_pPlanet->s_pShell2Generator->LockData();
 	TAssert(!m_aflShell2Drop.size());
 	swap(m_aflShell2Drop, aflVerts);
+	swap(m_aiShell2Drop, aiVerts);
+	m_pPlanet->s_pShell2Generator->UnlockData();
+}
+
+// This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
+void CPlanetTerrain::RebuildShell2Indices()
+{
+	TAssert(m_iShell2IBO);
+
+	int iHighLevels = m_pPlanet->ChunkDepth();
+
+	tvector<CChunkCoordinate> aiChunkCoordinates;
+	for (size_t i = 0; i < m_pPlanet->m_pTerrainChunkManager->GetNumChunks(); i++)
+	{
+		CTerrainChunk* pChunk = m_pPlanet->m_pTerrainChunkManager->GetChunk(i);
+		if (!pChunk)
+			continue;
+
+		if (m_pPlanet->m_apTerrain[pChunk->GetTerrain()] != this)
+			continue;
+
+		CChunkCoordinate& oCoord = aiChunkCoordinates.push_back();
+		pChunk->GetCoordinates(oCoord.x, oCoord.y);
+	}
+
+	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iHighLevels);
+
+	tvector<unsigned int> aiVerts;
+	size_t iTriangles = BuildMeshIndices(aiVerts, aiChunkCoordinates, iHighLevels, iQuadsPerRow);
+
+	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
+	m_pPlanet->s_pShell2Generator->LockData();
 	swap(m_aiShell2Drop, aiVerts);
 	m_pPlanet->s_pShell2Generator->UnlockData();
 }

@@ -32,6 +32,9 @@ public:
 
 	void								Render();
 
+	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
+	size_t                              GetTerrain() const;
+
 protected:
 	class CTerrainChunkManager*			m_pManager;
 	size_t                              m_iChunk;
@@ -40,6 +43,8 @@ protected:
 
 	DoubleVector2D                      m_vecMin;
 	DoubleVector2D                      m_vecMax;
+	size_t                              m_iX;
+	size_t                              m_iY;
 
 	DoubleVector                        m_vecLocalCenter;	// Center in planet space
 
