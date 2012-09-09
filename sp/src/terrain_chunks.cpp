@@ -5,6 +5,8 @@
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
 
+#include <physics/physics.h>
+
 #include "sp_game.h"
 #include "sp_playercharacter.h"
 #include "sp_renderer.h"
@@ -173,7 +175,7 @@ void CTerrainChunkManager::Think()
 		if (!pChunk)
 			continue;
 
-		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr())
+		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr()*4)
 		{
 			bool bAdd = true;
 			for (size_t j = 0; j < aiRebuildLumps.size(); j++)
@@ -293,6 +295,9 @@ CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size
 	m_aabbBounds = TemplateAABB<double>(vecWorldMin, vecWorldMax);
 
 	m_iLowResTerrainVBO = 0;
+	m_bLoadIntoPhysics = false;
+	m_iPhysicsMesh = ~0;
+	m_iPhysicsEntity = ~0;
 
 	size_t iResolution = (size_t)pow(2.0f, (float)m_pManager->m_pPlanet->ChunkDepth()-m_pManager->m_pPlanet->LumpDepth());
 	m_iX = (size_t)RemapVal((vecMin.x+vecMax.x)/2, pLump->m_vecMin.x, pLump->m_vecMax.x, 0, iResolution);
@@ -324,6 +329,12 @@ void CTerrainChunk::Think()
 		CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
 		if (oLock.TryLock())
 		{
+			if (m_bLoadIntoPhysics)
+			{
+				m_iPhysicsEntity = GamePhysics()->AddExtra(m_iPhysicsMesh);
+				m_bLoadIntoPhysics = false;
+			}
+
 			if (m_aflLowResDrop.size())
 			{
 				m_iLowResTerrainVBO = CRenderer::LoadVertexDataIntoGL(m_aflLowResDrop.size() * sizeof(float), m_aflLowResDrop.data());
@@ -367,9 +378,18 @@ void CTerrainChunk::GenerateTerrain()
 	tvector<CTerrainPoint> avecTerrain;
 	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
 
+	TAssert(!m_aflPhysicsVerts.size());
+	m_aflPhysicsVerts.clear();
+	m_aiPhysicsVerts.clear();
+	size_t iTriangles = CPlanetTerrain::BuildIndexedPhysVerts(m_aflPhysicsVerts, m_aiPhysicsVerts, avecTerrain, iResolution, iRows);
+
+	m_iPhysicsMesh = GamePhysics()->LoadExtraCollisionMesh(iTriangles, m_aiPhysicsVerts.data(), m_aflPhysicsVerts.size()/3, m_aflPhysicsVerts.data());
+
+	m_bLoadIntoPhysics = true;
+
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;
-	size_t iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows);
+	iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows);
 	m_iLowResTerrainIBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
@@ -378,6 +398,7 @@ void CTerrainChunk::GenerateTerrain()
 		TAssert(!m_aflLowResDrop.size());
 		swap(m_aflLowResDrop, aflVerts);
 		swap(m_aiLowResDrop, aiVerts);
+	oLock.Unlock();
 }
 
 void CTerrainChunk::Render()

@@ -568,8 +568,10 @@ void CBaseEntity::SetLocalTransform(const TMatrix& m)
 
 	if (IsInPhysics())
 	{
-		TAssert(!GetMoveParent());
-		GamePhysics()->SetEntityTransform(this, mNew);
+		if (GetMoveParent())
+			GamePhysics()->SetEntityTransform(this, GetMoveParent()->GetGlobalTransform() * mNew);
+		else
+			GamePhysics()->SetEntityTransform(this, mNew);
 	}
 
 	m_mLocalTransform = mNew;

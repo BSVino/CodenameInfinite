@@ -69,10 +69,14 @@ public:
 	virtual void			AddModelTris(class CBaseEntity* pEnt, collision_type_t eCollisionType, size_t iModel);
 	virtual void			RemoveEntity(class CBaseEntity* pEnt);
 	virtual void			RemoveEntity(CPhysicsEntity* pEntity);
+	virtual size_t          AddExtra(size_t iExtraMesh);  // Input is result from LoadExtraCollisionMesh
+	virtual void            RemoveExtra(size_t iExtra);   // Input is result from AddExtra
 	virtual void			RemoveAllEntities();
 
 	virtual void			LoadCollisionMesh(const tstring& sModel, size_t iTris, int* aiTris, size_t iVerts, float* aflVerts);
 	virtual void			UnloadCollisionMesh(const tstring& sModel);
+	virtual size_t          LoadExtraCollisionMesh(size_t iTris, int* aiTris, size_t iVerts, float* aflVerts);
+	virtual void			UnloadExtraCollisionMesh(size_t iMesh);
 
 	virtual void			Simulate();
 
@@ -90,12 +94,16 @@ public:
 	virtual void			SetLinearFactor(class CBaseEntity* pEnt, const Vector& vecFactor);
 	virtual void			SetAngularFactor(class CBaseEntity* pEnt, const Vector& vecFactor);
 
+	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta);
+
 	virtual void			CharacterJump(class CBaseEntity* pEnt);
 
 	virtual CPhysicsEntity*	GetPhysicsEntity(class CBaseEntity* pEnt);
+	virtual CBaseEntity*    GetBaseEntity(class btCollisionObject* pObject);
 
 protected:
 	tvector<CPhysicsEntity>					m_aEntityList;
+	tvector<CPhysicsEntity*>                m_apExtraEntityList;
 
 	btDefaultCollisionConfiguration*		m_pCollisionConfiguration;
 	btCollisionDispatcher*					m_pDispatcher;
@@ -111,6 +119,7 @@ protected:
 	};
 
 	tmap<size_t, CCollisionMesh>		m_apCollisionMeshes;
+	tvector<CCollisionMesh*>            m_apExtraCollisionMeshes;
 	tmap<tstring, btConvexShape*>		m_apCharacterShapes;
 
 	class CPhysicsDebugDrawer*				m_pDebugDrawer;

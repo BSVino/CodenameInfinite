@@ -35,15 +35,19 @@ public:
 	void			debugDraw(btIDebugDraw* debugDrawer) {};
 
 	// btCharacterControllerInterface
+	virtual void	preStep(btCollisionWorld* collisionWorld);
+	virtual void	playerStep(btCollisionWorld* collisionWorld, btScalar dt);
 	virtual void	setWalkDirection(const btVector3& walkDirection);
 	virtual void	setVelocityForTimeInterval(const btVector3& velocity, btScalar timeInterval);
 	virtual void	reset() {};
 	virtual void	warp(const btVector3& origin);
-	virtual void	preStep(btCollisionWorld* collisionWorld);
-	virtual void	playerStep(btCollisionWorld* collisionWorld, btScalar dt);
 	virtual bool	canJump() const;
 	virtual void	jump();
 	virtual bool	onGround() const;
+
+	virtual void	CharacterMovement(btCollisionWorld* collisionWorld, float flDelta);
+	virtual bool    PreStep(btCollisionWorld* collisionWorld);
+	virtual bool    PlayerStep(btCollisionWorld* collisionWorld, btScalar dt);
 
 	virtual void	SetLateralVelocity(const btVector3& velocity);
 	void			SetVerticalVelocity(btScalar flVerticalVelocity);
@@ -81,10 +85,10 @@ protected:
 	btVector3	PerpendicularComponent(const btVector3& direction, const btVector3& normal);
 
 	bool		RecoverFromPenetration(btCollisionWorld* collisionWorld);
-	void		StepUp(btCollisionWorld* collisionWorld);
+	void        StepUp(btCollisionWorld* collisionWorld);
 	void		UpdateTargetPositionBasedOnCollision(const btVector3& hit_normal, btScalar tangentMag = btScalar(0.0), btScalar normalMag = btScalar(1.0));
-	void		StepForwardAndStrafe(btCollisionWorld* collisionWorld, const btVector3& walkMove);
-	void		StepDown(btCollisionWorld* collisionWorld, btScalar dt);
+	void        StepForwardAndStrafe(btCollisionWorld* collisionWorld, const btVector3& walkMove);
+	void        StepDown(btCollisionWorld* collisionWorld, btScalar dt);
 
 	void		FindGround(btCollisionWorld* pCollisionWorld);
 

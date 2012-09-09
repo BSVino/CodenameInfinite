@@ -155,7 +155,7 @@ void CTerrainLumpManager::Think()
 		if (!pLump)
 			continue;
 
-		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pLump->m_aabbBounds.Center()) > pLump->m_aabbBounds.Size().LengthSqr())
+		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pLump->m_aabbBounds.Center()) > pLump->m_aabbBounds.Size().LengthSqr()*4)
 		{
 			bool bAdd = true;
 			for (size_t j = 0; j < aiRebuildTerrains.size(); j++)

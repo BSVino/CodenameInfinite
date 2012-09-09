@@ -35,6 +35,8 @@ public:
 	size_t                              GetTerrain() const;
 	size_t                              GetLump() const;
 	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
+	size_t                              GetPhysicsEntity() const { return m_iPhysicsEntity; }
+	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
 
 protected:
 	class CTerrainChunkManager*			m_pManager;
@@ -59,6 +61,12 @@ protected:
 	bool                                m_bGeneratingLowRes;
 	tvector<float>                      m_aflLowResDrop;
 	tvector<unsigned int>               m_aiLowResDrop;
+
+	bool                                m_bLoadIntoPhysics;
+	tvector<float>                      m_aflPhysicsVerts;
+	tvector<int>                        m_aiPhysicsVerts;
+	size_t								m_iPhysicsMesh;
+	size_t								m_iPhysicsEntity;
 };
 
 class CTerrainChunkManager

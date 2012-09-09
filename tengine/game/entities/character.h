@@ -31,6 +31,8 @@ public:
 	virtual void					MoveThink_NoClip();
 	virtual void					Jump();
 
+	virtual void                    CharacterMovement(class btCollisionWorld*, float flDelta);
+
 	virtual void					SetNoClip(bool bOn);
 	virtual bool					GetNoClip() const { return m_bNoClip; }
 

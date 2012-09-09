@@ -22,10 +22,14 @@ public:
 public:
 	virtual void			AddEntity(class CBaseEntity* pEnt, collision_type_t eCollisionType) {};
 	virtual void			RemoveEntity(class CBaseEntity* pEnt) {};
+	virtual size_t          AddExtra(size_t iExtraMesh) { return ~0; };  // Input is result from LoadExtraCollisionMesh
+	virtual void            RemoveExtra(size_t iExtra) {};               // Input is result from AddExtra
 	virtual void			RemoveAllEntities() {};
 
 	virtual void			LoadCollisionMesh(const tstring& sModel, size_t iTris, int* aiTris, size_t iVerts, float* aflVerts) {};
 	virtual void			UnloadCollisionMesh(const tstring& sModel) {};
+	virtual size_t          LoadExtraCollisionMesh(size_t iTris, int* aiTris, size_t iVerts, float* aflVerts) { return ~0; };
+	virtual void            UnloadExtraCollisionMesh(size_t iMesh) {};
 
 	virtual void			Simulate() {};
 
@@ -42,6 +46,8 @@ public:
 	virtual void			SetEntityUpVector(class CBaseEntity* pEnt, const Vector& vecUp) {};
 	virtual void			SetLinearFactor(class CBaseEntity* pEnt, const Vector& vecFactor) {};
 	virtual void			SetAngularFactor(class CBaseEntity* pEnt, const Vector& vecFactor) {};
+
+	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta) {};
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt) {};
 };

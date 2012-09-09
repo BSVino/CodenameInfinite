@@ -6,6 +6,7 @@
 #include "planet.h"
 #include "sp_camera.h"
 #include "planet_terrain.h"
+#include "terrain_chunks.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
 
@@ -29,6 +30,8 @@ CPlayerCharacter::CPlayerCharacter()
 	m_bHyperdrive = false;
 	m_bWalkSpeedOverride = false;
 	m_bFlying = false;
+
+	m_iCurrentPhysicsChunk = ~0;
 }
 
 void CPlayerCharacter::Spawn()
@@ -87,6 +90,73 @@ void CPlayerCharacter::MoveThink()
 	}
 	else
 		SetLocalVelocity(CScalableVector());
+}
+
+void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)
+{
+	CPlanet* pPlanet = FindNearestPlanet();
+	TAssert(pPlanet);
+	if (!pPlanet)
+	{
+		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+		return;
+	}
+
+	for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
+	{
+		CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
+		if (!pChunk)
+			continue;
+
+		if (pChunk->GetPhysicsEntity() == ~0)
+			continue;
+
+		m_iCurrentPhysicsChunk = pChunk->GetPhysicsEntity();
+		m_vecChunkOffset = pChunk->GetLocalCenter();
+
+		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+	}
+
+	m_iCurrentPhysicsChunk = ~0;
+}
+
+const TMatrix CPlayerCharacter::GetPhysicsTransform() const
+{
+	if (m_iCurrentPhysicsChunk == ~0)
+		return GetGlobalTransform();
+
+	CPlanet* pPlanet = FindNearestPlanet();
+	TAssert(pPlanet);
+	if (!pPlanet)
+		return GetGlobalTransform();
+
+	CScalableMatrix mLocal = GetLocalTransform();
+	CScalableVector vecChunkOffset(m_vecChunkOffset, pPlanet->GetScale());
+	mLocal.SetTranslation(mLocal.GetTranslation()-vecChunkOffset);
+
+	return mLocal;
+}
+
+void CPlayerCharacter::SetPhysicsTransform(const TMatrix& m)
+{
+	if (m_iCurrentPhysicsChunk == ~0)
+	{
+		SetGlobalTransform(m);
+		return;
+	}
+
+	CPlanet* pPlanet = FindNearestPlanet();
+	TAssert(pPlanet);
+	if (!pPlanet)
+	{
+		SetGlobalTransform(m);
+		return;
+	}
+
+	CScalableMatrix mLocal = m;
+	CScalableVector vecChunkOffset(m_vecChunkOffset, pPlanet->GetScale());
+	mLocal.SetTranslation(m.GetTranslation()+vecChunkOffset);
+	SetLocalTransform(mLocal);
 }
 
 void CPlayerCharacter::ToggleFlying()

@@ -85,6 +85,8 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 
 	size_t iDetailLevel = (size_t)pow(2.0, (double)m_pPlanet->m_iMeterDepth);
 
+	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), SCALE_METER);
+
 	for (size_t x = 0; x < iVertsPerRow; x++)
 	{
 		double flX = RemapVal((double)x, 0, (double)iVertsPerRow-1, vecMin.x, vecMax.x);
@@ -105,6 +107,8 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 //			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
 
 			vecTerrain.vec3DPosition -= vecCenter;
+
+			vecTerrain.vecPhys = vecTerrain.vec3DPosition * flScale;
 
 			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (float)iDetailLevel;
 		}
@@ -214,6 +218,54 @@ size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsig
 	size_t iTerrainSize = avecTerrain.size();
 	for (size_t x = 0; x < iTerrainSize; x++)
 		PushVert(aflVerts, avecTerrain[x]);
+
+	for (size_t x = 0; x < iRows-1; x++)
+	{
+		for (size_t y = 0; y < iRows-1; y++)
+		{
+			unsigned int i1 = y*iRows + x;
+			unsigned int i2 = y*iRows + (x+1);
+			unsigned int i3 = (y+1)*iRows + (x+1);
+			unsigned int i4 = (y+1)*iRows + x;
+
+			TAssert(i1 < iTerrainSize);
+			TAssert(i2 < iTerrainSize);
+			TAssert(i3 < iTerrainSize);
+			TAssert(i4 < iTerrainSize);
+
+			aiIndices.push_back(i1);
+			aiIndices.push_back(i2);
+			aiIndices.push_back(i3);
+
+			aiIndices.push_back(i1);
+			aiIndices.push_back(i3);
+			aiIndices.push_back(i4);
+		}
+	}
+
+	return iTriangles;
+}
+
+void PushPhysVert(tvector<float>& aflVerts, const CTerrainPoint& vecPoint)
+{
+	aflVerts.push_back((float)vecPoint.vecPhys.x);
+	aflVerts.push_back((float)vecPoint.vecPhys.y);
+	aflVerts.push_back((float)vecPoint.vecPhys.z);
+}
+
+size_t CPlanetTerrain::BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
+{
+	size_t iVertSize = 3;	// position only
+
+	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
+	aiIndices.reserve(iTriangles * 3);
+
+	aflVerts.reserve(avecTerrain.size()*iVertSize);
+
+	size_t iTerrainSize = avecTerrain.size();
+
+	for (size_t x = 0; x < iTerrainSize; x++)
+		PushPhysVert(aflVerts, avecTerrain[x]);
 
 	for (size_t x = 0; x < iRows-1; x++)
 	{

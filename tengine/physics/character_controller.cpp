@@ -115,6 +115,13 @@ void CCharacterController::updateAction(btCollisionWorld* pCollisionWorld, btSca
 	if (!m_bColliding)
 		return;
 
+	TAssert(dynamic_cast<CCharacter*>(GetEntity()));
+
+	static_cast<CCharacter*>(GetEntity())->CharacterMovement(pCollisionWorld, deltaTime);
+}
+
+void CCharacterController::CharacterMovement(btCollisionWorld* pCollisionWorld, btScalar deltaTime)
+{
 	// Grab the new player transform before doing movement steps in case the player has been moved,
 	// such as by a platform or teleported. No need to do a physics trace for it, the penetration
 	// functions should handle that.
@@ -124,33 +131,21 @@ void CCharacterController::updateAction(btCollisionWorld* pCollisionWorld, btSca
 
 	m_pGhostObject->setWorldTransform(mCharacter);
 
-	preStep(pCollisionWorld);
-	playerStep(pCollisionWorld, deltaTime);
+	bool bMovement = PreStep(pCollisionWorld);
+	bMovement |= PlayerStep(pCollisionWorld, deltaTime);
 
 	FindGround(pCollisionWorld);
 
-	pPhysicsEntity->m_oMotionState.setWorldTransform(m_pGhostObject->getWorldTransform());
-}
-
-void CCharacterController::setWalkDirection(const btVector3& walkDirection)
-{
-	SetLateralVelocity(walkDirection);
-}
-
-void CCharacterController::setVelocityForTimeInterval(const btVector3& velocity, btScalar timeInterval)
-{
-	SetLateralVelocity(velocity/timeInterval);
-}
-
-void CCharacterController::warp(const btVector3& origin)
-{
-	btTransform mNew;
-	mNew.setIdentity();
-	mNew.setOrigin(origin);
-	m_pGhostObject->setWorldTransform(mNew);
+	if (bMovement)
+		pPhysicsEntity->m_oMotionState.setWorldTransform(m_pGhostObject->getWorldTransform());
 }
 
 void CCharacterController::preStep(btCollisionWorld* pCollisionWorld)
+{
+	PreStep(pCollisionWorld);
+}
+
+bool CCharacterController::PreStep(btCollisionWorld* pCollisionWorld)
 {
 	m_bTouchingContact = false;
 	int i = 0;
@@ -168,9 +163,16 @@ void CCharacterController::preStep(btCollisionWorld* pCollisionWorld)
 
 	m_vecCurrentPosition = m_pGhostObject->getWorldTransform().getOrigin();
 	m_vecTargetPosition = m_vecCurrentPosition;
+
+	return m_bTouchingContact;
 }
 
 void CCharacterController::playerStep(btCollisionWorld* pCollisionWorld, btScalar dt)
+{
+	PlayerStep(pCollisionWorld, dt);
+}
+
+bool CCharacterController::PlayerStep(btCollisionWorld* pCollisionWorld, btScalar dt)
 {
 	//	printf("playerStep(): ");
 	//	printf("  dt = %f", dt);
@@ -206,16 +208,39 @@ void CCharacterController::playerStep(btCollisionWorld* pCollisionWorld, btScala
 
 	btVector3 vecOriginalPosition = mWorld.getOrigin();
 
-	StepUp(pCollisionWorld);
+	bool bMovement = m_vecWalkDirection.length2() > 0.001f;
 
-	StepForwardAndStrafe(pCollisionWorld, m_vecWalkDirection * dt);
-
-	StepDown(pCollisionWorld, dt);
+	if (bMovement)
+	{
+		StepUp(pCollisionWorld);
+		StepForwardAndStrafe(pCollisionWorld, m_vecWalkDirection * dt);
+		StepDown(pCollisionWorld, dt);
+	}
 
 	// printf("\n");
 
 	mWorld.setOrigin(mWorld.getOrigin() + (m_vecCurrentPosition - vecOriginalPosition) * m_vecLinearFactor);
 	m_pGhostObject->setWorldTransform (mWorld);
+
+	return bMovement;
+}
+
+void CCharacterController::setWalkDirection(const btVector3& walkDirection)
+{
+	SetLateralVelocity(walkDirection);
+}
+
+void CCharacterController::setVelocityForTimeInterval(const btVector3& velocity, btScalar timeInterval)
+{
+	SetLateralVelocity(velocity/timeInterval);
+}
+
+void CCharacterController::warp(const btVector3& origin)
+{
+	btTransform mNew;
+	mNew.setIdentity();
+	mNew.setOrigin(origin);
+	m_pGhostObject->setWorldTransform(mNew);
 }
 
 bool CCharacterController::canJump() const

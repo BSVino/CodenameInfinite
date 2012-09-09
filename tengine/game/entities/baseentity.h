@@ -524,6 +524,9 @@ public:
 	const TMatrix							GetGlobalTransform() const;
 	void									SetGlobalTransform(const TMatrix& m);
 
+	virtual const TMatrix                   GetPhysicsTransform() const { return GetGlobalTransform(); }
+	virtual void                            SetPhysicsTransform(const TMatrix& m) { SetGlobalTransform(m); }
+
 	const TMatrix							GetGlobalToLocalTransform();
 	const TMatrix							GetGlobalToLocalTransform() const;
 

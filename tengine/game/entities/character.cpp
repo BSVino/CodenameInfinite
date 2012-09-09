@@ -223,6 +223,11 @@ void CCharacter::MoveThink_NoClip()
 	}
 }
 
+void CCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)
+{
+	GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+}
+
 void CCharacter::Jump()
 {
 	GamePhysics()->CharacterJump(this);
