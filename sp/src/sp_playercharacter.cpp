@@ -112,7 +112,8 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			continue;
 
 		m_iCurrentPhysicsChunk = pChunk->GetPhysicsEntity();
-		m_vecChunkOffset = pChunk->GetLocalCenter();
+		m_mChunkToPlanet = pChunk->GetChunkToPlanet();
+		m_mPlanetToChunk = pChunk->GetPlanetToChunk();
 
 		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
 	}
@@ -120,7 +121,7 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 	m_iCurrentPhysicsChunk = ~0;
 }
 
-const TMatrix CPlayerCharacter::GetPhysicsTransform() const
+const Matrix4x4 CPlayerCharacter::GetPhysicsTransform() const
 {
 	if (m_iCurrentPhysicsChunk == ~0)
 		return GetGlobalTransform();
@@ -130,18 +131,14 @@ const TMatrix CPlayerCharacter::GetPhysicsTransform() const
 	if (!pPlanet)
 		return GetGlobalTransform();
 
-	CScalableMatrix mLocal = GetLocalTransform();
-	CScalableVector vecChunkOffset(m_vecChunkOffset, pPlanet->GetScale());
-	mLocal.SetTranslation(mLocal.GetTranslation()-vecChunkOffset);
-
-	return mLocal;
+	return m_mPlanetToChunk * GetLocalTransform().GetUnits(SCALE_METER);
 }
 
-void CPlayerCharacter::SetPhysicsTransform(const TMatrix& m)
+void CPlayerCharacter::SetPhysicsTransform(const Matrix4x4& m)
 {
 	if (m_iCurrentPhysicsChunk == ~0)
 	{
-		SetGlobalTransform(m);
+		SetGlobalTransform(TMatrix(m));
 		return;
 	}
 
@@ -149,14 +146,11 @@ void CPlayerCharacter::SetPhysicsTransform(const TMatrix& m)
 	TAssert(pPlanet);
 	if (!pPlanet)
 	{
-		SetGlobalTransform(m);
+		SetGlobalTransform(TMatrix(m));
 		return;
 	}
 
-	CScalableMatrix mLocal = m;
-	CScalableVector vecChunkOffset(m_vecChunkOffset, pPlanet->GetScale());
-	mLocal.SetTranslation(m.GetTranslation()+vecChunkOffset);
-	SetLocalTransform(mLocal);
+	SetLocalTransform(TMatrix(m_mChunkToPlanet * m));
 }
 
 void CPlayerCharacter::ToggleFlying()

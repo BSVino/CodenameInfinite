@@ -43,12 +43,15 @@ class Quaternion;
 // [fz uz rz tz]
 // [fw uw rw tw]
 
+class DoubleMatrix4x4;
+
 class Matrix4x4
 {
 public:
 	            Matrix4x4() { Identity(); }
 	explicit    Matrix4x4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33);
 	            Matrix4x4(const Matrix4x4& m);
+	            Matrix4x4(const DoubleMatrix4x4& m);
 	explicit    Matrix4x4(float* aflValues);
 	explicit    Matrix4x4(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const Vector& vecPosition = Vector(0,0,0));
 	explicit    Matrix4x4(const Quaternion& q);
@@ -141,6 +144,36 @@ public:
 	}
 
 	float		m[4][4];
+};
+
+// Yes, I know, templates do this, but I really want to avoid moving all the matrix stuff into a header file.
+class DoubleMatrix4x4
+{
+public:
+	                DoubleMatrix4x4() { Identity(); }
+	                DoubleMatrix4x4(const Matrix4x4& m);
+
+public:
+	void            Identity();
+
+	// Set a transformation
+	void            SetTranslation(const DoubleVector& vecPos);
+
+	DoubleVector    GetTranslation() const;
+
+	DoubleMatrix4x4 operator*(const DoubleMatrix4x4& t) const;
+	DoubleVector    operator*(const DoubleVector& v) const;
+
+	void            SetForwardVector(const DoubleVector& vecForward);
+	void            SetUpVector(const DoubleVector& vecUp);
+	void            SetRightVector(const DoubleVector& vecRight);
+	DoubleVector    GetForwardVector() const { return DoubleVector((double*)&m[0][0]); }
+	DoubleVector    GetUpVector() const { return DoubleVector((double*)&m[1][0]); }
+	DoubleVector    GetRightVector() const { return DoubleVector((double*)&m[2][0]); }
+
+	DoubleMatrix4x4 InvertedRT() const;
+
+	double          m[4][4];
 };
 
 #endif

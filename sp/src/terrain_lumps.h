@@ -52,6 +52,8 @@ protected:
 	DoubleVector                        m_vecLocalCenter;	// Center in planet space
 
 	TemplateAABB<double>				m_aabbBounds;
+	DoubleMatrix4x4                     m_mPlanetToLump;
+	DoubleMatrix4x4                     m_mLumpToPlanet;
 
 	size_t								m_iLowResTerrainVBO;
 	size_t								m_iLowResTerrainIBO;

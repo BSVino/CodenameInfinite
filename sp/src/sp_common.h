@@ -186,6 +186,8 @@ public:
 	CScalableFloat			x, y, z;
 };
 
+class DoubleMatrix4x4;
+
 class CScalableMatrix
 {
 public:
@@ -193,6 +195,7 @@ public:
 	explicit                CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition = CScalableVector());
 	explicit                CScalableMatrix(const EAngle& angDirection, const CScalableVector& vecPosition=CScalableVector(0,0,0));
 	explicit                CScalableMatrix(const Matrix4x4& mOther);
+	explicit                CScalableMatrix(const DoubleMatrix4x4& mOther);
 
 public:
 	void					Identity();
@@ -244,7 +247,7 @@ public:
 	Vector					GetUpVector() const { return GetRow(1); }
 	Vector					GetRightVector() const { return GetRow(2); }
 
-	class Matrix4x4			GetUnits(scale_t eScale) const;
+	class DoubleMatrix4x4   GetUnits(scale_t eScale) const;
 
 	operator Quaternion() const;
 	operator Matrix4x4() const;

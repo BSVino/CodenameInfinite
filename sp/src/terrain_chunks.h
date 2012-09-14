@@ -37,6 +37,8 @@ public:
 	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
 	size_t                              GetPhysicsEntity() const { return m_iPhysicsEntity; }
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
+	DoubleMatrix4x4                     GetPlanetToChunk() const { return m_mPlanetToChunk; }
+	DoubleMatrix4x4                     GetChunkToPlanet() const { return m_mChunkToPlanet; }
 
 protected:
 	class CTerrainChunkManager*			m_pManager;
@@ -53,6 +55,8 @@ protected:
 	DoubleVector                        m_vecLocalCenter;	// Center in planet space
 
 	TemplateAABB<double>				m_aabbBounds;
+	DoubleMatrix4x4                     m_mPlanetToChunk;
+	DoubleMatrix4x4                     m_mChunkToPlanet;
 
 	size_t								m_iLowResTerrainVBO;
 	size_t								m_iLowResTerrainIBO;

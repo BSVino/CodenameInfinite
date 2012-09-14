@@ -19,8 +19,8 @@ public:
 	virtual void				MoveThink();
 
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
-	virtual const TMatrix       GetPhysicsTransform() const;
-	virtual void                SetPhysicsTransform(const TMatrix& m);
+	virtual const Matrix4x4     GetPhysicsTransform() const;
+	virtual void                SetPhysicsTransform(const Matrix4x4& m);
 
 	void						ToggleFlying();
 	void						StartFlying();
@@ -50,7 +50,8 @@ protected:
 	double                      m_flApproximateElevation;     // From the center of the planet
 
 	size_t                      m_iCurrentPhysicsChunk;
-	DoubleVector                m_vecChunkOffset;
+	DoubleMatrix4x4             m_mPlanetToChunk;
+	DoubleMatrix4x4             m_mChunkToPlanet;
 };
 
 #endif

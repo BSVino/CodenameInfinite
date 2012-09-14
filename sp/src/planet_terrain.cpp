@@ -77,7 +77,7 @@ void CPlanetTerrain::Think()
 	}
 }
 
-size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter)
+size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecOrigin)
 {
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iDepth);
 	size_t iVertsPerRow = iQuadsPerRow + 1;
@@ -86,6 +86,22 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 	size_t iDetailLevel = (size_t)pow(2.0, (double)m_pPlanet->m_iMeterDepth);
 
 	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), SCALE_METER);
+
+	DoubleVector2D vecCenter2D = (vecMax+vecMin)/2;
+
+	DoubleVector vecCenter, vecUp, vecCenterForward, vecCenterRight;
+	vecCenter = CoordToWorld(vecCenter2D);
+	vecUp = vecCenter.Normalized();
+	vecCenterForward = vecUp.Cross(CoordToWorld(DoubleVector2D(vecCenter2D.x, vecMax.y))).Normalized();
+	vecCenterRight = vecCenterForward.Cross(vecUp).Normalized();
+
+	DoubleMatrix4x4 mChunk;
+	mChunk.SetForwardVector(vecCenterForward);
+	mChunk.SetRightVector(vecCenterRight);
+	mChunk.SetUpVector(vecUp);
+	mChunk.SetTranslation(vecOrigin * flScale);
+
+	mPlanetToChunk = mChunk.InvertedRT();
 
 	for (size_t x = 0; x < iVertsPerRow; x++)
 	{
@@ -106,9 +122,9 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 
 //			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
 
-			vecTerrain.vec3DPosition -= vecCenter;
+			vecTerrain.vecPhys = mPlanetToChunk * (vecTerrain.vec3DPosition * flScale);
 
-			vecTerrain.vecPhys = vecTerrain.vec3DPosition * flScale;
+			vecTerrain.vec3DPosition -= vecOrigin;
 
 			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (float)iDetailLevel;
 		}
@@ -122,7 +138,7 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, si
 
 			Vector vecNormal(0, 0, 0);
 
-			Vector vecUp = (vecTerrain.vec3DPosition + vecCenter).Normalized();
+			Vector vecUp = (vecTerrain.vec3DPosition + vecOrigin).Normalized();
 
 			if (x > 0)
 			{
@@ -351,7 +367,8 @@ void CPlanetTerrain::CreateShell1VBO()
 	int iHighLevels = 3;
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
+	DoubleMatrix4x4 mChunkToPlanet;
+	size_t iRows = BuildTerrainArray(avecTerrain, mChunkToPlanet, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
 
 	tvector<float> aflVerts;
 	size_t iTriangles = BuildVerts(aflVerts, avecTerrain, iHighLevels, iRows);
@@ -373,7 +390,8 @@ void CPlanetTerrain::CreateShell2VBO()
 	int iHighLevels = m_pPlanet->LumpDepth();
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = BuildTerrainArray(avecTerrain, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
+	DoubleMatrix4x4 mChunkToPlanet;
+	size_t iRows = BuildTerrainArray(avecTerrain, mChunkToPlanet, iHighLevels, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0));
 
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;

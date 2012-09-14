@@ -1559,6 +1559,17 @@ CScalableMatrix::CScalableMatrix(const Matrix4x4& mOther)
 	SetTranslation(mOther.GetTranslation());
 }
 
+CScalableMatrix::CScalableMatrix(const DoubleMatrix4x4& mOther)
+{
+	for (size_t x = 0; x < 3; x++)
+	{
+		for (size_t y = 0; y < 3; y++)
+			m[x][y] = (float)mOther.m[x][y];
+	}
+
+	SetTranslation(CScalableVector(mOther.GetTranslation(), SCALE_METER));
+}
+
 void CScalableMatrix::Identity()
 {
 	memset(this, 0, sizeof(m));
@@ -1848,10 +1859,12 @@ void CScalableMatrix::SetRightVector(const Vector& v)
 	m[2][2] = v.z;
 }
 
-Matrix4x4 CScalableMatrix::GetUnits(scale_t eScale) const
+DoubleMatrix4x4 CScalableMatrix::GetUnits(scale_t eScale) const
 {
-	Matrix4x4 r;
-	r.Init(m[0][0], m[0][1], m[0][2], 0, m[1][0], m[1][1], m[1][2], 0, m[2][0], m[2][1], m[2][2], 0, 0, 0, 0, 1);
+	DoubleMatrix4x4 r;
+	r.SetForwardVector(DoubleVector(m[0][0], m[0][1], m[0][2]));
+	r.SetUpVector(DoubleVector(m[1][0], m[1][1], m[1][2]));
+	r.SetRightVector(DoubleVector(m[2][0], m[2][1], m[2][2]));
 	r.SetTranslation(mt.GetUnits(eScale));
 	return r;
 }

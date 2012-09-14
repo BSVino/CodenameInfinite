@@ -340,7 +340,8 @@ void CTerrainLump::GenerateTerrain()
 	m_vecLocalCenter = pTerrain->CoordToWorld(vecCoordCenter) + pTerrain->GenerateOffset(vecCoordCenter);
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
+	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToLump, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
+	m_mLumpToPlanet = m_mPlanetToLump.InvertedRT();
 
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;

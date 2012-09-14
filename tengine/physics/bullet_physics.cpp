@@ -836,7 +836,7 @@ void CMotionState::getWorldTransform(btTransform& mCenterOfMass) const
 		mCenterOfMass.setFromOpenGLMatrix(mCenter * m_hEntity->GetPhysicsTransform());
 	}
 	else
-		mCenterOfMass.setFromOpenGLMatrix((Matrix4x4)m_hEntity->GetPhysicsTransform());
+		mCenterOfMass.setFromOpenGLMatrix(m_hEntity->GetPhysicsTransform());
 }
 
 void CMotionState::setWorldTransform(const btTransform& mCenterOfMass)
@@ -851,10 +851,10 @@ void CMotionState::setWorldTransform(const btTransform& mCenterOfMass)
 		Matrix4x4 mCenter;
 		mCenter.SetTranslation(m_hEntity->GetPhysBoundingBox().Center());
 
-		m_hEntity->SetPhysicsTransform(TMatrix(mCenter.InvertedRT() * mGlobal));
+		m_hEntity->SetPhysicsTransform(mCenter.InvertedRT() * mGlobal);
 	}
 	else
-		m_hEntity->SetPhysicsTransform(TMatrix(mGlobal));
+		m_hEntity->SetPhysicsTransform(mGlobal);
 }
 
 CPhysicsModel* GamePhysics()
