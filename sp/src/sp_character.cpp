@@ -207,6 +207,15 @@ const Vector CSPCharacter::GetUpVector() const
 	return Vector(0, 1, 0);
 }
 
+const Vector CSPCharacter::GetLocalUpVector() const
+{
+	CPlanet* pNearestPlanet = GetNearestPlanet();
+	if (pNearestPlanet)
+		return Vector(GetLocalOrigin() - pNearestPlanet->GetLocalOrigin()).Normalized();
+
+	return Vector(0, 1, 0);
+}
+
 void CSPCharacter::LockViewToPlanet()
 {
 	// Now lock the roll value to the planet.

@@ -94,7 +94,7 @@ void CPlayerCharacter::MoveThink()
 
 void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)
 {
-	CPlanet* pPlanet = FindNearestPlanet();
+	CPlanet* pPlanet = GetNearestPlanet();
 	TAssert(pPlanet);
 	if (!pPlanet)
 	{
@@ -125,7 +125,7 @@ const TMatrix CPlayerCharacter::GetPhysicsTransform() const
 	if (m_iCurrentPhysicsChunk == ~0)
 		return GetGlobalTransform();
 
-	CPlanet* pPlanet = FindNearestPlanet();
+	CPlanet* pPlanet = GetNearestPlanet();
 	TAssert(pPlanet);
 	if (!pPlanet)
 		return GetGlobalTransform();
@@ -145,7 +145,7 @@ void CPlayerCharacter::SetPhysicsTransform(const TMatrix& m)
 		return;
 	}
 
-	CPlanet* pPlanet = FindNearestPlanet();
+	CPlanet* pPlanet = GetNearestPlanet();
 	TAssert(pPlanet);
 	if (!pPlanet)
 	{
@@ -236,7 +236,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 
 void CPlayerCharacter::ApproximateElevation()
 {
-	CPlanet* pPlanet = FindNearestPlanet();
+	CPlanet* pPlanet = GetNearestPlanet();
 	if (!pPlanet)
 		return;
 

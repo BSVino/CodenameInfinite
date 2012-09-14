@@ -212,7 +212,11 @@ void CPlanet::PostRender() const
 
 	CScalableMatrix mCharacterToLocal = pCharacter->GetGlobalToLocalTransform();
 
-	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eScale);
+	Vector vecStarLightPosition;
+	if (pCharacter->GetNearestPlanet() == this)
+		vecStarLightPosition = pStar->GameData().GetScalableRenderOrigin();
+	else
+		vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eScale);
 
 	float flScale;
 	if (eScale == SCALE_RENDER)

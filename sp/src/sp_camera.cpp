@@ -42,25 +42,57 @@ void CSPCamera::CameraThink()
 	if (!pCharacter)
 		return;
 
-	if (GetThirdPerson())
+	CPlanet* pPlanet = pCharacter->GetNearestPlanet();
+
+	if (pPlanet)
 	{
-		SetGlobalOrigin(GetThirdPersonCameraPosition());
-		SetGlobalAngles(VectorAngles(GetThirdPersonCameraDirection()));
-		return;
+		if (GetThirdPerson())
+		{
+			TUnimplemented();
+			// Must be made local
+			SetGlobalOrigin(GetThirdPersonCameraPosition());
+			SetGlobalAngles(VectorAngles(GetThirdPersonCameraDirection()));
+			return;
+		}
+
+		CScalableVector vecEyeHeight = pCharacter->GetLocalUpVector() * pCharacter->EyeHeight();
+
+		SetGlobalOrigin(vecEyeHeight);
+
+		SetGlobalAngles(pCharacter->GetLocalAngles());
 	}
+	else
+	{
+		if (GetThirdPerson())
+		{
+			SetGlobalOrigin(GetThirdPersonCameraPosition());
+			SetGlobalAngles(VectorAngles(GetThirdPersonCameraDirection()));
+			return;
+		}
 
-	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
+		CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
-	SetGlobalOrigin(vecEyeHeight);
+		SetGlobalOrigin(vecEyeHeight);
 
-	SetGlobalAngles(pCharacter->GetGlobalAngles());
+		SetGlobalAngles(pCharacter->GetGlobalAngles());
+	}
 }
 
 const Vector CSPCamera::GetUpVector() const
 {
 	CSPCharacter* pCharacter = m_hCharacter;
-	if (pCharacter)
-		return pCharacter->GetGlobalTransform().GetUpVector();
+
+	CPlanet* pPlanet = pCharacter->GetNearestPlanet();
+	if (pPlanet)
+	{
+		if (pCharacter)
+			return pCharacter->GetLocalTransform().GetUpVector();
+	}
+	else
+	{
+		if (pCharacter)
+			return pCharacter->GetGlobalTransform().GetUpVector();
+	}
 
 	return BaseClass::GetUpVector();
 }

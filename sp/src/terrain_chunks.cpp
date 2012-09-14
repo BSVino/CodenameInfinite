@@ -417,9 +417,17 @@ void CTerrainChunk::Render()
 	CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
 	CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
 
-	CScalableVector vecChunkCenter = mPlanetTransform.TransformVector(CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin);
+	CScalableVector vecChunkCenter;
+	CScalableMatrix mChunkTransform;
 
-	CScalableMatrix mChunkTransform = mPlanetTransform;
+	if (pCharacter->GetNearestPlanet() == pPlanet)
+		vecChunkCenter = CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin;
+	else
+	{
+		vecChunkCenter = mPlanetTransform.TransformVector(CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin);
+		mChunkTransform = mPlanetTransform;
+	}
+
 	mChunkTransform.SetTranslation(vecChunkCenter);
 
 	Matrix4x4 mChunkTransformMeters = mChunkTransform.GetUnits(eRenderScale);
@@ -431,7 +439,12 @@ void CTerrainChunk::Render()
 		flScale = (float)CScalableFloat::ConvertUnits(1, ePlanetScale, eRenderScale);
 
 	CScalableMatrix mPlanetToLocal = mPlanetTransform.InvertedRT();
-	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eRenderScale);
+
+	Vector vecStarLightPosition;
+	if (pCharacter->GetNearestPlanet() == pPlanet)
+		vecStarLightPosition = pStar->GameData().GetScalableRenderOrigin();
+	else
+		vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eRenderScale);
 
 	CRenderingContext r(GameServer()->GetRenderer(), true);
 

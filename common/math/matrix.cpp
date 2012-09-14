@@ -551,9 +551,9 @@ EAngle Matrix4x4::GetAngles() const
 #endif
 
 	if (m[0][1] > 0.999999f)
-		return EAngle(asin(m[0][1]) * 180/M_PI, -atan2(m[2][0], m[2][2]) * 180/M_PI, 0);
+		return EAngle(asin(Clamp(m[0][1], 0.0f, 1.0f)) * 180/M_PI, -atan2(m[2][0], m[2][2]) * 180/M_PI, 0);
 	else if (m[0][1] < -0.999999f)
-		return EAngle(asin(m[0][1]) * 180/M_PI, -atan2(m[2][0], m[2][2]) * 180/M_PI, 0);
+		return EAngle(asin(Clamp(m[0][1], 0.0f, 1.0f)) * 180/M_PI, -atan2(m[2][0], m[2][2]) * 180/M_PI, 0);
 
 	// Clamp to [-1, 1] looping
 	float flPitch = fmod(m[0][1], 2);

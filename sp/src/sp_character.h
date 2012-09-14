@@ -36,6 +36,7 @@ public:
 	CPlanet*					FindNearestPlanet() const;
 
 	virtual const Vector        GetUpVector() const;
+	virtual const Vector        GetLocalUpVector() const;
 
 	void						LockViewToPlanet();
 

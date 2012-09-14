@@ -412,9 +412,17 @@ void CTerrainLump::Render()
 	CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
 	CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
 
-	CScalableVector vecLumpCenter = mPlanetTransform.TransformVector(CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin);
+	CScalableVector vecLumpCenter;
+	CScalableMatrix mLumpTransform;
+	
+	if (pCharacter->GetNearestPlanet() == pPlanet)
+		vecLumpCenter = CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin;
+	else
+	{
+		vecLumpCenter = mPlanetTransform.TransformVector(CScalableVector(m_vecLocalCenter, ePlanetScale) - vecCharacterOrigin);
+		mLumpTransform = mPlanetTransform;
+	}
 
-	CScalableMatrix mLumpTransform = mPlanetTransform;
 	mLumpTransform.SetTranslation(vecLumpCenter);
 
 	Matrix4x4 mLumpTransformMeters = mLumpTransform.GetUnits(eRenderScale);
@@ -426,7 +434,12 @@ void CTerrainLump::Render()
 		flScale = (float)CScalableFloat::ConvertUnits(1, ePlanetScale, eRenderScale);
 
 	CScalableMatrix mPlanetToLocal = mPlanetTransform.InvertedRT();
-	Vector vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eRenderScale);
+
+	Vector vecStarLightPosition;
+	if (pCharacter->GetNearestPlanet() == pPlanet)
+		vecStarLightPosition = pStar->GameData().GetScalableRenderOrigin();
+	else
+		vecStarLightPosition = (mPlanetToLocal.TransformVector(pStar->GameData().GetScalableRenderOrigin())).GetUnits(eRenderScale);
 
 	CRenderingContext r(GameServer()->GetRenderer(), true);
 

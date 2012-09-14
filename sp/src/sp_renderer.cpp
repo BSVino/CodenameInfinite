@@ -155,6 +155,9 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 		CPlanet* pPlanet = pCharacter->GetNearestPlanet();
 		if (pPlanet)
 		{
+			// The skybox is drawn globally even if we're in planet-local rendering mode.
+			c->SetView(Matrix4x4::ConstructCameraView(Vector(0, 0, 0), AngleVector(pCharacter->GetGlobalAngles()), pCharacter->GetUpVector()));
+
 			CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - pPlanet->GetRadius();
 			float flAtmosphere = (float)RemapVal(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1, 0);
 			c->SetUniform("flAtmosphere", flAtmosphere);
@@ -162,7 +165,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 			c->SetUniform("clrSky", Vector(pPlanet->GetAtmosphereColor()));
 			if (GetClosestStar())
 			{
-				c->SetUniform("vecStar", GetClosestStar()->GameData().GetScalableRenderOrigin().GetUnits(SCALE_METER).Normalized());
+				c->SetUniform("vecStar", GetClosestStar()->GetGlobalOrigin().GetUnits(SCALE_METER).Normalized());
 				c->SetUniform("clrStar", Vector(GetClosestStar()->GetLightColor()));
 			}
 		}
