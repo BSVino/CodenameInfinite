@@ -85,6 +85,11 @@ public:
 		return fabs(v.x - x) > flEp || fabs(v.y - y) > flEp || fabs(v.z - z) > flEp;
 	}
 
+	bool	Equals(const TemplateVector<unit_t>& v, float flEp = 0.000001f) const
+	{
+		return fabs(AngleDifference(v.x, x)) < flEp && fabs(AngleDifference(v.y, y)) < flEp && fabs(AngleDifference(v.z, z)) < flEp;
+	}
+
 	unit_t	Length() const;
 	unit_t	LengthSqr() const;
 	unit_t	Length2D() const;

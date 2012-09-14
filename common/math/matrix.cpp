@@ -529,28 +529,28 @@ EAngle Matrix4x4::GetAngles() const
 {
 #ifdef _DEBUG
 	// If any of the below is not true then you have a matrix that has been scaled or reflected or something and it won't work to try to pull its Eulers
-	bool b = fabs(GetForwardVector().LengthSqr() - 1) < 0.00001f;
+	bool b = fabs(GetForwardVector().LengthSqr() - 1) < 0.001f;
 	if (!b)
 	{
 		TAssertNoMsg(b);
 		return EAngle(0, 0, 0);
 	}
 
-	b = fabs(GetUpVector().LengthSqr() - 1) < 0.00001f;
+	b = fabs(GetUpVector().LengthSqr() - 1) < 0.001f;
 	if (!b)
 	{
 		TAssertNoMsg(b);
 		return EAngle(0, 0, 0);
 	}
 
-	b = fabs(GetRightVector().LengthSqr() - 1) < 0.00001f;
+	b = fabs(GetRightVector().LengthSqr() - 1) < 0.001f;
 	if (!b)
 	{
 		TAssertNoMsg(b);
 		return EAngle(0, 0, 0);
 	}
 
-	b = GetRightVector().Cross(GetForwardVector()) == GetUpVector();
+	b = GetRightVector().Cross(GetForwardVector()).Equals(GetUpVector(), 0.001f);
 	if (!b)
 	{
 		TAssertNoMsg(b);
@@ -759,6 +759,19 @@ DoubleVector DoubleMatrix4x4::operator*(const DoubleVector& v) const
 	vecResult.x = m[0][0] * v.x + m[1][0] * v.y + m[2][0] * v.z + m[3][0];
 	vecResult.y = m[0][1] * v.x + m[1][1] * v.y + m[2][1] * v.z + m[3][1];
 	vecResult.z = m[0][2] * v.x + m[1][2] * v.y + m[2][2] * v.z + m[3][2];
+	return vecResult;
+}
+
+DoubleVector DoubleMatrix4x4::TransformVector(const DoubleVector& v) const
+{
+	// [a b c][X] 
+	// [d e f][Y] = [aX+bY+cZ dX+eY+fZ gX+hY+iZ]
+	// [g h i][Z]
+
+	DoubleVector vecResult;
+	vecResult.x = m[0][0] * v.x + m[1][0] * v.y + m[2][0] * v.z;
+	vecResult.y = m[0][1] * v.x + m[1][1] * v.y + m[2][1] * v.z;
+	vecResult.z = m[0][2] * v.x + m[1][2] * v.y + m[2][2] * v.z;
 	return vecResult;
 }
 

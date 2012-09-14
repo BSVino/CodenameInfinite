@@ -163,6 +163,7 @@ public:
 
 	DoubleMatrix4x4 operator*(const DoubleMatrix4x4& t) const;
 	DoubleVector    operator*(const DoubleVector& v) const;
+	DoubleVector    TransformVector(const DoubleVector& v) const;		// Same as homogenous vector with w=0 transform, no translation.
 
 	void            SetForwardVector(const DoubleVector& vecForward);
 	void            SetUpVector(const DoubleVector& vecUp);

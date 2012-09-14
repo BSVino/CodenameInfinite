@@ -208,7 +208,7 @@ bool CCharacterController::PlayerStep(btCollisionWorld* pCollisionWorld, btScala
 
 	btVector3 vecOriginalPosition = mWorld.getOrigin();
 
-	bool bMovement = m_vecWalkDirection.length2() > 0.001f;
+	bool bMovement = m_vecWalkDirection.length2() > 0.001f || fabs(m_flVerticalOffset) > 0.001f;
 
 	if (bMovement)
 	{

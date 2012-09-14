@@ -44,7 +44,7 @@ void CSPCharacter::Think()
 
 	if (pPlanet && !IsInPhysics())
 		AddToPhysics(CT_CHARACTER);
-	else if (IsInPhysics())
+	else if (!pPlanet && IsInPhysics())
 		RemoveFromPhysics();
 
 	if (pPlanet && !HasMoveParent())

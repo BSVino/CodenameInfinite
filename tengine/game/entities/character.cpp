@@ -72,6 +72,9 @@ void CCharacter::Think()
 	else
 		MoveThink();
 
+	if (IsInPhysics())
+		return;
+
 	TMatrix mGlobalToLocalRotation;
 	if (HasMoveParent())
 	{

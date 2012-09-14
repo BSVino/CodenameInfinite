@@ -102,19 +102,35 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 		return;
 	}
 
-	for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
+	if (pPlanet->GetChunkManager()->GetNumChunks())
 	{
-		CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
-		if (!pChunk)
-			continue;
+		for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
+		{
+			CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
+			if (!pChunk)
+				continue;
 
-		if (pChunk->GetPhysicsEntity() == ~0)
-			continue;
+			if (pChunk->GetPhysicsEntity() == ~0)
+				continue;
 
-		m_iCurrentPhysicsChunk = pChunk->GetPhysicsEntity();
-		m_mChunkToPlanet = pChunk->GetChunkToPlanet();
-		m_mPlanetToChunk = pChunk->GetPlanetToChunk();
+			m_iCurrentPhysicsChunk = pChunk->GetPhysicsEntity();
+			m_mChunkToPlanet = pChunk->GetChunkToPlanet();
+			m_mPlanetToChunk = pChunk->GetPlanetToChunk();
 
+			if (m_bFlying)
+				GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
+			else
+				GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
+
+			GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
+			GamePhysics()->SetControllerWalkVelocity(this, m_mPlanetToChunk.TransformVector(GetLocalVelocity().GetUnits(SCALE_METER)));
+			GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+		}
+	}
+	else
+	{
+		m_iCurrentPhysicsChunk = ~0;
+		GamePhysics()->SetControllerWalkVelocity(this, GetGlobalVelocity().GetUnits(SCALE_METER));
 		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
 	}
 
@@ -208,7 +224,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 
 		if (flDistance < flAtmosphere)
 		{
-			CScalableFloat flGroundSpeed = CScalableFloat(0.5f, SCALE_KILOMETER);
+			CScalableFloat flGroundSpeed = CScalableFloat(0.1f, SCALE_KILOMETER);
 			return RemapValClamped(flDistance, CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
