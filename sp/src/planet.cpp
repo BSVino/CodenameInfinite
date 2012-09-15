@@ -236,6 +236,11 @@ void CPlanet::PostRender() const
 	c.SetUniform("bDetail", eScale <= SCALE_METER);
 	c.SetUniform("vecStarLightPosition", vecStarLightPosition);
 	c.SetUniform("eScale", eScale);
+	c.SetUniform("flScale", flScale);
+
+	CScalableFloat flDistance = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - GetRadius();
+	float flAtmosphere = (float)RemapValClamped(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), GetAtmosphereThickness(), 1.0, 0.0);
+	c.SetUniform("flAtmosphere", flAtmosphere);
 
 	if (r_colorcodescales.GetBool())
 	{

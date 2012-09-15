@@ -450,6 +450,11 @@ void CTerrainLump::Render()
 	r.Scale(flScale, flScale, flScale);
 
 	r.SetUniform("vecStarLightPosition", vecStarLightPosition);
+	r.SetUniform("flScale", flScale);
+
+	CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - pPlanet->GetRadius();
+	float flAtmosphere = (float)RemapValClamped(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1.0, 0.0);
+	r.SetUniform("flAtmosphere", flAtmosphere);
 
 	r.BeginRenderVertexArray(m_iLowResTerrainVBO);
 	r.SetPositionBuffer(0u, 10*sizeof(float));
