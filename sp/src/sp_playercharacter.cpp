@@ -145,7 +145,10 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			GamePhysics()->CharacterMovement(this, pWorld, flDelta);
 		}
 
-		if (!bFoundChunk)
+		if (bFoundChunk)
+			// Consider ourselves to have simulated up to this point even though Simulate() isn't run.
+			m_flMoveSimulationTime = GameServer()->GetGameTime();
+		else
 			Simulate();
 	}
 	else
