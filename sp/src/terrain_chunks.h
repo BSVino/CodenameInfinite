@@ -39,10 +39,12 @@ public:
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
 	DoubleMatrix4x4                     GetPlanetToChunk() const { return m_mPlanetToChunk; }
 	DoubleMatrix4x4                     GetChunkToPlanet() const { return m_mChunkToPlanet; }
+	size_t                              GetParity() const { return m_iParity; }
 
 protected:
 	class CTerrainChunkManager*			m_pManager;
 	size_t                              m_iChunk;
+	size_t                              m_iParity;
 
 	size_t                              m_iTerrain;
 	size_t                              m_iLump;
@@ -71,6 +73,9 @@ protected:
 	tvector<int>                        m_aiPhysicsVerts;
 	size_t								m_iPhysicsMesh;
 	size_t								m_iPhysicsEntity;
+
+private:
+	static size_t                       s_iChunks;
 };
 
 class CTerrainChunkManager

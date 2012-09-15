@@ -75,13 +75,11 @@ void CCharacter::Think()
 	if (IsInPhysics())
 		return;
 
-	TMatrix mGlobalToLocalRotation;
-	if (HasMoveParent())
-	{
-		mGlobalToLocalRotation = GetMoveParent()->GetGlobalToLocalTransform();
-		mGlobalToLocalRotation.SetTranslation(TVector());
-	}
+	Simulate();
+}
 
+void CCharacter::Simulate()
+{
 	float flSimulationFrameTime = 0.01f;
 
 	// Break simulations up into consistent small steps to preserve accuracy.

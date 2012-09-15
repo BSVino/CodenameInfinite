@@ -31,7 +31,9 @@ CPlayerCharacter::CPlayerCharacter()
 	m_bWalkSpeedOverride = false;
 	m_bFlying = false;
 
-	m_iCurrentPhysicsChunk = ~0;
+	m_iCurrentChunk = ~0;
+	m_iCurrentChunkPhysics = ~0;
+	m_bIgnoreLocalTransform = false;
 }
 
 void CPlayerCharacter::Spawn()
@@ -102,8 +104,15 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 		return;
 	}
 
+	if (pPlanet->GetChunkManager()->GetNumChunks() > m_aiChunkParities.size())
+	{
+		m_aiChunkParities.resize(pPlanet->GetChunkManager()->GetNumChunks());
+		m_amChunkTransforms.resize(pPlanet->GetChunkManager()->GetNumChunks());
+	}
+
 	if (pPlanet->GetChunkManager()->GetNumChunks())
 	{
+		bool bFoundChunk = false;
 		for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
 		{
 			CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
@@ -113,9 +122,18 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			if (pChunk->GetPhysicsEntity() == ~0)
 				continue;
 
-			m_iCurrentPhysicsChunk = pChunk->GetPhysicsEntity();
+			bFoundChunk = true;
+
+			m_iCurrentChunk = i;
+			m_iCurrentChunkPhysics = pChunk->GetPhysicsEntity();
 			m_mChunkToPlanet = pChunk->GetChunkToPlanet();
 			m_mPlanetToChunk = pChunk->GetPlanetToChunk();
+
+			if (pChunk->GetParity() != m_aiChunkParities[i])
+			{
+				m_aiChunkParities[i] = pChunk->GetParity();
+				m_amChunkTransforms[i] = m_mPlanetToChunk * GetLocalTransform().GetUnits(SCALE_METER);
+			}
 
 			if (m_bFlying)
 				GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
@@ -126,20 +144,24 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			GamePhysics()->SetControllerWalkVelocity(this, m_mPlanetToChunk.TransformVector(GetLocalVelocity().GetUnits(SCALE_METER)));
 			GamePhysics()->CharacterMovement(this, pWorld, flDelta);
 		}
+
+		if (!bFoundChunk)
+			Simulate();
 	}
 	else
 	{
-		m_iCurrentPhysicsChunk = ~0;
-		GamePhysics()->SetControllerWalkVelocity(this, GetGlobalVelocity().GetUnits(SCALE_METER));
-		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+		m_iCurrentChunk = ~0;
+		m_iCurrentChunkPhysics = ~0;
+		Simulate();
 	}
 
-	m_iCurrentPhysicsChunk = ~0;
+	m_iCurrentChunk = ~0;
+	m_iCurrentChunkPhysics = ~0;
 }
 
 const Matrix4x4 CPlayerCharacter::GetPhysicsTransform() const
 {
-	if (m_iCurrentPhysicsChunk == ~0)
+	if (m_iCurrentChunk == ~0)
 		return GetGlobalTransform();
 
 	CPlanet* pPlanet = GetNearestPlanet();
@@ -147,12 +169,14 @@ const Matrix4x4 CPlayerCharacter::GetPhysicsTransform() const
 	if (!pPlanet)
 		return GetGlobalTransform();
 
-	return m_mPlanetToChunk * GetLocalTransform().GetUnits(SCALE_METER);
+	TAssert(pPlanet->GetChunkManager()->GetChunk(m_iCurrentChunk)->GetParity() == m_aiChunkParities[m_iCurrentChunk]);
+
+	return m_amChunkTransforms[m_iCurrentChunk];
 }
 
 void CPlayerCharacter::SetPhysicsTransform(const Matrix4x4& m)
 {
-	if (m_iCurrentPhysicsChunk == ~0)
+	if (m_iCurrentChunk == ~0)
 	{
 		SetGlobalTransform(TMatrix(m));
 		return;
@@ -166,7 +190,40 @@ void CPlayerCharacter::SetPhysicsTransform(const Matrix4x4& m)
 		return;
 	}
 
+	TAssert(pPlanet->GetChunkManager()->GetChunk(m_iCurrentChunk)->GetParity() == m_aiChunkParities[m_iCurrentChunk]);
+
+	m_amChunkTransforms[m_iCurrentChunk] = m;
+
+	m_bIgnoreLocalTransform = true;
 	SetLocalTransform(TMatrix(m_mChunkToPlanet * m));
+	m_bIgnoreLocalTransform = false;
+}
+
+void CPlayerCharacter::OnSetLocalTransform(TMatrix& m)
+{
+	BaseClass::OnSetLocalTransform(m);
+
+	if (m_bIgnoreLocalTransform)
+		return;
+
+	CPlanet* pPlanet = GetNearestPlanet();
+	if (!pPlanet)
+		return;
+
+	if (pPlanet->GetChunkManager()->GetNumChunks() > m_aiChunkParities.size())
+	{
+		m_aiChunkParities.resize(pPlanet->GetChunkManager()->GetNumChunks());
+		m_amChunkTransforms.resize(pPlanet->GetChunkManager()->GetNumChunks());
+	}
+
+	for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
+	{
+		CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
+		if (!pChunk)
+			continue;
+
+		m_amChunkTransforms[i] = pChunk->GetPlanetToChunk() * GetLocalTransform().GetUnits(SCALE_METER);
+	}
 }
 
 void CPlayerCharacter::ToggleFlying()

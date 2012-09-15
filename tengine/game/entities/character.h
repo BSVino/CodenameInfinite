@@ -23,6 +23,7 @@ public:
 public:
 	virtual void					Spawn();
 	virtual void					Think();
+	virtual void                    Simulate();
 
 	void							Move(movetype_t);
 	void							StopMove(movetype_t);

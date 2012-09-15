@@ -276,8 +276,12 @@ void CTerrainChunkManager::Render()
 	}
 }
 
+size_t CTerrainChunk::s_iChunks = 0;
+
 CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size_t iTerrain, size_t iLump, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax)
 {
+	m_iParity = s_iChunks++;
+
 	m_pManager = pManager;
 	m_iChunk = iChunk;
 	m_iTerrain = iTerrain;

@@ -21,6 +21,7 @@ public:
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
 	virtual const Matrix4x4     GetPhysicsTransform() const;
 	virtual void                SetPhysicsTransform(const Matrix4x4& m);
+	virtual void                OnSetLocalTransform(TMatrix& m);
 
 	void						ToggleFlying();
 	void						StartFlying();
@@ -49,9 +50,14 @@ protected:
 	double                      m_flNextApproximateElevation;
 	double                      m_flApproximateElevation;     // From the center of the planet
 
-	size_t                      m_iCurrentPhysicsChunk;
+	size_t                      m_iCurrentChunk;
+	size_t                      m_iCurrentChunkPhysics;
 	DoubleMatrix4x4             m_mPlanetToChunk;
 	DoubleMatrix4x4             m_mChunkToPlanet;
+
+	tvector<size_t>             m_aiChunkParities;
+	tvector<Matrix4x4>          m_amChunkTransforms;    // Use a persistent transform for each chunk to avoid floating point problems converting back to double all the time.
+	bool                        m_bIgnoreLocalTransform;
 };
 
 #endif
