@@ -449,7 +449,9 @@ void CTerrainLump::Render()
 	r.Transform(mLumpTransformMeters);
 	r.Scale(flScale, flScale, flScale);
 
+	r.SetUniform("bDetail", false);
 	r.SetUniform("vecStarLightPosition", vecStarLightPosition);
+	r.SetUniform("eScale", eRenderScale);
 	r.SetUniform("flScale", flScale);
 
 	CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - pPlanet->GetRadius();

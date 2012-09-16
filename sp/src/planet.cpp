@@ -233,7 +233,7 @@ void CPlanet::PostRender() const
 
 	c.UseMaterial("textures/earth.mat");
 
-	c.SetUniform("bDetail", eScale <= SCALE_METER);
+	c.SetUniform("bDetail", false);
 	c.SetUniform("vecStarLightPosition", vecStarLightPosition);
 	c.SetUniform("eScale", eScale);
 	c.SetUniform("flScale", flScale);
