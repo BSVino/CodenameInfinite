@@ -149,10 +149,10 @@ void CCharacterController::CharacterMovement(btCollisionWorld* pCollisionWorld, 
 	bool bMovement = PreStep(pCollisionWorld);
 	bMovement |= PlayerStep(pCollisionWorld, deltaTime);
 
-	FindGround(pCollisionWorld);
-
 	if (bMovement)
 		pPhysicsEntity->m_oMotionState.setWorldTransform(m_pGhostObject->getWorldTransform());
+
+	FindGround(pCollisionWorld);
 }
 
 void CCharacterController::preStep(btCollisionWorld* pCollisionWorld)
@@ -688,7 +688,7 @@ void CCharacterController::StepDown(btCollisionWorld* pCollisionWorld, btScalar 
 
 void CCharacterController::FindGround(btCollisionWorld* pCollisionWorld)
 {
-	if (GetVelocity().dot(GetUpVector()) > m_flJumpSpeed/2.0f)
+	if (m_vecWalkDirection.dot(GetUpVector()) > m_flJumpSpeed/2.0f)
 	{
 		m_hEntity->SetGroundEntity(nullptr);
 		return;

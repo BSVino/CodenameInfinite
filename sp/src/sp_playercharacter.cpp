@@ -251,6 +251,25 @@ bool CPlayerCharacter::ShouldCollideWithExtra(size_t iIndex, const TVector& vecP
 	return true;
 }
 
+void CPlayerCharacter::SetGroundEntity(CBaseEntity* pEntity)
+{
+	// Overridden so that we don't mess with the move parent.
+	if ((CBaseEntity*)m_hGround == pEntity)
+		return;
+
+	m_hGround = pEntity;
+
+	if (pEntity)
+	{
+		if (GetNearestPlanet())
+			TAssert(pEntity == GetNearestPlanet() || pEntity->GetMoveParent() == GetNearestPlanet() || (pEntity->GetMoveParent() && pEntity->GetMoveParent()->GetMoveParent() == GetNearestPlanet()));
+
+		SetMoveParent(pEntity);
+	}
+	else
+		SetMoveParent(GetNearestPlanet());
+}
+
 void CPlayerCharacter::SetGroundEntityExtra(size_t iExtra)
 {
 	SetGroundEntity(GetNearestPlanet());
