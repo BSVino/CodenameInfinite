@@ -82,7 +82,7 @@ void CPlayerCharacter::MoveThink()
 	{
 		CScalableVector vecVelocity = GetLocalVelocity();
 
-		CScalableMatrix m = GetLocalTransform();
+		CScalableMatrix m(GetViewAngles());
 		m.SetTranslation(CScalableVector());
 
 		CScalableVector vecMove = m_vecMoveVelocity * CharacterSpeed();

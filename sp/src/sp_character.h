@@ -48,6 +48,9 @@ public:
 	virtual CScalableFloat		EyeHeight() const;
 	virtual TFloat				JumpStrength();
 	virtual CScalableFloat		CharacterSpeed();
+	virtual double              GetLastEnteredAtmosphere() const { return m_flLastEnteredAtmosphere; }
+	virtual float               GetAtmosphereLerpTime() const { return 1; }
+	virtual float               GetAtmosphereLerp() const { return 0.3f; }
 
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;

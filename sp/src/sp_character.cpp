@@ -50,7 +50,7 @@ void CSPCharacter::Think()
 	if (pPlanet && !HasMoveParent())
 	{
 		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
-		m_flRollFromSpace = GetGlobalAngles().r;
+		m_flRollFromSpace = GetViewAngles().r;
 
 		EnteredAtmosphere();
 	}
@@ -223,21 +223,20 @@ void CSPCharacter::LockViewToPlanet()
 	if (!pNearestPlanet)
 		return;
 
-	Matrix4x4 mGlobalRotation = GetGlobalTransform();
-	mGlobalRotation.SetTranslation(CScalableVector());
+	Matrix4x4 mPlanetLocalRotation(GetViewAngles());
 
 	// Construct a "local space" for the planet
-	Vector vecPlanetUp = GetUpVector();
-	Vector vecPlanetForward = mGlobalRotation.GetForwardVector();
-	Vector vecPlanetRight = vecPlanetForward.Cross(vecPlanetUp).Normalized();
-	vecPlanetForward = vecPlanetUp.Cross(vecPlanetRight).Normalized();
+	Vector vecSurfaceUp = GetLocalUpVector();
+	Vector vecSurfaceForward = mPlanetLocalRotation.GetForwardVector();
+	Vector vecSurfaceRight = vecSurfaceForward.Cross(vecSurfaceUp).Normalized();
+	vecSurfaceForward = vecSurfaceUp.Cross(vecSurfaceRight).Normalized();
 
-	Matrix4x4 mPlanet(vecPlanetForward, vecPlanetUp, vecPlanetRight);
-	Matrix4x4 mPlanetInverse = mPlanet;
-	mPlanetInverse.InvertRT();
+	Matrix4x4 mSurface(vecSurfaceForward, vecSurfaceUp, vecSurfaceRight);
+	Matrix4x4 mSurfaceInverse = mSurface;
+	mSurfaceInverse.InvertRT();
 
 	// Bring our current view angles into that local space
-	Matrix4x4 mLocalRotation = mPlanetInverse * mGlobalRotation;
+	Matrix4x4 mLocalRotation = mSurfaceInverse * mPlanetLocalRotation;
 	EAngle angLocalRotation = mLocalRotation.GetAngles();
 
 	// Lock them so that the roll is 0
@@ -247,20 +246,23 @@ void CSPCharacter::LockViewToPlanet()
 	mLockedLocalRotation.SetAngles(angLocalRotation);
 
 	// Bring it back out to global space
-	Matrix4x4 mLockedRotation = mPlanet * mLockedLocalRotation;
+	Matrix4x4 mLockedRotation = mSurface * mLockedLocalRotation;
 
 	// Only use the changed r value to avoid floating point crap
-	EAngle angNewLockedRotation = GetGlobalAngles();
+	EAngle angNewLockedRotation = GetViewAngles();
 	EAngle angOverloadRotation = mLockedRotation.GetAngles();
 
 	// Lerp our way there
-	float flTimeToLocked = 1;
+	float flTimeToLocked = GetAtmosphereLerpTime();
 	if (GameServer()->GetGameTime() - m_flLastEnteredAtmosphere > flTimeToLocked)
 		angNewLockedRotation.r = angOverloadRotation.r;
 	else
-		angNewLockedRotation.r = RemapValClamped(SLerp((float)(GameServer()->GetGameTime() - m_flLastEnteredAtmosphere), 0.3f), 0, flTimeToLocked, m_flRollFromSpace, angOverloadRotation.r);
+	{
+		float flRollDifference = AngleDifference(angOverloadRotation.r, m_flRollFromSpace);
+		angNewLockedRotation.r = m_flRollFromSpace + RemapValClamped(SLerp((float)(GameServer()->GetGameTime() - m_flLastEnteredAtmosphere), GetAtmosphereLerp()), 0, flTimeToLocked, 0, flRollDifference);
+	}
 
-	SetGlobalAngles(angNewLockedRotation);
+	SetViewAngles(angNewLockedRotation);
 }
 
 void CSPCharacter::StandOnNearestPlanet()

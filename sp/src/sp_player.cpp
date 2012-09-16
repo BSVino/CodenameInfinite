@@ -6,6 +6,7 @@
 #include <tinker/keys.h>
 
 #include "sp_playercharacter.h"
+#include "planet.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
@@ -27,26 +28,63 @@ void CSPPlayer::MouseMotion(int x, int y)
 	float flYaw = (x*flSensitivity/20);
 	float flPitch = (y*flSensitivity/20);
 
-	EAngle angMouse;
-	angMouse.p = -flPitch;
-	angMouse.y = flYaw;
-	angMouse.r = 0;
+	if (GetPlayerCharacter()->GetNearestPlanet())
+	{
+		Matrix4x4 mPlanetLocalRotation(GetPlayerCharacter()->GetViewAngles());
 
-	CScalableMatrix mRotate;
-	mRotate.SetAngles(angMouse);
+		// Construct a "local space" for the surface
+		Vector vecSurfaceUp = GetPlayerCharacter()->GetLocalUpVector();
+		Vector vecSurfaceForward = mPlanetLocalRotation.GetForwardVector();
+		Vector vecSurfaceRight = vecSurfaceForward.Cross(vecSurfaceUp).Normalized();
+		vecSurfaceForward = vecSurfaceUp.Cross(vecSurfaceRight).Normalized();
 
-	CScalableMatrix mTransform = GetPlayerCharacter()->GetLocalTransform();
-	mTransform.SetTranslation(CScalableVector());
+		Matrix4x4 mSurface(vecSurfaceForward, vecSurfaceUp, vecSurfaceRight);
+		Matrix4x4 mSurfaceInverse = mSurface;
+		mSurfaceInverse.InvertRT();
 
-	CScalableMatrix mNewTransform = mTransform * mRotate;
+		// Bring our current view angles into that local space
+		Matrix4x4 mLocalRotation = mSurfaceInverse * mPlanetLocalRotation;
+		EAngle angLocalRotation = mLocalRotation.GetAngles();
 
-	mNewTransform.SetTranslation(GetPlayerCharacter()->GetLocalOrigin());
+		angLocalRotation.y += flYaw;
+		angLocalRotation.p -= flPitch;
+		angLocalRotation.r = 0;
 
-	mNewTransform.SetForwardVector(mNewTransform.GetForwardVector().Normalized());
-	mNewTransform.SetRightVector(mNewTransform.GetForwardVector().Cross(mNewTransform.GetUpVector()).Normalized());
-	mNewTransform.SetUpVector(mNewTransform.GetRightVector().Cross(mNewTransform.GetForwardVector()));
+		if (angLocalRotation.p > 89)
+			angLocalRotation.p = 89;
 
-	GetPlayerCharacter()->SetLocalTransform(mNewTransform);
+		if (angLocalRotation.p < -89)
+			angLocalRotation.p = -89;
+
+		while (angLocalRotation.y > 180)
+			angLocalRotation.y -= 360;
+
+		while (angLocalRotation.y < -180)
+			angLocalRotation.y += 360;
+
+		Matrix4x4 mNewLocalRotation;
+		mNewLocalRotation.SetAngles(angLocalRotation);
+
+		Matrix4x4 mNewGlobalRotation = mSurface * mNewLocalRotation;
+
+		GetPlayerCharacter()->SetViewAngles(mNewGlobalRotation.GetAngles());
+	}
+	else
+	{
+		EAngle angMouse;
+		angMouse.p = -flPitch;
+		angMouse.y = flYaw;
+		angMouse.r = 0;
+
+		CScalableMatrix mRotate;
+		mRotate.SetAngles(angMouse);
+
+		CScalableMatrix mTransform(GetPlayerCharacter()->GetViewAngles());
+
+		CScalableMatrix mNewTransform = mTransform * mRotate;
+
+		GetPlayerCharacter()->SetViewAngles(mNewTransform.GetAngles());
+	}
 }
 
 void CSPPlayer::KeyPress(int c)

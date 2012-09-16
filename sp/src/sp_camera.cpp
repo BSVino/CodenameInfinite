@@ -59,7 +59,7 @@ void CSPCamera::CameraThink()
 
 		SetGlobalOrigin(vecEyeHeight);
 
-		SetGlobalAngles(pCharacter->GetLocalAngles());
+		SetGlobalAngles(pCharacter->GetViewAngles());
 	}
 	else
 	{
@@ -74,7 +74,7 @@ void CSPCamera::CameraThink()
 
 		SetGlobalOrigin(vecEyeHeight);
 
-		SetGlobalAngles(pCharacter->GetGlobalAngles());
+		SetGlobalAngles(pCharacter->GetViewAngles());
 	}
 }
 
@@ -82,19 +82,22 @@ const Vector CSPCamera::GetUpVector() const
 {
 	CSPCharacter* pCharacter = m_hCharacter;
 
+	if (!pCharacter)
+		return BaseClass::GetUpVector();
+
 	CPlanet* pPlanet = pCharacter->GetNearestPlanet();
+
 	if (pPlanet)
 	{
-		if (pCharacter)
-			return pCharacter->GetLocalTransform().GetUpVector();
+		float flTimeToLocked = pCharacter->GetAtmosphereLerpTime();
+		float flLerp = RemapValClamped(SLerp((float)(GameServer()->GetGameTime() - pCharacter->GetLastEnteredAtmosphere()), pCharacter->GetAtmosphereLerp()), 0.0f, flTimeToLocked, 0.0f, 1.0f);
+		if (flLerp == 1)
+			return pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized();
+		else
+			return LerpValue<Vector>(Matrix4x4(pCharacter->GetViewAngles()).GetUpVector(), pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized(), flLerp);
 	}
 	else
-	{
-		if (pCharacter)
-			return pCharacter->GetGlobalTransform().GetUpVector();
-	}
-
-	return BaseClass::GetUpVector();
+		return Matrix4x4(pCharacter->GetViewAngles()).GetUpVector();
 }
 
 float CSPCamera::GetCameraNear() const

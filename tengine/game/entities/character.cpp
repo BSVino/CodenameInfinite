@@ -20,7 +20,6 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, int, m_hControllingPlayer);
-	SAVEDATA_DEFINE_HANDLE(CSaveData::DATA_COPYTYPE, EAngle, m_angView, "ViewAngles");
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CBaseEntity>, m_hGround);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bNoClip);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, bool, m_bTransformMoveByView);
@@ -32,7 +31,6 @@ SAVEDATA_TABLE_BEGIN(CCharacter);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CCharacter);
-	INPUT_DEFINE(SetViewAngles);
 INPUTS_TABLE_END();
 
 CCharacter::CCharacter()
@@ -391,17 +389,6 @@ TFloat CCharacter::CharacterSpeed()
 		return BaseCharacterSpeed() * sv_noclip_multiplier.GetFloat();
 	else
 		return BaseCharacterSpeed();
-}
-
-void CCharacter::SetViewAngles(const tvector<tstring>& asArgs)
-{
-	if (asArgs.size() != 3)
-	{
-		TError("CCharacter::SetViewAngles with != 3 arguments. Was expecting \"p y r\"\n");
-		return;
-	}
-
-	SetViewAngles(EAngle((float)stof(asArgs[0]), (float)stof(asArgs[1]), (float)stof(asArgs[2])));
 }
 
 void CCharacter::SetGroundEntity(CBaseEntity* pEntity)

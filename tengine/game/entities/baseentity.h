@@ -570,6 +570,11 @@ public:
 	DECLARE_ENTITY_INPUT(SetLocalOrigin);
 	DECLARE_ENTITY_INPUT(SetLocalAngles);
 
+	virtual void					SetViewAngles(const EAngle& angView) { m_angView = angView; }
+	virtual const EAngle			GetViewAngles() const { return m_angView; }
+
+	DECLARE_ENTITY_INPUT(SetViewAngles);
+
 	inline const Vector						GetScale() const { return m_vecScale.Get(); }
 
 	virtual const Vector					GetUpVector() const { return Vector(0, 1, 0); };
@@ -753,6 +758,7 @@ protected:
 	CNetworkedEAngle						m_angLocalAngles;
 	CNetworkedVector						m_vecLocalVelocity;
 	CNetworkedVariable<Vector>              m_vecScale;
+	EAngle                                  m_angView;
 
 	size_t									m_iHandle;
 

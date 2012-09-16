@@ -110,6 +110,7 @@ SAVEDATA_TABLE_BEGIN(CBaseEntity);
 	SAVEDATA_EDITOR_VARIABLE("Angles");
 	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, TVector, m_vecLocalVelocity);
 	SAVEDATA_DEFINE_HANDLE_DEFAULT(CSaveData::DATA_NETVAR, Vector, m_vecScale, "Scale", Vector(1, 1, 1));
+	SAVEDATA_DEFINE_HANDLE(CSaveData::DATA_COPYTYPE, EAngle, m_angView, "ViewAngles");
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iHandle);
 	SAVEDATA_DEFINE_HANDLE_DEFAULT(CSaveData::DATA_NETVAR, bool, m_bTakeDamage, "TakeDamage", false);
 	SAVEDATA_DEFINE_HANDLE(CSaveData::DATA_NETVAR, float, m_flTotalHealth, "TotalHealth");
@@ -134,6 +135,7 @@ SAVEDATA_TABLE_END();
 INPUTS_TABLE_BEGIN(CBaseEntity);
 	INPUT_DEFINE(SetLocalOrigin);
 	INPUT_DEFINE(SetLocalAngles);
+	INPUT_DEFINE(SetViewAngles);
 	INPUT_DEFINE(SetVisible);
 	INPUT_DEFINE(Activate);
 	INPUT_DEFINE(Deactivate);
@@ -340,6 +342,7 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 		TMatrix mPreviousGlobal = GetGlobalTransform();
 		TVector vecPreviousVelocity = GetGlobalVelocity();
 		TVector vecPreviousLastOrigin = mPreviousGlobal * GetLastLocalOrigin();
+		EAngle angPreviousGlobalView = (Matrix4x4(m_hMoveParent->GetGlobalTransform()) * Matrix4x4(m_angView)).GetAngles();
 
 		for (size_t i = 0; i < m_hMoveParent->m_ahMoveChildren.size(); i++)
 		{
@@ -357,6 +360,7 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 		m_vecLocalOrigin = mPreviousGlobal.GetTranslation();
 		m_qLocalRotation = Quaternion(mPreviousGlobal);
 		m_angLocalAngles = mPreviousGlobal.GetAngles();
+		m_angView = angPreviousGlobalView;
 
 		InvalidateGlobalTransforms();
 	}
@@ -379,6 +383,7 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 	m_vecLocalOrigin = m_mLocalTransform.GetTranslation();
 	m_qLocalRotation = Quaternion(m_mLocalTransform);
 	m_angLocalAngles = m_mLocalTransform.GetAngles();
+	m_angView = (Matrix4x4(mGlobalToLocal) * Matrix4x4(m_angView)).GetAngles();
 
 	TFloat flVelocityLength = vecPreviousVelocity.Length();
 	if (flVelocityLength > TFloat(0))
@@ -712,6 +717,17 @@ void CBaseEntity::SetLocalAngles(const tvector<tstring>& asArgs)
 	}
 
 	SetLocalAngles(EAngle((float)stof(asArgs[0]), (float)stof(asArgs[1]), (float)stof(asArgs[2])));
+}
+
+void CBaseEntity::SetViewAngles(const tvector<tstring>& asArgs)
+{
+	if (asArgs.size() != 3)
+	{
+		TError("CCharacter::SetViewAngles with != 3 arguments. Was expecting \"p y r\"\n");
+		return;
+	}
+
+	SetViewAngles(EAngle((float)stof(asArgs[0]), (float)stof(asArgs[1]), (float)stof(asArgs[2])));
 }
 
 CBaseEntity* CBaseEntity::GetEntity(size_t iHandle)

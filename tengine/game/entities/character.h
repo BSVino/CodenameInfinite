@@ -62,11 +62,6 @@ public:
 
 	virtual bool					ShouldCollide() const { return false; }
 
-	virtual void					SetViewAngles(const EAngle& angView) { m_angView = angView; }
-	virtual const EAngle			GetViewAngles() const { return m_angView; }
-
-	DECLARE_ENTITY_INPUT(SetViewAngles);
-
 	virtual const EAngle			GetThirdPersonCameraAngles() const { return GetViewAngles(); }
 
 	CBaseEntity*					GetGroundEntity() const { return m_hGround; }
@@ -78,8 +73,6 @@ public:
 
 protected:
 	CNetworkedHandle<CPlayer>		m_hControllingPlayer;
-
-	EAngle							m_angView;
 
 	CNetworkedHandle<CBaseEntity>	m_hGround;
 
