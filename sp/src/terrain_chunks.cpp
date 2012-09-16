@@ -317,7 +317,10 @@ CTerrainChunk::~CTerrainChunk()
 	}
 
 	if (m_iPhysicsEntity != ~0)
-		GamePhysics()->UnloadExtraCollisionMesh(m_iPhysicsEntity);
+	{
+		GamePhysics()->RemoveExtra(m_iPhysicsEntity);
+		GamePhysics()->UnloadExtraCollisionMesh(m_iPhysicsMesh);
+	}
 }
 
 void CTerrainChunk::Initialize()

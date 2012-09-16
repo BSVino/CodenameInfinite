@@ -560,7 +560,10 @@ void CBulletPhysics::UnloadExtraCollisionMesh(size_t iIndex)
 		auto pObject = m_pDynamicsWorld->getCollisionObjectArray()[i];
 		TAssert(pObject->getCollisionShape() != m_apExtraCollisionMeshes[iIndex]->m_pCollisionShape);
 		if (pObject->getCollisionShape() == m_apExtraCollisionMeshes[iIndex]->m_pCollisionShape)
+		{
+			RemoveExtra(iIndex);
 			TError("Entity found with collision mesh which is being unloaded\n");
+		}
 	}
 
 	delete m_apExtraCollisionMeshes[iIndex]->m_pCollisionShape;
