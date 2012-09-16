@@ -48,30 +48,12 @@ void CStar::PostRender() const
 
 	float flRadius = (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
 
-	if (pCharacter->GetNearestPlanet())
-	{
-		Vector vecRight = pCharacter->GetGlobalTransform().GetForwardVector().Cross(pCharacter->GetUpVector()).Normalized();
-		Vector vecUp = vecRight.Cross(pCharacter->GetGlobalTransform().GetForwardVector()).Normalized();
+	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
-		CRenderingContext c(GameServer()->GetRenderer(), true);
+	c.ResetTransformations();
+	c.Transform(BaseGetRenderTransform());
 
-		// The skybox is drawn globally even if we're in planet-local rendering mode.
-		c.SetView(Matrix4x4::ConstructCameraView(Vector(0, 0, 0), AngleVector(pCharacter->GetGlobalAngles()), pCharacter->GetUpVector()));
-
-		c.ResetTransformations();
-		c.Transform(GetGlobalTransform().GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale()));
-
-		c.RenderBillboard(CMaterialHandle("textures/star-yellow.mat"), flRadius, vecUp, vecRight);
-	}
-	else
-	{
-		CGameRenderingContext c(GameServer()->GetRenderer(), true);
-
-		c.ResetTransformations();
-		c.Transform(BaseGetRenderTransform());
-
-		c.RenderBillboard("textures/star-yellow.mat", flRadius);
-	}
+	c.RenderBillboard("textures/star-yellow.mat", flRadius);
 }
 
 CScalableFloat CStar::GetCloseOrbit()
