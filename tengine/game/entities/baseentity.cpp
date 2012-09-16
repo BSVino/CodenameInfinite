@@ -571,15 +571,10 @@ void CBaseEntity::SetLocalTransform(const TMatrix& m)
 	if (!m_angLocalAngles.IsInitialized())
 		m_angLocalAngles = angNew;
 
-	if (IsInPhysics())
-	{
-		if (GetMoveParent())
-			GamePhysics()->SetEntityTransform(this, GetMoveParent()->GetGlobalTransform() * mNew);
-		else
-			GamePhysics()->SetEntityTransform(this, mNew);
-	}
-
 	m_mLocalTransform = mNew;
+
+	if (IsInPhysics())
+		GamePhysics()->SetEntityTransform(this, GetPhysicsTransform());
 
 	if ((mNew.GetTranslation() - m_vecLocalOrigin).LengthSqr() > TFloat(0))
 		m_vecLocalOrigin = mNew.GetTranslation();
