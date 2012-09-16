@@ -163,6 +163,7 @@ void CGameRenderer::DrawSkybox(class CRenderingContext* pContext)
 		));
 
 	c.SetView(Matrix4x4::ConstructCameraView(Vector(0, 0, 0), m_vecCameraDirection, m_vecCameraUp));
+	c.ResetTransformations();
 
 	c.SetDepthTest(false);
 	c.UseProgram("skybox");
