@@ -68,7 +68,7 @@ void CTerrainLumpManager::RemoveLump(size_t iLump)
 		return;
 	}
 
-	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	CMutexLocker oLock = s_pLumpGenerator->GetLock();
 	oLock.Lock();
 	RemoveLumpNoLock(iLump);
 }

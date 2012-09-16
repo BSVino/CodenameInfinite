@@ -666,6 +666,7 @@ public:
 	// definitely collide if true is returned here. If two objects should never collide,
 	// use collision groups instead to avoid the expensive collision checks.
 	virtual bool							ShouldCollideWith(CBaseEntity* pOther, const TVector& vecPoint) const { return true; }
+	virtual bool							ShouldCollideWithExtra(size_t, const TVector& vecPoint) const { return true; }
 
 	size_t									GetSpawnSeed() const { return m_iSpawnSeed; }
 	void									SetSpawnSeed(size_t iSpawnSeed);

@@ -66,6 +66,7 @@ public:
 
 	CBaseEntity*					GetGroundEntity() const { return m_hGround; }
 	void							SetGroundEntity(CBaseEntity* pEntity);
+	virtual void                    SetGroundEntityExtra(size_t iExtra);
 
 	TFloat							GetMaxStepHeight() const { return m_flMaxStepSize; }
 

@@ -106,7 +106,8 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 
 	if (pPlanet->GetChunkManager()->GetNumChunks() > m_aiChunkParities.size())
 	{
-		m_aiChunkParities.resize(pPlanet->GetChunkManager()->GetNumChunks());
+		while (m_aiChunkParities.size() < pPlanet->GetChunkManager()->GetNumChunks())
+			m_aiChunkParities.push_back(~0);
 		m_amChunkTransforms.resize(pPlanet->GetChunkManager()->GetNumChunks());
 	}
 
@@ -132,7 +133,14 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			if (pChunk->GetParity() != m_aiChunkParities[i])
 			{
 				m_aiChunkParities[i] = pChunk->GetParity();
-				m_amChunkTransforms[i] = m_mPlanetToChunk * GetLocalTransform().GetUnits(SCALE_METER);
+
+				Matrix4x4& mChunkTransform = m_amChunkTransforms[i];
+				mChunkTransform = m_mPlanetToChunk * GetLocalTransform().GetUnits(SCALE_METER);
+
+				// For the purposes of physics, the player to stands up straight.
+				mChunkTransform.SetUpVector(Vector(0, 1, 0));
+				mChunkTransform.SetRightVector(mChunkTransform.GetForwardVector().Cross(mChunkTransform.GetUpVector()).Normalized());
+				mChunkTransform.SetForwardVector(mChunkTransform.GetUpVector().Cross(mChunkTransform.GetRightVector()).Normalized());
 			}
 
 			if (m_bFlying)
@@ -225,8 +233,27 @@ void CPlayerCharacter::OnSetLocalTransform(TMatrix& m)
 		if (!pChunk)
 			continue;
 
-		m_amChunkTransforms[i] = pChunk->GetPlanetToChunk() * GetLocalTransform().GetUnits(SCALE_METER);
+		Matrix4x4& mChunkTransform = m_amChunkTransforms[i];
+		mChunkTransform = pChunk->GetPlanetToChunk() * GetLocalTransform().GetUnits(SCALE_METER);
+		mChunkTransform.SetUpVector(Vector(0, 1, 0));
+		mChunkTransform.SetRightVector(mChunkTransform.GetForwardVector().Cross(mChunkTransform.GetUpVector()).Normalized());
+		mChunkTransform.SetForwardVector(mChunkTransform.GetUpVector().Cross(mChunkTransform.GetRightVector()).Normalized());
 	}
+}
+
+bool CPlayerCharacter::ShouldCollideWithExtra(size_t iIndex, const TVector& vecPoint) const
+{
+	TAssert(m_iCurrentChunk != ~0);
+
+	if (iIndex != m_iCurrentChunkPhysics)
+		return false;
+
+	return true;
+}
+
+void CPlayerCharacter::SetGroundEntityExtra(size_t iExtra)
+{
+	SetGroundEntity(GetNearestPlanet());
 }
 
 void CPlayerCharacter::ToggleFlying()

@@ -75,7 +75,7 @@ void CTerrainChunkManager::RemoveChunk(size_t iChunk)
 		return;
 	}
 
-	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
+	CMutexLocker oLock = s_pChunkGenerator->GetLock();
 	oLock.Lock();
 	RemoveChunkNoLock(iChunk);
 }

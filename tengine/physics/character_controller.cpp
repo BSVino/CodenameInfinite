@@ -46,17 +46,32 @@ public:
 		if (convexResult.m_hitCollisionObject->getBroadphaseHandle()->m_collisionFilterGroup & btBroadphaseProxy::SensorTrigger)
 			return 1;
 
-		CEntityHandle<CBaseEntity> hCollidedEntity((size_t)convexResult.m_hitCollisionObject->getUserPointer());
-		TAssert(hCollidedEntity != NULL);
-		if (hCollidedEntity.GetPointer())
+		if ((size_t)convexResult.m_hitCollisionObject->getUserPointer() >= GameServer()->GetMaxEntities())
 		{
+			size_t iIndex = (size_t)convexResult.m_hitCollisionObject->getUserPointer() - GameServer()->GetMaxEntities();
 			CBaseEntity* pControllerEntity = m_pController->GetEntity();
 			TAssert(pControllerEntity);
 			if (pControllerEntity)
 			{
 				TAssert(normalInWorldSpace);
-				if (!pControllerEntity->ShouldCollideWith(hCollidedEntity, Vector(convexResult.m_hitPointLocal)))
+				if (!pControllerEntity->ShouldCollideWithExtra(iIndex, Vector(convexResult.m_hitPointLocal)))
 					return 1;
+			}
+		}
+		else
+		{
+			CEntityHandle<CBaseEntity> hCollidedEntity((size_t)convexResult.m_hitCollisionObject->getUserPointer());
+			TAssert(hCollidedEntity != NULL);
+			if (hCollidedEntity.GetPointer())
+			{
+				CBaseEntity* pControllerEntity = m_pController->GetEntity();
+				TAssert(pControllerEntity);
+				if (pControllerEntity)
+				{
+					TAssert(normalInWorldSpace);
+					if (!pControllerEntity->ShouldCollideWith(hCollidedEntity, Vector(convexResult.m_hitPointLocal)))
+						return 1;
+				}
 			}
 		}
 
@@ -376,6 +391,7 @@ bool CCharacterController::RecoverFromPenetration(btCollisionWorld* pCollisionWo
 
 			btScalar directionSign;
 			CEntityHandle<CBaseEntity> hOther;
+			size_t iExtra;
 			if (obA == m_pGhostObject)
 			{
 				if (obB->getBroadphaseHandle()->m_collisionFilterGroup & btBroadphaseProxy::SensorTrigger)
@@ -383,6 +399,7 @@ bool CCharacterController::RecoverFromPenetration(btCollisionWorld* pCollisionWo
 
 				directionSign = btScalar(-1.0);
 				hOther = CEntityHandle<CBaseEntity>((size_t)obB->getUserPointer());
+				iExtra = (size_t)obB->getUserPointer()-GameServer()->GetMaxEntities();
 
 				if (obB->getCollisionFlags()&btCollisionObject::CF_CHARACTER_OBJECT)
 				{
@@ -398,6 +415,7 @@ bool CCharacterController::RecoverFromPenetration(btCollisionWorld* pCollisionWo
 
 				directionSign = btScalar(1.0);
 				hOther = CEntityHandle<CBaseEntity>((size_t)obA->getUserPointer());
+				iExtra = (size_t)obB->getUserPointer()-GameServer()->GetMaxEntities();
 
 				if (obA->getCollisionFlags()&btCollisionObject::CF_CHARACTER_OBJECT)
 				{
@@ -413,13 +431,29 @@ bool CCharacterController::RecoverFromPenetration(btCollisionWorld* pCollisionWo
 
 				if (obA == m_pGhostObject)
 				{
-					if (!m_hEntity->ShouldCollideWith(hOther, Vector(pt.getPositionWorldOnB())))
-						continue;
+					if (hOther)
+					{
+						if (!m_hEntity->ShouldCollideWith(hOther, Vector(pt.getPositionWorldOnB())))
+							continue;
+					}
+					else
+					{
+						if (!m_hEntity->ShouldCollideWithExtra(iExtra, Vector(pt.getPositionWorldOnB())))
+							continue;
+					}
 				}
 				else
 				{
-					if (!m_hEntity->ShouldCollideWith(hOther, Vector(pt.getPositionWorldOnA())))
-						continue;
+					if (hOther)
+					{
+						if (!m_hEntity->ShouldCollideWith(hOther, Vector(pt.getPositionWorldOnA())))
+							continue;
+					}
+					else
+					{
+						if (!m_hEntity->ShouldCollideWithExtra(iExtra, Vector(pt.getPositionWorldOnA())))
+							continue;
+					}
 				}
 
 				btScalar dist = pt.getDistance();
@@ -446,6 +480,8 @@ bool CCharacterController::RecoverFromPenetration(btCollisionWorld* pCollisionWo
 
 						m_vecCurrentPosition += btVector3(0, ((vecNewTouch2.y() - pt.m_positionWorldOnA.y()) * 1.001f), 0);
 					}
+					//else if (flDot < 0.01f)
+					//	m_vecCurrentPosition += (m_vecCurrentPosition - pt.m_positionWorldOnB).normalized() * (directionSign * dist * 1.001f);
 					else
 						m_vecCurrentPosition += pt.m_normalWorldOnB * (directionSign * dist * 1.001f);
 
@@ -683,7 +719,10 @@ void CCharacterController::FindGround(btCollisionWorld* pCollisionWorld)
 		else
 		{
 			CEntityHandle<CBaseEntity> hOther = CEntityHandle<CBaseEntity>((size_t)callback.m_hitCollisionObject->getUserPointer());
-			m_hEntity->SetGroundEntity(hOther);
+			if (hOther)
+				m_hEntity->SetGroundEntity(hOther);
+			else
+				m_hEntity->SetGroundEntityExtra((size_t)callback.m_hitCollisionObject->getUserPointer()-GameServer()->GetMaxEntities());
 		}
 	}
 	else

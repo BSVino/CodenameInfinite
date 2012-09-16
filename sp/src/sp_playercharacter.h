@@ -22,6 +22,8 @@ public:
 	virtual const Matrix4x4     GetPhysicsTransform() const;
 	virtual void                SetPhysicsTransform(const Matrix4x4& m);
 	virtual void                OnSetLocalTransform(TMatrix& m);
+	virtual bool                ShouldCollideWithExtra(size_t, const TVector& vecPoint) const;
+	virtual void                SetGroundEntityExtra(size_t iExtra);
 
 	void						ToggleFlying();
 	void						StartFlying();

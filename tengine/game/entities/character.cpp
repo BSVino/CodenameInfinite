@@ -399,3 +399,7 @@ void CCharacter::SetGroundEntity(CBaseEntity* pEntity)
 	m_hGround = pEntity;
 	SetMoveParent(pEntity);
 }
+
+void CCharacter::SetGroundEntityExtra(size_t iExtra)
+{
+}
