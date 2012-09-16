@@ -315,6 +315,9 @@ CTerrainChunk::~CTerrainChunk()
 		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainVBO);
 		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainIBO);
 	}
+
+	if (m_iPhysicsEntity != ~0)
+		GamePhysics()->UnloadExtraCollisionMesh(m_iPhysicsEntity);
 }
 
 void CTerrainChunk::Initialize()
