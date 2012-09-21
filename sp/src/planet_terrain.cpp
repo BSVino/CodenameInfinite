@@ -126,7 +126,9 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 
 			vecTerrain.vec3DPosition -= vecOrigin;
 
-			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (float)iDetailLevel;
+			vecTerrain.vecDetail = vecTerrain.vec2DPosition * (double)iDetailLevel;
+			vecTerrain.vecDetail.x = fmod(vecTerrain.vecDetail.x, 100);
+			vecTerrain.vecDetail.y = fmod(vecTerrain.vecDetail.y, 100);
 		}
 	}
 
