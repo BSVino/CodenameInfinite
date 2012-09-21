@@ -10,6 +10,16 @@
 #include "character_controller.h"
 #include "trigger_controller.h"
 
+inline btVector3 ToBTVector(const Vector& v)
+{
+	return btVector3(v.x, v.y, v.z);
+}
+
+inline Vector ToTVector(const btVector3& v)
+{
+	return Vector(v.x(), v.y(), v.z());
+}
+
 class CMotionState : public btMotionState
 {
 public:
@@ -69,7 +79,7 @@ public:
 	virtual void			AddModelTris(class CBaseEntity* pEnt, collision_type_t eCollisionType, size_t iModel);
 	virtual void			RemoveEntity(class CBaseEntity* pEnt);
 	virtual void			RemoveEntity(CPhysicsEntity* pEntity);
-	virtual size_t          AddExtra(size_t iExtraMesh);  // Input is result from LoadExtraCollisionMesh
+	virtual size_t          AddExtra(size_t iExtraMesh, const Vector& vecOrigin);  // Input is result from LoadExtraCollisionMesh
 	virtual void            RemoveExtra(size_t iExtra);   // Input is result from AddExtra
 	virtual void			RemoveAllEntities();
 

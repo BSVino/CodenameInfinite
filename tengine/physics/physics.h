@@ -22,7 +22,7 @@ public:
 public:
 	virtual void			AddEntity(class CBaseEntity* pEnt, collision_type_t eCollisionType) {};
 	virtual void			RemoveEntity(class CBaseEntity* pEnt) {};
-	virtual size_t          AddExtra(size_t iExtraMesh) { return ~0; };  // Input is result from LoadExtraCollisionMesh
+	virtual size_t          AddExtra(size_t iExtraMesh, const Vector& vecOrigin) { return ~0; };  // Input is result from LoadExtraCollisionMesh
 	virtual void            RemoveExtra(size_t iExtra) {};               // Input is result from AddExtra
 	virtual void			RemoveAllEntities() {};
 

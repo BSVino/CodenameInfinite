@@ -36,6 +36,7 @@ public:
 	size_t                              GetLump() const;
 	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
 	size_t                              GetPhysicsEntity() const { return m_iPhysicsEntity; }
+	bool                                HasPhysicsEntity() const { return m_iPhysicsEntity != ~0; }
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
 	DoubleMatrix4x4                     GetPlanetToChunk() const { return m_mPlanetToChunk; }
 	DoubleMatrix4x4                     GetChunkToPlanet() const { return m_mChunkToPlanet; }
@@ -94,7 +95,12 @@ public:
 	CTerrainChunk*						GetChunk(size_t iChunk) const;
 	size_t								GetNumChunks() const { return m_apChunks.size(); }
 
+	bool                                HasGroupCenter() const { return m_bHaveGroupCenter; }
+	const DoubleMatrix4x4&                 GetPlanetToGroupCenterTransform() const { return m_mPlanetToGroup; }
+	const DoubleMatrix4x4&                 GetGroupCenterToPlanetTransform() const { return m_mGroupToPlanet; }
+
 	void								Think();
+	void                                FindCenterChunk();
 	void                                AddNearbyChunks();
 	void								GenerateChunk(size_t iChunk);
 	void								Render();
@@ -107,6 +113,13 @@ protected:
 	tvector<CTerrainChunk*>             m_apChunks;
 
 	double								m_flNextChunkCheck;
+
+	size_t                      m_iActiveChunks;
+
+	// A "group" is a group of chunks, grouped for physics purposes.
+	bool                        m_bHaveGroupCenter;
+	DoubleMatrix4x4             m_mPlanetToGroup; // Really just the transforms of the center chunk of the group.
+	DoubleMatrix4x4             m_mGroupToPlanet;
 
 	static class CParallelizer*         s_pChunkGenerator;
 };

@@ -205,6 +205,9 @@ void CPlanet::PostRender() const
 		return;
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eScale == SCALE_RENDER)
+		return;
+
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();

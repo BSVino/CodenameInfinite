@@ -91,7 +91,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 				TAssert(pEntity->GetModelID() != ~0);
 
 				Vector vecHalf = pEntity->GetModel()->m_aabbPhysBoundingBox.m_vecMaxs - pEntity->GetModel()->m_aabbPhysBoundingBox.Center();
-				m_apCharacterShapes[sIdentifier] = new btBoxShape(btVector3(vecHalf.x, vecHalf.y, vecHalf.z));
+				m_apCharacterShapes[sIdentifier] = new btBoxShape(ToBTVector(vecHalf));
 			}
 			else
 			{
@@ -150,7 +150,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 		aabbBoundingBox.m_vecMaxs += pEntity->GetGlobalOrigin();
 
 		Vector vecHalf = (aabbBoundingBox.m_vecMaxs - aabbBoundingBox.Center()) * pEntity->GetScale();
-		pCollisionShape = new btBoxShape(btVector3(vecHalf.x, vecHalf.y, vecHalf.z));
+		pCollisionShape = new btBoxShape(ToBTVector(vecHalf));
 
 		TAssert(pCollisionShape);
 
@@ -160,7 +160,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 		if (pEntity->GetModelID() != ~0)
 			mTransform.setFromOpenGLMatrix(&pEntity->GetPhysicsTransform().m[0][0]);
 		else
-			mTransform.setOrigin(btVector3(aabbBoundingBox.Center().x, aabbBoundingBox.Center().y, aabbBoundingBox.Center().z));
+			mTransform.setOrigin(ToBTVector(aabbBoundingBox.Center()));
 
 		btVector3 vecLocalInertia(0, 0, 0);
 
@@ -218,7 +218,7 @@ void CBulletPhysics::AddModel(class CBaseEntity* pEntity, collision_type_t eColl
 		pPhysicsEntity->m_bCenterMassOffset = true;
 
 		Vector vecHalf = pModel->m_pToy->GetPhysicsBoxHalfSize(i);
-		pCollisionShape = new btBoxShape(btVector3(vecHalf.x, vecHalf.y, vecHalf.z));
+		pCollisionShape = new btBoxShape(ToBTVector(vecHalf));
 
 		btTransform mTransform;
 		mTransform.setIdentity();
@@ -371,7 +371,7 @@ void CBulletPhysics::RemoveEntity(CPhysicsEntity* pPhysicsEntity)
 	pPhysicsEntity->m_pTriggerController = NULL;
 }
 
-size_t CBulletPhysics::AddExtra(size_t iExtraMesh)
+size_t CBulletPhysics::AddExtra(size_t iExtraMesh, const Vector& vecOrigin)
 {
 	size_t iIndex = ~0;
 	for (size_t i = 0; i < m_apExtraEntityList.size(); i++)
@@ -404,6 +404,7 @@ size_t CBulletPhysics::AddExtra(size_t iExtraMesh)
 
 	btTransform mTransform;
 	mTransform.setIdentity();
+	mTransform.setOrigin(ToBTVector(vecOrigin));
 
 	bool bDynamic = (flMass != 0.f);
 
@@ -415,6 +416,7 @@ size_t CBulletPhysics::AddExtra(size_t iExtraMesh)
 
 	pPhysicsEntity->m_pRigidBody = new btRigidBody(rbInfo);
 	pPhysicsEntity->m_pRigidBody->setUserPointer((void*)(GameServer()->GetMaxEntities()+iIndex));
+	pPhysicsEntity->m_pRigidBody->setWorldTransform(mTransform);
 
 	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody);
 

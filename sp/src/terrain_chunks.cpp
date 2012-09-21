@@ -35,6 +35,10 @@ CTerrainChunkManager::CTerrainChunkManager(CPlanet* pPlanet)
 	m_pPlanet = pPlanet;
 
 	m_flNextChunkCheck = 0;
+
+	m_iActiveChunks = 0;
+
+	m_bHaveGroupCenter = false;
 }
 
 void CTerrainChunkManager::AddChunk(size_t iLump, const DoubleVector2D& vecChunkMin, const DoubleVector2D& vecChunkMax)
@@ -96,6 +100,15 @@ void CTerrainChunkManager::RemoveChunkNoLock(size_t iChunk)
 {
 	if (m_apChunks[iChunk] && m_apChunks[iChunk]->m_bGeneratingLowRes)
 		return;
+
+	if (m_apChunks[iChunk]->HasPhysicsEntity())
+	{
+		TAssert(m_iActiveChunks);
+		m_iActiveChunks--;
+	}
+
+	if (!m_iActiveChunks)
+		m_bHaveGroupCenter = false;
 
 	delete m_apChunks[iChunk];
 	m_apChunks[iChunk] = NULL;
@@ -175,7 +188,7 @@ void CTerrainChunkManager::Think()
 		if (!pChunk)
 			continue;
 
-		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr()*4)
+		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr()*2)
 		{
 			bool bAdd = true;
 			for (size_t j = 0; j < aiRebuildLumps.size(); j++)
@@ -206,6 +219,60 @@ void CTerrainChunkManager::Think()
 		if (m_pPlanet->GetLumpManager()->GetLump(aiRebuildLumps[i]))
 			m_pPlanet->GetLumpManager()->GetLump(aiRebuildLumps[i])->RebuildIndices();
 	}
+}
+
+void CTerrainChunkManager::FindCenterChunk()
+{
+	if (m_bHaveGroupCenter || !m_iActiveChunks)
+		return;
+
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	double flNearest;
+	size_t iNearestChunk = ~0;
+	for (size_t i = 0; i < GetNumChunks(); i++)
+	{
+		CTerrainChunk* pChunk = GetChunk(i);
+
+		if (!pChunk)
+			continue;
+
+		if (!pChunk->HasPhysicsEntity())
+			continue;
+
+		if (iNearestChunk == ~0)
+		{
+			iNearestChunk = i;
+			flNearest = pChunk->GetLocalCenter().DistanceSqr(pCharacter->GetLocalOrigin().GetUnits(SCALE_METER));
+			continue;
+		}
+
+		double flDistance = pChunk->GetLocalCenter().DistanceSqr(pCharacter->GetLocalOrigin().GetUnits(SCALE_METER));
+		if (flDistance < flNearest)
+		{
+			flNearest = flDistance;
+			iNearestChunk = i;
+		}
+	}
+
+	if (iNearestChunk == ~0)
+		return;
+
+	CTerrainChunk* pChunk = GetChunk(iNearestChunk);
+
+	m_mGroupToPlanet = pChunk->GetChunkToPlanet();
+	m_mPlanetToGroup = pChunk->GetPlanetToChunk();
+
+	Matrix4x4 mChunkPlayer = m_mPlanetToGroup * pCharacter->GetLocalTransform().GetUnits(SCALE_METER);
+
+	// For the purposes of physics, the player to stands up straight.
+	mChunkPlayer.SetUpVector(Vector(0, 1, 0));
+	mChunkPlayer.SetRightVector(mChunkPlayer.GetForwardVector().Cross(mChunkPlayer.GetUpVector()).Normalized());
+	mChunkPlayer.SetForwardVector(mChunkPlayer.GetUpVector().Cross(mChunkPlayer.GetRightVector()).Normalized());
+
+	pCharacter->SetGroupTransform(mChunkPlayer);
+
+	m_bHaveGroupCenter = true;
 }
 
 void CTerrainChunkManager::AddNearbyChunks()
@@ -246,6 +313,7 @@ void CTerrainChunkManager::GenerateChunk(size_t iChunk)
 }
 
 CVar r_markchunks("r_markchunks", "off");
+CVar r_markgroups("r_markgroups", "off");
 
 void CTerrainChunkManager::Render()
 {
@@ -262,9 +330,36 @@ void CTerrainChunkManager::Render()
 
 			CRenderingContext c(GameServer()->GetRenderer(), true);
 
+			c.UseProgram("model");
 			c.SetDepthTest(false);
 			c.RenderWireBox(AABB(vecMinWorld, vecMaxWorld));
 		}
+	}
+
+	if (r_markgroups.GetBool() && m_bHaveGroupCenter && SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_METER)
+	{
+		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+		CPlanet* pPlanet = m_pPlanet;
+		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+		CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
+
+		CRenderingContext c(GameServer()->GetRenderer(), true);
+
+		CScalableVector vecGroupCenter;
+		CScalableMatrix mGroupTransform;
+
+		TAssert(pCharacter->GetNearestPlanet() == pPlanet);
+		vecGroupCenter = CScalableVector(m_mGroupToPlanet.GetTranslation(), SCALE_METER) - vecCharacterOrigin;
+
+		mGroupTransform.SetTranslation(vecGroupCenter);
+
+		Matrix4x4 mGroupTransformMeters = mGroupTransform.GetUnits(SCALE_METER);
+
+		c.UseProgram("model");
+		c.ResetTransformations();
+		c.Transform(mGroupTransformMeters);
+		c.SetDepthTest(false);
+		c.RenderWireBox(AABB(Vector(-1, -1, -1), Vector(1, 1, 1)));
 	}
 
 	for (size_t i = 0; i < m_apChunks.size(); i++)
@@ -341,8 +436,20 @@ void CTerrainChunk::Think()
 		{
 			if (m_bLoadIntoPhysics)
 			{
-				m_iPhysicsEntity = GamePhysics()->AddExtra(m_iPhysicsMesh);
+				m_pManager->m_iActiveChunks++;
+
+				DoubleVector vecOrigin;
+				if (m_pManager->m_bHaveGroupCenter)
+				{
+					vecOrigin = m_mChunkToPlanet * vecOrigin;
+					vecOrigin = m_pManager->m_mPlanetToGroup * vecOrigin;
+				}
+
+				m_iPhysicsEntity = GamePhysics()->AddExtra(m_iPhysicsMesh, vecOrigin);
+
 				m_bLoadIntoPhysics = false;
+				if (!m_pManager->m_bHaveGroupCenter)
+					m_pManager->FindCenterChunk();
 			}
 
 			if (m_aflLowResDrop.size())

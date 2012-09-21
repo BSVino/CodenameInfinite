@@ -170,6 +170,8 @@ public:
 	bool		Inside2D(const TemplateVector<F>& vecPoint) const;
 	bool		Intersects(const TemplateAABB<F>& oBox) const;
 
+	void        Expand(const TemplateVector<F>& vecPoint);
+
 	TemplateAABB<F>		operator+(const TemplateAABB<F>& oBox) const;
 	TemplateAABB<F>		operator*(float s) const;
 	bool		operator==(const TemplateAABB<F>& o) const;
@@ -277,6 +279,18 @@ inline bool TemplateAABB<F>::Intersects(const TemplateAABB<F>& oBox) const
 		return false;
 
 	return true;
+}
+
+template <class F>
+inline void TemplateAABB<F>::Expand(const TemplateVector<F>& vecNew)
+{
+	for (size_t i = 0; i < 3; i++)
+	{
+		if (vecNew[i] < m_vecMins[i])
+			m_vecMins[i] = vecNew[i];
+		else if (vecNew[i] > m_vecMaxs[i])
+			m_vecMaxs[i] = vecNew[i];
+	}
 }
 
 inline AABB AABB::operator+(const AABB& oBox) const

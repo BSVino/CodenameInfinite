@@ -558,10 +558,19 @@ bool CPlanetTerrain::FindAreaNearestToPlayer(size_t iAreaDepth, const DoubleVect
 				vecQuadMax = vecMaxCoord;
 			}
 
-			DoubleVector vecMinWorld = CoordToWorld(vecQuadMin) + GenerateOffset(vecQuadMin);
-			DoubleVector vecMaxWorld = CoordToWorld(vecQuadMax) + GenerateOffset(vecQuadMax);
+			DoubleVector2D vecQuad1 = vecQuadMin;
+			DoubleVector2D vecQuad2 = DoubleVector2D(vecQuadMin.x, vecQuadMax.y);
+			DoubleVector2D vecQuad3 = vecQuadMax;
+			DoubleVector2D vecQuad4 = DoubleVector2D(vecQuadMax.x, vecQuadMin.y);
 
-			TemplateAABB<double> aabbWorld(vecMinWorld, vecMaxWorld);
+			DoubleVector vecWorld1 = CoordToWorld(vecQuad1) + GenerateOffset(vecQuad1);
+			DoubleVector vecWorld2 = CoordToWorld(vecQuad2) + GenerateOffset(vecQuad2);
+			DoubleVector vecWorld3 = CoordToWorld(vecQuad3) + GenerateOffset(vecQuad3);
+			DoubleVector vecWorld4 = CoordToWorld(vecQuad4) + GenerateOffset(vecQuad4);
+
+			TemplateAABB<double> aabbWorld(vecWorld1, vecWorld3);
+			aabbWorld.Expand(vecWorld2);
+			aabbWorld.Expand(vecWorld4);
 
 			double flDistanceSqr = aabbWorld.Center().DistanceSqr(vecLocalPlayer);
 			if (flDistanceSqr < flLowestDistanceSqr && flDistanceSqr < aabbWorld.Size().LengthSqr())

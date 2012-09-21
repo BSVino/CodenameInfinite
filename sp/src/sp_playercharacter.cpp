@@ -30,10 +30,6 @@ CPlayerCharacter::CPlayerCharacter()
 	m_bHyperdrive = false;
 	m_bWalkSpeedOverride = false;
 	m_bFlying = false;
-
-	m_iCurrentChunk = ~0;
-	m_iCurrentChunkPhysics = ~0;
-	m_bIgnoreLocalTransform = false;
 }
 
 void CPlayerCharacter::Spawn()
@@ -104,151 +100,54 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 		return;
 	}
 
-	if (pPlanet->GetChunkManager()->GetNumChunks() > m_aiChunkParities.size())
+	if (pPlanet->GetChunkManager()->HasGroupCenter())
 	{
-		while (m_aiChunkParities.size() < pPlanet->GetChunkManager()->GetNumChunks())
-			m_aiChunkParities.push_back(~0);
-		m_amChunkTransforms.resize(pPlanet->GetChunkManager()->GetNumChunks());
-	}
-
-	if (pPlanet->GetChunkManager()->GetNumChunks())
-	{
-		bool bFoundChunk = false;
-		for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
-		{
-			CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
-			if (!pChunk)
-				continue;
-
-			if (pChunk->GetPhysicsEntity() == ~0)
-				continue;
-
-			bFoundChunk = true;
-
-			m_iCurrentChunk = i;
-			m_iCurrentChunkPhysics = pChunk->GetPhysicsEntity();
-			m_mChunkToPlanet = pChunk->GetChunkToPlanet();
-			m_mPlanetToChunk = pChunk->GetPlanetToChunk();
-
-			if (pChunk->GetParity() != m_aiChunkParities[i])
-			{
-				m_aiChunkParities[i] = pChunk->GetParity();
-
-				Matrix4x4& mChunkTransform = m_amChunkTransforms[i];
-				mChunkTransform = m_mPlanetToChunk * GetLocalTransform().GetUnits(SCALE_METER);
-
-				// For the purposes of physics, the player to stands up straight.
-				mChunkTransform.SetUpVector(Vector(0, 1, 0));
-				mChunkTransform.SetRightVector(mChunkTransform.GetForwardVector().Cross(mChunkTransform.GetUpVector()).Normalized());
-				mChunkTransform.SetForwardVector(mChunkTransform.GetUpVector().Cross(mChunkTransform.GetRightVector()).Normalized());
-			}
-
-			if (m_bFlying)
-				GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
-			else
-				GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
-
-			GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
-			GamePhysics()->SetControllerWalkVelocity(this, m_mPlanetToChunk.TransformVector(GetLocalVelocity().GetUnits(SCALE_METER)));
-			GamePhysics()->CharacterMovement(this, pWorld, flDelta);
-		}
-
-		if (bFoundChunk)
-			// Consider ourselves to have simulated up to this point even though Simulate() isn't run.
-			m_flMoveSimulationTime = GameServer()->GetGameTime();
+		if (m_bFlying)
+			GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
 		else
-			Simulate();
+			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
+
+		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
+		GamePhysics()->SetControllerWalkVelocity(this, pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform().TransformVector(GetLocalVelocity().GetUnits(SCALE_METER)));
+		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+
+		// Consider ourselves to have simulated up to this point even though Simulate() isn't run.
+		m_flMoveSimulationTime = GameServer()->GetGameTime();
 	}
 	else
-	{
-		m_iCurrentChunk = ~0;
-		m_iCurrentChunkPhysics = ~0;
 		Simulate();
-	}
-
-	m_iCurrentChunk = ~0;
-	m_iCurrentChunkPhysics = ~0;
 }
 
 const Matrix4x4 CPlayerCharacter::GetPhysicsTransform() const
 {
-	if (m_iCurrentChunk == ~0)
-		return GetGlobalTransform();
-
 	CPlanet* pPlanet = GetNearestPlanet();
-	TAssert(pPlanet);
 	if (!pPlanet)
 		return GetGlobalTransform();
 
-	TAssert(pPlanet->GetChunkManager()->GetChunk(m_iCurrentChunk)->GetParity() == m_aiChunkParities[m_iCurrentChunk]);
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+		return GetGlobalTransform();
 
-	return m_amChunkTransforms[m_iCurrentChunk];
+	return m_mGroupTransform;
 }
 
 void CPlayerCharacter::SetPhysicsTransform(const Matrix4x4& m)
 {
-	if (m_iCurrentChunk == ~0)
-	{
-		SetGlobalTransform(TMatrix(m));
-		return;
-	}
-
 	CPlanet* pPlanet = GetNearestPlanet();
-	TAssert(pPlanet);
 	if (!pPlanet)
 	{
 		SetGlobalTransform(TMatrix(m));
 		return;
 	}
 
-	TAssert(pPlanet->GetChunkManager()->GetChunk(m_iCurrentChunk)->GetParity() == m_aiChunkParities[m_iCurrentChunk]);
-
-	m_amChunkTransforms[m_iCurrentChunk] = m;
-
-	m_bIgnoreLocalTransform = true;
-	SetLocalTransform(TMatrix(m_mChunkToPlanet * m));
-	m_bIgnoreLocalTransform = false;
-}
-
-void CPlayerCharacter::OnSetLocalTransform(TMatrix& m)
-{
-	BaseClass::OnSetLocalTransform(m);
-
-	if (m_bIgnoreLocalTransform)
-		return;
-
-	CPlanet* pPlanet = GetNearestPlanet();
-	if (!pPlanet)
-		return;
-
-	if (pPlanet->GetChunkManager()->GetNumChunks() > m_aiChunkParities.size())
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
 	{
-		m_aiChunkParities.resize(pPlanet->GetChunkManager()->GetNumChunks());
-		m_amChunkTransforms.resize(pPlanet->GetChunkManager()->GetNumChunks());
+		SetGlobalTransform(TMatrix(m));
+		return;
 	}
 
-	for (size_t i = 0; i < pPlanet->GetChunkManager()->GetNumChunks(); i++)
-	{
-		CTerrainChunk* pChunk = pPlanet->GetChunkManager()->GetChunk(i);
-		if (!pChunk)
-			continue;
+	m_mGroupTransform = m;
 
-		Matrix4x4& mChunkTransform = m_amChunkTransforms[i];
-		mChunkTransform = pChunk->GetPlanetToChunk() * GetLocalTransform().GetUnits(SCALE_METER);
-		mChunkTransform.SetUpVector(Vector(0, 1, 0));
-		mChunkTransform.SetRightVector(mChunkTransform.GetForwardVector().Cross(mChunkTransform.GetUpVector()).Normalized());
-		mChunkTransform.SetForwardVector(mChunkTransform.GetUpVector().Cross(mChunkTransform.GetRightVector()).Normalized());
-	}
-}
-
-bool CPlayerCharacter::ShouldCollideWithExtra(size_t iIndex, const TVector& vecPoint) const
-{
-	TAssert(m_iCurrentChunk != ~0);
-
-	if (iIndex != m_iCurrentChunkPhysics)
-		return false;
-
-	return true;
+	SetLocalTransform(TMatrix(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m));
 }
 
 void CPlayerCharacter::SetGroundEntity(CBaseEntity* pEntity)
