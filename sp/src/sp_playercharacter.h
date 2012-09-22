@@ -38,6 +38,7 @@ public:
 	virtual CScalableFloat		CharacterSpeed();
 
 	void						ApproximateElevation();
+	double                      GetApproximateElevation() const { return m_flApproximateElevation; }
 
 	virtual inline const CScalableVector	GetGlobalGravity() const;
 

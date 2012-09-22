@@ -209,7 +209,7 @@ void CPlanet::PostRender() const
 		return;
 
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
-	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
 	mPlanetToLocal.InvertRT();
 
@@ -261,7 +261,18 @@ void CPlanet::PostRender() const
 	else
 		c.SetColor(Color(255, 255, 255));
 
-	if (r_planet_shells.GetBool())
+	bool bShowShells = true;
+
+	if (pCharacter->GetNearestPlanet() == this)
+	{
+		double flElevation = pCharacter->GetApproximateElevation();
+		double flNoShellElevation = flElevation + 0.00001;
+		double flPlayerDistanceSqr = pCharacter->GetLocalOrigin().GetUnits(GetScale()).LengthSqr();
+		if (flPlayerDistanceSqr < flNoShellElevation*flNoShellElevation)
+			bShowShells = false;
+	}
+
+	if (bShowShells && r_planet_shells.GetBool())
 	{
 		for (size_t i = 0; i < (size_t)(m_bOneSurface?1:6); i++)
 			m_apTerrain[i]->Render(&c);
