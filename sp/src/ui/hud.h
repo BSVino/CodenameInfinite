@@ -5,6 +5,8 @@
 
 class CSPHUD : public CHUDViewport
 {
+	DECLARE_CLASS(CSPHUD, CHUDViewport);
+
 public:
 					CSPHUD();
 

@@ -38,6 +38,8 @@ tstring GetStringDistance(const CScalableFloat& v)
 
 void CSPHUD::Paint(float x, float y, float w, float h)
 {
+	BaseClass::Paint(x, y, w, h);
+
 	Vector vecUp;
 	Vector vecForward;
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
