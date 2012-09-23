@@ -78,16 +78,27 @@ void CPlayerCharacter::MoveThink()
 	{
 		CScalableVector vecVelocity = GetLocalVelocity();
 
-		CScalableMatrix m(GetViewAngles());
-		m.SetTranslation(CScalableVector());
+		TMatrix m = GetMovementVelocityTransform();
 
 		CScalableVector vecMove = m_vecMoveVelocity * CharacterSpeed();
-		vecVelocity = m * vecMove;
+		vecVelocity = m.TransformVector(vecMove);
 
 		SetLocalVelocity(vecVelocity);
 	}
 	else
 		SetLocalVelocity(CScalableVector());
+}
+
+const TMatrix CPlayerCharacter::GetMovementVelocityTransform() const
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+
+	TMatrix m;
+	m.SetAngles(GetViewAngles());
+	if (pPlanet && pPlanet->GetChunkManager()->HasGroupCenter())
+		m = TMatrix(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform()) * m;
+
+	return m;
 }
 
 void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)
@@ -108,7 +119,7 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
 
 		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
-		GamePhysics()->SetControllerWalkVelocity(this, pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform().TransformVector(GetLocalVelocity().GetUnits(SCALE_METER)));
+		GamePhysics()->SetControllerWalkVelocity(this, GetLocalVelocity());
 		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
 
 		// Consider ourselves to have simulated up to this point even though Simulate() isn't run.
@@ -122,10 +133,10 @@ const Matrix4x4 CPlayerCharacter::GetPhysicsTransform() const
 {
 	CPlanet* pPlanet = GetNearestPlanet();
 	if (!pPlanet)
-		return GetGlobalTransform();
+		return GetLocalTransform();
 
 	if (!pPlanet->GetChunkManager()->HasGroupCenter())
-		return GetGlobalTransform();
+		return GetLocalTransform();
 
 	return m_mGroupTransform;
 }
@@ -135,13 +146,13 @@ void CPlayerCharacter::SetPhysicsTransform(const Matrix4x4& m)
 	CPlanet* pPlanet = GetNearestPlanet();
 	if (!pPlanet)
 	{
-		SetGlobalTransform(TMatrix(m));
+		SetLocalTransform(TMatrix(m));
 		return;
 	}
 
 	if (!pPlanet->GetChunkManager()->HasGroupCenter())
 	{
-		SetGlobalTransform(TMatrix(m));
+		SetLocalTransform(TMatrix(m));
 		return;
 	}
 

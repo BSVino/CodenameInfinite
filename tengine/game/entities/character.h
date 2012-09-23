@@ -31,6 +31,7 @@ public:
 	virtual void					MoveThink();
 	virtual void					MoveThink_NoClip();
 	virtual void					Jump();
+	virtual const TMatrix           GetMovementVelocityTransform() const;
 
 	virtual void                    CharacterMovement(class btCollisionWorld*, float flDelta);
 

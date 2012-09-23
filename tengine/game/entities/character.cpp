@@ -161,8 +161,8 @@ void CCharacter::MoveThink()
 				vecUp = mGlobalToLocal.TransformVector(vecUp);
 			}
 
-			TMatrix m = GetLocalTransform();
-			m.SetAngles(GetViewAngles());
+			Matrix4x4 m = GetPhysicsTransform();
+			m.AddAngles(GetViewAngles());
 
 			Vector vecRight = m.GetForwardVector().Cross(vecUp).Normalized();
 			Vector vecForward = vecUp.Cross(vecRight).Normalized();
@@ -210,8 +210,7 @@ void CCharacter::MoveThink_NoClip()
 				vecUp = mGlobalToLocal.TransformVector(vecUp);
 			}
 
-			TMatrix m = GetLocalTransform();
-			m.SetAngles(GetViewAngles());
+			TMatrix m = GetMovementVelocityTransform();
 
 			vecLocalVelocity = m.TransformVector(vecMove);
 		}
@@ -220,6 +219,11 @@ void CCharacter::MoveThink_NoClip()
 
 		SetGlobalOrigin(GetGlobalOrigin() + (float)GameServer()->GetFrameTime()*vecLocalVelocity);
 	}
+}
+
+const TMatrix CCharacter::GetMovementVelocityTransform() const
+{
+	return TMatrix(GetViewAngles());
 }
 
 void CCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)

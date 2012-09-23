@@ -17,6 +17,7 @@ public:
 
 	virtual void				Think();
 	virtual void				MoveThink();
+	virtual const TMatrix       GetMovementVelocityTransform() const;
 
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
 	virtual const Matrix4x4     GetPhysicsTransform() const;
