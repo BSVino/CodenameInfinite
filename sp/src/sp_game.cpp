@@ -68,6 +68,7 @@ void CSPGame::SetupGame(tstring sType)
 		pPlanet->SetAtmosphereThickness(CScalableFloat(50.0f, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 		pPlanet->SetMinutesPerRevolution(30);
 		pPlanet->SetAtmosphereColor(Color(0.25f, 0.41f, 0.64f));
+		pPlanet->SetRandomSeed(0);
 
 		pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 		pPlanet->SetPlanetName("Mars");
@@ -76,6 +77,7 @@ void CSPGame::SetupGame(tstring sType)
 		pPlanet->SetAtmosphereThickness(CScalableFloat(25.0f, SCALE_KILOMETER));
 		pPlanet->SetMinutesPerRevolution(20);
 		pPlanet->SetAtmosphereColor(Color(0.64f, 0.25f, 0.25f));
+		pPlanet->SetRandomSeed(1);
 
 		CStar* pStar = GameServer()->Create<CStar>("CStar");
 		pStar->SetGlobalOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
