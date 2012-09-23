@@ -211,7 +211,7 @@ const Vector CSPCharacter::GetLocalUpVector() const
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return Vector(GetLocalOrigin() - pNearestPlanet->GetLocalOrigin()).Normalized();
+		return Vector(GetLocalOrigin()).Normalized();
 
 	return Vector(0, 1, 0);
 }

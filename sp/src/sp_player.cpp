@@ -34,7 +34,7 @@ void CSPPlayer::MouseMotion(int x, int y)
 
 		// Construct a "local space" for the surface
 		Vector vecSurfaceUp = GetPlayerCharacter()->GetLocalUpVector();
-		Vector vecSurfaceForward = mPlanetLocalRotation.GetForwardVector();
+		Vector vecSurfaceForward(1, 0, 0);
 		Vector vecSurfaceRight = vecSurfaceForward.Cross(vecSurfaceUp).Normalized();
 		vecSurfaceForward = vecSurfaceUp.Cross(vecSurfaceRight).Normalized();
 
@@ -48,7 +48,8 @@ void CSPPlayer::MouseMotion(int x, int y)
 
 		angLocalRotation.y += flYaw;
 		angLocalRotation.p -= flPitch;
-		angLocalRotation.r = 0;
+		// Don't lock this here since it will snap as we're rolling in from space. LockViewToPlanet() keeps us level.
+		//angLocalRotation.r = 0;
 
 		if (angLocalRotation.p > 89)
 			angLocalRotation.p = 89;
