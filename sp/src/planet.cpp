@@ -266,7 +266,7 @@ void CPlanet::PostRender() const
 	if (pCharacter->GetNearestPlanet() == this)
 	{
 		double flElevation = pCharacter->GetApproximateElevation();
-		double flNoShellElevation = flElevation + 0.00001;
+		double flNoShellElevation = flElevation + 0.0001;
 		double flPlayerDistanceSqr = pCharacter->GetLocalOrigin().GetUnits(GetScale()).LengthSqr();
 		if (flPlayerDistanceSqr < flNoShellElevation*flNoShellElevation)
 			bShowShells = false;
