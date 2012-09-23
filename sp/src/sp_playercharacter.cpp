@@ -211,6 +211,7 @@ void CPlayerCharacter::EnteredAtmosphere()
 {
 	BaseClass::EnteredAtmosphere();
 
+	m_flApproximateElevation = GetNearestPlanet()->GetRadius().GetUnits(GetNearestPlanet()->GetScale());
 	ApproximateElevation();
 }
 
@@ -279,6 +280,8 @@ void CPlayerCharacter::ApproximateElevation()
 		m_flApproximateElevation = (pPlanet->GetTerrain(i)->CoordToWorld((vecLumpMin + vecLumpMax)/2) + pPlanet->GetTerrain(i)->GenerateOffset((vecLumpMin + vecLumpMax)/2)).Length();
 		return;
 	}
+
+	TAssert(false); // Should have gotten an approximation.
 }
 
 const CScalableVector CPlayerCharacter::GetGlobalGravity() const
