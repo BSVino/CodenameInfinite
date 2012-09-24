@@ -518,86 +518,162 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	return vecOffset;
 }
 
-bool CPlanetTerrain::FindAreaNearestToPlayer(size_t iAreaDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, DoubleVector2D& vecLumpMin, DoubleVector2D& vecLumpMax)
+CTerrainArea CPlanetTerrain::FindNearestArea(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch)
 {
-	DoubleVector vecLocalPlayer = m_pPlanet->m_vecCharacterLocalOrigin;
+	CTerrainArea vecArea;
+	vecArea.flDistanceToPlayer = FLT_MAX;
 
-	DoubleVector2D vecMinCoord = vecSearchMin;
-	DoubleVector2D vecMaxCoord = vecSearchMax;
+	SearchAreas(vecArea, iMaxDepth, iStartDepth, vecSearchMin, vecSearchMax, m_pPlanet->m_vecCharacterLocalOrigin);
 
-	for (size_t i = 0; i < iAreaDepth; i++)
-	{
-		bool bFound = false;
-		double flLowestDistanceSqr = FLT_MAX;
-		DoubleVector2D vecNearestQuadMin;
-		DoubleVector2D vecNearestQuadMax;
-
-		for (size_t j = 0; j < 4; j++)
-		{
-			DoubleVector2D vecQuadMin;
-			DoubleVector2D vecQuadMax;
-
-			if (j == 0)
-			{
-				vecQuadMin = vecMinCoord;
-				vecQuadMax = (vecMinCoord + vecMaxCoord)/2;
-			}
-			else if (j == 1)
-			{
-				vecQuadMin = DoubleVector2D(vecMinCoord.x, (vecMinCoord.y + vecMaxCoord.y)/2);
-				vecQuadMax = DoubleVector2D((vecMinCoord.x + vecMaxCoord.x)/2, vecMaxCoord.y);
-			}
-			else if (j == 2)
-			{
-				vecQuadMin = DoubleVector2D((vecMinCoord.x + vecMaxCoord.x)/2, vecMinCoord.y);
-				vecQuadMax = DoubleVector2D(vecMaxCoord.x, (vecMinCoord.y + vecMaxCoord.y)/2);
-			}
-			else
-			{
-				vecQuadMin = (vecMinCoord + vecMaxCoord)/2;
-				vecQuadMax = vecMaxCoord;
-			}
-
-			DoubleVector2D vecQuad1 = vecQuadMin;
-			DoubleVector2D vecQuad2 = DoubleVector2D(vecQuadMin.x, vecQuadMax.y);
-			DoubleVector2D vecQuad3 = vecQuadMax;
-			DoubleVector2D vecQuad4 = DoubleVector2D(vecQuadMax.x, vecQuadMin.y);
-
-			DoubleVector vecWorld1 = CoordToWorld(vecQuad1) + GenerateOffset(vecQuad1);
-			DoubleVector vecWorld2 = CoordToWorld(vecQuad2) + GenerateOffset(vecQuad2);
-			DoubleVector vecWorld3 = CoordToWorld(vecQuad3) + GenerateOffset(vecQuad3);
-			DoubleVector vecWorld4 = CoordToWorld(vecQuad4) + GenerateOffset(vecQuad4);
-
-			TemplateAABB<double> aabbWorld(vecWorld1, vecWorld3);
-			aabbWorld.Expand(vecWorld2);
-			aabbWorld.Expand(vecWorld4);
-
-			double flDistanceSqr = aabbWorld.Center().DistanceSqr(vecLocalPlayer);
-			if (flDistanceSqr < flLowestDistanceSqr && flDistanceSqr < aabbWorld.Size().LengthSqr())
-			{
-				bFound = true;
-
-				flLowestDistanceSqr = flDistanceSqr;
-
-				vecNearestQuadMin = vecQuadMin;
-				vecNearestQuadMax = vecQuadMax;
-			}
-		}
-
-		if (!bFound)
-			return false;
-
-		vecMinCoord = vecNearestQuadMin;
-		vecMaxCoord = vecNearestQuadMax;
-	}
-
-	vecLumpMin = vecMinCoord;
-	vecLumpMax = vecMaxCoord;
-
-	return true;
+	return vecArea;
 }
 
-DoubleVector CPlanetTerrain::CoordToWorld(const DoubleVector2D& v) const
+void CPlanetTerrain::SearchAreas(CTerrainArea& vecNearest, size_t iMaxDepth, size_t iCurrentDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch)
+{
+	if (iCurrentDepth < 4 && iMaxDepth != iCurrentDepth)
+	{
+		// Use a cheaper search method that works great for sphere sections.
+		DoubleVector2D vecQuad1 = vecSearchMin;
+		DoubleVector2D vecQuad2 = DoubleVector2D(vecSearchMin.x, vecSearchMax.y);
+		DoubleVector2D vecQuad3 = vecSearchMax;
+		DoubleVector2D vecQuad4 = DoubleVector2D(vecSearchMax.x, vecSearchMin.y);
+
+		DoubleVector vecWorld1 = CoordToWorld(vecQuad1);
+		DoubleVector vecWorld2 = CoordToWorld(vecQuad2);
+		DoubleVector vecWorld3 = CoordToWorld(vecQuad3);
+		DoubleVector vecWorld4 = CoordToWorld(vecQuad4);
+
+		DoubleVector vecCenter = ((vecWorld1 + vecWorld2 + vecWorld3 + vecWorld4)/4).Normalized();
+
+		DoubleVector vecSearchNormalized = vecSearch.Normalized();
+		DoubleVector vecCornerNormalized = vecWorld1.Normalized();
+
+		double flSearchDot = vecCenter.Dot(vecSearchNormalized);
+		double flCornerDot = vecCenter.Dot(vecCornerNormalized) - 0.1; // Nudge a little to accept near cases
+
+		if (flSearchDot < flCornerDot)
+			return;
+	}
+	else
+	{
+		DoubleVector2D vecQuad1 = vecSearchMin;
+		DoubleVector2D vecQuad2 = DoubleVector2D(vecSearchMin.x, vecSearchMax.y);
+		DoubleVector2D vecQuad3 = vecSearchMax;
+		DoubleVector2D vecQuad4 = DoubleVector2D(vecSearchMax.x, vecSearchMin.y);
+
+		DoubleVector vecWorld1 = CoordToWorld(vecQuad1) + GenerateOffset(vecQuad1);
+		DoubleVector vecWorld2 = CoordToWorld(vecQuad2) + GenerateOffset(vecQuad2);
+		DoubleVector vecWorld3 = CoordToWorld(vecQuad3) + GenerateOffset(vecQuad3);
+		DoubleVector vecWorld4 = CoordToWorld(vecQuad4) + GenerateOffset(vecQuad4);
+
+		DoubleVector vecNormal = (vecWorld2-vecWorld1).Cross(vecWorld3-vecWorld1).Normalized();
+
+		double flDistance = DistanceToQuad(vecSearch, vecWorld1, vecWorld2, vecWorld3, vecWorld4, vecNormal);
+
+		if (flDistance > vecNearest.flDistanceToPlayer*2)
+			return;
+
+		if (iMaxDepth == iCurrentDepth)
+		{
+			if (flDistance < vecNearest.flDistanceToPlayer)
+			{
+				vecNearest.flDistanceToPlayer = flDistance;
+				vecNearest.vecMin = vecSearchMin;
+				vecNearest.vecMax = vecSearchMax;
+			}
+			return;
+		}
+	}
+
+	DoubleVector2D vecSearchCenter = (vecSearchMin + vecSearchMax)/2;
+
+	SearchAreas(vecNearest, iMaxDepth, iCurrentDepth+1, vecSearchMin, vecSearchCenter, vecSearch);
+	SearchAreas(vecNearest, iMaxDepth, iCurrentDepth+1, DoubleVector2D(vecSearchMin.x, vecSearchCenter.y), DoubleVector2D(vecSearchCenter.x, vecSearchMax.y), vecSearch);
+	SearchAreas(vecNearest, iMaxDepth, iCurrentDepth+1, vecSearchCenter, vecSearchMax, vecSearch);
+	SearchAreas(vecNearest, iMaxDepth, iCurrentDepth+1, DoubleVector2D(vecSearchCenter.x, vecSearchMin.y), DoubleVector2D(vecSearchMax.x, vecSearchCenter.y), vecSearch);
+}
+
+tvector<CTerrainArea> CPlanetTerrain::FindNearbyAreas(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance)
+{
+	tvector<CTerrainArea> avecAreas;
+	avecAreas.reserve(50);
+
+	// Make sure we don't throw out a quad that would have been valid if it the offsets were generated properly.
+	// This is compensated for by dividing by two in each recursion of SearchAreas().
+	flMaxDistance *= pow(2.0, (double)iMaxDepth - iStartDepth);
+
+	SearchAreas(avecAreas, iMaxDepth, iStartDepth, vecSearchMin, vecSearchMax, m_pPlanet->m_vecCharacterLocalOrigin, flMaxDistance);
+
+	sort_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
+
+	return avecAreas;
+}
+
+void CPlanetTerrain::SearchAreas(tvector<CTerrainArea>& avecAreas, size_t iMaxDepth, size_t iCurrentDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance)
+{
+	if (iCurrentDepth < 4 && iMaxDepth != iCurrentDepth)
+	{
+		// Use a cheaper search method that works great for sphere sections.
+		DoubleVector2D vecQuad1 = vecSearchMin;
+		DoubleVector2D vecQuad2 = DoubleVector2D(vecSearchMin.x, vecSearchMax.y);
+		DoubleVector2D vecQuad3 = vecSearchMax;
+		DoubleVector2D vecQuad4 = DoubleVector2D(vecSearchMax.x, vecSearchMin.y);
+
+		DoubleVector vecWorld1 = CoordToWorld(vecQuad1);
+		DoubleVector vecWorld2 = CoordToWorld(vecQuad2);
+		DoubleVector vecWorld3 = CoordToWorld(vecQuad3);
+		DoubleVector vecWorld4 = CoordToWorld(vecQuad4);
+
+		DoubleVector vecCenter = ((vecWorld1 + vecWorld2 + vecWorld3 + vecWorld4)/4).Normalized();
+
+		DoubleVector vecSearchNormalized = vecSearch.Normalized();
+		DoubleVector vecCornerNormalized = vecWorld1.Normalized();
+
+		double flSearchDot = vecCenter.Dot(vecSearchNormalized);
+		double flCornerDot = vecCenter.Dot(vecCornerNormalized) - 0.1; // Nudge a little to accept near cases
+
+		if (flSearchDot < flCornerDot)
+			return;
+	}
+	else
+	{
+		DoubleVector2D vecQuad1 = vecSearchMin;
+		DoubleVector2D vecQuad2 = DoubleVector2D(vecSearchMin.x, vecSearchMax.y);
+		DoubleVector2D vecQuad3 = vecSearchMax;
+		DoubleVector2D vecQuad4 = DoubleVector2D(vecSearchMax.x, vecSearchMin.y);
+
+		DoubleVector vecWorld1 = CoordToWorld(vecQuad1) + GenerateOffset(vecQuad1);
+		DoubleVector vecWorld2 = CoordToWorld(vecQuad2) + GenerateOffset(vecQuad2);
+		DoubleVector vecWorld3 = CoordToWorld(vecQuad3) + GenerateOffset(vecQuad3);
+		DoubleVector vecWorld4 = CoordToWorld(vecQuad4) + GenerateOffset(vecQuad4);
+
+		DoubleVector vecNormal = (vecWorld2-vecWorld1).Cross(vecWorld3-vecWorld1).Normalized();
+
+		double flDistance = DistanceToQuad(vecSearch, vecWorld1, vecWorld2, vecWorld3, vecWorld4, vecNormal);
+
+		if (flDistance > flMaxDistance)
+			return;
+
+		if (iMaxDepth == iCurrentDepth)
+		{
+			CTerrainArea& vecArea = avecAreas.push_back();
+			vecArea.flDistanceToPlayer = flDistance;
+			vecArea.vecMin = vecSearchMin;
+			vecArea.vecMax = vecSearchMax;
+			push_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
+			return;
+		}
+	}
+
+	DoubleVector2D vecSearchCenter = (vecSearchMin + vecSearchMax)/2;
+
+	SearchAreas(avecAreas, iMaxDepth, iCurrentDepth+1, vecSearchMin, vecSearchCenter, vecSearch, flMaxDistance/2);
+	SearchAreas(avecAreas, iMaxDepth, iCurrentDepth+1, DoubleVector2D(vecSearchMin.x, vecSearchCenter.y), DoubleVector2D(vecSearchCenter.x, vecSearchMax.y), vecSearch, flMaxDistance/2);
+	SearchAreas(avecAreas, iMaxDepth, iCurrentDepth+1, vecSearchCenter, vecSearchMax, vecSearch, flMaxDistance/2);
+	SearchAreas(avecAreas, iMaxDepth, iCurrentDepth+1, DoubleVector2D(vecSearchCenter.x, vecSearchMin.y), DoubleVector2D(vecSearchMax.x, vecSearchCenter.y), vecSearch, flMaxDistance/2);
+}
+
+const DoubleVector CPlanetTerrain::CoordToWorld(const DoubleVector2D& v) const
 {
 	DoubleVector vecDirection = GetDirection();
 

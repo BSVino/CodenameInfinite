@@ -18,6 +18,8 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 #ifndef LW_GEOMETRY_H
 #define LW_GEOMETRY_H
 
+#include <algorithm>
+
 #include "../common.h"
 #include "../tstring.h"
 #include "vector.h"
@@ -377,7 +379,7 @@ inline float DistanceToLineSegment(const Vector& p, const Vector& v1, const Vect
 		return (v2-p).Length();
 	}
 
-	if (c2 < 0.001f)
+	if (c2 == 0.0f)
 		return 0;
 
 	float b = c1/c2;
@@ -400,6 +402,38 @@ inline float DistanceToPlane(const Vector& p, const Vector& v, const Vector& n)
 
 	Vector b = p + n * sb;
 	return (p - b).Length();
+}
+
+#define smaller(l, r) (((l)<(r))?(l):(r))
+
+inline float DistanceToQuad(const Vector& p, const Vector& v1, const Vector& v2, const Vector& v3, const Vector& v4, const Vector& n)
+{
+	float flPlaneDistance = DistanceToPlane(p, v1, n);
+
+	if (PointInTriangle(p, v1, v2, v3))
+		return flPlaneDistance;
+
+	if (PointInTriangle(p, v1, v3, v4))
+		return flPlaneDistance;
+
+	float flClosestPointSqr = (v1 - p).LengthSqr();
+
+	float flV2Sqr = (v2 - p).LengthSqr();
+	float flV3Sqr = (v3 - p).LengthSqr();
+	float flV4Sqr = (v4 - p).LengthSqr();
+
+	flClosestPointSqr = smaller(flClosestPointSqr, smaller(flV2Sqr, smaller(flV3Sqr, flV4Sqr)));
+
+	float flClosestPoint = sqrt(flClosestPointSqr);
+
+	float flV12 = DistanceToLineSegment(p, v1, v2);
+	float flV23 = DistanceToLineSegment(p, v2, v3);
+	float flV34 = DistanceToLineSegment(p, v3, v4);
+	float flV41 = DistanceToLineSegment(p, v4, v1);
+
+	flClosestPoint = smaller(flClosestPoint, smaller(flV12, smaller(flV23, smaller(flV34, flV41))));
+
+	return flClosestPoint;
 }
 
 inline float DistanceToPolygon(const Vector& p, tvector<Vector>& v, Vector n)

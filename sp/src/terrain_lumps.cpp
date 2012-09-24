@@ -155,7 +155,7 @@ void CTerrainLumpManager::Think()
 		if (!pLump)
 			continue;
 
-		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pLump->m_aabbBounds.Center()) > pLump->m_aabbBounds.Size().LengthSqr()*4)
+		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pLump->m_aabbBounds.Center()) > (pLump->m_aabbBounds.Size()*4).LengthSqr())
 		{
 			bool bAdd = true;
 			for (size_t j = 0; j < aiRebuildTerrains.size(); j++)
@@ -187,15 +187,15 @@ void CTerrainLumpManager::Think()
 
 void CTerrainLumpManager::AddNearbyLumps()
 {
+	double flLumpDistance = m_pPlanet->GetAtmosphereThickness().GetUnits(m_pPlanet->GetScale()) * 2;
+
 	for (size_t i = 0; i < 6; i++)
 	{
-		DoubleVector2D vecLumpMin;
-		DoubleVector2D vecLumpMax;
+		tvector<CTerrainArea> avecAreas = m_pPlanet->m_apTerrain[i]->FindNearbyAreas(m_pPlanet->LumpDepth(), 0, DoubleVector2D(0, 0), DoubleVector2D(1, 1), m_pPlanet->m_vecCharacterLocalOrigin, flLumpDistance);
 
-		if (!m_pPlanet->m_apTerrain[i]->FindAreaNearestToPlayer(m_pPlanet->LumpDepth(), DoubleVector2D(0, 0), DoubleVector2D(1, 1), vecLumpMin, vecLumpMax))
-			continue;
-
-		AddLump(i, vecLumpMin, vecLumpMax);
+		size_t iMaxAreas = std::min((size_t)2, avecAreas.size());
+		for (size_t j = 0; j < iMaxAreas; j++)
+			AddLump(i, avecAreas[j].vecMin, avecAreas[j].vecMax);
 	}
 }
 

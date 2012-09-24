@@ -48,10 +48,10 @@ CVar sv_approximateelevation("sv_approximateelevation", "1");
 
 void CPlayerCharacter::Think()
 {
+	BaseClass::Think();
+
 	if (GameServer()->GetGameTime() > m_flNextApproximateElevation)
 		ApproximateElevation();
-
-	BaseClass::Think();
 }
 
 void CPlayerCharacter::MoveThink()
@@ -211,7 +211,7 @@ void CPlayerCharacter::EnteredAtmosphere()
 {
 	BaseClass::EnteredAtmosphere();
 
-	m_flApproximateElevation = GetNearestPlanet()->GetRadius().GetUnits(GetNearestPlanet()->GetScale());
+	m_flApproximateElevation = GetNearestPlanet()->GetAtmosphereThickness().GetUnits(GetNearestPlanet()->GetScale());
 	ApproximateElevation();
 }
 
@@ -242,7 +242,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 		if (flDistance < flAtmosphere)
 		{
 			CScalableFloat flGroundSpeed = CScalableFloat(0.1f, SCALE_KILOMETER);
-			return RemapValClamped(flDistance, CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), flAtmosphere, flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
+			return RemapValClamped(CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), CScalableFloat(), pPlanet->GetAtmosphereThickness(), flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
 		if (flDistance > flCloseOrbit)
@@ -269,19 +269,16 @@ void CPlayerCharacter::ApproximateElevation()
 
 	m_flNextApproximateElevation = GameServer()->GetGameTime() + sv_approximateelevation.GetFloat();
 
-	for (size_t i = 0; i < 6; i++)
+	CTerrainArea vecNearest = pPlanet->GetTerrain(0)->FindNearestArea(pPlanet->LumpDepth(), 0, DoubleVector2D(0, 0), DoubleVector2D(1, 1), pPlanet->GetCharacterLocalOrigin());
+
+	for (size_t i = 1; i < 6; i++)
 	{
-		DoubleVector2D vecLumpMin;
-		DoubleVector2D vecLumpMax;
-
-		if (!pPlanet->GetTerrain(i)->FindAreaNearestToPlayer(pPlanet->LumpDepth(), DoubleVector2D(0, 0), DoubleVector2D(1, 1), vecLumpMin, vecLumpMax))
-			continue;
-
-		m_flApproximateElevation = (pPlanet->GetTerrain(i)->CoordToWorld((vecLumpMin + vecLumpMax)/2) + pPlanet->GetTerrain(i)->GenerateOffset((vecLumpMin + vecLumpMax)/2)).Length();
-		return;
+		CTerrainArea vecArea = pPlanet->GetTerrain(i)->FindNearestArea(pPlanet->LumpDepth(), 0, DoubleVector2D(0, 0), DoubleVector2D(1, 1), pPlanet->GetCharacterLocalOrigin());
+		if (vecArea.flDistanceToPlayer < vecNearest.flDistanceToPlayer)
+			vecNearest = vecArea;
 	}
 
-	TAssert(false); // Should have gotten an approximation.
+	m_flApproximateElevation = vecNearest.flDistanceToPlayer;
 }
 
 const CScalableVector CPlayerCharacter::GetGlobalGravity() const

@@ -122,7 +122,8 @@ CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
 	return m_apChunks[iChunk];
 }
 
-CVar terrain_chunkcheck("terrain_chunkcheck", "0.3");
+CVar terrain_chunkcheck("terrain_chunkcheck", "0.5");
+CVar chunk_distance("chunk_distance", "0.0003");
 
 void CTerrainChunkManager::Think()
 {
@@ -181,6 +182,9 @@ void CTerrainChunkManager::Think()
 		m_flNextChunkCheck = GameServer()->GetGameTime() + terrain_chunkcheck.GetFloat();
 	}
 
+	float flMaxChunkDistance = chunk_distance.GetFloat()*2;
+	float flMaxChunkDistanceSqr = flMaxChunkDistance*flMaxChunkDistance;
+
 	tvector<size_t> aiRebuildLumps;
 	for (size_t i = 0; i < m_apChunks.size(); i++)
 	{
@@ -188,7 +192,7 @@ void CTerrainChunkManager::Think()
 		if (!pChunk)
 			continue;
 
-		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > pChunk->m_aabbBounds.Size().LengthSqr()*2)
+		if (m_pPlanet->m_vecCharacterLocalOrigin.DistanceSqr(pChunk->m_aabbBounds.Center()) > flMaxChunkDistanceSqr)
 		{
 			bool bAdd = true;
 			for (size_t j = 0; j < aiRebuildLumps.size(); j++)
@@ -277,22 +281,22 @@ void CTerrainChunkManager::FindCenterChunk()
 
 void CTerrainChunkManager::AddNearbyChunks()
 {
-	DoubleVector2D vecChunkMin;
-	DoubleVector2D vecChunkMax;
+	double flChunkDistance = chunk_distance.GetFloat();
 
-	for (size_t j = 0; j < m_pPlanet->m_pLumpManager->GetNumLumps(); j++)
+	for (size_t i = 0; i < m_pPlanet->m_pLumpManager->GetNumLumps(); i++)
 	{
-		CTerrainLump* pLump = m_pPlanet->m_pLumpManager->GetLump(j);
+		CTerrainLump* pLump = m_pPlanet->m_pLumpManager->GetLump(i);
 		if (!pLump)
 			continue;
 
-		for (size_t i = 0; i < 6; i++)
-		{
-			if (!m_pPlanet->m_apTerrain[i]->FindAreaNearestToPlayer(m_pPlanet->ChunkDepth()-m_pPlanet->LumpDepth(), pLump->m_vecMin, pLump->m_vecMax, vecChunkMin, vecChunkMax))
-				continue;
+		if (pLump->m_bGeneratingLowRes)
+			continue;
 
-			AddChunk(j, vecChunkMin, vecChunkMax);
-		}
+		tvector<CTerrainArea> avecAreas = m_pPlanet->m_apTerrain[pLump->m_iTerrain]->FindNearbyAreas(m_pPlanet->ChunkDepth(), m_pPlanet->LumpDepth(), pLump->m_vecMin, pLump->m_vecMax, m_pPlanet->m_vecCharacterLocalOrigin, flChunkDistance);
+
+		size_t iMaxAreas = std::min((size_t)2, avecAreas.size());
+		for (size_t j = 0; j < iMaxAreas; j++)
+			AddChunk(i, avecAreas[j].vecMin, avecAreas[j].vecMax);
 	}
 }
 

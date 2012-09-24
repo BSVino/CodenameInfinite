@@ -47,15 +47,17 @@ void CSPCharacter::Think()
 	else if (!pPlanet && IsInPhysics())
 		RemoveFromPhysics();
 
+	bool bHadParent = HasMoveParent();
 	if (pPlanet && !HasMoveParent())
 	{
 		m_flLastEnteredAtmosphere = GameServer()->GetGameTime();
 		m_flRollFromSpace = GetViewAngles().r;
-
-		EnteredAtmosphere();
 	}
 
 	SetMoveParent(pPlanet);
+
+	if (pPlanet && !bHadParent)
+		EnteredAtmosphere();
 
 	if (pPlanet && IsInPhysics())
 		GamePhysics()->SetEntityUpVector(this, GetUpVector());

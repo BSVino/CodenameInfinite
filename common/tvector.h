@@ -19,10 +19,15 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 
 #ifdef WITH_EASTL
 #include <EASTL/vector.h>
+#include <EASTL/heap.h>
 
 #define TVECTOR_BASE eastl::vector<T>
 using eastl::remove;
 using eastl::find;
+using eastl::push_heap;
+using eastl::pop_heap;
+using eastl::make_heap;
+using eastl::sort_heap;
 #else
 #include <vector>
 #include <algorithm>

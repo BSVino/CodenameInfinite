@@ -15,6 +15,19 @@ public:
 	Vector              vecPhys;
 };
 
+class CTerrainArea
+{
+public:
+	DoubleVector2D    vecMin;
+	DoubleVector2D    vecMax;
+	double            flDistanceToPlayer;
+};
+
+inline bool TerrainAreaCompare(const CTerrainArea& l, const CTerrainArea& r)
+{
+	return l.flDistanceToPlayer < r.flDistanceToPlayer;
+}
+
 class CShell2GenerationJob
 {
 public:
@@ -49,9 +62,12 @@ public:
 
 	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
 
-	bool                        FindAreaNearestToPlayer(size_t iAreaDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, DoubleVector2D& vecLumpMin, DoubleVector2D& vecLumpMax);
+	CTerrainArea                FindNearestArea(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch);
+	void                        SearchAreas(CTerrainArea& vecNearest, size_t iMaxDepth, size_t iCurrentDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch);
+	tvector<CTerrainArea>       FindNearbyAreas(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance);
+	void                        SearchAreas(tvector<CTerrainArea>& avecAreas, size_t iMaxDepth, size_t iCurrentDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance);
 
-	virtual DoubleVector		CoordToWorld(const TemplateVector2D<double>& vecTree) const;
+	const DoubleVector          CoordToWorld(const DoubleVector2D& vecTree) const;
 
 	Vector						GetDirection() const { return m_vecDirection; }
 	class CPlanet*				GetPlanet() const { return m_pPlanet; }
