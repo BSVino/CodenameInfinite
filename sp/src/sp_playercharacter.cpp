@@ -74,19 +74,27 @@ void CPlayerCharacter::MoveThink()
 		m_vecMoveVelocity.y = m_vecMoveVelocity.z = 0;
 #endif
 
+	CScalableVector vecLocalVelocity = GetLocalVelocity();
+
 	if (m_vecMoveVelocity.LengthSqr() > 0.0f)
 	{
-		CScalableVector vecVelocity = GetLocalVelocity();
-
 		TMatrix m = GetMovementVelocityTransform();
 
 		CScalableVector vecMove = m_vecMoveVelocity * CharacterSpeed();
-		vecVelocity = m.TransformVector(vecMove);
-
-		SetLocalVelocity(vecVelocity);
+		vecLocalVelocity = m.TransformVector(vecMove);
 	}
 	else
-		SetLocalVelocity(CScalableVector());
+		vecLocalVelocity = CScalableVector();
+
+	if (IsInPhysics())
+	{
+		if (GetNearestPlanet() && GetNearestPlanet()->GetChunkManager()->HasGroupCenter())
+			GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
+		else
+			SetLocalVelocity(vecLocalVelocity);
+	}
+	else
+		SetLocalVelocity(vecLocalVelocity);
 }
 
 const TMatrix CPlayerCharacter::GetMovementVelocityTransform() const
@@ -119,7 +127,6 @@ void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float f
 			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
 
 		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
-		GamePhysics()->SetControllerWalkVelocity(this, GetLocalVelocity());
 		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
 
 		// Consider ourselves to have simulated up to this point even though Simulate() isn't run.

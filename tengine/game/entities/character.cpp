@@ -161,15 +161,7 @@ void CCharacter::MoveThink()
 				vecUp = mGlobalToLocal.TransformVector(vecUp);
 			}
 
-			Matrix4x4 m = GetPhysicsTransform();
-			m.AddAngles(GetViewAngles());
-
-			Vector vecRight = m.GetForwardVector().Cross(vecUp).Normalized();
-			Vector vecForward = vecUp.Cross(vecRight).Normalized();
-
-			m.SetForwardVector(vecForward);
-			m.SetUpVector(vecUp);
-			m.SetRightVector(vecRight);
+			TMatrix m = GetMovementVelocityTransform();
 
 			vecLocalVelocity = m.TransformVector(vecMove);
 		}
