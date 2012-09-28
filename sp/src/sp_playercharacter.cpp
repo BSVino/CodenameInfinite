@@ -248,7 +248,7 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 
 		if (flDistance < flAtmosphere)
 		{
-			CScalableFloat flGroundSpeed = CScalableFloat(0.1f, SCALE_KILOMETER);
+			CScalableFloat flGroundSpeed = CScalableFloat(20.0f, SCALE_METER);
 			return RemapValClamped(CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), CScalableFloat(), pPlanet->GetAtmosphereThickness(), flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
