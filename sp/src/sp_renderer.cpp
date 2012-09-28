@@ -169,7 +169,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 			c->SetUniform("clrSky", Vector(pPlanet->GetAtmosphereColor()));
 			if (GetClosestStar())
 			{
-				c->SetUniform("vecStar", GetClosestStar()->GetGlobalOrigin().GetUnits(SCALE_METER).Normalized());
+				c->SetUniform("vecStar", (GetClosestStar()->GetGlobalOrigin()-pPlanet->GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized());
 				c->SetUniform("clrStar", Vector(GetClosestStar()->GetLightColor()));
 			}
 		}
