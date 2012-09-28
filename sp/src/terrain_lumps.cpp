@@ -244,12 +244,22 @@ void CTerrainLumpManager::Render()
 		}
 	}
 
+	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), eRenderScale);
+	DoubleVector vecCharacterOrigin = SPGame()->GetLocalPlayerCharacter()->GetLocalOrigin().GetUnits(eRenderScale);
+
 	for (size_t i = 0; i < m_apLumps.size(); i++)
 	{
-		if (!m_apLumps[i])
+		CTerrainLump* pLump = m_apLumps[i];
+		if (!pLump)
 			continue;
 		
-		m_apLumps[i]->Render();
+		if (pLump->IsGeneratingLowRes())
+			continue;
+
+		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScale(eRenderScale, Vector(pLump->GetLocalCenter()*flScale-vecCharacterOrigin), (float)(pLump->GetRadius()*flScale)))
+			continue;
+
+		pLump->Render();
 	}
 }
 
@@ -349,6 +359,18 @@ void CTerrainLump::GenerateTerrain()
 	tvector<CTerrainPoint> avecTerrain;
 	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToLump, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
 	m_mLumpToPlanet = m_mPlanetToLump.InvertedRT();
+
+	DoubleVector vecCorner1 = avecTerrain[0].vec3DPosition;
+	DoubleVector vecCorner2 = avecTerrain[iRows-1].vec3DPosition;
+	DoubleVector vecCorner3 = avecTerrain.back().vec3DPosition;
+	DoubleVector vecCorner4 = avecTerrain[(iRows-1)*iRows-1].vec3DPosition;
+
+	double flDistanceSqr1 = vecCorner1.LengthSqr();
+	double flDistanceSqr2 = vecCorner2.LengthSqr();
+	double flDistanceSqr3 = vecCorner3.LengthSqr();
+	double flDistanceSqr4 = vecCorner4.LengthSqr();
+
+	m_flRadius = sqrt(std::max(flDistanceSqr1, std::max(flDistanceSqr2, std::max(flDistanceSqr3, flDistanceSqr4))));
 
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;

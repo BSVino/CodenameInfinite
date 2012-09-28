@@ -37,6 +37,8 @@ public:
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
 	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
+	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
+	double                              GetRadius() const { return m_flRadius; }
 
 protected:
 	class CTerrainLumpManager*			m_pManager;
@@ -50,6 +52,7 @@ protected:
 	size_t                              m_iY;
 
 	DoubleVector                        m_vecLocalCenter;	// Center in planet space
+	double                              m_flRadius;
 
 	TemplateAABB<double>				m_aabbBounds;
 	DoubleMatrix4x4                     m_mPlanetToLump;

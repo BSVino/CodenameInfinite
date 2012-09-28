@@ -517,14 +517,14 @@ void CTerrainChunk::GenerateTerrain()
 	DoubleVector vecCorner1 = avecTerrain[0].vec3DPosition;
 	DoubleVector vecCorner2 = avecTerrain[iRows-1].vec3DPosition;
 	DoubleVector vecCorner3 = avecTerrain.back().vec3DPosition;
-	DoubleVector vecCorner4 = avecTerrain[(iRows-1)*iRows].vec3DPosition;
+	DoubleVector vecCorner4 = avecTerrain[(iRows-1)*iRows-1].vec3DPosition;
 
 	double flDistanceSqr1 = vecCorner1.LengthSqr();
 	double flDistanceSqr2 = vecCorner2.LengthSqr();
 	double flDistanceSqr3 = vecCorner3.LengthSqr();
 	double flDistanceSqr4 = vecCorner4.LengthSqr();
 
-	m_flRadius = sqrt(std::min(flDistanceSqr1, std::min(flDistanceSqr2, std::min(flDistanceSqr3, flDistanceSqr4))));
+	m_flRadius = sqrt(std::max(flDistanceSqr1, std::max(flDistanceSqr2, std::max(flDistanceSqr3, flDistanceSqr4))));
 
 	TAssert(!m_aflPhysicsVerts.size());
 	m_aflPhysicsVerts.clear();
