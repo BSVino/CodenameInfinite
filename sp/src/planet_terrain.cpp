@@ -468,6 +468,9 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 			return;
 	}
 
+	if (pCharacter->GetApproximateElevation() < 0.0001f)
+		return;
+
 	if (!m_bGeneratingShell2 && m_iShell2VBO && !bLowRes)
 	{
 		c->BeginRenderVertexArray(m_iShell2VBO);

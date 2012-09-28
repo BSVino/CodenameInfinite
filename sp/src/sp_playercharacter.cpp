@@ -293,6 +293,10 @@ void CPlayerCharacter::ApproximateElevation()
 	TAssert(bHit);
 
 	m_flApproximateElevation = vecHit.Distance(pPlanet->GetCharacterLocalOrigin());
+
+	// If the character is nearer to the planet's origin than the hit point then we approximated that we're under the ground so zero it out.
+	if (pPlanet->GetCharacterLocalOrigin().LengthSqr() < vecHit.LengthSqr())
+		m_flApproximateElevation = 0;
 }
 
 const CScalableVector CPlayerCharacter::GetGlobalGravity() const
