@@ -38,6 +38,7 @@ public:
 	size_t                              GetPhysicsEntity() const { return m_iPhysicsEntity; }
 	bool                                HasPhysicsEntity() const { return m_iPhysicsEntity != ~0; }
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
+	double                              GetRadius() const { return m_flRadius; }
 	DoubleMatrix4x4                     GetPlanetToChunk() const { return m_mPlanetToChunk; }
 	DoubleMatrix4x4                     GetChunkToPlanet() const { return m_mChunkToPlanet; }
 	size_t                              GetParity() const { return m_iParity; }
@@ -56,6 +57,7 @@ protected:
 	size_t                              m_iY;
 
 	DoubleVector                        m_vecLocalCenter;	// Center in planet space
+	double                              m_flRadius;
 
 	TemplateAABB<double>				m_aabbBounds;
 	DoubleMatrix4x4                     m_mPlanetToChunk;

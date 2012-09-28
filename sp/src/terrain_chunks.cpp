@@ -370,12 +370,22 @@ void CTerrainChunkManager::Render()
 		c.RenderWireBox(AABB(Vector(-1, -1, -1), Vector(1, 1, 1)));
 	}
 
+	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), eRenderScale);
+	DoubleVector vecCharacterOrigin = SPGame()->GetLocalPlayerCharacter()->GetLocalOrigin().GetUnits(eRenderScale);
+
 	for (size_t i = 0; i < m_apChunks.size(); i++)
 	{
-		if (!m_apChunks[i])
+		CTerrainChunk* pChunk = m_apChunks[i];
+		if (!pChunk)
 			continue;
-		
-		m_apChunks[i]->Render();
+
+		if (pChunk->IsGeneratingLowRes())
+			continue;
+
+		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScale(eRenderScale, Vector(pChunk->GetLocalCenter()*flScale-vecCharacterOrigin), (float)(pChunk->GetRadius()*flScale)))
+			continue;
+
+		pChunk->Render();
 	}
 }
 
@@ -503,6 +513,18 @@ void CTerrainChunk::GenerateTerrain()
 	tvector<CTerrainPoint> avecTerrain;
 	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToChunk, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
 	m_mChunkToPlanet = m_mPlanetToChunk.InvertedRT();
+
+	DoubleVector vecCorner1 = avecTerrain[0].vec3DPosition;
+	DoubleVector vecCorner2 = avecTerrain[iRows-1].vec3DPosition;
+	DoubleVector vecCorner3 = avecTerrain.back().vec3DPosition;
+	DoubleVector vecCorner4 = avecTerrain[(iRows-1)*iRows].vec3DPosition;
+
+	double flDistanceSqr1 = vecCorner1.LengthSqr();
+	double flDistanceSqr2 = vecCorner2.LengthSqr();
+	double flDistanceSqr3 = vecCorner3.LengthSqr();
+	double flDistanceSqr4 = vecCorner4.LengthSqr();
+
+	m_flRadius = sqrt(std::min(flDistanceSqr1, std::min(flDistanceSqr2, std::min(flDistanceSqr3, flDistanceSqr4))));
 
 	TAssert(!m_aflPhysicsVerts.size());
 	m_aflPhysicsVerts.clear();
