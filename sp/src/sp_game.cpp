@@ -57,13 +57,13 @@ void CSPGame::SetupGame(tstring sType)
 		Game()->AddPlayer(pPlayer);
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
-		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0, 0, 0), SCALE_MEGAMETER));
+		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0.11f, 0, 0), SCALE_MEGAMETER));
 		pCharacter->SetViewAngles(EAngle(0, 140, 0));
 		pPlayer->SetCharacter(pCharacter);
 
 		CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 		pPlanet->SetPlanetName("Earth");
-		pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7.1, 0, 7), SCALE_MEGAMETER));
+		pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
 		pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
 		pPlanet->SetAtmosphereThickness(CScalableFloat(50.0f, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 		pPlanet->SetMinutesPerRevolution(30);

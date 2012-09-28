@@ -274,6 +274,9 @@ void CPlayerCharacter::ApproximateElevation()
 	if (!pPlanet)
 		return;
 
+	if (pPlanet->GetCharacterLocalOrigin().LengthSqr() == 0)
+		return;
+
 	m_flNextApproximateElevation = GameServer()->GetGameTime() + sv_approximateelevation.GetFloat();
 
 	size_t iTerrain;

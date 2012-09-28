@@ -314,26 +314,37 @@ void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerra
 
 		flHighestDot = flDot;
 
+		float flXSign = 1, flYSign = 1;
 		int iBig;
 		int iX;
 		int iY;
 		if (vecDirection[0] != 0)
 		{
 			iBig = 0;
-			iX = 1;
-			iY = 2;
+			iX = 2;
+			iY = 1;
+
+			if (vecDirection[0] > 0)
+				flXSign = -1;
 		}
 		else if (vecDirection[1] != 0)
 		{
 			iBig = 1;
-			iX = 0;
-			iY = 2;
+			iX = 2;
+			iY = 0;
+
+			flXSign = -1;
+			if (vecDirection[1] > 0)
+				flYSign = -1;
 		}
 		else
 		{
 			iBig = 2;
 			iX = 0;
 			iY = 1;
+
+			if (vecDirection[2] < 0)
+				flXSign = -1;
 		}
 
 		// Shoot a ray from (0,0,0) through (a,b,c) until it hits a face of the bounding cube.
@@ -344,8 +355,8 @@ void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerra
 
 		double r = 1/vecPointDirection[iBig];
 
-		double x = RemapVal(vecPointDirection[iX]*r, -1, 1, 0, 1);
-		double y = RemapVal(vecPointDirection[iY]*r, -1, 1, 0, 1);
+		double x = RemapVal(flXSign*vecPointDirection[iX]*r, -1, 1, 0, 1);
+		double y = RemapVal(flYSign*vecPointDirection[iY]*r, -1, 1, 0, 1);
 
 		iTerrain = i;
 		vec2DCoord = DoubleVector2D(x, y);
