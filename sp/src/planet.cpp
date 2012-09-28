@@ -296,6 +296,67 @@ void CPlanet::SetRandomSeed(size_t iSeed)
 	}
 }
 
+void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord)
+{
+	// Find the spot on the planet's surface that this point is closest to.
+	double flHighestDot = -1;
+
+	DoubleVector vecPointDirection = vec3DLocal.Normalized();
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		DoubleVector vecDirection = GetTerrain(i)->GetDirection();
+
+		double flDot = vecPointDirection.Dot(vecDirection);
+
+		if (flDot <= flHighestDot)
+			continue;
+
+		flHighestDot = flDot;
+
+		int iBig;
+		int iX;
+		int iY;
+		if (vecDirection[0] != 0)
+		{
+			iBig = 0;
+			iX = 1;
+			iY = 2;
+		}
+		else if (vecDirection[1] != 0)
+		{
+			iBig = 1;
+			iX = 0;
+			iY = 2;
+		}
+		else
+		{
+			iBig = 2;
+			iX = 0;
+			iY = 1;
+		}
+
+		// Shoot a ray from (0,0,0) through (a,b,c) until it hits a face of the bounding cube.
+		// The faces of the bounding cube are specified by GetDirection() above.
+		// If the ray hits the +z face at (x,y,z) then (x,y,1) is a scalar multiple of (a,b,c).
+		// (x,y,1) = r*(a,b,c), so 1 = r*c and r = 1/c
+		// Then we can figure x and y with x = a*r and y = b*r
+
+		double r = 1/vecPointDirection[iBig];
+
+		double x = RemapVal(vecPointDirection[iX]*r, -1, 1, 0, 1);
+		double y = RemapVal(vecPointDirection[iY]*r, -1, 1, 0, 1);
+
+		iTerrain = i;
+		vec2DCoord = DoubleVector2D(x, y);
+	}
+
+	TAssert(vec2DCoord.x >= 0);
+	TAssert(vec2DCoord.y >= 0);
+	TAssert(vec2DCoord.x <= 1);
+	TAssert(vec2DCoord.y <= 1);
+}
+
 void CPlanet::SetRadius(const CScalableFloat& flRadius)
 {
 	m_flRadius = flRadius;

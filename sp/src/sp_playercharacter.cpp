@@ -276,16 +276,20 @@ void CPlayerCharacter::ApproximateElevation()
 
 	m_flNextApproximateElevation = GameServer()->GetGameTime() + sv_approximateelevation.GetFloat();
 
-	CTerrainArea vecNearest = pPlanet->GetTerrain(0)->FindNearestArea(pPlanet->LumpDepth(), 0, DoubleVector2D(0, 0), DoubleVector2D(1, 1), pPlanet->GetCharacterLocalOrigin());
+	size_t iTerrain;
+	DoubleVector2D vecApprox2DCoord;
+	pPlanet->GetApprox2DPosition(pPlanet->GetCharacterLocalOrigin(), iTerrain, vecApprox2DCoord);
 
-	for (size_t i = 1; i < 6; i++)
-	{
-		CTerrainArea vecArea = pPlanet->GetTerrain(i)->FindNearestArea(pPlanet->LumpDepth(), 0, DoubleVector2D(0, 0), DoubleVector2D(1, 1), pPlanet->GetCharacterLocalOrigin());
-		if (vecArea.flDistanceToPlayer < vecNearest.flDistanceToPlayer)
-			vecNearest = vecArea;
-	}
+	DoubleVector vecApprox3DCoord = pPlanet->GetTerrain(iTerrain)->CoordToWorld(vecApprox2DCoord) + pPlanet->GetTerrain(iTerrain)->GenerateOffset(vecApprox2DCoord);
 
-	m_flApproximateElevation = vecNearest.flDistanceToPlayer;
+	DoubleVector vecOriginNormalized = pPlanet->GetCharacterLocalOrigin().Normalized();
+
+	// Remove any lateral movement from the terrain generation offset.
+	Vector vecHit;
+	bool bHit = RayIntersectsPlane(Ray(Vector(0, 0, 0), vecOriginNormalized), vecApprox3DCoord, vecOriginNormalized, &vecHit);
+	TAssert(bHit);
+
+	m_flApproximateElevation = vecHit.Distance(pPlanet->GetCharacterLocalOrigin());
 }
 
 const CScalableVector CPlayerCharacter::GetGlobalGravity() const

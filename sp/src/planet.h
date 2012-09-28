@@ -39,6 +39,8 @@ public:
 
 	void						SetRandomSeed(size_t iSeed);
 
+	void                        GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord);
+
 	void						SetRadius(const CScalableFloat& flRadius);
 	CScalableFloat				GetRadius() const { return m_flRadius; }
 
