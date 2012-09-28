@@ -219,6 +219,13 @@ CVar r_marklumps("r_marklumps", "off");
 
 void CTerrainLumpManager::Render()
 {
+	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eRenderScale >= SCALE_MEGAMETER)
+		return;
+
+	if (eRenderScale < SCALE_METER)
+		return;
+
 	if (r_marklumps.GetBool() && SPGame()->GetLocalPlayerCharacter()->GetNearestPlanet() == m_pPlanet)
 	{
 		for (size_t i = 0; i < m_apLumps.size(); i++)
@@ -403,9 +410,6 @@ void CTerrainLump::Render()
 		return;
 
 	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
-	if (eRenderScale >= SCALE_MEGAMETER)
-		return;
-
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CPlanet* pPlanet = m_pManager->m_pPlanet;
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();

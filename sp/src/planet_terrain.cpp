@@ -452,6 +452,13 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 	if (flPlayerDot < -0.60f)
 		return;
 
+	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eRenderScale < SCALE_KILOMETER)
+		return;
+
+	if (eRenderScale > SCALE_GIGAMETER)
+		return;
+
 	bool bLowRes = flDistance > 300;
 
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();

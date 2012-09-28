@@ -321,6 +321,10 @@ CVar r_markgroups("r_markgroups", "off");
 
 void CTerrainChunkManager::Render()
 {
+	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
+	if (eRenderScale >= SCALE_MEGAMETER)
+		return;
+
 	if (r_markchunks.GetBool() && SPGame()->GetLocalPlayerCharacter()->GetNearestPlanet() == m_pPlanet)
 	{
 		for (size_t i = 0; i < m_apChunks.size(); i++)
@@ -529,9 +533,6 @@ void CTerrainChunk::Render()
 		return;
 
 	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
-	if (eRenderScale >= SCALE_MEGAMETER)
-		return;
-
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CPlanet* pPlanet = m_pManager->m_pPlanet;
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
