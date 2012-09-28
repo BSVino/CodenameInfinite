@@ -3,6 +3,7 @@
 #include <tinker/application.h>
 
 #include "planet.h"
+#include "planet_terrain.h"
 #include "sp_game.h"
 #include "sp_renderer.h"
 #include "sp_playercharacter.h"
@@ -273,25 +274,23 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
+	SetMoveParent(nullptr);
+
+	CScalableVector vecPlayerGlobal = GetGlobalOrigin();
+	CScalableVector vecPlayerLocal = pPlanet->GetGlobalToLocalTransform() * vecPlayerGlobal;
+	DoubleVector vecPlayerLocalMeters = vecPlayerLocal;
+
 	SetMoveParent(pPlanet);
 
-	CScalableVector vecPlanetOrigin = pPlanet->GetLocalOrigin();
-	CScalableVector vecCharacterOrigin = GetLocalOrigin();
-	CScalableVector vecCharacterDirection = (vecCharacterOrigin - vecPlanetOrigin).Normalized();
+	size_t iTerrain;
+	DoubleVector2D vecApprox2DCoord;
+	pPlanet->GetApprox2DPosition(vecPlayerLocalMeters, iTerrain, vecApprox2DCoord);
 
-	TUnimplemented();
+	DoubleVector vecNewLocalMeters = pPlanet->GetTerrain(iTerrain)->CoordToWorld(vecApprox2DCoord) + pPlanet->GetTerrain(iTerrain)->GenerateOffset(vecApprox2DCoord);
 
-	/*
-	CTraceResult tr;
-	pPlanet->CollideLocalAccurate(this, true, vecCharacterDirection * (pPlanet->GetRadius()*2.0f), TVector(), tr);
+	CScalableVector vecNewLocal(vecNewLocalMeters, pPlanet->GetScale());
 
-	TFloat flPlanetRadius = pPlanet->GetRadius();
-	TVector vecPoint = (vecCharacterOrigin - vecPlanetOrigin).Normalized() * flPlanetRadius;
-
-	TAssert(tr.bHit);
-
-	SetLocalOrigin(tr.vecHit);
-	*/
+	SetLocalOrigin(vecNewLocal);
 }
 
 CScalableFloat CSPCharacter::EyeHeight() const

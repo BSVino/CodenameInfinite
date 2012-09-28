@@ -63,7 +63,7 @@ void CSPGame::SetupGame(tstring sType)
 
 		CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 		pPlanet->SetPlanetName("Earth");
-		pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
+		pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7.1, 0, 7), SCALE_MEGAMETER));
 		pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
 		pPlanet->SetAtmosphereThickness(CScalableFloat(50.0f, SCALE_KILOMETER));	// Atmosphere of Earth, about 50km until the end of the stratosphere
 		pPlanet->SetMinutesPerRevolution(30);
@@ -84,7 +84,7 @@ void CSPGame::SetupGame(tstring sType)
 		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
 		pStar->SetLightColor(Color(255, 242, 143));
 
-		//pCharacter->StandOnNearestPlanet();
+		pCharacter->StandOnNearestPlanet();
 
 		if (!pCharacter->GetNearestPlanet())
 			pCharacter->StartFlying();
