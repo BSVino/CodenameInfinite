@@ -4,6 +4,7 @@
 
 #include "planet/planet.h"
 #include "planet/planet_terrain.h"
+#include "planet/terrain_chunks.h"
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
 #include "entities/sp_playercharacter.h"
@@ -61,9 +62,9 @@ void CSPCharacter::Think()
 		EnteredAtmosphere();
 
 	if (pPlanet && IsInPhysics())
-		GamePhysics()->SetEntityUpVector(this, GetUpVector());
+		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
 
-	if (pPlanet)
+	if (pPlanet && ApplyGravity())
 	{
 		// Estimate this planet's mass given things we know about earth. Assume equal densities.
 		double flEarthVolume = 1097509500000000000000.0;	// cubic meters
@@ -83,6 +84,8 @@ void CSPCharacter::Think()
 
 		SetGlobalGravity(vecGravity);
 	}
+	else
+		SetGlobalGravity(Vector(0, 0, 0));
 }
 
 const CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
@@ -113,6 +116,101 @@ const Vector CSPCharacter::GetRenderOrigin() const
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetTranslation().GetUnits(eScale);
+}
+
+const TMatrix CSPCharacter::GetMovementVelocityTransform() const
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+
+	TMatrix m;
+	m.SetAngles(GetViewAngles());
+	if (pPlanet && pPlanet->GetChunkManager()->HasGroupCenter())
+		m = TMatrix(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform()) * m;
+
+	return m;
+}
+
+void CSPCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+	TAssert(pPlanet);
+	if (!pPlanet)
+	{
+		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+		return;
+	}
+
+	if (pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		if (ApplyGravity())
+			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
+		else
+			GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
+
+		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
+		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
+
+		// Consider ourselves to have simulated up to this point even though Simulate() isn't run.
+		m_flMoveSimulationTime = GameServer()->GetGameTime();
+	}
+	else
+		Simulate();
+}
+
+const Matrix4x4 CSPCharacter::GetPhysicsTransform() const
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+	if (!pPlanet)
+		return GetLocalTransform();
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+		return GetLocalTransform();
+
+	return m_mGroupTransform;
+}
+
+void CSPCharacter::SetPhysicsTransform(const Matrix4x4& m)
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+	if (!pPlanet)
+	{
+		SetLocalTransform(TMatrix(m));
+		return;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		SetLocalTransform(TMatrix(m));
+		return;
+	}
+
+	m_mGroupTransform = m;
+
+	SetLocalTransform(TMatrix(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m));
+}
+
+void CSPCharacter::SetGroundEntity(CBaseEntity* pEntity)
+{
+	// Overridden so that we don't mess with the move parent.
+	if ((CBaseEntity*)m_hGround == pEntity)
+		return;
+
+	m_hGround = pEntity;
+
+	if (pEntity)
+	{
+		if (GetNearestPlanet())
+			TAssert(pEntity == GetNearestPlanet() || pEntity->GetMoveParent() == GetNearestPlanet() || (pEntity->GetMoveParent() && pEntity->GetMoveParent()->GetMoveParent() == GetNearestPlanet()));
+
+		SetMoveParent(pEntity);
+	}
+	else
+		SetMoveParent(GetNearestPlanet());
+}
+
+void CSPCharacter::SetGroundEntityExtra(size_t iExtra)
+{
+	SetGroundEntity(GetNearestPlanet());
 }
 
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)

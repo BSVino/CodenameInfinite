@@ -44,7 +44,7 @@ public:
 
 	virtual void					MoveToPlayerStart();
 
-	virtual void					PostRender(bool bTransparent) const;
+	virtual void					PostRender() const;
 	virtual void					ShowPlayerVectors() const;
 
 	void							SetControllingPlayer(CPlayer* pCharacter);

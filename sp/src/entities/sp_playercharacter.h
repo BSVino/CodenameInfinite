@@ -5,6 +5,8 @@
 
 #include "sp_camera.h"
 
+class CHelperBot;
+
 class CPlayerCharacter : public CSPCharacter
 {
 	REGISTER_ENTITY_CLASS(CPlayerCharacter, CSPCharacter);
@@ -17,13 +19,6 @@ public:
 
 	virtual void				Think();
 	virtual void				MoveThink();
-	virtual const TMatrix       GetMovementVelocityTransform() const;
-
-	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
-	virtual const Matrix4x4     GetPhysicsTransform() const;
-	virtual void                SetPhysicsTransform(const Matrix4x4& m);
-	virtual void                SetGroundEntity(CBaseEntity* pEntity);
-	virtual void                SetGroundEntityExtra(size_t iExtra);
 
 	void						ToggleFlying();
 	void						StartFlying();
@@ -43,7 +38,7 @@ public:
 
 	virtual inline const CScalableVector	GetGlobalGravity() const;
 
-	void                        SetGroupTransform(const Matrix4x4& m) { m_mGroupTransform = m; }
+	virtual bool                ApplyGravity() const { return !m_bFlying; }
 
 protected:
 	bool						m_bFlying;
@@ -55,9 +50,7 @@ protected:
 	double                      m_flNextApproximateElevation;
 	double                      m_flApproximateElevation;     // From the center of the planet
 
-	// Transform from the center of the nearest chunk group.
-	// Use a persistent transform to avoid floating point problems converting back to double all the time.
-	Matrix4x4                   m_mGroupTransform;
+	CEntityHandle<CHelperBot>   m_hHelper;
 };
 
 #endif

@@ -308,9 +308,9 @@ void CCharacter::MoveToPlayerStart()
 
 CVar debug_showplayervectors("debug_showplayervectors", "off");
 
-void CCharacter::PostRender(bool bTransparent) const
+void CCharacter::PostRender() const
 {
-	if (!bTransparent && debug_showplayervectors.GetBool())
+	if (!GameServer()->GetRenderer()->IsRenderingTransparent() && debug_showplayervectors.GetBool())
 		ShowPlayerVectors();
 }
 

@@ -12,7 +12,7 @@ public:
 	virtual const TFloat	GetBoundingRadius() const;
 
 	virtual bool			ShouldRender() const { return true; };
-	virtual void			PostRender(bool bTransparent) const;
+	virtual void			PostRender() const;
 
 	Vector					GetStart() const { return m_vecStart; }
 	void					SetStart(const Vector& vecStart) { m_vecStart = vecStart; }

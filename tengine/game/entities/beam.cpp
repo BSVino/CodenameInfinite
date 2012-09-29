@@ -27,9 +27,9 @@ const TFloat CBeam::GetBoundingRadius() const
 	return (m_vecStart - m_vecEnd).Length()/2;
 }
 
-void CBeam::PostRender(bool bTransparent) const
+void CBeam::PostRender() const
 {
-	if (!bTransparent)
+	if (!GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
 	CRenderingContext c(GameServer()->GetRenderer(), true);

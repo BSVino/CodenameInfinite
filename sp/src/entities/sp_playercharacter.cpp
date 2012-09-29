@@ -7,6 +7,7 @@
 #include "entities/sp_camera.h"
 #include "planet/planet_terrain.h"
 #include "planet/terrain_chunks.h"
+#include "bots/helper.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
 
@@ -42,6 +43,12 @@ void CPlayerCharacter::Spawn()
 	m_hCamera->SetCharacter(this);
 
 	m_flNextApproximateElevation = 0;
+
+	if (m_hHelper)
+		m_hHelper->Delete();
+
+	m_hHelper = GameServer()->Create<CHelperBot>("CHelperBot");
+	m_hHelper->SetPlayerCharacter(this);
 }
 
 CVar sv_approximateelevation("sv_approximateelevation", "1");
@@ -95,101 +102,6 @@ void CPlayerCharacter::MoveThink()
 	}
 	else
 		SetLocalVelocity(vecLocalVelocity);
-}
-
-const TMatrix CPlayerCharacter::GetMovementVelocityTransform() const
-{
-	CPlanet* pPlanet = GetNearestPlanet();
-
-	TMatrix m;
-	m.SetAngles(GetViewAngles());
-	if (pPlanet && pPlanet->GetChunkManager()->HasGroupCenter())
-		m = TMatrix(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform()) * m;
-
-	return m;
-}
-
-void CPlayerCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDelta)
-{
-	CPlanet* pPlanet = GetNearestPlanet();
-	TAssert(pPlanet);
-	if (!pPlanet)
-	{
-		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
-		return;
-	}
-
-	if (pPlanet->GetChunkManager()->HasGroupCenter())
-	{
-		if (m_bFlying)
-			GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
-		else
-			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
-
-		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
-		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
-
-		// Consider ourselves to have simulated up to this point even though Simulate() isn't run.
-		m_flMoveSimulationTime = GameServer()->GetGameTime();
-	}
-	else
-		Simulate();
-}
-
-const Matrix4x4 CPlayerCharacter::GetPhysicsTransform() const
-{
-	CPlanet* pPlanet = GetNearestPlanet();
-	if (!pPlanet)
-		return GetLocalTransform();
-
-	if (!pPlanet->GetChunkManager()->HasGroupCenter())
-		return GetLocalTransform();
-
-	return m_mGroupTransform;
-}
-
-void CPlayerCharacter::SetPhysicsTransform(const Matrix4x4& m)
-{
-	CPlanet* pPlanet = GetNearestPlanet();
-	if (!pPlanet)
-	{
-		SetLocalTransform(TMatrix(m));
-		return;
-	}
-
-	if (!pPlanet->GetChunkManager()->HasGroupCenter())
-	{
-		SetLocalTransform(TMatrix(m));
-		return;
-	}
-
-	m_mGroupTransform = m;
-
-	SetLocalTransform(TMatrix(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m));
-}
-
-void CPlayerCharacter::SetGroundEntity(CBaseEntity* pEntity)
-{
-	// Overridden so that we don't mess with the move parent.
-	if ((CBaseEntity*)m_hGround == pEntity)
-		return;
-
-	m_hGround = pEntity;
-
-	if (pEntity)
-	{
-		if (GetNearestPlanet())
-			TAssert(pEntity == GetNearestPlanet() || pEntity->GetMoveParent() == GetNearestPlanet() || (pEntity->GetMoveParent() && pEntity->GetMoveParent()->GetMoveParent() == GetNearestPlanet()));
-
-		SetMoveParent(pEntity);
-	}
-	else
-		SetMoveParent(GetNearestPlanet());
-}
-
-void CPlayerCharacter::SetGroundEntityExtra(size_t iExtra)
-{
-	SetGroundEntity(GetNearestPlanet());
 }
 
 void CPlayerCharacter::ToggleFlying()
