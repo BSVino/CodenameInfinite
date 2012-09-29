@@ -2,11 +2,11 @@
 
 #include <tinker/application.h>
 
-#include "planet.h"
-#include "planet_terrain.h"
-#include "sp_game.h"
+#include "planet/planet.h"
+#include "planet/planet_terrain.h"
+#include "entities/sp_game.h"
 #include "sp_renderer.h"
-#include "sp_playercharacter.h"
+#include "entities/sp_playercharacter.h"
 
 REGISTER_ENTITY(CSPCharacter);
 

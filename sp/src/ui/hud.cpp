@@ -6,9 +6,9 @@
 #include <glgui/label.h>
 #include <tinker/cvar.h>
 
-#include "../planet.h"
-#include "../sp_playercharacter.h"
-#include "../sp_game.h"
+#include "planet/planet.h"
+#include "entities/sp_playercharacter.h"
+#include "entities/sp_game.h"
 
 CSPHUD::CSPHUD()
 	: CHUDViewport()

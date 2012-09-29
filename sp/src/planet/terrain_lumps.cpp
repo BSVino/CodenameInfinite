@@ -5,13 +5,13 @@
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
 
-#include "sp_game.h"
-#include "sp_playercharacter.h"
+#include "entities/sp_game.h"
+#include "entities/sp_playercharacter.h"
 #include "sp_renderer.h"
-#include "star.h"
-#include "planet.h"
-#include "planet_terrain.h"
-#include "terrain_chunks.h"
+#include "entities/star.h"
+#include "planet/planet.h"
+#include "planet/planet_terrain.h"
+#include "planet/terrain_chunks.h"
 
 CParallelizer* CTerrainLumpManager::s_pLumpGenerator = nullptr;
 

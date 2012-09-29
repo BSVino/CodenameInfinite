@@ -5,13 +5,13 @@
 #include <game/level.h>
 #include <tinker/cvar.h>
 
-#include "sp_player.h"
-#include "sp_playercharacter.h"
-#include "sp_character.h"
-#include "sp_camera.h"
+#include "entities/sp_player.h"
+#include "entities/sp_playercharacter.h"
+#include "entities/sp_character.h"
+#include "entities/sp_camera.h"
 #include "sp_renderer.h"
-#include "planet.h"
-#include "star.h"
+#include "planet/planet.h"
+#include "entities/star.h"
 #include "ui/hud.h"
 
 CGame* CreateGame()

@@ -16,11 +16,11 @@
 #include <tengine/game/cameramanager.h>
 
 #include "sp_window.h"
-#include "sp_game.h"
-#include "sp_playercharacter.h"
-#include "planet.h"
-#include "star.h"
-#include "sp_camera.h"
+#include "entities/sp_game.h"
+#include "entities/sp_playercharacter.h"
+#include "planet/planet.h"
+#include "entities/star.h"
+#include "entities/sp_camera.h"
 
 CSPRenderer::CSPRenderer()
 	: CGameRenderer(CApplication::Get()->GetWindowWidth(), CApplication::Get()->GetWindowHeight())

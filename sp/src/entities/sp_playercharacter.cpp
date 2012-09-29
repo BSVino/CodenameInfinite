@@ -3,10 +3,10 @@
 #include <tinker/application.h>
 #include <tinker/cvar.h>
 
-#include "planet.h"
-#include "sp_camera.h"
-#include "planet_terrain.h"
-#include "terrain_chunks.h"
+#include "planet/planet.h"
+#include "entities/sp_camera.h"
+#include "planet/planet_terrain.h"
+#include "planet/terrain_chunks.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
 

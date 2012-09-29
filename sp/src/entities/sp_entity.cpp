@@ -3,11 +3,11 @@
 #include <tinker/application.h>
 #include <tinker/profiler.h>
 
-#include "sp_game.h"
+#include "entities/sp_game.h"
 #include "sp_renderer.h"
-#include "sp_playercharacter.h"
-#include "planet.h"
-#include "star.h"
+#include "entities/sp_playercharacter.h"
+#include "planet/planet.h"
+#include "entities/star.h"
 
 bool CSPEntityData::ShouldRenderAtScale(scale_t eScale) const
 {

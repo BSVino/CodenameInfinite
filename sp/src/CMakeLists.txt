@@ -13,34 +13,49 @@ if (WIN32)
 	include_directories(${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release)
 endif (WIN32)
 
-set (SPINTRO_SOURCES
+set (CI_PLANET_SOURCES
+	planet/planet.cpp
+	planet/planet_terrain.cpp
+	planet/terrain_lumps.cpp
+	planet/terrain_chunks.cpp
+)
+
+set (CI_ENTITY_SOURCES
+	entities/star.cpp
+	entities/sp_character.cpp
+	entities/sp_playercharacter.cpp
+	entities/sp_player.cpp
+	entities/sp_camera.cpp
+	entities/sp_game.cpp
+	entities/sp_entity.cpp
+)
+
+set (CI_UI_SOURCES
+	ui/hud.cpp
+)
+
+set (CI_SOURCES
 	main.cpp
 
-	planet.cpp
-	planet_terrain.cpp
-	terrain_lumps.cpp
-	terrain_chunks.cpp
-	star.cpp
-
 	sp_common.cpp
-	sp_character.cpp
-	sp_playercharacter.cpp
-	sp_player.cpp
-
-	sp_camera.cpp
-	sp_game.cpp
 	sp_renderer.cpp
 	sp_systems.cpp
 	sp_window.cpp
-	sp_entity.cpp
 
-	ui/hud.cpp
+	${CI_PLANET_SOURCES}
+	${CI_ENTITY_SOURCES}
+	${CI_UI_SOURCES}
 )
-add_executable (sp ${SPINTRO_SOURCES})
-target_link_libraries (sp tinker tengine)
+
+source_group(Planet FILES ${CI_PLANET_SOURCES})
+source_group(Entities FILES ${CI_ENTITY_SOURCES})
+source_group(UI FILES ${CI_UI_SOURCES})
+
+add_executable (infinite ${CI_SOURCES})
+target_link_libraries (infinite tinker tengine)
 
 if (WIN32)
-	target_link_libraries(sp debug ${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release/Debug/pthread.lib)
+	target_link_libraries(infinite debug ${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release/Debug/pthread.lib)
 
-	target_link_libraries(sp optimized ${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release/Release/pthread.lib)
+	target_link_libraries(infinite optimized ${CMAKE_SOURCE_DIR}/../ext-deps/pthreads-w32-2-8-0-release/Release/pthread.lib)
 endif (WIN32)

@@ -10,11 +10,11 @@
 #include <tinker/profiler.h>
 #include <tengine/renderer/game_renderer.h>
 
-#include "sp_game.h"
+#include "entities/sp_game.h"
 #include "sp_renderer.h"
-#include "sp_playercharacter.h"
-#include "planet.h"
-#include "terrain_lumps.h"
+#include "entities/sp_playercharacter.h"
+#include "planet/planet.h"
+#include "planet/terrain_lumps.h"
 
 CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 {

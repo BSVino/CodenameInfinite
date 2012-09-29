@@ -3,6 +3,6 @@
 
 #define CGameEntityData CSPEntityData
 
-#include "../sp/src/sp_entity.h"
+#include "../sp/src/entities/sp_entity.h"
 
 #endif

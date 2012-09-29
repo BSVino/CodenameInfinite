@@ -10,14 +10,14 @@
 #include <renderer/shaders.h>
 #include <tengine/renderer/game_renderer.h>
 
-#include "sp_game.h"
+#include "entities/sp_game.h"
 #include "sp_renderer.h"
-#include "sp_camera.h"
-#include "sp_playercharacter.h"
-#include "star.h"
-#include "planet_terrain.h"
-#include "terrain_lumps.h"
-#include "terrain_chunks.h"
+#include "entities/sp_camera.h"
+#include "entities/sp_playercharacter.h"
+#include "entities/star.h"
+#include "planet/planet_terrain.h"
+#include "planet/terrain_lumps.h"
+#include "planet/terrain_chunks.h"
 
 REGISTER_ENTITY(CPlanet);
 

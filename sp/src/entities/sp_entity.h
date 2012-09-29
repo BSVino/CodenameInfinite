@@ -3,7 +3,7 @@
 
 #include <game/entities/baseentitydata.h>
 
-#include "sp_common.h"
+#include "../sp_common.h"
 
 class CSPEntityData : public CBaseEntityData
 {

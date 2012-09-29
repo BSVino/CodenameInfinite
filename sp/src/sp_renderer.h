@@ -9,7 +9,7 @@
 #include <tengine/renderer/game_renderer.h>
 
 #include "sp_common.h"
-#include "sp_entity.h"
+#include "entities/sp_entity.h"
 
 class CPlanet;
 class CStar;

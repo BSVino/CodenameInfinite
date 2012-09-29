@@ -7,13 +7,13 @@
 
 #include <physics/physics.h>
 
-#include "sp_game.h"
-#include "sp_playercharacter.h"
+#include "entities/sp_game.h"
+#include "entities/sp_playercharacter.h"
 #include "sp_renderer.h"
-#include "star.h"
-#include "planet.h"
-#include "planet_terrain.h"
-#include "terrain_lumps.h"
+#include "entities/star.h"
+#include "planet/planet.h"
+#include "planet/planet_terrain.h"
+#include "planet/terrain_lumps.h"
 
 CParallelizer* CTerrainChunkManager::s_pChunkGenerator = nullptr;
 

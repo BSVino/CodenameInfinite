@@ -5,8 +5,8 @@
 #include <tinker/application.h>
 #include <tinker/keys.h>
 
-#include "sp_playercharacter.h"
-#include "planet.h"
+#include "entities/sp_playercharacter.h"
+#include "planet/planet.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
