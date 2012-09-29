@@ -282,17 +282,29 @@ size_t CPlanetTerrain::BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<i
 
 	size_t iTerrainSize = avecTerrain.size();
 
-	for (size_t x = 0; x < iTerrainSize; x++)
-		PushPhysVert(aflVerts, avecTerrain[x]);
+	size_t iInputRows = (int)sqrt((float)iTerrainSize);
+	TAssert(iInputRows == iRows);
 
-	for (size_t x = 0; x < iRows-1; x++)
+	size_t iInputLevels = (int)(log((float)iInputRows-1)/log(2.0f));
+	TAssert(iInputLevels >= iLevels && iInputLevels < 100);
+	size_t iRowStride = (int)pow(2.0f, (float)(iInputLevels-iLevels));
+
+	size_t iOutputRows = (int)pow(2.0f, (float)iLevels)+1;
+
+	for (size_t x = 0; x < iInputRows; x += iRowStride)
 	{
-		for (size_t y = 0; y < iRows-1; y++)
+		for (size_t y = 0; y < iInputRows; y += iRowStride)
+			PushPhysVert(aflVerts, avecTerrain[x*iInputRows + y]);
+	}
+
+	for (size_t x = 0; x < iOutputRows-1; x++)
+	{
+		for (size_t y = 0; y < iOutputRows-1; y++)
 		{
-			unsigned int i1 = y*iRows + x;
-			unsigned int i2 = y*iRows + (x+1);
-			unsigned int i3 = (y+1)*iRows + (x+1);
-			unsigned int i4 = (y+1)*iRows + x;
+			unsigned int i1 = y*iOutputRows + x;
+			unsigned int i2 = y*iOutputRows + (x+1);
+			unsigned int i3 = (y+1)*iOutputRows + (x+1);
+			unsigned int i4 = (y+1)*iOutputRows + x;
 
 			TAssert(i1 < iTerrainSize);
 			TAssert(i2 < iTerrainSize);

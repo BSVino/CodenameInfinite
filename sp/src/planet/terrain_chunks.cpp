@@ -529,7 +529,7 @@ void CTerrainChunk::GenerateTerrain()
 	TAssert(!m_aflPhysicsVerts.size());
 	m_aflPhysicsVerts.clear();
 	m_aiPhysicsVerts.clear();
-	size_t iTriangles = CPlanetTerrain::BuildIndexedPhysVerts(m_aflPhysicsVerts, m_aiPhysicsVerts, avecTerrain, iResolution, iRows);
+	size_t iTriangles = CPlanetTerrain::BuildIndexedPhysVerts(m_aflPhysicsVerts, m_aiPhysicsVerts, avecTerrain, iResolution-1, iRows);
 
 	m_iPhysicsMesh = GamePhysics()->LoadExtraCollisionMesh(iTriangles, m_aiPhysicsVerts.data(), m_aflPhysicsVerts.size()/3, m_aflPhysicsVerts.data());
 
