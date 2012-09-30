@@ -197,6 +197,42 @@ void CSPCharacter::SetPhysicsTransform(const Matrix4x4& m)
 	SetLocalTransform(TMatrix(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m));
 }
 
+const Vector CSPCharacter::TransformPointPhysicsToLocal(const Vector& v)
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+	if (!pPlanet)
+	{
+		TAssert(pPlanet);
+		return v;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
+		return v;
+	}
+
+	return pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * v;
+}
+
+const Vector CSPCharacter::TransformVectorLocalToPhysics(const Vector& v)
+{
+	CPlanet* pPlanet = GetNearestPlanet();
+	if (!pPlanet)
+	{
+		TAssert(pPlanet);
+		return v;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
+		return v;
+	}
+
+	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform().TransformVector(v);
+}
+
 void CSPCharacter::SetGroundEntity(CBaseEntity* pEntity)
 {
 	// Overridden so that we don't mess with the move parent.

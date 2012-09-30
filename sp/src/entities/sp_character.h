@@ -39,6 +39,8 @@ public:
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
 	virtual const Matrix4x4     GetPhysicsTransform() const;
 	virtual void                SetPhysicsTransform(const Matrix4x4& m);
+	const Vector                TransformPointPhysicsToLocal(const Vector& v);
+	const Vector                TransformVectorLocalToPhysics(const Vector& v);
 	virtual void                SetGroundEntity(CBaseEntity* pEntity);
 	virtual void                SetGroundEntityExtra(size_t iExtra);
 

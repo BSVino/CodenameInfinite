@@ -55,6 +55,7 @@ void CSPGame::SetupGame(tstring sType)
 	{
 		CSPPlayer* pPlayer = GameServer()->Create<CSPPlayer>("CSPPlayer");
 		Game()->AddPlayer(pPlayer);
+		pPlayer->AddSpires(1);
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
 		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0.11f, 0, 0), SCALE_MEGAMETER));
@@ -90,6 +91,8 @@ void CSPGame::SetupGame(tstring sType)
 			pCharacter->StartFlying();
 
 		Application()->SetMouseCursorEnabled(false);
+
+		GameServer()->AddAllToPrecacheList();
 	}
 	else if (sType == "menu")
 	{
@@ -104,6 +107,11 @@ void CSPGame::SetupGame(tstring sType)
 void CSPGame::Think()
 {
 	BaseClass::Think();
+}
+
+CSPPlayer* CSPGame::GetLocalSPPlayer()
+{
+	return static_cast<CSPPlayer*>(GetLocalPlayer());
 }
 
 CPlayerCharacter* CSPGame::GetLocalPlayerCharacter()

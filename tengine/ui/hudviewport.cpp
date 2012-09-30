@@ -30,12 +30,29 @@ void CHUDViewport::Paint(float x, float y, float w, float h)
 		if (pPlayer)
 		{
 			CCharacter* pCharacter = pPlayer->GetCharacter();
-			TVector vecPlayer = pCharacter->GetGlobalOrigin();
-			TVector vecVelocity = pCharacter->GetGlobalVelocity();
-			tstring sPlayer = sprintf("Player: %.2f %.2f %.2f  Velocity: %.2f %.2f %.2f",
-				(float)vecPlayer.x, (float)vecPlayer.y, (float)vecPlayer.z,
-				(float)vecVelocity.x, (float)vecVelocity.y, (float)vecVelocity.z);
+			TVector vecGlobalPlayer = pCharacter->GetGlobalOrigin();
+			TVector vecLocalPlayer = pCharacter->GetLocalOrigin();
+			TVector vecGlobalVelocity = pCharacter->GetGlobalVelocity();
+			TVector vecLocalVelocity = pCharacter->GetLocalVelocity();
+			Vector vecView = AngleVector(pCharacter->GetViewAngles());
+
+			tstring sPlayer = sprintf(
+				"Local:  Player: %.2f %.2f %.2f  Velocity: %.2f %.2f %.2f  View: %.2f %.2f %.2f",
+				(float)vecLocalPlayer.x, (float)vecLocalPlayer.y, (float)vecLocalPlayer.z,
+				(float)vecLocalVelocity.x, (float)vecLocalVelocity.y, (float)vecLocalVelocity.z,
+				vecView.x, vecView.y, vecView.z);
+
 			glgui::CLabel::PaintText(sPlayer, -1, "sans-serif", 10, 15, 30);
+
+			if (pCharacter->HasMoveParent())
+			{
+				sPlayer = sprintf(
+					"Global:  Player: %.2f %.2f %.2f  Velocity: %.2f %.2f %.2f",
+					(float)vecGlobalPlayer.x, (float)vecGlobalPlayer.y, (float)vecGlobalPlayer.z,
+					(float)vecGlobalVelocity.x, (float)vecGlobalVelocity.y, (float)vecGlobalVelocity.z);
+
+				glgui::CLabel::PaintText(sPlayer, -1, "sans-serif", 10, 15, 45);
+			}
 		}
 	}
 

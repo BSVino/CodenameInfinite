@@ -35,8 +35,14 @@ set (CI_BOT_SOURCES
 	entities/bots/helper.cpp
 )
 
+set (CI_STRUCTURE_SOURCES
+	entities/structures/structure.cpp
+	entities/structures/spire.cpp
+)
+
 set (CI_UI_SOURCES
 	ui/hud.cpp
+	ui/hudmenu.cpp
 )
 
 set (CI_SOURCES
@@ -49,6 +55,7 @@ set (CI_SOURCES
 
 	${CI_PLANET_SOURCES}
 	${CI_ENTITY_SOURCES}
+	${CI_STRUCTURE_SOURCES}
 	${CI_BOT_SOURCES}
 	${CI_UI_SOURCES}
 )
@@ -56,6 +63,7 @@ set (CI_SOURCES
 source_group(Planet FILES ${CI_PLANET_SOURCES})
 source_group(Entities FILES ${CI_ENTITY_SOURCES})
 source_group(Entities\\Bots FILES ${CI_BOT_SOURCES})
+source_group(Entities\\Structures FILES ${CI_STRUCTURE_SOURCES})
 source_group(UI FILES ${CI_UI_SOURCES})
 
 add_executable (infinite ${CI_SOURCES})

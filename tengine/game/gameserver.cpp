@@ -167,6 +167,12 @@ void CGameServer::AddToPrecacheList(const tstring& sClass)
 		AddToPrecacheList(it2->second.m_pszParentClass);
 }
 
+void CGameServer::AddAllToPrecacheList()
+{
+	for (auto it = CBaseEntity::GetEntityRegistration().begin(); it != CBaseEntity::GetEntityRegistration().end(); it++)
+		AddToPrecacheList(it->first);
+}
+
 void CGameServer::PrecacheList()
 {
 	TMsg("Precaching entities... ");
@@ -828,7 +834,8 @@ CEntityHandle<CBaseEntity> CGameServer::Create(const char* pszEntityName)
 	// client portion and a server portion to help minimize bugs like this.
 	//::CreateEntity.RunCommand(sprintf(tstring("%s %d %d"), pszEntityName, hEntity->GetHandle(), hEntity->GetSpawnSeed()));
 
-	AddToPrecacheList(pszEntityName);
+	if (IsLoading())
+		AddToPrecacheList(pszEntityName);
 
 	return hEntity;
 }

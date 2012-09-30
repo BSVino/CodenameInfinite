@@ -14,6 +14,7 @@ public:
 
 	virtual void			Think();
 
+	class CSPPlayer*        GetLocalSPPlayer();
 	class CPlayerCharacter*	GetLocalPlayerCharacter();
 	class CSPRenderer*		GetSPRenderer();
 };

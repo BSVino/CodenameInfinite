@@ -10,10 +10,41 @@
 #include "entities/sp_playercharacter.h"
 #include "entities/sp_game.h"
 #include "entities/bots/helper.h"
+#include "entities/structures/spire.h"
+
+#include "hudmenu.h"
 
 CSPHUD::CSPHUD()
 	: CHUDViewport()
 {
+}
+
+void CSPHUD::BuildMenus()
+{
+	if (m_hConstructionMenu)
+	{
+		glgui::RootPanel()->RemoveControl(m_hConstructionMenu);
+		m_hConstructionMenu->ClearSubmenus();
+	}
+
+	if (!SPGame())
+		return;
+
+	if (SPGame()->GetNumLocalPlayers() == 0)
+		return;
+
+	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
+
+	if (!pPlayer)
+		return;
+
+	if (pPlayer->GetNumSpires())
+	{
+		m_hConstructionMenu = glgui::RootPanel()->AddControl(new CHUDMenu(1, "2. Construction"));
+		m_hConstructionMenu->AddSubmenu(new CHUDMenu(0, "1. Spire", true), this, ConstructSpire);
+	}
+
+	glgui::RootPanel()->Layout();
 }
 
 tstring GetStringDistance(const CScalableFloat& v)
@@ -71,6 +102,34 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 
 			glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
 		}
+
+		CSpire* pSpire = dynamic_cast<CSpire*>(pEntity);
+		if (pSpire)
+		{
+			CScalableVector vecScalableSpire = pSpire->GameData().GetScalableRenderOrigin();
+			CScalableFloat flDistance = vecScalableSpire.Length();
+
+			if (flDistance < CScalableFloat(100.0f, SCALE_METER))
+				continue;
+
+			CPlanet* pSpirePlanet = dynamic_cast<CPlanet*>(pSpire->GetMoveParent());
+			TAssert(pSpirePlanet);
+
+			CScalableVector vecScalablePlanet = pSpire->GetMoveParent()->GameData().GetScalableRenderOrigin();
+			if (vecScalablePlanet.LengthSqr() > CScalableFloat(60.0f, SCALE_MEGAMETER)*CScalableFloat(60.0f, SCALE_MEGAMETER))
+				continue;
+
+			Vector vecSpire = vecScalableSpire.GetUnits(SCALE_METER);
+
+			if (vecForward.Dot((vecSpire).Normalized()) < 0)
+				continue;
+
+			Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecSpire);
+
+			tstring sLabel = pSpirePlanet->GetPlanetName() + " " + pSpire->GetBaseName() + " - " + GetStringDistance(flDistance);
+
+			glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
+		}
 	}
 
 	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
@@ -107,6 +166,15 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 	}
 
 	Debug_Paint();
+}
+
+void CSPHUD::ConstructSpireCallback(const tstring& sArgs)
+{
+	m_hConstructionMenu->CloseMenu();
+
+	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
+
+	pPlayer->EnterConstructionMode(STRUCTURE_SPIRE);
 }
 
 void CSPHUD::Debug_Paint()

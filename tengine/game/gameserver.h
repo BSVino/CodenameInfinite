@@ -46,6 +46,7 @@ public:
 	void										AllowPrecaches();
 	bool										PrecachesAllowed() { return m_bAllowPrecaches; };
 	void										AddToPrecacheList(const tstring& sClass);
+	void										AddAllToPrecacheList();
 	void										PrecacheList();
 
 	void										SetServerType(servertype_t eServerType) { m_eServerType = eServerType; };

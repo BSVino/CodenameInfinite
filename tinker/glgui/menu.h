@@ -64,6 +64,7 @@ namespace glgui
 		void						CloseMenu();
 
 		virtual void				AddSubmenu(const tstring& sTitle, IEventListener* pListener = NULL, IEventListener::Callback pfnCallback = NULL);
+		virtual void				AddSubmenu(CMenu* pMenu, IEventListener* pListener = NULL, IEventListener::Callback pfnCallback = NULL);
 		virtual void				ClearSubmenus();
 
 		virtual size_t				GetSelectedMenu();

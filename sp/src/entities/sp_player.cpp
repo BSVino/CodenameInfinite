@@ -4,9 +4,16 @@
 #include <tinker/cvar.h>
 #include <tinker/application.h>
 #include <tinker/keys.h>
+#include <tengine/renderer/game_renderingcontext.h>
 
+#include "sp_window.h"
+#include "ui/hud.h"
 #include "entities/sp_playercharacter.h"
 #include "planet/planet.h"
+#include "entities/sp_game.h"
+#include "sp_renderer.h"
+#include "structures/structure.h"
+#include "structures/spire.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
@@ -14,10 +21,18 @@ NETVAR_TABLE_BEGIN(CSPPlayer);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSPPlayer);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, structure_type, m_eConstructionMode);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiStructures);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPPlayer);
 INPUTS_TABLE_END();
+
+CSPPlayer::CSPPlayer()
+{
+	m_eConstructionMode = STRUCTURE_NONE;
+	memset(m_aiStructures, 0, sizeof(m_aiStructures));
+}
 
 void CSPPlayer::MouseMotion(int x, int y)
 {
@@ -88,6 +103,17 @@ void CSPPlayer::MouseMotion(int x, int y)
 	}
 }
 
+void CSPPlayer::MouseInput(int iButton, int iState)
+{
+	if (m_eConstructionMode)
+	{
+		FinishConstruction();
+		return;
+	}
+
+	BaseClass::MouseInput(iButton, iState);
+}
+
 void CSPPlayer::KeyPress(int c)
 {
 	BaseClass::KeyPress(c);
@@ -103,6 +129,9 @@ void CSPPlayer::KeyPress(int c)
 
 	if (c == 'F')
 		GetPlayerCharacter()->ToggleFlying();
+
+	if (c == TINKER_KEY_ESCAPE)
+		m_eConstructionMode = STRUCTURE_NONE;
 }
 
 void CSPPlayer::KeyRelease(int c)
@@ -119,7 +148,146 @@ void CSPPlayer::KeyRelease(int c)
 		GetPlayerCharacter()->SetWalkSpeedOverride(false);
 }
 
-CPlayerCharacter* CSPPlayer::GetPlayerCharacter()
+CPlayerCharacter* CSPPlayer::GetPlayerCharacter() const
 {
 	return static_cast<CPlayerCharacter*>(m_hCharacter.GetPointer());
+}
+
+bool CSPPlayer::ShouldRender() const
+{
+	return m_eConstructionMode && SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
+}
+
+void CSPPlayer::PostRender() const
+{
+	BaseClass::PostRender();
+
+	if (m_eConstructionMode && GameServer()->GetRenderer()->IsRenderingTransparent())
+	{
+		float flRadius = GetPhysBoundingBox().Size().Length()/2;
+
+		CScalableVector vecLocal;
+		if (FindConstructionPoint(vecLocal))
+		{
+			if (m_eConstructionMode == STRUCTURE_SPIRE)
+			{
+				Vector vecUp, vecRight;
+				GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
+				vecUp = GetPlayerCharacter()->GetLocalTransform().GetUpVector();
+
+				Vector vecPosition = vecLocal - GetPlayerCharacter()->GetLocalOrigin();
+
+				CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+				c.ResetTransformations();
+				c.Translate(vecPosition);
+
+				c.UseMaterial("textures/spire.mat");
+				c.SetUniform("flAlpha", 0.5f);
+				c.SetBlend(BLEND_ADDITIVE);
+
+				c.BeginRenderTriFan();
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(-vecRight + vecUp * 15);
+					c.TexCoord(0.0f, 0.0f);
+					c.Vertex(-vecRight - vecUp);
+					c.TexCoord(1.0f, 0.0f);
+					c.Vertex(vecRight - vecUp);
+					c.TexCoord(1.0f, 1.0f);
+					c.Vertex(vecRight + vecUp * 15);
+				c.EndRender();
+			}
+		}
+	}
+}
+
+void CSPPlayer::EnterConstructionMode(structure_type eStructure)
+{
+	m_eConstructionMode = eStructure;
+}
+
+bool CSPPlayer::FindConstructionPoint(CScalableVector& vecLocal) const
+{
+	Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
+
+	Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
+	Vector vecDirection = GetPlayerCharacter()->TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+
+	CTraceResult tr;
+	GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*8, GetPlayerCharacter());
+
+	if (tr.m_flFraction < 1)
+		vecLocal = GetPlayerCharacter()->TransformPointPhysicsToLocal(tr.m_vecHit);
+
+	return tr.m_flFraction < 1;
+}
+
+void CSPPlayer::FinishConstruction()
+{
+	if (!m_eConstructionMode)
+		return;
+
+	CScalableVector vecPoint;
+	if (!FindConstructionPoint(vecPoint))
+		return;
+
+	CStructure* pStructure = CStructure::CreateStructure(m_eConstructionMode, this, vecPoint);
+
+	TAssert(m_aiStructures[m_eConstructionMode]);
+	m_aiStructures[m_eConstructionMode]--;
+
+	if (m_eConstructionMode == STRUCTURE_SPIRE)
+	{
+		CSpire* pNewSpire = static_cast<CSpire*>(pStructure);
+		size_t iSpires = 0;
+		for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+		{
+			CBaseEntity* pEnt = CBaseEntity::GetEntity(i);
+			if (!pEnt)
+				continue;
+
+			CSpire* pSpire = dynamic_cast<CSpire*>(pEnt);
+			if (!pSpire)
+				continue;
+
+			if (pSpire->GetMoveParent() != pNewSpire->GetMoveParent())
+				continue;
+
+			if (pSpire == pNewSpire)
+				continue;
+
+			iSpires++;
+		}
+
+		// Let's find a good name.
+		tstring asDefaultNames[] =
+		{
+			"Alpha",
+			"Beta",
+			"Gamma",
+			"Delta",
+			"Epsilon",
+			"Zeta",
+			"Iota",
+			"Lambda",
+			"Omicron",
+			"Sigma",
+			"Tau",
+			"Psi",
+			"Omega",
+		};
+
+		pNewSpire->SetBaseName(asDefaultNames[iSpires%(sizeof(asDefaultNames)/sizeof(asDefaultNames[0]))]);
+	}
+
+	m_eConstructionMode = STRUCTURE_NONE;
+
+	SPWindow()->GetHUD()->BuildMenus();
+}
+
+void CSPPlayer::AddSpires(size_t iSpires)
+{
+	m_aiStructures[STRUCTURE_SPIRE] += iSpires;
+
+	SPWindow()->GetHUD()->BuildMenus();
 }

@@ -783,6 +783,23 @@ void CBulletPhysics::CharacterMovement(class CBaseEntity* pEnt, class btCollisio
 	pPhysicsEntity->m_pCharacterController->CharacterMovement(pCollisionWorld, flDelta);
 }
 
+void CBulletPhysics::TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore)
+{
+	btVector3 vecFrom, vecTo;
+	vecFrom = ToBTVector(v1);
+	vecTo = ToBTVector(v2);
+
+	CClosestRayResultCallback callback(vecFrom, vecTo, GetPhysicsEntity(pIgnore)->m_pRigidBody);
+
+	m_pDynamicsWorld->rayTest(vecFrom, vecTo, callback);
+
+	if (callback.m_closestHitFraction < tr.m_flFraction)
+	{
+		tr.m_flFraction = callback.m_closestHitFraction;
+		tr.m_vecHit = ToTVector(callback.m_hitPointWorld);
+	}
+}
+
 void CBulletPhysics::CharacterJump(class CBaseEntity* pEnt)
 {
 	CPhysicsEntity* pPhysicsEntity = GetPhysicsEntity(pEnt);

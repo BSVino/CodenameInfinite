@@ -14,6 +14,19 @@ typedef enum collision_type_e
 	CT_TRIGGER,		// Does not collide, but reports intersections.
 } collision_type_t;
 
+class CTraceResult
+{
+public:
+	CTraceResult()
+	{
+		m_flFraction = 1.0f;
+	}
+
+public:
+	float        m_flFraction;
+	Vector       m_vecHit;
+};
+
 class CPhysicsModel
 {
 public:
@@ -48,6 +61,8 @@ public:
 	virtual void			SetAngularFactor(class CBaseEntity* pEnt, const Vector& vecFactor) {};
 
 	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta) {};
+
+	virtual void            TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore=nullptr) {};
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt) {};
 };

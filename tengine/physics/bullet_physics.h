@@ -20,6 +20,27 @@ inline Vector ToTVector(const btVector3& v)
 	return Vector(v.x(), v.y(), v.z());
 }
 
+class CClosestRayResultCallback : public btCollisionWorld::ClosestRayResultCallback
+{
+public:
+	CClosestRayResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld, btRigidBody* pIgnore=nullptr)
+		: btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
+	{
+		m_pIgnore = pIgnore;
+	}
+
+	virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult,bool normalInWorldSpace)
+	{
+		if (rayResult.m_collisionObject == m_pIgnore)
+			return 1.0;
+
+		return ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
+	}
+
+protected:
+	btRigidBody*     m_pIgnore;
+};
+
 class CMotionState : public btMotionState
 {
 public:
@@ -105,6 +126,8 @@ public:
 	virtual void			SetAngularFactor(class CBaseEntity* pEnt, const Vector& vecFactor);
 
 	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta);
+
+	virtual void            TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore=nullptr);
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt);
 

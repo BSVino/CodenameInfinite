@@ -304,7 +304,12 @@ void CMenu::CloseMenu()
 
 void CMenu::AddSubmenu(const tstring& sTitle, IEventListener* pListener, IEventListener::Callback pfnCallback)
 {
-	CControl<CMenu> hMenu = m_hMenu->AddControl(new CMenu(sTitle, true), true);
+	AddSubmenu(new CMenu(sTitle, true), pListener, pfnCallback);
+}
+
+void CMenu::AddSubmenu(CMenu* pMenu, IEventListener* pListener, IEventListener::Callback pfnCallback)
+{
+	CControl<CMenu> hMenu = m_hMenu->AddControl(pMenu, true);
 	hMenu->SetAlign(TA_LEFTCENTER);
 	hMenu->SetWrap(false);
 	hMenu->EnsureTextFits();
@@ -327,7 +332,7 @@ void CMenu::AddSubmenu(const tstring& sTitle, IEventListener* pListener, IEventL
 		iTotalControls++;
 	}
 
-	hMenu->SetClickedListener(hMenu, Clicked, sprintf("%d " + sTitle, iTotalControls-1));
+	hMenu->SetClickedListener(hMenu, Clicked, sprintf("%d " + pMenu->GetText(), iTotalControls-1));
 
 	m_ahEntries.push_back(hMenu);
 }
