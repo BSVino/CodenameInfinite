@@ -15,6 +15,7 @@ public:
 
 	void        SetPlayerCharacter(class CPlayerCharacter* pPlayer);
 
+	bool        ShouldRender() const;
 	void        PostRender() const;
 
 private:

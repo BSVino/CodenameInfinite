@@ -31,6 +31,7 @@ public:
 	virtual const CScalableMatrix GetScalableRenderTransform() const;
 	virtual const CScalableVector GetScalableRenderOrigin() const;
 
+	virtual bool                ShouldRender() const;
 	virtual const Matrix4x4     GetRenderTransform() const;
 	virtual const Vector        GetRenderOrigin() const;
 

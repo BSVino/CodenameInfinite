@@ -4,6 +4,8 @@
 #include <tengine/renderer/game_renderingcontext.h>
 
 #include "entities/sp_playercharacter.h"
+#include "entities/sp_game.h"
+#include "sp_renderer.h"
 
 REGISTER_ENTITY(CHelperBot);
 
@@ -59,6 +61,11 @@ void CHelperBot::SetPlayerCharacter(CPlayerCharacter* pPlayer)
 	}
 
 	TeleportToPlayer();
+}
+
+bool CHelperBot::ShouldRender() const
+{
+	return SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
 }
 
 void CHelperBot::PostRender() const

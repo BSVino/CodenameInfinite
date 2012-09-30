@@ -88,6 +88,14 @@ void CSPCharacter::Think()
 		SetGlobalGravity(Vector(0, 0, 0));
 }
 
+bool CSPCharacter::ShouldRender() const
+{
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() != SCALE_RENDER)
+		return false;
+
+	return BaseClass::ShouldRender();
+}
+
 const CScalableMatrix CSPCharacter::GetScalableRenderTransform() const
 {
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
