@@ -38,6 +38,7 @@ public:
 
 	virtual inline const CScalableVector	GetGlobalGravity() const;
 
+	CHelperBot*                 GetHelperBot();
 	virtual bool                ApplyGravity() const { return !m_bFlying; }
 
 protected:

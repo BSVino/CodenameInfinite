@@ -218,3 +218,8 @@ const CScalableVector CPlayerCharacter::GetGlobalGravity() const
 
 	return BaseClass::GetGlobalGravity();
 }
+
+CHelperBot* CPlayerCharacter::GetHelperBot()
+{
+	return m_hHelper;
+}

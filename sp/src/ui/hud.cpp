@@ -9,6 +9,7 @@
 #include "planet/planet.h"
 #include "entities/sp_playercharacter.h"
 #include "entities/sp_game.h"
+#include "entities/bots/helper.h"
 
 CSPHUD::CSPHUD()
 	: CHUDViewport()
@@ -69,6 +70,39 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 			tstring sLabel = pPlanet->GetPlanetName() + " - " + GetStringDistance(flDistance);
 
 			glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x + 15, vecScreen.y - 15);
+		}
+	}
+
+	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
+	CHelperBot* pHelper = pLocalPlayer->GetHelperBot();
+	if (pHelper)
+	{
+		CScalableVector vecScalablePlanet = pHelper->GameData().GetScalableRenderOrigin();
+
+		Vector vecPlanet = vecScalablePlanet.GetUnits(SCALE_METER);
+
+		if (vecForward.Dot((vecPlanet).Normalized()) > 0)
+		{
+			Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
+
+			tstring sLabel = "Helper-Bot";
+
+			float flFontHeight = glgui::CLabel::GetFontHeight("sans-serif", 16);
+			float flTextWidth = glgui::CLabel::GetTextWidth(sLabel, sLabel.length(), "sans-serif", 16);
+
+			vecScreen.x += 15;
+			vecScreen.y -= 15;
+
+			if (vecScreen.x < 0)
+				vecScreen.x = 0;
+			if (vecScreen.y < 0)
+				vecScreen.y = 0;
+			if (vecScreen.x > glgui::RootPanel()->GetWidth() - flTextWidth)
+				vecScreen.x = glgui::RootPanel()->GetWidth() - flTextWidth;
+			if (vecScreen.y > glgui::RootPanel()->GetHeight() - flFontHeight)
+				vecScreen.y = glgui::RootPanel()->GetHeight() - flFontHeight;
+
+			glgui::CLabel::PaintText(sLabel, sLabel.length(), "sans-serif", 16, vecScreen.x, vecScreen.y);
 		}
 	}
 
