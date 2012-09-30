@@ -6,6 +6,8 @@
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
 #include "entities/sp_playercharacter.h"
+#include "game/gameserver.h"
+#include "entities/bots/worker.h"
 
 REGISTER_ENTITY(CSpire);
 
@@ -70,4 +72,14 @@ void CSpire::PostRender() const
 		c.TexCoord(1.0f, 1.0f);
 		c.Vertex(vecRight + vecUp * m_aabbPhysBoundingBox.m_vecMaxs.y);
 	c.EndRender();
+}
+
+void CSpire::PostConstruction()
+{
+	BaseClass::PostConstruction();
+
+	CWorkerBot* pWorker = GameServer()->Create<CWorkerBot>("CWorkerBot");
+	pWorker->SetOwner(GetOwner());
+	pWorker->SetMoveParent(GetMoveParent());
+	pWorker->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector()*2);
 }

@@ -197,6 +197,20 @@ void CSPCharacter::SetPhysicsTransform(const Matrix4x4& m)
 	SetLocalTransform(TMatrix(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m));
 }
 
+void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
+{
+	BaseClass::PostSetLocalTransform(m);
+
+	CPlanet* pPlanet = GetNearestPlanet();
+	if (!pPlanet)
+		return;
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+		return;
+
+	m_mGroupTransform = pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * m.GetUnits(SCALE_METER);
+}
+
 const Vector CSPCharacter::TransformPointPhysicsToLocal(const Vector& v)
 {
 	CPlanet* pPlanet = GetNearestPlanet();

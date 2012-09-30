@@ -12,6 +12,7 @@ NETVAR_TABLE_BEGIN(CStructure);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CStructure);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPPlayer, m_hOwner);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CStructure);
@@ -32,6 +33,7 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 		break;
 	}
 
+	pStructure->SetOwner(pOwner);
 	pStructure->SetMoveParent(pOwner->GetPlayerCharacter()->GetMoveParent());
 	pStructure->SetLocalOrigin(vecOrigin);
 	if (pStructure->GetMoveParent())
@@ -43,6 +45,8 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 		mDirection.SetRightVector(mDirection.GetForwardVector().Cross(vecUp).Normalized());
 		pStructure->SetLocalAngles(mDirection.GetAngles());
 	}
+
+	pStructure->PostConstruction();
 
 	return pStructure;
 }

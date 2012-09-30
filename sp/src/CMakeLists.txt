@@ -33,6 +33,7 @@ set (CI_ENTITY_SOURCES
 set (CI_BOT_SOURCES
 	entities/bots/bot.cpp
 	entities/bots/helper.cpp
+	entities/bots/worker.cpp
 )
 
 set (CI_STRUCTURE_SOURCES

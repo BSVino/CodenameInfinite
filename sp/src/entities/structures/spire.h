@@ -13,6 +13,8 @@ public:
 	bool        ShouldRender() const;
 	void        PostRender() const;
 
+	void        PostConstruction();
+
 	void        SetBaseName(const tstring& sName) { m_sBaseName = sName; }
 	tstring     GetBaseName() { return m_sBaseName; }
 

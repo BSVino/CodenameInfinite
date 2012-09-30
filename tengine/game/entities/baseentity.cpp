@@ -466,6 +466,8 @@ void CBaseEntity::SetGlobalTransform(const TMatrix& m)
 
 	if (IsInPhysics())
 		GamePhysics()->SetEntityTransform(this, GetGlobalTransform());
+
+	PostSetLocalTransform(mNew);
 }
 
 const TMatrix CBaseEntity::GetGlobalToLocalTransform()
@@ -586,6 +588,8 @@ void CBaseEntity::SetLocalTransform(const TMatrix& m)
 		m_qLocalRotation = Quaternion(mNew);
 	}
 
+	PostSetLocalTransform(mNew);
+
 	InvalidateGlobalTransforms();
 }
 
@@ -632,6 +636,8 @@ void CBaseEntity::SetLocalOrigin(const TVector& vecOrigin)
 
 	m_vecLocalOrigin = mNew.GetTranslation();
 	m_mLocalTransform = mNew;
+
+	PostSetLocalTransform(mNew);
 
 	InvalidateGlobalTransforms();
 };
@@ -688,6 +694,8 @@ void CBaseEntity::SetLocalAngles(const EAngle& angAngles)
 
 	m_mLocalTransform = mNew;
 	m_qLocalRotation = Quaternion(mNew);
+
+	PostSetLocalTransform(mNew);
 
 	InvalidateGlobalTransforms();
 }

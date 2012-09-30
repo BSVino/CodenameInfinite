@@ -549,6 +549,7 @@ public:
 	const TMatrix&							GetLocalTransform() const { return m_mLocalTransform; }
 	void									SetLocalTransform(const TMatrix& m);
 	virtual void							OnSetLocalTransform(TMatrix& m) {}
+	virtual void                            PostSetLocalTransform(const TMatrix& m) {}
 
 	const Quaternion&						GetLocalRotation() const { return m_qLocalRotation; }
 	void									SetLocalRotation(const Quaternion& q);
