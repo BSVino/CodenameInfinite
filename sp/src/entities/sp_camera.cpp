@@ -105,6 +105,9 @@ float CSPCamera::GetCameraNear() const
 	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER)
 		return 0.05f;
 
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_METER)
+		return 0.2f;
+
 	return 1;
 }
 
