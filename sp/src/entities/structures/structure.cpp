@@ -6,6 +6,8 @@
 #include "entities/sp_player.h"
 #include "entities/sp_playercharacter.h"
 #include "mine.h"
+#include "planet/planet.h"
+#include "planet/terrain_chunks.h"
 
 REGISTER_ENTITY(CStructure);
 
@@ -63,7 +65,21 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 		pStructure->SetLocalAngles(mDirection.GetAngles());
 	}
 
+	pStructure->AddToPhysics(CT_STATIC_MESH);
+
 	pStructure->PostConstruction();
 
 	return pStructure;
+}
+
+const Matrix4x4 CStructure::GetPhysicsTransform() const
+{
+	CPlanet* pPlanet = static_cast<CPlanet*>(GetMoveParent());
+	if (!pPlanet)
+		return GetLocalTransform();
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+		return GetLocalTransform();
+
+	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * Matrix4x4(GetLocalTransform());
 }

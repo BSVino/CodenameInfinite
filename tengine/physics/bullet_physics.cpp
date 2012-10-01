@@ -182,7 +182,10 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 	{
 		if (eCollisionType == CT_STATIC_MESH)
 		{
-			AddModel(pEntity, eCollisionType, pEntity->GetModelID());
+			if (pEntity->GetModelID() != ~0)
+				AddModel(pEntity, eCollisionType, pEntity->GetModelID());
+			else
+				AddShape(pEntity, eCollisionType);
 		}
 		else if (eCollisionType == CT_KINEMATIC)
 		{
@@ -193,6 +196,38 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 			TAssert(!"Unimplemented collision type");
 		}
 	}
+}
+
+void CBulletPhysics::AddShape(class CBaseEntity* pEntity, collision_type_t eCollisionType)
+{
+	CPhysicsEntity* pPhysicsEntity = &m_aEntityList[pEntity->GetHandle()];
+
+	btCollisionShape* pCollisionShape;
+
+	pPhysicsEntity->m_bCenterMassOffset = true;
+
+	Vector vecHalf = pEntity->GetPhysBoundingBox().m_vecMaxs-pEntity->GetPhysBoundingBox().Center();
+	pCollisionShape = new btBoxShape(ToBTVector(vecHalf));
+
+	btTransform mTransform;
+	mTransform.setIdentity();
+	mTransform.setFromOpenGLMatrix((Matrix4x4)pEntity->GetPhysicsTransform());
+
+	btVector3 vecLocalInertia(0, 0, 0);
+
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(0, &pPhysicsEntity->m_oMotionState, pCollisionShape, vecLocalInertia);
+
+	pPhysicsEntity->m_apPhysicsShapes.push_back(new btRigidBody(rbInfo));
+	pPhysicsEntity->m_apPhysicsShapes.back()->setUserPointer((void*)pEntity->GetHandle());
+	pPhysicsEntity->m_apPhysicsShapes.back()->setWorldTransform(mTransform);
+
+	if (eCollisionType == CT_KINEMATIC)
+	{
+		pPhysicsEntity->m_apPhysicsShapes.back()->setCollisionFlags((pPhysicsEntity->m_pRigidBody?pPhysicsEntity->m_pRigidBody->getCollisionFlags():0) | btCollisionObject::CF_KINEMATIC_OBJECT);
+		pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_DEACTIVATION);
+	}
+
+	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back());
 }
 
 void CBulletPhysics::AddModel(class CBaseEntity* pEntity, collision_type_t eCollisionType, size_t iModel)

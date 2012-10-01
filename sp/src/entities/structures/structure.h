@@ -25,6 +25,8 @@ public:
 
 	virtual void            PostConstruction() {};
 
+	virtual const Matrix4x4 GetPhysicsTransform() const;
+
 public:
 	static CStructure*      CreateStructure(structure_type eType, class CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin);
 
