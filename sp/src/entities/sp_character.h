@@ -49,6 +49,10 @@ public:
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE) const;
 	CPlanet*					FindNearestPlanet() const;
 
+	CSpire*                     GetNearestSpire() const;
+	CSpire*                     FindNearestSpire() const;
+	void                        ClearNearestSpire();
+
 	virtual const Vector        GetUpVector() const;
 	virtual const Vector        GetLocalUpVector() const;
 
@@ -72,6 +76,9 @@ public:
 protected:
 	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 	double                      m_flNextPlanetCheck;
+
+	mutable CNetworkedHandle<CSpire>    m_hNearestSpire;
+	mutable double                      m_flNextSpireCheck;
 
 	double                      m_flLastEnteredAtmosphere;
 	float						m_flRollFromSpace;

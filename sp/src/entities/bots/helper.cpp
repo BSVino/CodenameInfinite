@@ -6,6 +6,7 @@
 #include "entities/sp_playercharacter.h"
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
+#include "entities/structures/spire.h"
 
 REGISTER_ENTITY(CHelperBot);
 

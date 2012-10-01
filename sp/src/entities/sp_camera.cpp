@@ -10,6 +10,7 @@
 #include "entities/sp_game.h"
 #include "planet/planet.h"
 #include "sp_renderer.h"
+#include "entities/structures/spire.h"
 
 REGISTER_ENTITY(CSPCamera);
 

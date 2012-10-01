@@ -38,10 +38,18 @@ void CSPHUD::BuildMenus()
 	if (!pPlayer)
 		return;
 
-	if (pPlayer->GetNumSpires())
+	if (!pPlayer->GetPlayerCharacter())
+		return;
+
+	if (pPlayer->GetPlayerCharacter()->GetNearestSpire() || pPlayer->GetNumSpires())
 	{
 		m_hConstructionMenu = glgui::RootPanel()->AddControl(new CHUDMenu(1, "2. Construction"));
-		m_hConstructionMenu->AddSubmenu(new CHUDMenu(0, "1. Spire", true), this, ConstructSpire);
+
+		if (pPlayer->GetNumSpires())
+			m_hConstructionMenu->AddSubmenu(new CHUDMenu(0, "1. Spire", true), this, ConstructSpire);
+
+		if (pPlayer->GetPlayerCharacter()->GetNearestSpire())
+			m_hConstructionMenu->AddSubmenu(new CHUDMenu(1, "2. Mine", true), this, ConstructMine);
 	}
 
 	glgui::RootPanel()->Layout();
@@ -175,6 +183,15 @@ void CSPHUD::ConstructSpireCallback(const tstring& sArgs)
 	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
 
 	pPlayer->EnterConstructionMode(STRUCTURE_SPIRE);
+}
+
+void CSPHUD::ConstructMineCallback(const tstring& sArgs)
+{
+	m_hConstructionMenu->CloseMenu();
+
+	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
+
+	pPlayer->EnterConstructionMode(STRUCTURE_MINE);
 }
 
 void CSPHUD::Debug_Paint()

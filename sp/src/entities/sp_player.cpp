@@ -169,22 +169,24 @@ void CSPPlayer::PostRender() const
 		CScalableVector vecLocal;
 		if (FindConstructionPoint(vecLocal))
 		{
+			Vector vecUp, vecRight;
+			GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
+			vecUp = GetPlayerCharacter()->GetLocalTransform().GetUpVector();
+
+			Vector vecPosition = vecLocal - GetPlayerCharacter()->GetLocalOrigin();
+
+			CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+			c.ResetTransformations();
+			c.Translate(vecPosition);
+
+			c.SetBlend(BLEND_ADDITIVE);
+
 			if (m_eConstructionMode == STRUCTURE_SPIRE)
 			{
-				Vector vecUp, vecRight;
-				GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
-				vecUp = GetPlayerCharacter()->GetLocalTransform().GetUpVector();
-
-				Vector vecPosition = vecLocal - GetPlayerCharacter()->GetLocalOrigin();
-
-				CGameRenderingContext c(GameServer()->GetRenderer(), true);
-
-				c.ResetTransformations();
-				c.Translate(vecPosition);
-
 				c.UseMaterial("textures/spire.mat");
+
 				c.SetUniform("flAlpha", 0.5f);
-				c.SetBlend(BLEND_ADDITIVE);
 
 				c.BeginRenderTriFan();
 					c.TexCoord(0.0f, 1.0f);
@@ -197,12 +199,32 @@ void CSPPlayer::PostRender() const
 					c.Vertex(vecRight + vecUp * 15);
 				c.EndRender();
 			}
+			else if (m_eConstructionMode == STRUCTURE_MINE)
+			{
+				c.UseMaterial("textures/mine.mat");
+
+				c.SetUniform("flAlpha", 0.5f);
+
+				c.BeginRenderTriFan();
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(-vecRight + vecUp * 1.8f);
+					c.TexCoord(0.0f, 0.0f);
+					c.Vertex(-vecRight - vecUp * 0.2f);
+					c.TexCoord(1.0f, 0.0f);
+					c.Vertex(vecRight - vecUp * 0.2f);
+					c.TexCoord(1.0f, 1.0f);
+					c.Vertex(vecRight + vecUp * 1.8f);
+				c.EndRender();
+			}
 		}
 	}
 }
 
 void CSPPlayer::EnterConstructionMode(structure_type eStructure)
 {
+	if (eStructure == STRUCTURE_SPIRE && !m_aiStructures[eStructure])
+		return;
+
 	m_eConstructionMode = eStructure;
 }
 
@@ -216,10 +238,12 @@ bool CSPPlayer::FindConstructionPoint(CScalableVector& vecLocal) const
 	CTraceResult tr;
 	GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*8, GetPlayerCharacter());
 
-	if (tr.m_flFraction < 1)
-		vecLocal = GetPlayerCharacter()->TransformPointPhysicsToLocal(tr.m_vecHit);
+	if (tr.m_flFraction == 1)
+		return false;
 
-	return tr.m_flFraction < 1;
+	vecLocal = GetPlayerCharacter()->TransformPointPhysicsToLocal(tr.m_vecHit);
+
+	return true;
 }
 
 void CSPPlayer::FinishConstruction()
@@ -231,13 +255,15 @@ void CSPPlayer::FinishConstruction()
 	if (!FindConstructionPoint(vecPoint))
 		return;
 
-	CStructure* pStructure = CStructure::CreateStructure(m_eConstructionMode, this, vecPoint);
-
-	TAssert(m_aiStructures[m_eConstructionMode]);
-	m_aiStructures[m_eConstructionMode]--;
+	CStructure* pStructure = CStructure::CreateStructure(m_eConstructionMode, this, GetPlayerCharacter()->GetNearestSpire(), vecPoint);
 
 	if (m_eConstructionMode == STRUCTURE_SPIRE)
 	{
+		TAssert(m_aiStructures[m_eConstructionMode]);
+		m_aiStructures[m_eConstructionMode]--;
+
+		GetPlayerCharacter()->ClearNearestSpire();
+
 		CSpire* pNewSpire = static_cast<CSpire*>(pStructure);
 		size_t iSpires = 0;
 		for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)

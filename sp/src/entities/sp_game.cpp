@@ -55,12 +55,13 @@ void CSPGame::SetupGame(tstring sType)
 	{
 		CSPPlayer* pPlayer = GameServer()->Create<CSPPlayer>("CSPPlayer");
 		Game()->AddPlayer(pPlayer);
-		pPlayer->AddSpires(1);
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
 		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0.11f, 0, 0), SCALE_MEGAMETER));
 		pCharacter->SetViewAngles(EAngle(0, 140, 0));
 		pPlayer->SetCharacter(pCharacter);
+
+		pPlayer->AddSpires(1);
 
 		CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 		pPlanet->SetPlanetName("Earth");

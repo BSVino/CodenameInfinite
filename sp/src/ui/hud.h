@@ -18,6 +18,7 @@ public:
 	virtual void    Paint(float x, float y, float w, float h);
 
 	EVENT_CALLBACK(CSPHUD, ConstructSpire);
+	EVENT_CALLBACK(CSPHUD, ConstructMine);
 
 	virtual void    Debug_Paint();
 

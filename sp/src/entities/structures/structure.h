@@ -6,8 +6,11 @@ typedef enum
 {
 	STRUCTURE_NONE = 0,
 	STRUCTURE_SPIRE,
+	STRUCTURE_MINE,
 	STRUCTURE_TOTAL,
 } structure_type;
+
+class CSpire;
 
 class CStructure : public CBaseEntity
 {
@@ -17,11 +20,15 @@ public:
 	void                    SetOwner(class CSPPlayer* pOwner) { m_hOwner = pOwner; }
 	CSPPlayer*              GetOwner() const { return m_hOwner; }
 
+	void                    SetSpire(CSpire* pSpire);
+	CSpire*                 GetSpire() const;
+
 	virtual void            PostConstruction() {};
 
 public:
-	static CStructure*      CreateStructure(structure_type eType, class CSPPlayer* pOwner, const CScalableVector& vecOrigin);
+	static CStructure*      CreateStructure(structure_type eType, class CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin);
 
 private:
 	CEntityHandle<CSPPlayer>  m_hOwner;
+	CEntityHandle<CSpire>     m_hSpire;
 };

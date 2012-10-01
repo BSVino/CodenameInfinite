@@ -39,6 +39,7 @@ set (CI_BOT_SOURCES
 set (CI_STRUCTURE_SOURCES
 	entities/structures/structure.cpp
 	entities/structures/spire.cpp
+	entities/structures/mine.cpp
 )
 
 set (CI_UI_SOURCES

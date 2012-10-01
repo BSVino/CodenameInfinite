@@ -8,6 +8,7 @@
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
 #include "entities/sp_playercharacter.h"
+#include "entities/structures/spire.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -28,6 +29,7 @@ INPUTS_TABLE_END();
 CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
+	m_flNextSpireCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
 }
 
@@ -355,6 +357,54 @@ CPlanet* CSPCharacter::FindNearestPlanet() const
 	}
 
 	return pNearestPlanet;
+}
+
+CSpire* CSPCharacter::GetNearestSpire() const
+{
+	if (GameServer()->GetGameTime() > m_flNextSpireCheck)
+	{
+		CSpire* pNearestSpire = FindNearestSpire();
+
+		m_hNearestSpire = pNearestSpire;
+		m_flNextSpireCheck = GameServer()->GetGameTime() + 0.3f;
+	}
+
+	return m_hNearestSpire;
+}
+
+CSpire* CSPCharacter::FindNearestSpire() const
+{
+	CSpire* pNearestSpire = NULL;
+	CScalableFloat flNearestDistance;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CSpire* pSpire = dynamic_cast<CSpire*>(CBaseEntity::GetEntity(i));
+		if (!pSpire)
+			continue;
+
+		CScalableFloat flDistance = (pSpire->GetGlobalOrigin() - GetGlobalOrigin()).Length();
+
+		if (pNearestSpire == NULL)
+		{
+			pNearestSpire = pSpire;
+			flNearestDistance = flDistance;
+			continue;
+		}
+
+		if (flDistance > flNearestDistance)
+			continue;
+
+		pNearestSpire = pSpire;
+		flNearestDistance = flDistance;
+	}
+
+	return pNearestSpire;
+}
+
+void CSPCharacter::ClearNearestSpire()
+{
+	m_flNextSpireCheck = 0;
 }
 
 const Vector CSPCharacter::GetUpVector() const
