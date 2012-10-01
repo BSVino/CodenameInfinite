@@ -832,6 +832,7 @@ void CBulletPhysics::TraceLine(CTraceResult& tr, const Vector& v1, const Vector&
 	{
 		tr.m_flFraction = callback.m_closestHitFraction;
 		tr.m_vecHit = ToTVector(callback.m_hitPointWorld);
+		tr.m_pHit = CEntityHandle<CBaseEntity>((size_t)callback.m_collisionObject->getUserPointer()).GetPointer();
 	}
 }
 

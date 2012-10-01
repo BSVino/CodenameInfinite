@@ -10,6 +10,13 @@ public:
 	void        Precache();
 	void        Spawn();
 
+	void        Think();
+
 	bool        ShouldRender() const;
 	void        PostRender() const;
+
+	void        PerformStructureTask();
+
+private:
+	double      m_flDiggingStarted;
 };

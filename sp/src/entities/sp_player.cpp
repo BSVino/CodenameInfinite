@@ -111,6 +111,24 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		return;
 	}
 
+	if (iButton == TINKER_KEY_MOUSE_RIGHT && iState == 1)
+	{
+		Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
+
+		Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
+		Vector vecDirection = GetPlayerCharacter()->TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+
+		CTraceResult tr;
+		GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*3, GetPlayerCharacter());
+
+		if (tr.m_flFraction < 1)
+		{
+			CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
+			if (pStructure)
+				pStructure->PerformStructureTask();
+		}
+	}
+
 	BaseClass::MouseInput(iButton, iState);
 }
 

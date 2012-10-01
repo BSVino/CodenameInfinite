@@ -20,11 +20,13 @@ public:
 	CTraceResult()
 	{
 		m_flFraction = 1.0f;
+		m_pHit = nullptr;
 	}
 
 public:
-	float        m_flFraction;
-	Vector       m_vecHit;
+	float              m_flFraction;
+	Vector             m_vecHit;
+	class CBaseEntity* m_pHit;
 };
 
 class CPhysicsModel

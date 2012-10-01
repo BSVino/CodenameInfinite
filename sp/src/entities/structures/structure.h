@@ -25,6 +25,8 @@ public:
 
 	virtual void            PostConstruction() {};
 
+	virtual void            PerformStructureTask() {};
+
 	virtual const Matrix4x4 GetPhysicsTransform() const;
 
 public:

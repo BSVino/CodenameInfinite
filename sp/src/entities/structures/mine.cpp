@@ -1,5 +1,6 @@
 #include "mine.h"
 
+#include <tinker/cvar.h>
 #include <tengine/renderer/game_renderer.h>
 #include <tengine/renderer/game_renderingcontext.h>
 
@@ -28,6 +29,22 @@ void CMine::Spawn()
 	m_aabbPhysBoundingBox = AABB(Vector(-1.0f, -0.2f, -1.0f), Vector(1.0f, 1.8f, 1.0f));
 
 	BaseClass::Spawn();
+
+	m_flDiggingStarted = 0;
+}
+
+CVar mine_digtime("mine_digtime", "3");
+
+void CMine::Think()
+{
+	BaseClass::Think();
+
+	if (m_flDiggingStarted && m_flDiggingStarted + mine_digtime.GetFloat() < GameServer()->GetGameTime())
+	{
+		m_flDiggingStarted = 0;
+
+		TMsg("Digging done!\n");
+	}
 }
 
 bool CMine::ShouldRender() const
@@ -52,6 +69,9 @@ void CMine::PostRender() const
 	if (vecPosition.LengthSqr() > 1000*1000)
 		return;
 
+	if (m_flDiggingStarted)
+		vecPosition += Vector(RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f));
+
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
 	c.ResetTransformations();
@@ -69,4 +89,14 @@ void CMine::PostRender() const
 		c.TexCoord(1.0f, 1.0f);
 		c.Vertex(vecRight + vecUp * m_aabbPhysBoundingBox.m_vecMaxs.y);
 	c.EndRender();
+}
+
+void CMine::PerformStructureTask()
+{
+	BaseClass::PerformStructureTask();
+
+	if (m_flDiggingStarted)
+		return;
+
+	m_flDiggingStarted = GameServer()->GetGameTime();
 }
