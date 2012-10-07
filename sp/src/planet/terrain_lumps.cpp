@@ -357,7 +357,7 @@ void CTerrainLump::GenerateTerrain()
 	m_vecLocalCenter = pTerrain->CoordToWorld(vecCoordCenter) + pTerrain->GenerateOffset(vecCoordCenter);
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToLump, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
+	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToLump, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter, true);
 	m_mLumpToPlanet = m_mPlanetToLump.InvertedRT();
 
 	DoubleVector vecCorner1 = avecTerrain[0].vec3DPosition;
@@ -374,7 +374,7 @@ void CTerrainLump::GenerateTerrain()
 
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;
-	size_t iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows);
+	size_t iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows, true);
 	m_iLowResTerrainIBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
@@ -418,7 +418,7 @@ void CTerrainLump::RebuildIndices()
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iResolution);
 
 	tvector<unsigned int> aiVerts;
-	size_t iTriangles = CPlanetTerrain::BuildMeshIndices(aiVerts, aiChunkCoordinates, iResolution, iQuadsPerRow);
+	size_t iTriangles = CPlanetTerrain::BuildMeshIndices(aiVerts, aiChunkCoordinates, iResolution, iQuadsPerRow, true);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pManager->s_pLumpGenerator->GetLock();

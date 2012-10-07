@@ -77,7 +77,7 @@ void CPlanetTerrain::Think()
 	}
 }
 
-size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecOrigin)
+size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecOrigin, bool bSkirt)
 {
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iDepth);
 	size_t iVertsPerRow = iQuadsPerRow + 1;
@@ -178,6 +178,41 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 		}
 	}
 
+	if (bSkirt)
+	{
+		avecTerrain.resize(iVertsPerRow*iVertsPerRow + iVertsPerRow*4);
+
+		float flSkirtLength = (float)(avecTerrain[0].vec3DPosition - avecTerrain[iVertsPerRow/16].vec3DPosition).Length();
+
+		size_t iSkirt1Start = iVertsPerRow*iVertsPerRow;
+		size_t iSkirt2Start = iVertsPerRow*iVertsPerRow + iVertsPerRow;
+		size_t iSkirt3Start = iVertsPerRow*iVertsPerRow + iVertsPerRow*2;
+		size_t iSkirt4Start = iVertsPerRow*iVertsPerRow + iVertsPerRow*3;
+
+		for (size_t x = 0; x < iVertsPerRow; x++)
+		{
+			CTerrainPoint& vecSkirt1 = avecTerrain[iSkirt1Start + x];
+			vecSkirt1 = avecTerrain[x];
+			Vector vecToCenter = (vecSkirt1.vec3DPosition + vecOrigin).Normalized();
+			vecSkirt1.vec3DPosition -= vecToCenter*flSkirtLength;
+
+			CTerrainPoint& vecSkirt2  = avecTerrain[iSkirt2Start + x];
+			vecSkirt2 = avecTerrain[iVertsPerRow*(iVertsPerRow-1) + x];
+			vecToCenter = (vecSkirt2.vec3DPosition + vecOrigin).Normalized();
+			vecSkirt2.vec3DPosition -= vecToCenter*flSkirtLength;
+
+			CTerrainPoint& vecSkirt3  = avecTerrain[iSkirt3Start + x];
+			vecSkirt3 = avecTerrain[x*iVertsPerRow];
+			vecToCenter = (vecSkirt3.vec3DPosition + vecOrigin).Normalized();
+			vecSkirt3.vec3DPosition -= vecToCenter*flSkirtLength;
+
+			CTerrainPoint& vecSkirt4  = avecTerrain[iSkirt4Start + x];
+			vecSkirt4 = avecTerrain[x*iVertsPerRow + iVertsPerRow-1];
+			vecToCenter = (vecSkirt4.vec3DPosition + vecOrigin).Normalized();
+			vecSkirt4.vec3DPosition -= vecToCenter*flSkirtLength;
+		}
+	}
+
 	return iVertsPerRow;
 }
 
@@ -224,11 +259,83 @@ size_t BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTe
 	return iTriangles;
 }
 
-size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows)
+void BuildSkirt(tvector<unsigned int>& aiIndices, size_t iRows)
+{
+	unsigned int iSkirt1Start = iRows*iRows;
+	unsigned int iSkirt2Start = iRows*iRows + iRows;
+	unsigned int iSkirt3Start = iRows*iRows + iRows*2;
+	unsigned int iSkirt4Start = iRows*iRows + iRows*3;
+
+	unsigned int i1;
+	unsigned int i2;
+	unsigned int i3;
+	unsigned int i4;
+
+	for (size_t x = 0; x < iRows-1; x++)
+	{
+		i1 = iSkirt1Start + x;
+		i2 = iSkirt1Start + (x+1);
+		i3 = x+1;
+		i4 = x;
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i2);
+		aiIndices.push_back(i3);
+
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i3);
+		aiIndices.push_back(i4);
+
+		i1 = iSkirt2Start + x;
+		i2 = iSkirt2Start + (x+1);
+		i3 = iRows*(iRows-1) + (x+1);
+		i4 = iRows*(iRows-1) + x;
+
+		// Reverse winding order for the opposite side.
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i3);
+		aiIndices.push_back(i2);
+
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i4);
+		aiIndices.push_back(i3);
+
+		i1 = iSkirt3Start + x;
+		i2 = iSkirt3Start + (x+1);
+		i3 = (x+1)*iRows;
+		i4 = x*iRows;
+
+		// Reverse winding order for the opposite side.
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i3);
+		aiIndices.push_back(i2);
+
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i4);
+		aiIndices.push_back(i3);
+
+		i1 = iSkirt4Start + x;
+		i2 = iSkirt4Start + (x+1);
+		i3 = (x+1)*iRows + (iRows-1);
+		i4 = x*iRows + (iRows-1);
+
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i2);
+		aiIndices.push_back(i3);
+
+		aiIndices.push_back(i1);
+		aiIndices.push_back(i3);
+		aiIndices.push_back(i4);
+	}
+}
+
+size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt)
 {
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
 	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
+	if (bSkirt)
+		iTriangles += (int)pow(2.0f, (float)iLevels) * 4 * 2;
+
 	aiIndices.reserve(iTriangles * 3);
 
 	aflVerts.reserve(avecTerrain.size()*iVertSize);
@@ -261,6 +368,9 @@ size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsig
 		}
 	}
 
+	if (bSkirt)
+		BuildSkirt(aiIndices, iRows);
+
 	return iTriangles;
 }
 
@@ -282,8 +392,7 @@ size_t CPlanetTerrain::BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<i
 
 	size_t iTerrainSize = avecTerrain.size();
 
-	size_t iInputRows = (int)sqrt((float)iTerrainSize);
-	TAssert(iInputRows == iRows);
+	size_t iInputRows = iRows;
 
 	size_t iInputLevels = (int)(log((float)iInputRows-1)/log(2.0f));
 	TAssert(iInputLevels >= iLevels && iInputLevels < 100);
@@ -324,11 +433,14 @@ size_t CPlanetTerrain::BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<i
 	return iTriangles;
 }
 
-size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows)
+size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows, bool bSkirt)
 {
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
 	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
+	if (bSkirt)
+		iTriangles += (int)pow(2.0f, (float)iLevels) * 4 * 2;
+
 	aiIndices.reserve(iTriangles * 3);
 
 	size_t iVertsPerRow = iRows+1;
@@ -364,6 +476,9 @@ size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const 
 			aiIndices.push_back(i4);
 		}
 	}
+
+	if (bSkirt)
+		BuildSkirt(aiIndices, iVertsPerRow);
 
 	return iTriangles;
 }

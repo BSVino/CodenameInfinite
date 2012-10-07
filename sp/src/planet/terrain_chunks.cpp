@@ -511,7 +511,7 @@ void CTerrainChunk::GenerateTerrain()
 	m_vecLocalCenter = pTerrain->CoordToWorld(vecCoordCenter) + pTerrain->GenerateOffset(vecCoordCenter);
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToChunk, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
+	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToChunk, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter, true);
 	m_mChunkToPlanet = m_mPlanetToChunk.InvertedRT();
 
 	DoubleVector vecCorner1 = avecTerrain[0].vec3DPosition;
@@ -537,7 +537,7 @@ void CTerrainChunk::GenerateTerrain()
 
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;
-	iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows);
+	iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows, true);
 	m_iLowResTerrainIBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
