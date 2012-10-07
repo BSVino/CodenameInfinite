@@ -4,6 +4,8 @@
 #include <renderer/renderer.h>
 #include <game/level.h>
 #include <tinker/cvar.h>
+#include <tengine/ui/gamewindow.h>
+#include <tengine/ui/instructor.h>
 
 #include "entities/sp_player.h"
 #include "entities/sp_playercharacter.h"
@@ -108,6 +110,54 @@ void CSPGame::SetupGame(tstring sType)
 void CSPGame::Think()
 {
 	BaseClass::Think();
+}
+
+extern bool ValidPlayerAliveConditions(CPlayer *pPlayer, class CLesson *pLesson);
+
+bool ValidPlayerNotFlyingConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	if (pCharacter->IsFlying())
+		return false;
+
+	return true;
+}
+
+bool ValidPlayerFlyingConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	if (!pCharacter->IsFlying())
+		return false;
+
+	return true;
+}
+
+pfnConditionsMet Game_GetInstructorConditions(const tstring& sConditions)
+{
+	if (sConditions == "ValidPlayerNotFlying")
+		return ValidPlayerNotFlyingConditions;
+	if (sConditions == "ValidPlayerFlying")
+		return ValidPlayerFlyingConditions;
+
+	return CInstructor::GetBaseConditions(sConditions);
 }
 
 CSPPlayer* CSPGame::GetLocalSPPlayer()

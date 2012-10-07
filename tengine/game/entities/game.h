@@ -31,6 +31,8 @@ public:
 	virtual void								OnClientEnterGame(int iClient);
 	virtual void								OnClientDisconnect(int iClient);
 
+	virtual void                                OnDisplayLesson(const tstring& sTutorial) {};
+
 	virtual void								EnterGame();
 
 	void										AddPlayer(CPlayer* pPlayer);

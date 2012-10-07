@@ -23,7 +23,7 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 
 void CDataSerializer::Read(std::basic_istream<tchar>& sStream, CData* pData)
 {
-	if (sStream.bad())
+	if (!sStream.good())
 		return;
 
 	if (!pData)

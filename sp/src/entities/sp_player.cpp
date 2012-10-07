@@ -146,10 +146,20 @@ void CSPPlayer::KeyPress(int c)
 		GetPlayerCharacter()->SetWalkSpeedOverride(true);
 
 	if (c == 'F')
+	{
+		if (GetPlayerCharacter()->IsFlying())
+			Instructor_LessonLearned("f-to-stop-flying");
+		else
+			Instructor_LessonLearned("f-to-fly");
+
 		GetPlayerCharacter()->ToggleFlying();
+	}
 
 	if (c == TINKER_KEY_ESCAPE)
 		m_eConstructionMode = STRUCTURE_NONE;
+
+	if (c == 'W' || c == 'A' || c == 'S' || c == 'D')
+		Instructor_LessonLearned("wasd");
 }
 
 void CSPPlayer::KeyRelease(int c)

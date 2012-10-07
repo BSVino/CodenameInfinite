@@ -23,6 +23,7 @@ public:
 	void						ToggleFlying();
 	void						StartFlying();
 	void						StopFlying();
+	bool                        IsFlying() const { return m_bFlying; }
 
 	virtual void                EnteredAtmosphere();
 

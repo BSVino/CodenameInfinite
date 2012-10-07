@@ -71,6 +71,8 @@ public:
 
 	TFloat							GetMaxStepHeight() const { return m_flMaxStepSize; }
 
+	double                          GetLastSpawn() const { return m_flLastSpawn; }
+
 	virtual bool					UsePhysicsModelForController() const { return false; }
 
 protected:
@@ -86,6 +88,7 @@ protected:
 	double							m_flMoveSimulationTime;
 
 	double							m_flLastAttack;
+	double                          m_flLastSpawn;
 
 	TFloat							m_flMaxStepSize;
 };

@@ -19,6 +19,7 @@
 #include <renderer/game_renderer.h>
 #include <tinker/keys.h>
 #include <portals/portal.h>
+#include <ui/instructor.h>
 
 CGameWindow::CGameWindow(int argc, char** argv)
 	: CApplication(argc, argv)
@@ -46,6 +47,8 @@ void CGameWindow::OpenWindow()
 	CVar::SetCVar("game_mode", GetInitialGameMode());
 
 	m_pGameServer = new CGameServer();
+
+	m_pInstructor = new CInstructor();
 
 	mtsrand((size_t)time(NULL));
 
@@ -148,6 +151,9 @@ void CGameWindow::CreateGame(const tstring& sRequestedGameMode)
 			m_pRenderer = CreateRenderer();
 			m_pRenderer->Initialize();
 		}
+
+		if (!m_pInstructor)
+			m_pInstructor = new CInstructor();
 	}
 
 	GameServer()->AllowPrecaches();

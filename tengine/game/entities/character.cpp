@@ -38,6 +38,8 @@ CCharacter::CCharacter()
 	m_bTransformMoveByView = true;
 	m_bNoClip = false;
 
+	m_flLastSpawn = -1;
+
 	SetMass(60);
 }
 
@@ -53,12 +55,16 @@ void CCharacter::Spawn()
 	m_flMoveSimulationTime = 0;
 
 	m_flLastAttack = -1;
+	m_flLastSpawn = GameServer()->GetGameTime();
 
 	m_bTakeDamage = true;
 
 	m_flMaxStepSize = 0.2f;
 
 	AddToPhysics(CT_CHARACTER);
+
+	if (GetControllingPlayer())
+		GetControllingPlayer()->Instructor_Respawn();
 }
 
 void CCharacter::Think()

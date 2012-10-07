@@ -27,6 +27,8 @@ INPUTS_TABLE_END();
 CPlayer::CPlayer()
 {
 	m_iClient = NETWORK_LOCAL;
+
+	m_flLastLesson = -1;
 }
 
 void NoClip(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
@@ -149,6 +151,13 @@ void CPlayer::JoystickAxis(int iJoystick, int iAxis, float flValue, float flChan
 			m_hCharacter->StopMove(MOVE_FORWARD);
 		}
 	}
+}
+
+void CPlayer::Think()
+{
+	BaseClass::Think();
+
+	Instructor_Think();
 }
 
 void CPlayer::SetCharacter(CCharacter* pCharacter)

@@ -3,11 +3,30 @@
 
 #include <tengine/game/entities/baseentity.h>
 
+#include <ui/instructor.h>
+
 class CCharacter;
 
 class CPlayer : public CBaseEntity
 {
 	REGISTER_ENTITY_CLASS(CPlayer, CBaseEntity);
+
+	class CLessonProgress
+	{
+	public:
+		CLessonProgress()
+		{
+			m_flLastTimeShowed = 0;
+			m_iTimesLearned = 0;
+			m_flLastTimeLearned = 0;
+		}
+
+	public:
+		tstring        m_sLessonName;
+		double         m_flLastTimeShowed;
+		int            m_iTimesLearned;
+		double         m_flLastTimeLearned;
+	};
 
 public:
 									CPlayer();
@@ -20,6 +39,17 @@ public:
 	virtual void					JoystickButtonPress(int iJoystick, int c);
 	virtual void					JoystickButtonRelease(int iJoystick, int c) {};
 	virtual void					JoystickAxis(int iJoystick, int iAxis, float flValue, float flChange);
+
+	virtual void                    Think();
+
+	virtual void                    Instructor_Initialize();
+	virtual void                    Instructor_Think();
+	virtual void                    Instructor_Respawn();
+
+	virtual void                    Instructor_LessonLearned(const tstring& sLesson);
+	virtual bool                    Instructor_IsLessonLearned(const CLessonProgress* pLessonProgress);
+	virtual bool                    Instructor_IsLessonValid(const CLessonProgress* pLessonProgress);
+	virtual class CLessonProgress*  Instructor_GetBestLesson();
 
 	void							SetCharacter(CCharacter* pCharacter);
 	CCharacter*						GetCharacter() const;
@@ -39,6 +69,10 @@ protected:
 	size_t							m_iInstallID;
 
 	CNetworkedString				m_sPlayerName;
+
+	tmap<tstring, CLessonProgress>  m_apLessonProgress;
+	tvector<CLessonProgress*>       m_apLessonPriorities;
+	double                          m_flLastLesson;
 };
 
 #endif

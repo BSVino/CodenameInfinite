@@ -49,6 +49,8 @@ public:
 	void						PrintChat(tstring sText);
 	virtual class CChatBox*		GetChatBox();
 
+	class CInstructor*          GetInstructor() const { return m_pInstructor; }
+
 protected:
 	class CGameServer*			m_pGameServer;
 
@@ -59,6 +61,8 @@ protected:
 	int							m_iLastMouseY;
 
 	class CHUDViewport*			m_pHUD;
+
+	class CInstructor*          m_pInstructor;
 
 	tstring						m_sRestartGameMode;
 };

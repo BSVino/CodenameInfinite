@@ -93,6 +93,7 @@ set (TENGINE_UI_SOURCES
 	ui/hudviewport.cpp
 	ui/gamewindow.cpp
 	ui/chatbox.cpp
+	ui/instructor.cpp
 )
 
 set (TENGINE_LOBBY_SOURCES
