@@ -43,6 +43,7 @@ void CPlayerCharacter::Spawn()
 	m_hCamera->SetCharacter(this);
 
 	m_flNextApproximateElevation = 0;
+	m_flNextSurfaceCheck = 0;
 
 	if (m_hHelper)
 		m_hHelper->Delete();
@@ -59,6 +60,33 @@ void CPlayerCharacter::Think()
 
 	if (GameServer()->GetGameTime() > m_flNextApproximateElevation)
 		ApproximateElevation();
+
+	if (GameServer()->GetGameTime() > m_flNextSurfaceCheck)
+	{
+		CPlanet* pPlanet = GetNearestPlanet();
+		if (pPlanet && pPlanet->GetChunkManager()->HasGroupCenter())
+		{
+			CTraceResult tr;
+			GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() - Vector(0, 1000, 0), this);
+
+			if (tr.m_flFraction == 1)
+			{
+				// There is no ground below the player. Is there ground above the player?
+				GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() + Vector(0, 1000, 0), this);
+
+				if (tr.m_flFraction != 1)
+				{
+					Matrix4x4 mNewTransform = GetPhysicsTransform();
+					mNewTransform.SetTranslation(tr.m_vecHit + Vector(0, 1, 0));
+					SetPhysicsTransform(mNewTransform);
+
+					TMsg("Raised player to ground level.\n");
+				}
+			}
+		}
+
+		m_flNextSurfaceCheck = GameServer()->GetGameTime() + 2;
+	}
 }
 
 void CPlayerCharacter::MoveThink()

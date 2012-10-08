@@ -53,6 +53,8 @@ protected:
 	double                      m_flApproximateElevation;     // From the center of the planet
 
 	CEntityHandle<CHelperBot>   m_hHelper;
+
+	double                      m_flNextSurfaceCheck;
 };
 
 #endif
