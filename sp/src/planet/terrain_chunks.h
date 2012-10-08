@@ -107,6 +107,8 @@ public:
 	void								GenerateChunk(size_t iChunk);
 	void								Render();
 
+	bool                                IsGenerating() const;
+
 private:
 	void								RemoveChunkNoLock(size_t iChunk);
 

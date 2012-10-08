@@ -86,6 +86,8 @@ public:
 	void								GenerateLump(size_t iLump);
 	void								Render();
 
+	bool                                IsGenerating() const;
+
 private:
 	void								RemoveLumpNoLock(size_t iLump);
 

@@ -141,7 +141,7 @@ void CTerrainLumpManager::Think()
 		return;
 	}
 
-	if (GameServer()->GetGameTime() > m_flNextLumpCheck)
+	if (GameServer()->GetGameTime() >= m_flNextLumpCheck)
 	{
 		AddNearbyLumps();
 
@@ -263,6 +263,11 @@ void CTerrainLumpManager::Render()
 	}
 }
 
+bool CTerrainLumpManager::IsGenerating() const
+{
+	return !s_pLumpGenerator->AreAllJobsDone();
+}
+
 CTerrainLump::CTerrainLump(CTerrainLumpManager* pManager, size_t iLump, size_t iTerrain, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax)
 {
 	m_pManager = pManager;
@@ -332,7 +337,10 @@ void CTerrainLump::Think()
 		oLock2.Unlock();
 
 		if (bUpdateTerrain)
+		{
 			m_pManager->m_pPlanet->GetTerrain(m_iTerrain)->RebuildShell2Indices();
+			m_pManager->m_pPlanet->m_pChunkManager->AddNearbyChunks();
+		}
 	}
 }
 

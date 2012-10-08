@@ -8,6 +8,9 @@ class CSPGame : public CGame
 	REGISTER_ENTITY_CLASS(CSPGame, CGame);
 
 public:
+	CSPGame();
+
+public:
 	virtual void			Precache();
 
 	virtual void			SetupGame(tstring sType);
@@ -17,6 +20,9 @@ public:
 	class CSPPlayer*        GetLocalSPPlayer();
 	class CPlayerCharacter*	GetLocalPlayerCharacter();
 	class CSPRenderer*		GetSPRenderer();
+
+private:
+	bool                    m_bWaitingForTerrainToGenerate;
 };
 
 inline class CSPGame* SPGame()

@@ -275,9 +275,12 @@ void CSPCharacter::SetGroundEntityExtra(size_t iExtra)
 
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 {
-	if (GameServer()->GetGameTime() > m_flNextPlanetCheck)
+	if (GameServer()->GetGameTime() >= m_flNextPlanetCheck)
 	{
 		CPlanet* pNearestPlanet = FindNearestPlanet();
+
+		if (!pNearestPlanet)
+			return nullptr;
 
 		CScalableFloat flDistance = (pNearestPlanet->GetGlobalOrigin() - GetGlobalOrigin()).Length() - pNearestPlanet->GetRadius();
 		if (flDistance < pNearestPlanet->GetAtmosphereThickness())
@@ -476,7 +479,7 @@ void CSPCharacter::LockViewToPlanet()
 
 void CSPCharacter::StandOnNearestPlanet()
 {
-	CPlanet* pPlanet = GetNearestPlanet(FINDPLANET_ANY);
+	CPlanet* pPlanet = FindNearestPlanet();
 	if (!pPlanet)
 		return;
 
@@ -497,6 +500,8 @@ void CSPCharacter::StandOnNearestPlanet()
 	CScalableVector vecNewLocal(vecNewLocalMeters, pPlanet->GetScale());
 
 	SetLocalOrigin(vecNewLocal);
+
+	pPlanet->RenderUpdate();
 }
 
 CScalableFloat CSPCharacter::EyeHeight() const

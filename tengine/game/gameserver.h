@@ -116,6 +116,8 @@ public:
 	double										GetFrameTime() { return m_flFrameTime; };
 	double										GetGameTime() { return m_flGameTime; };
 	size_t										GetFrame() { return m_iFrame; }
+	float                                       GetTimeScale() { return m_flTimeScale; }
+	void                                        SetTimeScale(float flTimeScale) { m_flTimeScale = flTimeScale; }
 
 	class CGameRenderer*						GetRenderer();
 	class CCameraManager*						GetCameraManager();
@@ -149,6 +151,7 @@ protected:
 	double										m_flGameTime;		// This is how time passes for the game entities
 	double										m_flFrameTime;		// This is the delta of each frame of game time
 	double										m_flHostTime;		// This is the current time for the computer
+	float                                       m_flTimeScale;      // This is a scalar applied to the frame time
 	size_t										m_iFrame;
 
 	class CCameraManager*						m_pCameraManager;

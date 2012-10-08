@@ -15,6 +15,8 @@
 #include "planet/planet.h"
 #include "entities/star.h"
 #include "ui/hud.h"
+#include "planet/terrain_chunks.h"
+#include "planet/terrain_lumps.h"
 
 CGame* CreateGame()
 {
@@ -46,6 +48,11 @@ SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPGame);
 INPUTS_TABLE_END();
+
+CSPGame::CSPGame()
+{
+	m_bWaitingForTerrainToGenerate = false;
+}
 
 void CSPGame::Precache()
 {
@@ -90,12 +97,13 @@ void CSPGame::SetupGame(tstring sType)
 
 		pCharacter->StandOnNearestPlanet();
 
-		if (!pCharacter->GetNearestPlanet())
-			pCharacter->StartFlying();
-
 		Application()->SetMouseCursorEnabled(false);
 
 		GameServer()->AddAllToPrecacheList();
+
+		// Pause it until our terrain is done generating.
+		GameServer()->SetTimeScale(0);
+		m_bWaitingForTerrainToGenerate = true;
 	}
 	else if (sType == "menu")
 	{
@@ -110,6 +118,29 @@ void CSPGame::SetupGame(tstring sType)
 void CSPGame::Think()
 {
 	BaseClass::Think();
+
+	if (m_bWaitingForTerrainToGenerate)
+	{
+		TAssert(GetLocalSPPlayer() && GetLocalSPPlayer()->GetPlayerCharacter());
+		CPlayerCharacter* pCharacter = GetLocalSPPlayer()->GetPlayerCharacter();
+
+		if (!pCharacter->GetNearestPlanet())
+		{
+			TUnimplemented(); // Should be just fine but I haven't tried it.
+			m_bWaitingForTerrainToGenerate = false;
+			GameServer()->SetTimeScale(1);
+		}
+
+		if (pCharacter && pCharacter->GetNearestPlanet())
+		{
+			CPlanet* pPlanet = pCharacter->GetNearestPlanet();
+			if (!pPlanet->GetChunkManager()->IsGenerating() && !pPlanet->GetLumpManager()->IsGenerating())
+			{
+				m_bWaitingForTerrainToGenerate = false;
+				GameServer()->SetTimeScale(1);
+			}
+		}
+	}
 }
 
 extern bool ValidPlayerAliveConditions(CPlayer *pPlayer, class CLesson *pLesson);

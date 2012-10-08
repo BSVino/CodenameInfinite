@@ -175,12 +175,8 @@ void CTerrainChunkManager::Think()
 		return;
 	}
 
-	if (GameServer()->GetGameTime() > m_flNextChunkCheck)
-	{
+	if (GameServer()->GetGameTime() >= m_flNextChunkCheck)
 		AddNearbyChunks();
-
-		m_flNextChunkCheck = GameServer()->GetGameTime() + terrain_chunkcheck.GetFloat();
-	}
 
 	float flMaxChunkDistance = chunk_distance.GetFloat()*2;
 	float flMaxChunkDistanceSqr = flMaxChunkDistance*flMaxChunkDistance;
@@ -298,6 +294,8 @@ void CTerrainChunkManager::AddNearbyChunks()
 		for (size_t j = 0; j < iMaxAreas; j++)
 			AddChunk(i, avecAreas[j].vecMin, avecAreas[j].vecMax);
 	}
+
+	m_flNextChunkCheck = GameServer()->GetGameTime() + terrain_chunkcheck.GetFloat();
 }
 
 void CTerrainChunkManager::GenerateChunk(size_t iChunk)
@@ -387,6 +385,11 @@ void CTerrainChunkManager::Render()
 
 		pChunk->Render();
 	}
+}
+
+bool CTerrainChunkManager::IsGenerating() const
+{
+	return !s_pChunkGenerator->AreAllJobsDone();
 }
 
 size_t CTerrainChunk::s_iChunks = 0;

@@ -15,6 +15,7 @@ class CPlanet : public CBaseEntity
 {
 	friend class CPlanetTerrain;
 	friend class CTerrainLumpManager;
+	friend class CTerrainLump;
 	friend class CTerrainChunkManager;
 	REGISTER_ENTITY_CLASS(CPlanet, CBaseEntity);
 
