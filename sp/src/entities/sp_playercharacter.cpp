@@ -189,7 +189,12 @@ CScalableFloat CPlayerCharacter::CharacterSpeed()
 		if (flDistance < flAtmosphere)
 		{
 			CScalableFloat flGroundSpeed = CScalableFloat(20.0f, SCALE_METER);
-			return RemapValClamped(CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), CScalableFloat(), pPlanet->GetAtmosphereThickness(), flGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
+			CScalableFloat flAboveGroundSpeed = CScalableFloat(200.0f, SCALE_METER);
+			float flSpeedRise = 0.0005f;
+			if (m_flApproximateElevation < flSpeedRise)
+				return RemapValClamped((float)m_flApproximateElevation, 0.0f, flSpeedRise, flGroundSpeed, flAboveGroundSpeed) * flDebugBonus;
+			else
+				return RemapValClamped(CScalableFloat(m_flApproximateElevation, pPlanet->GetScale()), CScalableFloat(flSpeedRise, pPlanet->GetScale()), pPlanet->GetAtmosphereThickness(), flAboveGroundSpeed, flAtmosphereSpeed) * flDebugBonus;
 		}
 
 		if (flDistance > flCloseOrbit)
@@ -219,17 +224,39 @@ void CPlayerCharacter::ApproximateElevation()
 
 	m_flNextApproximateElevation = GameServer()->GetGameTime() + sv_approximateelevation.GetFloat();
 
+	if (pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		float flDistance = 1000;
+		CTraceResult tr;
+		GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() - Vector(0, flDistance, 0), this);
+
+		if (tr.m_flFraction < 1)
+		{
+			m_flApproximateElevation = CScalableFloat(tr.m_flFraction * flDistance, SCALE_METER).GetUnits(pPlanet->GetScale());
+			return;
+		}
+	}
+
+	DoubleVector vec3DOrigin = pPlanet->GetCharacterLocalOrigin();
+
 	size_t iTerrain;
 	DoubleVector2D vecApprox2DCoord;
-	pPlanet->GetApprox2DPosition(pPlanet->GetCharacterLocalOrigin(), iTerrain, vecApprox2DCoord);
+	pPlanet->GetApprox2DPosition(vec3DOrigin, iTerrain, vecApprox2DCoord);
 
 	DoubleVector vecApprox3DCoord = pPlanet->GetTerrain(iTerrain)->CoordToWorld(vecApprox2DCoord) + pPlanet->GetTerrain(iTerrain)->GenerateOffset(vecApprox2DCoord);
+
+	DoubleVector2D vecAdjusted2DCoord;
+	pPlanet->GetApprox2DPosition(vecApprox3DCoord, iTerrain, vecAdjusted2DCoord);
+
+	DoubleVector2D vecEstimated2DCoord = vecApprox2DCoord - (vecAdjusted2DCoord - vecApprox2DCoord);
+
+	vec3DOrigin = pPlanet->GetTerrain(iTerrain)->CoordToWorld(vecEstimated2DCoord) + pPlanet->GetTerrain(iTerrain)->GenerateOffset(vecEstimated2DCoord);
 
 	DoubleVector vecOriginNormalized = pPlanet->GetCharacterLocalOrigin().Normalized();
 
 	// Remove any lateral movement from the terrain generation offset.
 	Vector vecHit;
-	bool bHit = RayIntersectsPlane(Ray(Vector(0, 0, 0), vecOriginNormalized), vecApprox3DCoord, vecOriginNormalized, &vecHit);
+	bool bHit = RayIntersectsPlane(Ray(Vector(0, 0, 0), vecOriginNormalized), vec3DOrigin, vecOriginNormalized, &vecHit);
 	TAssert(bHit);
 
 	m_flApproximateElevation = vecHit.Distance(pPlanet->GetCharacterLocalOrigin());

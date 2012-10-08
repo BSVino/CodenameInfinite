@@ -326,6 +326,11 @@ void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerra
 
 			if (vecDirection[0] > 0)
 				flXSign = -1;
+			else
+			{
+				flXSign = -1;
+				flYSign = -1;
+			}
 		}
 		else if (vecDirection[1] != 0)
 		{
