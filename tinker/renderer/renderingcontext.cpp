@@ -328,7 +328,9 @@ void CRenderingContext::RenderBillboard(const CMaterialHandle& hMaterial, float 
 	// Clear out any existing rotation so that they don't interfere with the billboarding below.
 	GetContext().m_mTransformations.SetAngles(EAngle(0, 0, 0));
 
-	UseMaterial(hMaterial);
+	if (GetContext().m_hMaterial != hMaterial)
+		UseMaterial(hMaterial);
+
 	BeginRenderTriFan();
 		TexCoord(0.0f, 1.0f);
 		Vertex(-vecRight + vecUp);

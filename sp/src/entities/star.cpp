@@ -23,7 +23,8 @@ INPUTS_TABLE_END();
 
 void CStar::Precache()
 {
-	PrecacheMaterial("textures/star-yellow.mat");
+	PrecacheMaterial("textures/star-yellow-space.mat");
+	PrecacheMaterial("textures/star-yellow-atmosphere.mat");
 }
 
 void CStar::Spawn()
@@ -45,15 +46,36 @@ void CStar::PostRender() const
 		return;
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	CPlanet* pNearestPlanet = pCharacter->GetNearestPlanet();
 
 	float flRadius = (float)(GetRadius()*2.0f).GetUnits(SPGame()->GetSPRenderer()->GetRenderingScale());
 
+	CScalableFloat flDistance;
+	float flAtmosphere = 0;
+
+	if (pNearestPlanet)
+	{
+		flDistance = (pNearestPlanet->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - pNearestPlanet->GetRadius();
+		flAtmosphere = (float)RemapValClamped(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pNearestPlanet->GetAtmosphereThickness(), 1.0, 0.0);
+	}
+
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+	c.SetDepthMask(false);
 
 	c.ResetTransformations();
 	c.Transform(BaseGetRenderTransform());
 
-	c.RenderBillboard("textures/star-yellow.mat", flRadius);
+	// Set material and uniform now so RenderBillboard doesn't overwrite the alpha value.
+	c.UseMaterial("textures/star-yellow-atmosphere.mat");
+	c.SetUniform("flAlpha", flAtmosphere);
+
+	c.RenderBillboard("textures/star-yellow-atmosphere.mat", flRadius);
+
+	c.UseMaterial("textures/star-yellow-space.mat");
+	c.SetUniform("flAlpha", 1-flAtmosphere);
+
+	c.RenderBillboard("textures/star-yellow-space.mat", flRadius);
 }
 
 CScalableFloat CStar::GetCloseOrbit()
