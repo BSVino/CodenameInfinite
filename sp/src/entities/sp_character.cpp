@@ -9,6 +9,7 @@
 #include "sp_renderer.h"
 #include "entities/sp_playercharacter.h"
 #include "entities/structures/spire.h"
+#include "entities/star.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -483,17 +484,48 @@ void CSPCharacter::StandOnNearestPlanet()
 	if (!pPlanet)
 		return;
 
+	CScalableVector vecPlanetGlobal = pPlanet->GetGlobalOrigin();
+
+	CStar* pNearestStar = nullptr;
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		CStar* pStar = dynamic_cast<CStar*>(pEntity);
+		if (!pStar)
+			continue;
+
+		if (pNearestStar == NULL)
+		{
+			pNearestStar = pStar;
+			continue;
+		}
+
+		if ((pStar->GetGlobalOrigin()-vecPlanetGlobal).LengthSqr() < (pNearestStar->GetGlobalOrigin()-vecPlanetGlobal).LengthSqr())
+			pNearestStar = pStar;
+	}
+
+	TAssert(pNearestStar);
+	if (!pNearestStar)
+		return;
+
 	SetMoveParent(nullptr);
 
-	CScalableVector vecPlayerGlobal = GetGlobalOrigin();
-	CScalableVector vecPlayerLocal = pPlanet->GetGlobalToLocalTransform() * vecPlayerGlobal;
-	DoubleVector vecPlayerLocalMeters = vecPlayerLocal;
+	Vector vecToStar = (pNearestStar->GetGlobalOrigin() - pPlanet->GetGlobalOrigin()).Normalized();
+
+	// Assumes planet spin and that this star system's up vector is 0,1,0
+	Vector vecToDawn = -vecToStar.Cross(Vector(0, 1, 0));
+
+	CScalableVector vecGlobalDawn = pPlanet->GetGlobalOrigin() + CScalableVector(vecToDawn) * pPlanet->GetRadius();
+	DoubleVector vecPlayerLocal = (pPlanet->GetGlobalToLocalTransform() * vecGlobalDawn).GetUnits(pPlanet->GetScale());
 
 	SetMoveParent(pPlanet);
 
 	size_t iTerrain;
 	DoubleVector2D vecApprox2DCoord;
-	pPlanet->GetApprox2DPosition(vecPlayerLocalMeters, iTerrain, vecApprox2DCoord);
+	pPlanet->GetApprox2DPosition(vecPlayerLocal, iTerrain, vecApprox2DCoord);
 
 	DoubleVector vecNewLocalMeters = pPlanet->GetTerrain(iTerrain)->CoordToWorld(vecApprox2DCoord) + pPlanet->GetTerrain(iTerrain)->GenerateOffset(vecApprox2DCoord);
 
