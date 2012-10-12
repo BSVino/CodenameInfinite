@@ -11,12 +11,18 @@ class CPickup : public CBaseEntity
 public:
 	void        Precache();
 
+	void        Spawn();
+	void        Think();
+
 	bool        ShouldRender() const;
 	void        PostRender() const;
 
 	void        SetItem(item_t eItem);
+	item_t      GetItem() const { return m_eItem; }
 
 private:
 	item_t      m_eItem;
+
+	double      m_flNextPlayerCheck;
 };
 

@@ -8,6 +8,7 @@
 #include "sp_common.h"
 #include "sp_entity.h"
 #include "sp_player.h"
+#include "items/items.h"
 
 class CPlanet;
 
@@ -34,6 +35,9 @@ public:
 	virtual bool                ShouldRender() const;
 	virtual const Matrix4x4     GetRenderTransform() const;
 	virtual const Vector        GetRenderOrigin() const;
+
+	virtual bool                CanPickUp(class CPickup* pPickup) const;
+	void                        PickUp(class CPickup* pPickup);
 
 	virtual const TMatrix       GetMovementVelocityTransform() const;
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
@@ -86,6 +90,10 @@ protected:
 	// Transform from the center of the nearest chunk group.
 	// Use a persistent transform to avoid floating point problems converting back to double all the time.
 	Matrix4x4                   m_mGroupTransform;
+
+	size_t                      m_aiInventory[ITEM_TOTAL];
+
+	const static int            MAX_INVENTORY;
 };
 
 #endif

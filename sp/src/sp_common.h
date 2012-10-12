@@ -46,6 +46,8 @@ public:
 	bool					IsZero() const;
 	bool					IsZero();
 
+	CScalableFloat          Squared() const;
+
 	CScalableFloat			operator-(void) const;
 
 	CScalableFloat			AddSimilar(const CScalableFloat& u) const;

@@ -976,6 +976,18 @@ void CBaseEntity::Delete(const tvector<tstring>& sArgs)
 	Delete();
 }
 
+void CBaseEntity::OnDeleted(CBaseEntity* pEntity)
+{
+	for (size_t i = 0; i < m_ahMoveChildren.size(); i++)
+	{
+		if (pEntity == m_ahMoveChildren[i])
+		{
+			m_ahMoveChildren.erase(i);
+			break;
+		}
+	}
+}
+
 void CBaseEntity::CallInput(const tstring& sName, const tstring& sArgs)
 {
 	CEntityInput* pInput = FindInput(sName.c_str());

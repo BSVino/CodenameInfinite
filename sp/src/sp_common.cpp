@@ -202,6 +202,11 @@ bool CScalableFloat::IsZero()
 	return true;
 }
 
+CScalableFloat CScalableFloat::Squared() const
+{
+	return (*this)*(*this);
+}
+
 CScalableFloat CScalableFloat::operator-() const
 {
 	CScalableFloat f;

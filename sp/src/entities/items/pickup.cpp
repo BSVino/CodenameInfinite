@@ -1,10 +1,13 @@
 #include "pickup.h"
 
+#include <mtrand.h>
+
 #include <tengine/renderer/game_renderer.h>
 #include <tengine/renderer/game_renderingcontext.h>
 
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
+#include "entities/sp_character.h"
 
 REGISTER_ENTITY(CPickup);
 
@@ -21,6 +24,50 @@ INPUTS_TABLE_END();
 void CPickup::Precache()
 {
 	PrecacheMaterial("textures/items1.mat");
+}
+
+void CPickup::Spawn()
+{
+	BaseClass::Spawn();
+
+	m_flNextPlayerCheck = 0;
+}
+
+void CPickup::Think()
+{
+	BaseClass::Think();
+
+	if (GameServer()->GetGameTime() > m_flNextPlayerCheck)
+	{
+		CSPCharacter* pNearestCharacter = nullptr;
+		for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+		{
+			CBaseEntity* pEnt = CBaseEntity::GetEntity(i);
+			if (!pEnt)
+				continue;
+
+			CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(pEnt);
+			if (!pCharacter)
+				continue;
+
+			if (!pCharacter->CanPickUp(this))
+				continue;
+
+			if (!pNearestCharacter)
+			{
+				pNearestCharacter = pCharacter;
+				continue;
+			}
+
+			if ((pCharacter->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < (pNearestCharacter->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr())
+				pNearestCharacter = pCharacter;
+		}
+
+		if (pNearestCharacter && (pNearestCharacter->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < CScalableFloat(2.5f, SCALE_METER).Squared())
+			pNearestCharacter->PickUp(this);
+
+		m_flNextPlayerCheck = GameServer()->GetGameTime() + (double)RandomFloat(0.4f, 0.8f);
+	}
 }
 
 bool CPickup::ShouldRender() const

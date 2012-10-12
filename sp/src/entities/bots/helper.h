@@ -13,6 +13,8 @@ public:
 
 	void        TeleportToPlayer();
 
+	bool        CanPickUp(class CPickup* pPickup) const { return false; }
+
 	void        SetPlayerCharacter(class CPlayerCharacter* pPlayer);
 
 	bool        ShouldRender() const;

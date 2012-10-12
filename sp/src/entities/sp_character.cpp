@@ -10,6 +10,7 @@
 #include "entities/sp_playercharacter.h"
 #include "entities/structures/spire.h"
 #include "entities/star.h"
+#include "entities/items/pickup.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -22,16 +23,21 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiInventory);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
 INPUTS_TABLE_END();
+
+const int CSPCharacter::MAX_INVENTORY = 16;
 
 CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
 	m_flNextSpireCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
+
+	memset(&m_aiInventory[0], 0, sizeof(m_aiInventory));
 }
 
 void CSPCharacter::Spawn()
@@ -127,6 +133,32 @@ const Vector CSPCharacter::GetRenderOrigin() const
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetTranslation().GetUnits(eScale);
+}
+
+bool CSPCharacter::CanPickUp(CPickup* pPickup) const
+{
+	if (!pPickup)
+		return false;
+
+	if (m_aiInventory[pPickup->GetItem()] >= MAX_INVENTORY)
+		return false;
+
+	return true;
+}
+
+void CSPCharacter::PickUp(CPickup* pPickup)
+{
+	if (!pPickup)
+		return;
+
+	item_t eItem = pPickup->GetItem();
+
+	if (m_aiInventory[eItem] >= MAX_INVENTORY)
+		return;
+
+	pPickup->Delete();
+
+	m_aiInventory[eItem]++;
 }
 
 const TMatrix CSPCharacter::GetMovementVelocityTransform() const
