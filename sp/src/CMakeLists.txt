@@ -42,6 +42,10 @@ set (CI_STRUCTURE_SOURCES
 	entities/structures/mine.cpp
 )
 
+set (CI_ITEM_SOURCES
+	entities/items/pickup.cpp
+)
+
 set (CI_UI_SOURCES
 	ui/hud.cpp
 	ui/hudmenu.cpp
@@ -59,6 +63,7 @@ set (CI_SOURCES
 	${CI_ENTITY_SOURCES}
 	${CI_STRUCTURE_SOURCES}
 	${CI_BOT_SOURCES}
+	${CI_ITEM_SOURCES}
 	${CI_UI_SOURCES}
 )
 
@@ -66,6 +71,7 @@ source_group(Planet FILES ${CI_PLANET_SOURCES})
 source_group(Entities FILES ${CI_ENTITY_SOURCES})
 source_group(Entities\\Bots FILES ${CI_BOT_SOURCES})
 source_group(Entities\\Structures FILES ${CI_STRUCTURE_SOURCES})
+source_group(Entities\\Items FILES ${CI_ITEM_SOURCES})
 source_group(UI FILES ${CI_UI_SOURCES})
 
 add_executable (infinite ${CI_SOURCES})

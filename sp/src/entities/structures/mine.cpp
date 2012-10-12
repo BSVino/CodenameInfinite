@@ -7,6 +7,7 @@
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
 #include "entities/sp_playercharacter.h"
+#include "entities/items/pickup.h"
 
 REGISTER_ENTITY(CMine);
 
@@ -43,7 +44,11 @@ void CMine::Think()
 	{
 		m_flDiggingStarted = 0;
 
-		TMsg("Digging done!\n");
+		CPickup* pMined = GameServer()->Create<CPickup>("CPickup");
+		pMined->SetMoveParent(GetMoveParent());
+		pMined->SetLocalTransform(GetLocalTransform());
+		pMined->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector());
+		pMined->SetItem(ITEM_DIRT);
 	}
 }
 
