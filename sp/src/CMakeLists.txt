@@ -20,6 +20,12 @@ set (CI_PLANET_SOURCES
 	planet/terrain_chunks.cpp
 )
 
+set (CI_VOXEL_SOURCES
+	voxel/ivector.cpp
+	voxel/voxel_tree.cpp
+	voxel/voxel_chunk.cpp
+)
+
 set (CI_ENTITY_SOURCES
 	entities/star.cpp
 	entities/sp_character.cpp
@@ -43,6 +49,7 @@ set (CI_STRUCTURE_SOURCES
 )
 
 set (CI_ITEM_SOURCES
+	entities/items/items.cpp
 	entities/items/pickup.cpp
 )
 
@@ -60,6 +67,7 @@ set (CI_SOURCES
 	sp_window.cpp
 
 	${CI_PLANET_SOURCES}
+	${CI_VOXEL_SOURCES}
 	${CI_ENTITY_SOURCES}
 	${CI_STRUCTURE_SOURCES}
 	${CI_BOT_SOURCES}
@@ -68,6 +76,7 @@ set (CI_SOURCES
 )
 
 source_group(Planet FILES ${CI_PLANET_SOURCES})
+source_group(Voxel FILES ${CI_VOXEL_SOURCES})
 source_group(Entities FILES ${CI_ENTITY_SOURCES})
 source_group(Entities\\Bots FILES ${CI_BOT_SOURCES})
 source_group(Entities\\Structures FILES ${CI_STRUCTURE_SOURCES})

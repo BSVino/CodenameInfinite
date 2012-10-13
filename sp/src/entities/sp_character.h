@@ -39,6 +39,11 @@ public:
 	virtual bool                CanPickUp(class CPickup* pPickup) const;
 	void                        PickUp(class CPickup* pPickup);
 
+	bool                        HasBlocks() const;
+	size_t                      GetInventory(item_t eItem) const;
+
+	bool                        PlaceBlock(item_t eItem, const CScalableVector& vecLocal);
+
 	virtual const TMatrix       GetMovementVelocityTransform() const;
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
 	virtual const Matrix4x4     GetPhysicsTransform() const;

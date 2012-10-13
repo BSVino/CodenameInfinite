@@ -21,10 +21,12 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 #include <EASTL/map.h>
 
 #define TMAP_BASE eastl::map<T, U>
+#define tpair eastl::pair
 #else
 #include <map>
 
 #define TMAP_BASE std::map<T, U>
+#define tpair std::pair
 #endif
 
 template <class T, class U>

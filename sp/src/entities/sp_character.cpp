@@ -11,6 +11,8 @@
 #include "entities/structures/spire.h"
 #include "entities/star.h"
 #include "entities/items/pickup.h"
+#include "sp_window.h"
+#include "ui/hud.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
@@ -159,6 +161,52 @@ void CSPCharacter::PickUp(CPickup* pPickup)
 	pPickup->Delete();
 
 	m_aiInventory[eItem]++;
+
+	SPWindow()->GetHUD()->BuildMenus();
+}
+
+bool CSPCharacter::HasBlocks() const
+{
+	for (size_t i = 0; i < ITEM_BLOCKS_TOTAL; i++)
+	{
+		if (m_aiInventory[i])
+			return true;
+	}
+
+	return false;
+}
+
+size_t CSPCharacter::GetInventory(item_t eItem) const
+{
+	if (eItem < ITEM_NONE)
+		return 0;
+
+	if (eItem >= ITEM_TOTAL)
+		return 0;
+
+	return m_aiInventory[eItem];
+}
+
+bool CSPCharacter::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
+{
+	if (!GetInventory(eItem))
+		return false;
+
+	if (eItem >= ITEM_BLOCKS_TOTAL)
+		return false;
+
+	CSpire* pSpire = GetNearestSpire();
+	if (!pSpire)
+		return false;
+
+	CVoxelTree* pVoxel = pSpire->GetVoxelTree();
+
+	if (!pVoxel->PlaceBlock(eItem, vecLocal))
+		return false;
+
+	m_aiInventory[eItem]--;
+
+	return true;
 }
 
 const TMatrix CSPCharacter::GetMovementVelocityTransform() const

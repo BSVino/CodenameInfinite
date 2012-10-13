@@ -21,10 +21,12 @@ CSPHUD::CSPHUD()
 
 void CSPHUD::BuildMenus()
 {
-	if (m_hConstructionMenu)
+	for (int i = 0; i < MENU_TOTAL; i++)
 	{
-		glgui::RootPanel()->RemoveControl(m_hConstructionMenu);
-		m_hConstructionMenu->ClearSubmenus();
+		glgui::RootPanel()->RemoveControl(m_ahMenus[i]);
+
+		if (m_ahMenus[i])
+			m_ahMenus[i]->ClearSubmenus();
 	}
 
 	if (!SPGame())
@@ -38,18 +40,30 @@ void CSPHUD::BuildMenus()
 	if (!pPlayer)
 		return;
 
-	if (!pPlayer->GetPlayerCharacter())
+	CPlayerCharacter* pCharacter = pPlayer->GetPlayerCharacter();
+	if (!pCharacter)
 		return;
 
-	if (pPlayer->GetPlayerCharacter()->GetNearestSpire() || pPlayer->GetNumSpires())
+	if (pCharacter->HasBlocks())
 	{
-		m_hConstructionMenu = glgui::RootPanel()->AddControl(new CHUDMenu(1, "2. Construction"));
+		m_ahMenus[MENU_BLOCKS] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_BLOCKS, sprintf("%d. Blocks", MENU_BLOCKS+1)));
+
+		for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+		{
+			if (pCharacter->GetInventory((item_t)i))
+				m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(i-1, sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, pCharacter->GetInventory((item_t)i)), true), this, PlaceBlock);
+		}
+	}
+
+	if (pCharacter->GetNearestSpire() || pPlayer->GetNumSpires())
+	{
+		m_ahMenus[MENU_CONSTRUCTION] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_CONSTRUCTION, sprintf("%d. Construction", MENU_CONSTRUCTION+1)));
 
 		if (pPlayer->GetNumSpires())
-			m_hConstructionMenu->AddSubmenu(new CHUDMenu(0, "1. Spire", true), this, ConstructSpire);
+			m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(0, "1. Spire", true), this, ConstructSpire);
 
-		if (pPlayer->GetPlayerCharacter()->GetNearestSpire())
-			m_hConstructionMenu->AddSubmenu(new CHUDMenu(1, "2. Mine", true), this, ConstructMine);
+		if (pCharacter->GetNearestSpire())
+			m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(1, "2. Mine", true), this, ConstructMine);
 	}
 
 	glgui::RootPanel()->Layout();
@@ -176,9 +190,20 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 	Debug_Paint();
 }
 
+void CSPHUD::PlaceBlockCallback(const tstring& sArgs)
+{
+	m_ahMenus[MENU_BLOCKS]->CloseMenu();
+
+	item_t eBlock = (item_t)(stoi(sArgs)+1);
+
+	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
+
+	pPlayer->EnterBlockPlaceMode(eBlock);
+}
+
 void CSPHUD::ConstructSpireCallback(const tstring& sArgs)
 {
-	m_hConstructionMenu->CloseMenu();
+	m_ahMenus[MENU_CONSTRUCTION]->CloseMenu();
 
 	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
 
@@ -187,7 +212,7 @@ void CSPHUD::ConstructSpireCallback(const tstring& sArgs)
 
 void CSPHUD::ConstructMineCallback(const tstring& sArgs)
 {
-	m_hConstructionMenu->CloseMenu();
+	m_ahMenus[MENU_CONSTRUCTION]->CloseMenu();
 
 	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
 

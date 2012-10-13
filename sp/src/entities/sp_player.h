@@ -4,6 +4,7 @@
 #include <tengine/game/entities/player.h>
 
 #include "structures/structure.h"
+#include "items/items.h"
 
 class CSPPlayer : public CPlayer
 {
@@ -27,11 +28,17 @@ public:
 	bool                    FindConstructionPoint(CScalableVector& vecLocal) const;
 	void                    FinishConstruction();
 
+	void                    EnterBlockPlaceMode(item_t eBlock);
+	bool                    FindBlockPlacePoint(CScalableVector& vecLocal) const;
+	void                    FinishBlockPlace();
+
 	void                AddSpires(size_t iSpires);
 	size_t              GetNumSpires() { return m_aiStructures[STRUCTURE_SPIRE]; }
 
 private:
 	structure_type      m_eConstructionMode;
+	item_t              m_eBlockPlaceMode;
+
 	size_t              m_aiStructures[STRUCTURE_TOTAL];
 };
 

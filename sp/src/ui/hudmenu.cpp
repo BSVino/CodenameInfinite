@@ -18,7 +18,7 @@ void CHUDMenu::Layout()
 	BaseClass::Layout();
 
 	if (GetParent().Downcast<CRootPanel>())
-		SetPos(15, RootPanel()->GetHeight()/2 + m_iIndex * 20);
+		SetPos(15, RootPanel()->GetHeight()/2 + m_iIndex * 25);
 
 	EnsureTextFits();
 
@@ -33,7 +33,7 @@ bool CHUDMenu::KeyPressed(int code, bool bCtrlDown)
 		{
 			if (m_pfnClickCallback)
 			{
-				m_pfnClickCallback(m_pClickListener, "");
+				m_pfnClickCallback(m_pClickListener, sprintf("%d", m_iIndex));
 				return true;
 			}
 			else if (!m_hMenu->IsVisible())

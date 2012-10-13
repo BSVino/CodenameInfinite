@@ -17,8 +17,8 @@ class CStructure : public CBaseEntity
 	REGISTER_ENTITY_CLASS(CStructure, CBaseEntity);
 
 public:
-	void                    SetOwner(class CSPPlayer* pOwner) { m_hOwner = pOwner; }
-	CSPPlayer*              GetOwner() const { return m_hOwner; }
+	void                    SetOwner(class CSPPlayer* pOwner);
+	CSPPlayer*              GetOwner() const;
 
 	void                    SetSpire(CSpire* pSpire);
 	CSpire*                 GetSpire() const;

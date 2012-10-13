@@ -22,6 +22,16 @@ SAVEDATA_TABLE_END();
 INPUTS_TABLE_BEGIN(CStructure);
 INPUTS_TABLE_END();
 
+void CStructure::SetOwner(class CSPPlayer* pOwner)
+{
+	m_hOwner = pOwner;
+}
+
+CSPPlayer* CStructure::GetOwner() const
+{
+	return m_hOwner;
+}
+
 void CStructure::SetSpire(CSpire* pSpire)
 {
 	m_hSpire = pSpire;

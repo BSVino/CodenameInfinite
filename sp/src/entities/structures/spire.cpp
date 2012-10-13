@@ -28,6 +28,8 @@ void CSpire::Precache()
 
 void CSpire::Spawn()
 {
+	m_oVoxelTree.SetSpire(this);
+
 	m_aabbPhysBoundingBox = AABB(Vector(-1.0f, -1.0f, -1.0f), Vector(1.0f, 15.0f, 1.0f));
 
 	BaseClass::Spawn();
@@ -44,6 +46,8 @@ void CSpire::PostRender() const
 
 	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
+
+	GetVoxelTree()->Render();
 
 	Vector vecUp, vecRight;
 	GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
