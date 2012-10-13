@@ -70,7 +70,7 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 		Vector vecUp = pStructure->GetLocalOrigin().Normalized();
 		Matrix4x4 mDirection;
 		mDirection.SetUpVector(vecUp);
-		mDirection.SetForwardVector(vecUp.Cross(pStructure->GetLocalTransform().GetRightVector()).Normalized());
+		mDirection.SetForwardVector(vecUp.Cross(pOwner->GetPlayerCharacter()->GetLocalTransform().GetRightVector()).Normalized());
 		mDirection.SetRightVector(mDirection.GetForwardVector().Cross(vecUp).Normalized());
 		pStructure->SetLocalAngles(mDirection.GetAngles());
 	}
