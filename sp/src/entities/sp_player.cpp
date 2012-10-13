@@ -476,14 +476,16 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal) const
 
 	Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
 	Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+	Vector vecEndpoint = vecEye + vecDirection*6;
 
 	CTraceResult tr;
-	GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*6, GetPlayerCharacter());
+	GamePhysics()->TraceLine(tr, vecEye, vecEndpoint, GetPlayerCharacter());
 
 	if (tr.m_flFraction == 1)
 		return false;
 
-	vecLocal = CScalableVector(GetPlayerCharacter()->GameData().TransformPointPhysicsToLocal(tr.m_vecHit), SCALE_METER);
+	Vector vecAdjustedEndpoint = tr.m_vecHit - vecDirection * 0.01f;
+	vecLocal = CScalableVector(GetPlayerCharacter()->GameData().TransformPointPhysicsToLocal(vecAdjustedEndpoint), SCALE_METER);
 
 	return true;
 }
