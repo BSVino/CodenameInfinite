@@ -27,4 +27,5 @@ private:
 	size_t       m_iVBOSize;
 
 	unsigned char     m_aBlocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+	size_t            m_aPhysicsBlocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 };

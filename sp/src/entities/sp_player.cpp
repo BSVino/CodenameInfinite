@@ -124,7 +124,7 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
 
 		Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
-		Vector vecDirection = GetPlayerCharacter()->TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+		Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
 
 		CTraceResult tr;
 		GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*3, GetPlayerCharacter());
@@ -376,7 +376,7 @@ bool CSPPlayer::FindConstructionPoint(CScalableVector& vecLocal) const
 	Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
 
 	Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
-	Vector vecDirection = GetPlayerCharacter()->TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+	Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
 
 	CTraceResult tr;
 	GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*8, GetPlayerCharacter());
@@ -384,7 +384,7 @@ bool CSPPlayer::FindConstructionPoint(CScalableVector& vecLocal) const
 	if (tr.m_flFraction == 1)
 		return false;
 
-	vecLocal = GetPlayerCharacter()->TransformPointPhysicsToLocal(tr.m_vecHit);
+	vecLocal = CScalableVector(GetPlayerCharacter()->GameData().TransformPointPhysicsToLocal(tr.m_vecHit), SCALE_METER);
 
 	return true;
 }
@@ -467,7 +467,7 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal) const
 	Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
 
 	Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
-	Vector vecDirection = GetPlayerCharacter()->TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+	Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
 
 	CTraceResult tr;
 	GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*6, GetPlayerCharacter());
@@ -475,7 +475,7 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal) const
 	if (tr.m_flFraction == 1)
 		return false;
 
-	vecLocal = GetPlayerCharacter()->TransformPointPhysicsToLocal(tr.m_vecHit);
+	vecLocal = CScalableVector(GetPlayerCharacter()->GameData().TransformPointPhysicsToLocal(tr.m_vecHit), SCALE_METER);
 
 	return true;
 }

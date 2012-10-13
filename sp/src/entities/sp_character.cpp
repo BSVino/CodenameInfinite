@@ -17,11 +17,9 @@
 REGISTER_ENTITY(CSPCharacter);
 
 NETVAR_TABLE_BEGIN(CSPCharacter);
-	NETVAR_DEFINE(CEntityHandle, m_hNearestPlanet);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSPCharacter);
-	SAVEDATA_DEFINE(CSaveData::DATA_NETVAR, CEntityHandle<CPlanet>, m_hNearestPlanet);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
@@ -294,42 +292,6 @@ void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
 	m_mGroupTransform = pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * m.GetUnits(SCALE_METER);
 }
 
-const Vector CSPCharacter::TransformPointPhysicsToLocal(const Vector& v)
-{
-	CPlanet* pPlanet = GetNearestPlanet();
-	if (!pPlanet)
-	{
-		TAssert(pPlanet);
-		return v;
-	}
-
-	if (!pPlanet->GetChunkManager()->HasGroupCenter())
-	{
-		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
-		return v;
-	}
-
-	return pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * v;
-}
-
-const Vector CSPCharacter::TransformVectorLocalToPhysics(const Vector& v)
-{
-	CPlanet* pPlanet = GetNearestPlanet();
-	if (!pPlanet)
-	{
-		TAssert(pPlanet);
-		return v;
-	}
-
-	if (!pPlanet->GetChunkManager()->HasGroupCenter())
-	{
-		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
-		return v;
-	}
-
-	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform().TransformVector(v);
-}
-
 void CSPCharacter::SetGroundEntity(CBaseEntity* pEntity)
 {
 	// Overridden so that we don't mess with the move parent.
@@ -365,17 +327,17 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 
 		CScalableFloat flDistance = (pNearestPlanet->GetGlobalOrigin() - GetGlobalOrigin()).Length() - pNearestPlanet->GetRadius();
 		if (flDistance < pNearestPlanet->GetAtmosphereThickness())
-			m_hNearestPlanet = pNearestPlanet;
+			GameData().SetPlanet(pNearestPlanet);
 		else
-			m_hNearestPlanet = NULL;
+			GameData().SetPlanet(nullptr);
 
 		m_flNextPlanetCheck = GameServer()->GetGameTime() + 0.3f;
 	}
 
 	if (eFindPlanet != FINDPLANET_INATMOSPHERE)
 	{
-		if (m_hNearestPlanet != NULL)
-			return m_hNearestPlanet;
+		if (GameData().GetPlanet() != nullptr)
+			return GameData().GetPlanet();
 
 		CPlanet* pNearestPlanet = FindNearestPlanet();
 		if (eFindPlanet == FINDPLANET_ANY)
@@ -388,15 +350,15 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet)
 			return pNearestPlanet;
 	}
 
-	return m_hNearestPlanet;
+	return GameData().GetPlanet();
 }
 
 CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet) const
 {
 	if (eFindPlanet != FINDPLANET_INATMOSPHERE)
 	{
-		if (m_hNearestPlanet != NULL)
-			return m_hNearestPlanet;
+		if (GameData().GetPlanet() != NULL)
+			return GameData().GetPlanet();
 
 		CPlanet* pNearestPlanet = FindNearestPlanet();
 		if (eFindPlanet == FINDPLANET_ANY)
@@ -409,7 +371,7 @@ CPlanet* CSPCharacter::GetNearestPlanet(findplanet_t eFindPlanet) const
 			return pNearestPlanet;
 	}
 
-	return m_hNearestPlanet;
+	return GameData().GetPlanet();
 }
 
 CPlanet* CSPCharacter::FindNearestPlanet() const
@@ -618,13 +580,13 @@ void CSPCharacter::StandOnNearestPlanet()
 
 CScalableFloat CSPCharacter::EyeHeight() const
 {
-	// 180 centimeters
-	return CScalableFloat(1.8f, SCALE_METER);
+	// 160 centimeters
+	return CScalableFloat(1.6f, SCALE_METER);
 }
 
 CScalableFloat CSPCharacter::JumpStrength()
 {
-	return CScalableFloat(3.0f, SCALE_METER);
+	return CScalableFloat(5.0f, SCALE_METER);
 }
 
 CScalableFloat CSPCharacter::CharacterSpeed()

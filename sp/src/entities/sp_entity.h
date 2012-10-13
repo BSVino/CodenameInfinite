@@ -2,8 +2,11 @@
 #define SP_ENTITY_DATA_H
 
 #include <game/entities/baseentitydata.h>
+#include <game/entityhandle.h>
 
 #include "../sp_common.h"
+
+class CPlanet;
 
 class CSPEntityData : public CBaseEntityData
 {
@@ -19,6 +22,16 @@ public:
 
 	virtual const Matrix4x4         GetRenderTransform() const;
 	virtual const Vector            GetRenderOrigin() const;
+
+	const DoubleVector          TransformPointPhysicsToLocal(const Vector& v);
+	const Vector                TransformPointLocalToPhysics(const DoubleVector& v);
+	const Vector                TransformVectorLocalToPhysics(const Vector& v);
+
+	void                        SetPlanet(CPlanet* pPlanet);
+	CPlanet*                    GetPlanet() const;
+
+private:
+	CEntityHandle<CPlanet>      m_hPlanet;
 };
 
 #endif

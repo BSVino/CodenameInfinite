@@ -103,20 +103,14 @@ const Vector CSPCamera::GetUpVector() const
 
 float CSPCamera::GetCameraNear() const
 {
-	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER)
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() <= SCALE_METER)
 		return 0.05f;
-
-	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_METER)
-		return 0.2f;
 
 	return 1;
 }
 
 float CSPCamera::GetCameraFar() const
 {
-	if (SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER)
-		return 500;
-
 	return 1200;
 }
 

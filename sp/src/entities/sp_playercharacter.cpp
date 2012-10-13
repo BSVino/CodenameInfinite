@@ -35,7 +35,7 @@ CPlayerCharacter::CPlayerCharacter()
 
 void CPlayerCharacter::Spawn()
 {
-	m_aabbPhysBoundingBox = AABB(Vector(-0.35f, 0, -0.35f), Vector(0.35f, 2, 0.35f));
+	m_aabbPhysBoundingBox = AABB(Vector(-0.45f, 0, -0.45f), Vector(0.45f, 1.8f, 0.45f));
 
 	BaseClass::Spawn();
 

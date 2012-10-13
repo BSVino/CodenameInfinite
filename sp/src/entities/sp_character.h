@@ -49,8 +49,6 @@ public:
 	virtual const Matrix4x4     GetPhysicsTransform() const;
 	virtual void                SetPhysicsTransform(const Matrix4x4& m);
 	virtual void                PostSetLocalTransform(const TMatrix& m);
-	const Vector                TransformPointPhysicsToLocal(const Vector& v);
-	const Vector                TransformVectorLocalToPhysics(const Vector& v);
 	virtual void                SetGroundEntity(CBaseEntity* pEntity);
 	virtual void                SetGroundEntityExtra(size_t iExtra);
 
@@ -83,7 +81,6 @@ public:
 	virtual bool                ApplyGravity() const { return true; }
 
 protected:
-	CNetworkedHandle<CPlanet>	m_hNearestPlanet;
 	double                      m_flNextPlanetCheck;
 
 	mutable CNetworkedHandle<CSpire>    m_hNearestSpire;

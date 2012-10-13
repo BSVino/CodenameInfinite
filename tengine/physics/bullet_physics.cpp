@@ -458,6 +458,52 @@ size_t CBulletPhysics::AddExtra(size_t iExtraMesh, const Vector& vecOrigin)
 	return iIndex;
 }
 
+size_t CBulletPhysics::AddExtraCube(const Vector& vecCenter, float flSize)
+{
+	size_t iIndex = ~0;
+	for (size_t i = 0; i < m_apExtraEntityList.size(); i++)
+	{
+		if (!m_apExtraEntityList[i])
+		{
+			iIndex = i;
+			m_apExtraEntityList[i] = new CPhysicsEntity();
+			break;
+		}
+	}
+
+	if (iIndex == ~0)
+	{
+		iIndex = m_apExtraEntityList.size();
+		m_apExtraEntityList.push_back(new CPhysicsEntity());
+	}
+
+	CPhysicsEntity* pPhysicsEntity = m_apExtraEntityList[iIndex];
+	pPhysicsEntity->m_bCenterMassOffset = false;
+
+	float flMass = 0;
+	pPhysicsEntity->m_pExtraShape = new btBoxShape(btVector3(flSize, flSize, flSize)/2);
+
+	btTransform mTransform;
+	mTransform.setIdentity();
+	mTransform.setOrigin(ToBTVector(vecCenter));
+
+	bool bDynamic = (flMass != 0.f);
+
+	btVector3 vecLocalInertia(0, 0, 0);
+	if (bDynamic)
+		pPhysicsEntity->m_pExtraShape->calculateLocalInertia(flMass, vecLocalInertia);
+
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(flMass, nullptr, pPhysicsEntity->m_pExtraShape, vecLocalInertia);
+
+	pPhysicsEntity->m_pRigidBody = new btRigidBody(rbInfo);
+	pPhysicsEntity->m_pRigidBody->setUserPointer((void*)(GameServer()->GetMaxEntities()+iIndex));
+	pPhysicsEntity->m_pRigidBody->setWorldTransform(mTransform);
+
+	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody);
+
+	return iIndex;
+}
+
 void CBulletPhysics::RemoveExtra(size_t iExtra)
 {
 	CPhysicsEntity* pPhysicsEntity = m_apExtraEntityList[iExtra];
@@ -468,6 +514,7 @@ void CBulletPhysics::RemoveExtra(size_t iExtra)
 
 	m_pDynamicsWorld->removeRigidBody(pPhysicsEntity->m_pRigidBody);
 
+	delete m_apExtraEntityList[iExtra]->m_pExtraShape;
 	delete m_apExtraEntityList[iExtra]->m_pRigidBody;
 	delete m_apExtraEntityList[iExtra];
 	m_apExtraEntityList[iExtra] = nullptr;

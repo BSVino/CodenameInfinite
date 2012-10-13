@@ -8,6 +8,7 @@
 #include "entities/sp_playercharacter.h"
 #include "planet/planet.h"
 #include "entities/star.h"
+#include "planet/terrain_chunks.h"
 
 bool CSPEntityData::ShouldRenderAtScale(scale_t eScale) const
 {
@@ -89,4 +90,68 @@ const Vector CSPEntityData::GetRenderOrigin() const
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetTranslation().GetUnits(eScale);
+}
+
+const DoubleVector CSPEntityData::TransformPointPhysicsToLocal(const Vector& v)
+{
+	CPlanet* pPlanet = GetPlanet();
+	if (!pPlanet)
+	{
+		TAssert(pPlanet);
+		return v;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
+		return v;
+	}
+
+	return pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * v;
+}
+
+const Vector CSPEntityData::TransformPointLocalToPhysics(const DoubleVector& v)
+{
+	CPlanet* pPlanet = GetPlanet();
+	if (!pPlanet)
+	{
+		TAssert(pPlanet);
+		return v;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
+		return v;
+	}
+
+	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * v;
+}
+
+const Vector CSPEntityData::TransformVectorLocalToPhysics(const Vector& v)
+{
+	CPlanet* pPlanet = GetPlanet();
+	if (!pPlanet)
+	{
+		TAssert(pPlanet);
+		return v;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
+		return v;
+	}
+
+	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform().TransformVector(v);
+}
+
+void CSPEntityData::SetPlanet(CPlanet* pPlanet)
+{
+	m_hPlanet = pPlanet;
+}
+
+CPlanet* CSPEntityData::GetPlanet() const
+{
+	return m_hPlanet;
 }

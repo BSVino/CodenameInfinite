@@ -3,6 +3,7 @@
 #include <game/gameserver.h>
 #include <renderer/game_renderer.h>
 #include <renderer/renderingcontext.h>
+#include <physics/physics.h>
 
 #include "voxel_tree.h"
 #include "entities/structures/spire.h"
@@ -13,6 +14,7 @@ CVoxelChunk::CVoxelChunk(CVoxelTree* pTree, const IVector& vecChunk)
 	m_vecChunk = vecChunk;
 
 	memset(m_aBlocks, 0, sizeof(m_aBlocks));
+	memset(m_aPhysicsBlocks, 0, sizeof(m_aPhysicsBlocks));
 
 	m_iVBO = 0;
 }
@@ -83,6 +85,18 @@ void CVoxelChunk::BuildVBO()
 		{
 			for (size_t z = 0; z < CHUNK_SIZE; z++)
 			{
+				if (m_aBlocks[x][y][z] && !m_aPhysicsBlocks[x][y][z])
+				{
+					Vector vecCubeCenter = Vector(0.5f, 0.5f, 0.5f) + (m_vecChunk*16 + IVector(x, y, z)).GetVoxelSpaceCoordinates();
+					TVector vecCubeCenterPlanet = m_pTree->GetSpire()->GetLocalTransform() * vecCubeCenter;
+					m_aPhysicsBlocks[x][y][z] = GamePhysics()->AddExtraCube(m_pTree->GetSpire()->GameData().TransformPointLocalToPhysics(vecCubeCenterPlanet.GetUnits(SCALE_METER)), 1);
+				}
+				else if (!m_aBlocks[x][y][z] && m_aPhysicsBlocks[x][y][z])
+				{
+					GamePhysics()->RemoveExtra(m_aPhysicsBlocks[x][y][z]);
+					m_aPhysicsBlocks[x][y][z] = 0;
+				}
+
 				if (!m_aBlocks[x][y][z])
 					continue;
 

@@ -61,6 +61,7 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 		break;
 	}
 
+	pStructure->GameData().SetPlanet(pOwner->GetPlayerCharacter()->GameData().GetPlanet());
 	pStructure->SetOwner(pOwner);
 	pStructure->SetSpire(pSpire);
 	pStructure->SetMoveParent(pOwner->GetPlayerCharacter()->GetMoveParent());

@@ -45,6 +45,7 @@ void CMine::Think()
 		m_flDiggingStarted = 0;
 
 		CPickup* pMined = GameServer()->Create<CPickup>("CPickup");
+		pMined->GameData().SetPlanet(GameData().GetPlanet());
 		pMined->SetMoveParent(GetMoveParent());
 		pMined->SetLocalTransform(GetLocalTransform());
 		pMined->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector());

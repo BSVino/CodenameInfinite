@@ -65,6 +65,7 @@ public:
 	CPhysicsEntity()
 	{
 		m_pRigidBody = NULL;
+		m_pExtraShape = NULL;
 		m_pGhostObject = NULL;
 		m_pCharacterController = NULL;
 		m_pTriggerController = NULL;
@@ -78,6 +79,7 @@ public:
 
 public:
 	btRigidBody*						m_pRigidBody;
+	btCollisionShape*                   m_pExtraShape;
 	tvector<btRigidBody*>				m_apAreaBodies;
 	tvector<btRigidBody*>				m_apPhysicsShapes;
 	class btPairCachingGhostObject*		m_pGhostObject;
@@ -102,7 +104,8 @@ public:
 	virtual void			RemoveEntity(class CBaseEntity* pEnt);
 	virtual void			RemoveEntity(CPhysicsEntity* pEntity);
 	virtual size_t          AddExtra(size_t iExtraMesh, const Vector& vecOrigin);  // Input is result from LoadExtraCollisionMesh
-	virtual void            RemoveExtra(size_t iExtra);   // Input is result from AddExtra
+	virtual size_t          AddExtraCube(const Vector& vecCenter, float flSize);
+	virtual void            RemoveExtra(size_t iExtra);   // Input is result from AddExtra*
 	virtual void			RemoveAllEntities();
 
 	virtual void			LoadCollisionMesh(const tstring& sModel, size_t iTris, int* aiTris, size_t iVerts, float* aflVerts);

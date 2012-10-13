@@ -129,6 +129,8 @@ void CSPRenderer::StartRendering(class CRenderingContext* pContext)
 	SetCameraFOV(pCamera->GetCameraFOV());
 	SetCameraNear(pCamera->GetCameraNear());
 	SetCameraFar(pCamera->GetCameraFar());
+	SetCustomProjection(pCamera->UseCustomProjection());
+	SetCustomProjection(pCamera->GetCustomProjection());
 
 	BaseClass::StartRendering(pContext);
 }
