@@ -87,4 +87,12 @@ void CSpire::PostConstruction()
 	pWorker->SetOwner(GetOwner());
 	pWorker->SetMoveParent(GameData().GetPlanet());
 	pWorker->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector()*2);
+
+	CTraceResult tr;
+	GamePhysics()->TraceLine(tr, pWorker->GetPhysicsTransform().GetTranslation() + Vector(0, 10, 0), pWorker->GetPhysicsTransform().GetTranslation() - Vector(0, 10, 0), this);
+
+	Matrix4x4 mTransform = pWorker->GetPhysicsTransform();
+	mTransform.SetTranslation(tr.m_vecHit + Vector(0, 1, 0));
+	
+	pWorker->SetPhysicsTransform(mTransform);
 }
