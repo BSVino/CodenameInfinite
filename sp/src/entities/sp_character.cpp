@@ -65,7 +65,8 @@ void CSPCharacter::Think()
 		m_flRollFromSpace = GetViewAngles().r;
 	}
 
-	SetMoveParent(pPlanet);
+	if (!HasMoveParent())
+		SetMoveParent(pPlanet);
 
 	if (pPlanet && !bHadParent)
 		EnteredAtmosphere();
@@ -275,7 +276,20 @@ void CSPCharacter::SetPhysicsTransform(const Matrix4x4& m)
 
 	m_mGroupTransform = m;
 
-	SetLocalTransform(TMatrix(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m));
+	TMatrix mLocalTransform(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m);
+
+	CBaseEntity* pMoveParent = GetMoveParent();
+	TAssert(pMoveParent);
+	if (pMoveParent)
+	{
+		while (pMoveParent != pPlanet)
+		{
+			mLocalTransform = pMoveParent->GetLocalTransform().InvertedRT() * mLocalTransform;
+			pMoveParent = pMoveParent->GetMoveParent();
+		}
+	}
+
+	SetLocalTransform(mLocalTransform);
 }
 
 void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
@@ -289,7 +303,20 @@ void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
 	if (!pPlanet->GetChunkManager()->HasGroupCenter())
 		return;
 
-	m_mGroupTransform = pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * m.GetUnits(SCALE_METER);
+	TMatrix mLocalTransform = m;
+
+	CBaseEntity* pMoveParent = GetMoveParent();
+	TAssert(pMoveParent);
+	if (pMoveParent)
+	{
+		while (pMoveParent != pPlanet)
+		{
+			mLocalTransform = pMoveParent->GetLocalTransform() * mLocalTransform;
+			pMoveParent = pMoveParent->GetMoveParent();
+		}
+	}
+
+	m_mGroupTransform = pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER);
 }
 
 void CSPCharacter::SetGroundEntity(CBaseEntity* pEntity)
@@ -466,7 +493,12 @@ const Vector CSPCharacter::GetLocalUpVector() const
 {
 	CPlanet* pNearestPlanet = GetNearestPlanet();
 	if (pNearestPlanet)
-		return Vector(GetLocalOrigin()).Normalized();
+	{
+		if (GetMoveParent() == pNearestPlanet)
+			return Vector(GetLocalOrigin()).Normalized();
+		else
+			return Vector(pNearestPlanet->GetGlobalToLocalTransform() * GetGlobalOrigin()).Normalized();
+	}
 
 	return Vector(0, 1, 0);
 }

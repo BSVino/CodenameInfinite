@@ -134,10 +134,10 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 			if (flDistance < CScalableFloat(100.0f, SCALE_METER))
 				continue;
 
-			CPlanet* pSpirePlanet = dynamic_cast<CPlanet*>(pSpire->GetMoveParent());
+			CPlanet* pSpirePlanet = pSpire->GameData().GetPlanet();
 			TAssert(pSpirePlanet);
 
-			CScalableVector vecScalablePlanet = pSpire->GetMoveParent()->GameData().GetScalableRenderOrigin();
+			CScalableVector vecScalablePlanet = pSpire->GameData().GetPlanet()->GameData().GetScalableRenderOrigin();
 			if (vecScalablePlanet.LengthSqr() > CScalableFloat(60.0f, SCALE_MEGAMETER)*CScalableFloat(60.0f, SCALE_MEGAMETER))
 				continue;
 

@@ -48,6 +48,11 @@ void CSPPlayer::MouseMotion(int x, int y)
 	if (GetPlayerCharacter()->GetNearestPlanet())
 	{
 		Matrix4x4 mPlanetLocalRotation(GetPlayerCharacter()->GetViewAngles());
+		if (GetPlayerCharacter()->GetMoveParent() != GetPlayerCharacter()->GetNearestPlanet())
+		{
+			TAssert(GetPlayerCharacter()->GetMoveParent()->GetMoveParent() == GetPlayerCharacter()->GetNearestPlanet());
+			mPlanetLocalRotation.SetAngles(VectorAngles(GetPlayerCharacter()->GetMoveParent()->GetLocalTransform().TransformVector(AngleVector(GetPlayerCharacter()->GetViewAngles()))));
+		}
 
 		// Construct a "local space" for the surface
 		Vector vecSurfaceUp = GetPlayerCharacter()->GetLocalUpVector();
@@ -85,7 +90,10 @@ void CSPPlayer::MouseMotion(int x, int y)
 
 		Matrix4x4 mNewGlobalRotation = mSurface * mNewLocalRotation;
 
-		GetPlayerCharacter()->SetViewAngles(mNewGlobalRotation.GetAngles());
+		if (GetPlayerCharacter()->GetMoveParent() == GetPlayerCharacter()->GetNearestPlanet())
+			GetPlayerCharacter()->SetViewAngles(mNewGlobalRotation.GetAngles());
+		else
+			GetPlayerCharacter()->SetViewAngles((Matrix4x4(GetPlayerCharacter()->GetMoveParent()->GetLocalTransform().InvertedRT()) * mNewGlobalRotation).GetAngles());
 	}
 	else
 	{
@@ -419,7 +427,7 @@ void CSPPlayer::FinishConstruction()
 			if (!pSpire)
 				continue;
 
-			if (pSpire->GetMoveParent() != pNewSpire->GetMoveParent())
+			if (pSpire->GameData().GetPlanet() != pNewSpire->GameData().GetPlanet())
 				continue;
 
 			if (pSpire == pNewSpire)

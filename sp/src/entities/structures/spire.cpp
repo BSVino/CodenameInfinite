@@ -85,6 +85,6 @@ void CSpire::PostConstruction()
 	CWorkerBot* pWorker = GameServer()->Create<CWorkerBot>("CWorkerBot");
 	pWorker->GameData().SetPlanet(GameData().GetPlanet());
 	pWorker->SetOwner(GetOwner());
-	pWorker->SetMoveParent(GetMoveParent());
+	pWorker->SetMoveParent(GameData().GetPlanet());
 	pWorker->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector()*2);
 }

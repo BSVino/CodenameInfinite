@@ -27,32 +27,32 @@ bool CSPEntityData::ShouldRenderAtScale(scale_t eScale) const
 CScalableMatrix CSPEntityData::GetScalableRenderTransform() const
 {
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	CPlanet* pPlanet = pCharacter->GetNearestPlanet();
-	CBaseEntity* pMoveParent = m_pEntity->GetMoveParent();
+	CPlanet* pCharacterPlanet = pCharacter->GetNearestPlanet();
+	CPlanet* pPlanet = GetPlanet();
 
-	if (pPlanet == m_pEntity)
+	if (pCharacterPlanet == m_pEntity)
 	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+		CScalableVector vecCharacterOrigin = m_pEntity->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin();
 
 		CScalableMatrix mTransform;
 		mTransform.SetTranslation(-vecCharacterOrigin);
 
 		return mTransform;
 	}
-	else if (pPlanet)
+	else if (pCharacterPlanet)
 	{
-		if (pMoveParent == pPlanet)
+		if (pPlanet == pCharacterPlanet)
 		{
-			CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+			CScalableVector vecCharacterOrigin = pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin();
 
-			CScalableMatrix mTransform = m_pEntity->GetLocalTransform();
+			CScalableMatrix mTransform = pPlanet->GetGlobalToLocalTransform() * m_pEntity->GetGlobalTransform();
 			mTransform.SetTranslation(mTransform.GetTranslation() - vecCharacterOrigin);
 
 			return mTransform;
 		}
 		else
 		{
-			CScalableMatrix mGlobalToLocal = pPlanet->GetGlobalToLocalTransform();
+			CScalableMatrix mGlobalToLocal = pCharacterPlanet->GetGlobalToLocalTransform();
 
 			CScalableVector vecCharacterOrigin = mGlobalToLocal * pCharacter->GetGlobalOrigin();
 

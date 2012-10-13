@@ -60,7 +60,10 @@ void CSPCamera::CameraThink()
 
 		SetGlobalOrigin(vecEyeHeight);
 
-		SetGlobalAngles(pCharacter->GetViewAngles());
+		if (pCharacter->GetMoveParent() == pPlanet)
+			SetGlobalAngles(pCharacter->GetViewAngles());
+		else
+			SetGlobalAngles(VectorAngles(pCharacter->GetMoveParent()->GetLocalTransform().TransformVector(AngleVector(pCharacter->GetViewAngles()))));
 	}
 	else
 	{
@@ -93,7 +96,12 @@ const Vector CSPCamera::GetUpVector() const
 		float flTimeToLocked = pCharacter->GetAtmosphereLerpTime();
 		float flLerp = RemapValClamped(SLerp((float)(GameServer()->GetGameTime() - pCharacter->GetLastEnteredAtmosphere()), pCharacter->GetAtmosphereLerp()), 0.0f, flTimeToLocked, 0.0f, 1.0f);
 		if (flLerp == 1)
-			return pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized();
+		{
+			if (pCharacter->GetMoveParent() != pPlanet)
+				return (pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+			else
+				return pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized();
+		}
 		else
 			return LerpValue<Vector>(Matrix4x4(pCharacter->GetViewAngles()).GetUpVector(), pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized(), flLerp);
 	}

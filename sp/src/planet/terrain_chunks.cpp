@@ -227,6 +227,8 @@ void CTerrainChunkManager::FindCenterChunk()
 		return;
 
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	DoubleMatrix4x4 mLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalTransform()).GetUnits(SCALE_METER);
+	DoubleVector vecLocalMeters = mLocalMeters.GetTranslation();
 
 	double flNearest;
 	size_t iNearestChunk = ~0;
@@ -243,11 +245,11 @@ void CTerrainChunkManager::FindCenterChunk()
 		if (iNearestChunk == ~0)
 		{
 			iNearestChunk = i;
-			flNearest = pChunk->GetLocalCenter().DistanceSqr(pCharacter->GetLocalOrigin().GetUnits(SCALE_METER));
+			flNearest = pChunk->GetLocalCenter().DistanceSqr(vecLocalMeters);
 			continue;
 		}
 
-		double flDistance = pChunk->GetLocalCenter().DistanceSqr(pCharacter->GetLocalOrigin().GetUnits(SCALE_METER));
+		double flDistance = pChunk->GetLocalCenter().DistanceSqr(vecLocalMeters);
 		if (flDistance < flNearest)
 		{
 			flNearest = flDistance;
@@ -263,7 +265,7 @@ void CTerrainChunkManager::FindCenterChunk()
 	m_mGroupToPlanet = pChunk->GetChunkToPlanet();
 	m_mPlanetToGroup = pChunk->GetPlanetToChunk();
 
-	Matrix4x4 mChunkPlayer = m_mPlanetToGroup * pCharacter->GetLocalTransform().GetUnits(SCALE_METER);
+	Matrix4x4 mChunkPlayer = m_mPlanetToGroup * mLocalMeters;
 
 	// For the purposes of physics, the player to stands up straight.
 	mChunkPlayer.SetUpVector(Vector(0, 1, 0));
@@ -346,7 +348,7 @@ void CTerrainChunkManager::Render()
 	{
 		CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 		CPlanet* pPlanet = m_pPlanet;
-		CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+		CScalableVector vecCharacterOrigin = m_pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin();
 		CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
 
 		CRenderingContext c(GameServer()->GetRenderer(), true);
@@ -369,7 +371,7 @@ void CTerrainChunkManager::Render()
 	}
 
 	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), eRenderScale);
-	DoubleVector vecCharacterOrigin = SPGame()->GetLocalPlayerCharacter()->GetLocalOrigin().GetUnits(eRenderScale);
+	DoubleVector vecCharacterOrigin = (m_pPlanet->GetGlobalToLocalTransform() * SPGame()->GetLocalPlayerCharacter()->GetGlobalOrigin()).GetUnits(eRenderScale);
 
 	for (size_t i = 0; i < m_apChunks.size(); i++)
 	{
@@ -563,6 +565,11 @@ void CTerrainChunk::Render()
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	scale_t ePlanetScale = pPlanet->GetScale();
 	CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+	if (pCharacter->GetMoveParent() != pPlanet)
+	{
+		TAssert(pCharacter->GetMoveParent()->GetMoveParent() == pPlanet);
+		vecCharacterOrigin = pCharacter->GetMoveParent()->GetLocalTransform() * pCharacter->GetLocalOrigin();
+	}
 	CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
 
 	CScalableVector vecChunkCenter;

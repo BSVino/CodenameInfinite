@@ -473,7 +473,7 @@ void CBaseEntity::SetGlobalTransform(const TMatrix& m)
 const TMatrix CBaseEntity::GetGlobalToLocalTransform()
 {
 	if (HasMoveParent())
-		return GetMoveParent()->GetGlobalTransform().InvertedRT();
+		return (GetMoveParent()->GetGlobalTransform() * GetLocalTransform()).InvertedRT();
 	else
 		return GetGlobalTransform().InvertedRT();
 }
@@ -481,7 +481,7 @@ const TMatrix CBaseEntity::GetGlobalToLocalTransform()
 const TMatrix CBaseEntity::GetGlobalToLocalTransform() const
 {
 	if (HasMoveParent())
-		return GetMoveParent()->GetGlobalTransform().InvertedRT();
+		return (GetMoveParent()->GetGlobalTransform() * GetLocalTransform()).InvertedRT();
 	else
 		return GetGlobalTransform().InvertedRT();
 }

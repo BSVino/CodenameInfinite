@@ -64,9 +64,9 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 	pStructure->GameData().SetPlanet(pOwner->GetPlayerCharacter()->GameData().GetPlanet());
 	pStructure->SetOwner(pOwner);
 	pStructure->SetSpire(pSpire);
-	pStructure->SetMoveParent(pOwner->GetPlayerCharacter()->GetMoveParent());
+	pStructure->SetMoveParent(pOwner->GetPlayerCharacter()->GameData().GetPlanet());
 	pStructure->SetLocalOrigin(vecOrigin);
-	if (pStructure->GetMoveParent())
+	if (pStructure->GameData().GetPlanet())
 	{
 		Vector vecUp = pStructure->GetLocalOrigin().Normalized();
 		Matrix4x4 mDirection;
@@ -85,7 +85,7 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 
 const Matrix4x4 CStructure::GetPhysicsTransform() const
 {
-	CPlanet* pPlanet = static_cast<CPlanet*>(GetMoveParent());
+	CPlanet* pPlanet = GameData().GetPlanet();
 	if (!pPlanet)
 		return GetLocalTransform();
 

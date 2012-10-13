@@ -245,7 +245,10 @@ void CTerrainLumpManager::Render()
 	}
 
 	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), eRenderScale);
-	DoubleVector vecCharacterOrigin = SPGame()->GetLocalPlayerCharacter()->GetLocalOrigin().GetUnits(eRenderScale);
+	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+	DoubleVector vecCharacterOrigin = pLocalCharacter->GetLocalOrigin().GetUnits(eRenderScale);
+	if (pLocalCharacter->GetMoveParent() != m_pPlanet)
+		vecCharacterOrigin = (m_pPlanet->GetGlobalToLocalTransform() * pLocalCharacter->GetGlobalOrigin()).GetUnits(eRenderScale);
 
 	for (size_t i = 0; i < m_apLumps.size(); i++)
 	{
@@ -445,6 +448,11 @@ void CTerrainLump::Render()
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	scale_t ePlanetScale = pPlanet->GetScale();
 	CScalableVector vecCharacterOrigin = pCharacter->GetLocalOrigin();
+	if (pCharacter->GetMoveParent() != pPlanet)
+	{
+		TAssert(pCharacter->GetMoveParent()->GetMoveParent() == pPlanet);
+		vecCharacterOrigin = pCharacter->GetMoveParent()->GetLocalTransform() * pCharacter->GetLocalOrigin();
+	}
 	CScalableMatrix mPlanetTransform = pPlanet->GetGlobalTransform();
 
 	CScalableVector vecLumpCenter;

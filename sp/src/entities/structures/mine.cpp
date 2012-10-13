@@ -46,7 +46,7 @@ void CMine::Think()
 
 		CPickup* pMined = GameServer()->Create<CPickup>("CPickup");
 		pMined->GameData().SetPlanet(GameData().GetPlanet());
-		pMined->SetMoveParent(GetMoveParent());
+		pMined->SetMoveParent(GameData().GetPlanet());
 		pMined->SetLocalTransform(GetLocalTransform());
 		pMined->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector());
 		pMined->SetItem(ITEM_DIRT);

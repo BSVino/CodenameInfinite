@@ -131,19 +131,8 @@ void CPlanet::RenderUpdate()
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	if (pCharacter->GetMoveParent() == this)
-	{
-		m_vecCharacterLocalOrigin = pCharacter->GetLocalOrigin().GetUnits(GetScale());
-	}
-	else
-	{
-		CScalableVector vecCharacterOrigin = pCharacter->GetGlobalOrigin();
 
-		// Transforming every quad to global coordinates in ShouldRenderBranch() is expensive.
-		// Instead, transform the player to the planet's local once and do the math in local space.
-		CScalableMatrix mPlanetGlobalToLocal = GetGlobalToLocalTransform();
-		m_vecCharacterLocalOrigin = (mPlanetGlobalToLocal * vecCharacterOrigin).GetUnits(GetScale());
-	}
+	m_vecCharacterLocalOrigin = (GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
 
 	Vector vecOrigin = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
 	Vector vecOutside = vecOrigin + vecUp * (float)GetRenderRadius().GetUnits(GetScale());
@@ -213,8 +202,6 @@ void CPlanet::PostRender() const
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
 	mPlanetToLocal.InvertRT();
 
-	CScalableMatrix mCharacterToLocal = pCharacter->GetGlobalToLocalTransform();
-
 	Vector vecStarLightPosition;
 	if (pCharacter->GetNearestPlanet() == this)
 		vecStarLightPosition = pStar->GameData().GetScalableRenderOrigin();
@@ -267,7 +254,7 @@ void CPlanet::PostRender() const
 	{
 		double flElevation = pCharacter->GetApproximateElevation();
 		double flNoShellElevation = flElevation + 0.0001;
-		double flPlayerDistanceSqr = pCharacter->GetLocalOrigin().GetUnits(GetScale()).LengthSqr();
+		double flPlayerDistanceSqr = m_vecCharacterLocalOrigin.LengthSqr();
 		if (flPlayerDistanceSqr < flNoShellElevation*flNoShellElevation)
 			bShowShells = false;
 	}
