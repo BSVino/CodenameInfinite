@@ -29,6 +29,7 @@ set (CI_VOXEL_SOURCES
 set (CI_ENTITY_SOURCES
 	entities/star.cpp
 	entities/sp_character.cpp
+	entities/character_ai.cpp
 	entities/sp_playercharacter.cpp
 	entities/sp_player.cpp
 	entities/sp_camera.cpp

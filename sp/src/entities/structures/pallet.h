@@ -20,6 +20,9 @@ public:
 	bool        TakesBlocks() const { return true; }
 	size_t      TakeBlocks(item_t eBlock, size_t iNumber);
 
+	item_t      GetBlockType() const { return m_eItem; }
+	size_t      GetBlockQuantity() const { return m_iQuantity; }
+
 private:
 	item_t      m_eItem;
 	size_t      m_iQuantity;

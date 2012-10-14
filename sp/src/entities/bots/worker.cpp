@@ -28,6 +28,8 @@ void CWorkerBot::Spawn()
 	m_aabbPhysBoundingBox = AABB(Vector(-0.2f, -0.3f, -0.2f), Vector(0.2f, 0.3f, 0.2f));
 
 	BaseClass::Spawn();
+
+	SetTask(TASK_MINE);
 }
 
 void CWorkerBot::Think()
@@ -59,7 +61,7 @@ void CWorkerBot::PostRender() const
 	if (IsHoldingABlock())
 	{
 		CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-		Vector vecPosition = GetLocalOrigin() - pCharacter->GetLocalOrigin() + GetUpVector()*0.8f;
+		Vector vecPosition = GetLocalOrigin() - pCharacter->GetLocalOrigin() + GetLocalUpVector()*0.8f;
 		vecPosition -= Vector(0.25f, 0.25f, 0.25f);
 
 		Vector vecForward = BaseGetRenderTransform().GetForwardVector()/2;
@@ -111,4 +113,9 @@ void CWorkerBot::PostRender() const
 			c.Vertex(vecForward + vecUp);
 		c.EndRender();
 	}
+}
+
+CScalableFloat CWorkerBot::CharacterSpeed()
+{
+	return CScalableFloat(2.0f, SCALE_METER);
 }

@@ -25,6 +25,7 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiInventorySlots);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, item_t, m_aiInventoryTypes);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, task_t, m_eTask);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
@@ -38,6 +39,8 @@ CSPCharacter::CSPCharacter()
 
 	memset(&m_aiInventorySlots[0], 0, sizeof(m_aiInventorySlots));
 	memset(&m_aiInventoryTypes[0], 0, sizeof(m_aiInventoryTypes));
+
+	m_eTask = TASK_NONE;
 }
 
 void CSPCharacter::Spawn()
@@ -49,6 +52,8 @@ void CSPCharacter::Spawn()
 
 void CSPCharacter::Think()
 {
+	TaskThink();
+
 	BaseClass::Think();
 
 	CPlanet* pPlanet = GetNearestPlanet();

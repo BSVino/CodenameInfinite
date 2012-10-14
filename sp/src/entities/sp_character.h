@@ -18,6 +18,13 @@ typedef enum {
 	FINDPLANET_INATMOSPHERE,
 } findplanet_t;
 
+typedef enum
+{
+	TASK_NONE = 0,
+	TASK_MINE,
+	TASK_TOTAL,
+} task_t;
+
 #define INVENTORY_SLOTS 12
 
 class CSPCharacter : public CCharacter
@@ -53,6 +60,12 @@ public:
 	virtual void                PostSetLocalTransform(const TMatrix& m);
 	virtual void                SetGroundEntity(CBaseEntity* pEntity);
 	virtual void                SetGroundEntityExtra(size_t iExtra);
+
+	virtual void                TaskThink();
+	virtual bool                MoveTo(CBaseEntity* pTarget, float flDistance=3); // return true if I'm there
+	class CPallet*              FindNearestPallet(item_t eBlock) const;
+	class CMine*                FindNearestMine() const;
+	CPickup*                    FindNearbyPickup() const;
 
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE) const;
@@ -91,6 +104,9 @@ public:
 	virtual size_t              RemoveBlocks(item_t eBlock, size_t iNumber);
 	virtual bool                IsHoldingABlock() const;
 
+	void                        SetTask(task_t eTask) { m_eTask = eTask; }
+	task_t                      GetTask() { return m_eTask; }
+
 protected:
 	double                      m_flNextPlanetCheck;
 
@@ -106,6 +122,9 @@ protected:
 
 	size_t                      m_aiInventorySlots[INVENTORY_SLOTS];
 	item_t                      m_aiInventoryTypes[INVENTORY_SLOTS];
+
+	task_t                      m_eTask;
+	CEntityHandle<CStructure>   m_hMine;
 };
 
 #endif

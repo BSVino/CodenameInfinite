@@ -15,4 +15,6 @@ public:
 	void        PostRender() const;
 
 	bool        TakesBlocks() const { return true; }
+
+	CScalableFloat  CharacterSpeed();
 };
