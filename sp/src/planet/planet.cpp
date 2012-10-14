@@ -274,8 +274,8 @@ void CPlanet::SetRandomSeed(size_t iSeed)
 
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{
-		for (size_t j = 0; j < 3; j++)
-			m_aNoiseArray[i][j].Init(iSeed+i*3+j);
+		for (size_t j = 0; j < 4; j++)
+			m_aNoiseArray[i][j].Init(iSeed+i*4+j);
 	}
 }
 

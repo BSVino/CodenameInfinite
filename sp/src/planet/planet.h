@@ -6,7 +6,7 @@
 
 #include <tengine/game/entities/baseentity.h>
 
-#define TERRAIN_NOISE_ARRAY_SIZE 15
+#define TERRAIN_NOISE_ARRAY_SIZE 8
 
 class CPlanetTerrain;
 class CTerrainLump;
@@ -108,8 +108,8 @@ protected:
 	class CTerrainLumpManager*  m_pLumpManager;
 	class CTerrainChunkManager* m_pChunkManager;
 
-	// 10 levels deep, 3 channels (x, y, z)
-	CSimplexNoise<double>		m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][3];
+	// 3 channels (x, y, z), one alpha for each channel for variation
+	CSimplexNoise<double>       m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][4];
 
 	static class CParallelizer*	s_pShell2Generator;
 };

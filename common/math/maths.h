@@ -80,6 +80,17 @@ inline float RemapValClamped(float flInput, float flInLo, float flInHi, float fl
 	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
 }
 
+inline double RemapValClamped(double flInput, double flInLo, double flInHi, double flOutLo, double flOutHi)
+{
+	if (flInput < flInLo)
+		return flOutLo;
+
+	if (flInput > flInHi)
+		return flOutHi;
+
+	return RemapVal(flInput, flInLo, flInHi, flOutLo, flOutHi);
+}
+
 template <class T>
 inline T RemapValClamped(float flInput, float flInLo, float flInHi, const T& flOutLo, const T& flOutHi)
 {

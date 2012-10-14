@@ -636,20 +636,57 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 		vecAdjustedCoordinate += DoubleVector2D(1, 0);
 
 	DoubleVector vecOffset;
-	double flSpaceFactor = 1.1/2;
-	double flHeightFactor = 0.035;
+
+	static double aflFreqFactors[TERRAIN_NOISE_ARRAY_SIZE] =
+	{
+		15,      // Continents
+		1000,
+		3000,   // Mountains
+		10000,
+		30000,  // Large hills
+		100000,
+		400000,
+		1500000, // Rough terrain
+	};
+
+	static double aflHeightFactors[TERRAIN_NOISE_ARRAY_SIZE] =
+	{
+		0.01,
+		0.005,
+		0.002,
+		0.0005,
+		0.0002,
+		0.00005,
+		0.00001,
+		0.000002,
+	};
+
+	static double aflAlphaFreqFactors[TERRAIN_NOISE_ARRAY_SIZE] =
+	{
+		0,
+		100,
+		300,
+		1000,
+		3000,
+		10000,
+		30000,
+		50000,
+	};
+
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{
-		double flXFactor = vecAdjustedCoordinate.x * flSpaceFactor;
-		double flYFactor = vecAdjustedCoordinate.y * flSpaceFactor;
-		double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * flHeightFactor;
-		double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * flHeightFactor;
-		double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * flHeightFactor;
+		double flXFactor = vecAdjustedCoordinate.x * aflFreqFactors[i];
+		double flYFactor = vecAdjustedCoordinate.y * aflFreqFactors[i];
+		double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * aflHeightFactors[i];
+		double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * aflHeightFactors[i];
+		double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * aflHeightFactors[i];
 
-		vecOffset += DoubleVector(x, y, z);
+		double a = m_pPlanet->m_aNoiseArray[i][3].Noise(vecAdjustedCoordinate.x * aflAlphaFreqFactors[i], vecAdjustedCoordinate.y * aflAlphaFreqFactors[i]);
 
-		flSpaceFactor = flSpaceFactor*2;
-		flHeightFactor = flHeightFactor/1.4;
+		double flScale = RemapValClamped(a, -0.2, 0.4, 0.0, 1.0);
+		double flOverdrive = RemapValClamped(a, 0.8, 1.0, 1.0, 1.5);
+
+		vecOffset += DoubleVector(x, y, z) * (flScale*flOverdrive);
 	}
 
 	return vecOffset;
