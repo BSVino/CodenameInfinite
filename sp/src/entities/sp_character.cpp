@@ -23,13 +23,12 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiInventory);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiInventorySlots);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, item_t, m_aiInventoryTypes);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);
 INPUTS_TABLE_END();
-
-const int CSPCharacter::MAX_INVENTORY = 16;
 
 CSPCharacter::CSPCharacter()
 {
@@ -37,7 +36,8 @@ CSPCharacter::CSPCharacter()
 	m_flNextSpireCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
 
-	memset(&m_aiInventory[0], 0, sizeof(m_aiInventory));
+	memset(&m_aiInventorySlots[0], 0, sizeof(m_aiInventorySlots));
+	memset(&m_aiInventoryTypes[0], 0, sizeof(m_aiInventoryTypes));
 }
 
 void CSPCharacter::Spawn()
@@ -141,10 +141,16 @@ bool CSPCharacter::CanPickUp(CPickup* pPickup) const
 	if (!pPickup)
 		return false;
 
-	if (m_aiInventory[pPickup->GetItem()] >= MAX_INVENTORY)
-		return false;
+	for (size_t i = 0; i < MaxSlots(); i++)
+	{
+		if (m_aiInventorySlots[i] == 0)
+			return true;
 
-	return true;
+		if (m_aiInventoryTypes[i] == pPickup->GetItem() && m_aiInventorySlots[i] < MaxInventory())
+			return true;
+	}
+
+	return false;
 }
 
 void CSPCharacter::PickUp(CPickup* pPickup)
@@ -154,21 +160,21 @@ void CSPCharacter::PickUp(CPickup* pPickup)
 
 	item_t eItem = pPickup->GetItem();
 
-	if (m_aiInventory[eItem] >= MAX_INVENTORY)
+	if (!CanPickUp(pPickup))
 		return;
 
 	pPickup->Delete();
 
-	m_aiInventory[eItem]++;
+	TakeBlocks(pPickup->GetItem(), 1);
 
 	SPWindow()->GetHUD()->BuildMenus();
 }
 
 bool CSPCharacter::HasBlocks() const
 {
-	for (size_t i = 0; i < ITEM_BLOCKS_TOTAL; i++)
+	for (size_t i = 0; i < MaxSlots(); i++)
 	{
-		if (m_aiInventory[i])
+		if (m_aiInventorySlots[i] && m_aiInventoryTypes[i] <= ITEM_BLOCKS_TOTAL)
 			return true;
 	}
 
@@ -183,7 +189,15 @@ size_t CSPCharacter::GetInventory(item_t eItem) const
 	if (eItem >= ITEM_TOTAL)
 		return 0;
 
-	return m_aiInventory[eItem];
+	size_t iTotal = 0;
+
+	for (size_t i = 0; i < MaxSlots(); i++)
+	{
+		if (m_aiInventoryTypes[i] == eItem)
+			iTotal += m_aiInventorySlots[i];
+	}
+
+	return iTotal;
 }
 
 bool CSPCharacter::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
@@ -203,7 +217,7 @@ bool CSPCharacter::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
 	if (!pVoxel->PlaceBlock(eItem, vecLocal))
 		return false;
 
-	m_aiInventory[eItem]--;
+	RemoveBlocks(eItem, 1);
 
 	return true;
 }
@@ -306,7 +320,6 @@ void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
 	TMatrix mLocalTransform = m;
 
 	CBaseEntity* pMoveParent = GetMoveParent();
-	TAssert(pMoveParent);
 	if (pMoveParent)
 	{
 		while (pMoveParent != pPlanet)
@@ -315,6 +328,8 @@ void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
 			pMoveParent = pMoveParent->GetMoveParent();
 		}
 	}
+	else
+		mLocalTransform = pPlanet->GetGlobalToLocalTransform() * m;
 
 	m_mGroupTransform = pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER);
 }
@@ -624,4 +639,122 @@ CScalableFloat CSPCharacter::JumpStrength()
 CScalableFloat CSPCharacter::CharacterSpeed()
 {
 	return CScalableFloat(5.0f, SCALE_METER);
+}
+
+size_t CSPCharacter::GiveBlocks(item_t eBlock, size_t iNumber, CBaseEntity* pGiveTo)
+{
+	iNumber = std::min(GetInventory(eBlock), iNumber);
+
+	size_t iTaken = 0;
+
+	CStructure* pStructure = dynamic_cast<CStructure*>(pGiveTo);
+	if (pStructure)
+	{
+		TAssert(pStructure->TakesBlocks());
+		if (pStructure->TakesBlocks())
+			iTaken = pStructure->TakeBlocks(eBlock, iNumber);
+		else
+			return 0;
+	}
+	else
+	{
+		TAssert(dynamic_cast<CSPCharacter*>(pGiveTo));
+		CSPCharacter* pCharacter = static_cast<CSPCharacter*>(pGiveTo);
+		TAssert(pCharacter->TakesBlocks());
+		if (pCharacter->TakesBlocks())
+			iTaken = pCharacter->TakeBlocks(eBlock, iNumber);
+		else
+			return 0;
+	}
+
+	size_t iTotalTaken = RemoveBlocks(eBlock, iTaken);
+	TAssert(iTotalTaken == iTaken);
+
+	SPWindow()->GetHUD()->BuildMenus();
+
+	return iTaken;
+}
+
+size_t CSPCharacter::TakeBlocks(item_t eBlock, size_t iNumber)
+{
+	size_t iTaken = 0;
+
+	// First go through looking for slots that have this thing.
+	for (size_t i = 0; i < MaxSlots(); i++)
+	{
+		if (m_aiInventoryTypes[i] == eBlock && m_aiInventorySlots[i])
+		{
+			size_t iGiveToThisPile = iNumber;
+
+			if (iGiveToThisPile + m_aiInventorySlots[i] > MaxInventory())
+				iGiveToThisPile = MaxInventory() - m_aiInventorySlots[i];
+
+			m_aiInventorySlots[i] += iGiveToThisPile;
+			iNumber -= iGiveToThisPile;
+			iTaken += iGiveToThisPile;
+
+			if (iNumber == 0)
+			{
+				SPWindow()->GetHUD()->BuildMenus();
+				return iTaken;
+			}
+		}
+	}
+
+	// Now just pile in an empty slot.
+	for (size_t i = 0; i < MaxSlots(); i++)
+	{
+		if (!m_aiInventorySlots[i])
+		{
+			m_aiInventoryTypes[i] = eBlock;
+
+			size_t iGiveToThisPile = iNumber;
+
+			if (iGiveToThisPile + m_aiInventorySlots[i] > MaxInventory())
+				iGiveToThisPile = MaxInventory() - m_aiInventorySlots[i];
+
+			m_aiInventorySlots[i] += iGiveToThisPile;
+			iNumber -= iGiveToThisPile;
+			iTaken += iGiveToThisPile;
+
+			if (iNumber == 0)
+			{
+				SPWindow()->GetHUD()->BuildMenus();
+				return iTaken;
+			}
+		}
+	}
+
+	SPWindow()->GetHUD()->BuildMenus();
+	return iTaken;
+}
+
+size_t CSPCharacter::RemoveBlocks(item_t eBlock, size_t iNumber)
+{
+	size_t iRemoved = 0;
+	for (size_t i = 0; i < MaxSlots(); i++)
+	{
+		if (m_aiInventoryTypes[i] == eBlock && m_aiInventorySlots[i])
+		{
+			size_t iTakeFromThisPile = iNumber;
+
+			if (iTakeFromThisPile > m_aiInventorySlots[i])
+				iTakeFromThisPile = m_aiInventorySlots[i];
+
+			m_aiInventorySlots[i] -= iTakeFromThisPile;
+			iNumber -= iTakeFromThisPile;
+			iRemoved += iTakeFromThisPile;
+
+			if (iNumber == 0)
+				return iRemoved;
+		}
+	}
+
+	return iRemoved;
+}
+
+bool CSPCharacter::IsHoldingABlock() const
+{
+	TAssert(MaxSlots() == 1);
+	return !!m_aiInventorySlots[0];
 }

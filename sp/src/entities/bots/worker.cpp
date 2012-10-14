@@ -55,4 +55,60 @@ void CWorkerBot::PostRender() const
 	c.Transform(BaseGetRenderTransform());
 
 	c.RenderBillboard("textures/workerbot.mat", flRadius);
+
+	if (IsHoldingABlock())
+	{
+		CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+		Vector vecPosition = GetLocalOrigin() - pCharacter->GetLocalOrigin() + GetUpVector()*0.8f;
+		vecPosition -= Vector(0.25f, 0.25f, 0.25f);
+
+		Vector vecForward = BaseGetRenderTransform().GetForwardVector()/2;
+		Vector vecUp = BaseGetRenderTransform().GetUpVector()/2;
+		Vector vecRight = BaseGetRenderTransform().GetRightVector()/2;
+
+		CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+		c.ResetTransformations();
+		c.Translate(vecPosition);
+
+		c.UseMaterial("textures/items1.mat");
+
+		c.BeginRenderTriFan();
+			c.TexCoord(0.0f, 0.75f);
+			c.Vertex(Vector(0, 0, 0));
+			c.TexCoord(0.25f, 0.75f);
+			c.Vertex(vecRight);
+			c.TexCoord(0.25f, 1.0f);
+			c.Vertex(vecRight + vecUp);
+			c.TexCoord(0.0f, 1.0f);
+			c.Vertex(vecUp);
+			c.TexCoord(0.25f, 1.0f);
+			c.Vertex(vecUp + vecForward);
+			c.TexCoord(0.25f, 0.75f);
+			c.Vertex(vecForward);
+			c.TexCoord(0.25f, 1.0f);
+			c.Vertex(vecForward + vecRight);
+			c.TexCoord(0.0f, 1.0f);
+			c.Vertex(vecRight);
+		c.EndRender();
+
+		c.BeginRenderTriFan();
+			c.TexCoord(0.0f, 1.0f);
+			c.Vertex(vecRight + vecUp + vecForward);
+			c.TexCoord(0.0f, 0.75f);
+			c.Vertex(vecUp + vecForward);
+			c.TexCoord(0.25f, 0.75f);
+			c.Vertex(vecUp);
+			c.TexCoord(0.25f, 1.0f);
+			c.Vertex(vecRight + vecUp);
+			c.TexCoord(0.25f, 0.75f);
+			c.Vertex(vecRight);
+			c.TexCoord(0.0f, 0.75f);
+			c.Vertex(vecForward + vecRight);
+			c.TexCoord(0.25f, 0.75f);
+			c.Vertex(vecForward);
+			c.TexCoord(0.25f, 1.0f);
+			c.Vertex(vecForward + vecUp);
+		c.EndRender();
+	}
 }

@@ -2,11 +2,14 @@
 
 #include <game/entities/baseentity.h>
 
+#include "entities/items/items.h"
+
 typedef enum
 {
 	STRUCTURE_NONE = 0,
 	STRUCTURE_SPIRE,
 	STRUCTURE_MINE,
+	STRUCTURE_PALLET,
 	STRUCTURE_TOTAL,
 } structure_type;
 
@@ -25,9 +28,12 @@ public:
 
 	virtual void            PostConstruction() {};
 
-	virtual void            PerformStructureTask() {};
+	virtual void            PerformStructureTask(class CSPCharacter* pCharacter) {};
 
 	virtual const Matrix4x4 GetPhysicsTransform() const;
+
+	virtual bool            TakesBlocks() const { return false; }
+	virtual size_t          TakeBlocks(item_t eBlock, size_t iNumber) { return 0; }
 
 public:
 	static CStructure*      CreateStructure(structure_type eType, class CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin);

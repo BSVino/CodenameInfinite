@@ -121,7 +121,7 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		return;
 	}
 
-	if (m_eBlockPlaceMode)
+	if (m_eBlockPlaceMode && iState == 1)
 	{
 		FinishBlockPlace();
 		return;
@@ -141,7 +141,7 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		{
 			CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
 			if (pStructure)
-				pStructure->PerformStructureTask();
+				pStructure->PerformStructureTask(GetPlayerCharacter());
 		}
 	}
 
@@ -263,16 +263,92 @@ void CSPPlayer::PostRender() const
 					c.Vertex(vecRight + vecUp * 1.8f);
 				c.EndRender();
 			}
+			else if (m_eConstructionMode == STRUCTURE_PALLET)
+			{
+				c.UseMaterial("textures/pallet.mat");
+
+				c.SetUniform("flAlpha", 0.5f);
+
+				c.BeginRenderTriFan();
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(-vecRight + vecUp * 1.8f);
+					c.TexCoord(0.0f, 0.0f);
+					c.Vertex(-vecRight - vecUp * 0.2f);
+					c.TexCoord(1.0f, 0.0f);
+					c.Vertex(vecRight - vecUp * 0.2f);
+					c.TexCoord(1.0f, 1.0f);
+					c.Vertex(vecRight + vecUp * 1.8f);
+				c.EndRender();
+			}
 		}
 	}
 
 	if (m_eBlockPlaceMode && GameServer()->GetRenderer()->IsRenderingTransparent())
 	{
 		CScalableVector vecLocal;
-		if (FindBlockPlacePoint(vecLocal))
+		CBaseEntity* pGiveTo;
+		if (FindBlockPlacePoint(vecLocal, &pGiveTo))
 		{
 			CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
-			if (pSpire)
+			if (pGiveTo)
+			{
+				Vector vecPosition = pGiveTo->GetLocalOrigin() - GetPlayerCharacter()->GetLocalOrigin();
+				vecPosition -= Vector(0.25f, 0.25f, 0.25f);
+
+				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector()/2;
+				Vector vecUp = pSpire->GetLocalTransform().GetUpVector()/2;
+				Vector vecRight = pSpire->GetLocalTransform().GetRightVector()/2;
+
+				CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+				c.ResetTransformations();
+				c.Translate(vecPosition);
+
+				c.UseMaterial("textures/items1.mat");
+
+				c.SetUniform("flAlpha", 0.7f);
+
+				c.SetBlend(BLEND_ADDITIVE);
+
+				c.BeginRenderTriFan();
+					c.TexCoord(0.0f, 0.75f);
+					c.Vertex(Vector(0, 0, 0));
+					c.TexCoord(0.25f, 0.75f);
+					c.Vertex(vecRight);
+					c.TexCoord(0.25f, 1.0f);
+					c.Vertex(vecRight + vecUp);
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(vecUp);
+					c.TexCoord(0.25f, 1.0f);
+					c.Vertex(vecUp + vecForward);
+					c.TexCoord(0.25f, 0.75f);
+					c.Vertex(vecForward);
+					c.TexCoord(0.25f, 1.0f);
+					c.Vertex(vecForward + vecRight);
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(vecRight);
+				c.EndRender();
+
+				c.BeginRenderTriFan();
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(vecRight + vecUp + vecForward);
+					c.TexCoord(0.0f, 0.75f);
+					c.Vertex(vecUp + vecForward);
+					c.TexCoord(0.25f, 0.75f);
+					c.Vertex(vecUp);
+					c.TexCoord(0.25f, 1.0f);
+					c.Vertex(vecRight + vecUp);
+					c.TexCoord(0.25f, 0.75f);
+					c.Vertex(vecRight);
+					c.TexCoord(0.0f, 0.75f);
+					c.Vertex(vecForward + vecRight);
+					c.TexCoord(0.25f, 0.75f);
+					c.Vertex(vecForward);
+					c.TexCoord(0.25f, 1.0f);
+					c.Vertex(vecForward + vecUp);
+				c.EndRender();
+			}
+			else if (pSpire)
 			{
 				CScalableVector vecSpire = pSpire->GetLocalOrigin();
 
@@ -470,7 +546,7 @@ void CSPPlayer::EnterBlockPlaceMode(item_t eBlock)
 	m_eBlockPlaceMode = eBlock;
 }
 
-bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal) const
+bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGiveTo) const
 {
 	Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
 
@@ -484,6 +560,18 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal) const
 	if (tr.m_flFraction == 1)
 		return false;
 
+	*pGiveTo = nullptr;
+
+	CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
+	if (pStructure && pStructure->TakesBlocks())
+		*pGiveTo = pStructure;
+	else
+	{
+		CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(tr.m_pHit);
+		if (pCharacter && pCharacter->TakesBlocks())
+			*pGiveTo = pCharacter;
+	}
+
 	Vector vecAdjustedEndpoint = tr.m_vecHit - vecDirection * 0.01f;
 	vecLocal = CScalableVector(GetPlayerCharacter()->GameData().TransformPointPhysicsToLocal(vecAdjustedEndpoint), SCALE_METER);
 
@@ -496,16 +584,23 @@ void CSPPlayer::FinishBlockPlace()
 		return;
 
 	CScalableVector vecPoint;
-	if (!FindBlockPlacePoint(vecPoint))
+	CBaseEntity* pGiveTo;
+	if (!FindBlockPlacePoint(vecPoint, &pGiveTo))
 		return;
 
 	if (!GetPlayerCharacter()->GetInventory(m_eBlockPlaceMode))
 		return;
 
-	if (!GetPlayerCharacter()->PlaceBlock(m_eBlockPlaceMode, vecPoint))
+	if (pGiveTo)
+	{
+		if (!GetPlayerCharacter()->GiveBlocks(m_eBlockPlaceMode, 1, pGiveTo))
+			return;
+	}
+	else if (!GetPlayerCharacter()->PlaceBlock(m_eBlockPlaceMode, vecPoint))
 		return;
 
-	m_eBlockPlaceMode = ITEM_NONE;
+	if (!GetPlayerCharacter()->GetInventory(m_eBlockPlaceMode))
+		m_eBlockPlaceMode = ITEM_NONE;
 
 	SPWindow()->GetHUD()->BuildMenus();
 }

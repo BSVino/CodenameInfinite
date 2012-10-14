@@ -29,6 +29,7 @@ public:
 	EVENT_CALLBACK(CSPHUD, PlaceBlock);
 	EVENT_CALLBACK(CSPHUD, ConstructSpire);
 	EVENT_CALLBACK(CSPHUD, ConstructMine);
+	EVENT_CALLBACK(CSPHUD, ConstructPallet);
 
 	virtual void    Debug_Paint();
 

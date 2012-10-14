@@ -15,7 +15,7 @@ public:
 	bool        ShouldRender() const;
 	void        PostRender() const;
 
-	void        PerformStructureTask();
+	void        PerformStructureTask(class CSPCharacter* pCharacter);
 
 private:
 	double      m_flDiggingStarted;

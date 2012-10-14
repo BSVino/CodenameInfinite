@@ -42,6 +42,11 @@ public:
 	CHelperBot*                 GetHelperBot();
 	virtual bool                ApplyGravity() const { return !m_bFlying; }
 
+	virtual size_t              MaxInventory() const { return 10; }
+	virtual size_t              MaxSlots() const { return INVENTORY_SLOTS; }
+
+	virtual bool                TakesBlocks() { return true; }
+
 protected:
 	bool						m_bFlying;
 	bool						m_bWalkSpeedOverride;

@@ -29,7 +29,7 @@ public:
 	void                    FinishConstruction();
 
 	void                    EnterBlockPlaceMode(item_t eBlock);
-	bool                    FindBlockPlacePoint(CScalableVector& vecLocal) const;
+	bool                    FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGiveTo) const;
 	void                    FinishBlockPlace();
 
 	void                AddSpires(size_t iSpires);

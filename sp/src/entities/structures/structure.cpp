@@ -2,12 +2,13 @@
 
 #include <game/gameserver.h>
 
-#include "spire.h"
 #include "entities/sp_player.h"
 #include "entities/sp_playercharacter.h"
-#include "mine.h"
 #include "planet/planet.h"
 #include "planet/terrain_chunks.h"
+#include "spire.h"
+#include "mine.h"
+#include "pallet.h"
 
 REGISTER_ENTITY(CStructure);
 
@@ -58,6 +59,10 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 
 	case STRUCTURE_MINE:
 		pStructure = GameServer()->Create<CMine>("CMine");
+		break;
+
+	case STRUCTURE_PALLET:
+		pStructure = GameServer()->Create<CPallet>("CPallet");
 		break;
 	}
 

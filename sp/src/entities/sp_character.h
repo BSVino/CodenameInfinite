@@ -18,6 +18,8 @@ typedef enum {
 	FINDPLANET_INATMOSPHERE,
 } findplanet_t;
 
+#define INVENTORY_SLOTS 12
+
 class CSPCharacter : public CCharacter
 {
 	REGISTER_ENTITY_CLASS(CSPCharacter, CCharacter);
@@ -80,6 +82,15 @@ public:
 	virtual float               GetAtmosphereLerp() const { return 0.3f; }
 	virtual bool                ApplyGravity() const { return true; }
 
+	virtual size_t              MaxInventory() const { return 1; }
+	virtual size_t              MaxSlots() const { return 1; }
+
+	virtual bool                TakesBlocks() const { return false; }
+	virtual size_t              GiveBlocks(item_t eBlock, size_t iNumber, CBaseEntity* pGiveTo);
+	virtual size_t              TakeBlocks(item_t eBlock, size_t iNumber);
+	virtual size_t              RemoveBlocks(item_t eBlock, size_t iNumber);
+	virtual bool                IsHoldingABlock() const;
+
 protected:
 	double                      m_flNextPlanetCheck;
 
@@ -93,9 +104,8 @@ protected:
 	// Use a persistent transform to avoid floating point problems converting back to double all the time.
 	Matrix4x4                   m_mGroupTransform;
 
-	size_t                      m_aiInventory[ITEM_TOTAL];
-
-	const static int            MAX_INVENTORY;
+	size_t                      m_aiInventorySlots[INVENTORY_SLOTS];
+	item_t                      m_aiInventoryTypes[INVENTORY_SLOTS];
 };
 
 #endif

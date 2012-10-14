@@ -13,4 +13,6 @@ public:
 
 	bool        ShouldRender() const;
 	void        PostRender() const;
+
+	bool        TakesBlocks() const { return true; }
 };

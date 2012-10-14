@@ -97,9 +97,9 @@ void CMine::PostRender() const
 	c.EndRender();
 }
 
-void CMine::PerformStructureTask()
+void CMine::PerformStructureTask(CSPCharacter* pCharacter)
 {
-	BaseClass::PerformStructureTask();
+	BaseClass::PerformStructureTask(pCharacter);
 
 	if (m_flDiggingStarted)
 		return;
