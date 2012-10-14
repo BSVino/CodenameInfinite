@@ -181,8 +181,6 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 
 void CSPRenderer::FinishRendering(CRenderingContext* c)
 {
-	TPROF("CSPRenderer::FinishRendering");
-
 	BaseClass::FinishRendering(c);
 
 	m_eRenderingScale = SCALE_NONE;

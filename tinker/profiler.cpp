@@ -27,9 +27,9 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 
 CVar prof_enable("prof_enable", "no");
 
-CProfileScope::CProfileScope(const tstring& sName)
+CProfileScope::CProfileScope(const char* pszName)
 {
-	m_sName = sName;
+	m_pszName = pszName;
 
 	CProfiler::PushScope(this);
 }
@@ -39,16 +39,16 @@ CProfileScope::~CProfileScope()
 	CProfiler::PopScope(this);
 }
 
-CPerfBlock::CPerfBlock(const tstring& sName, CPerfBlock* pParent)
+CPerfBlock::CPerfBlock(const char* pszName, CPerfBlock* pParent)
 {
 	m_pParent = pParent;
-	m_sName = sName;
+	m_pszName = pszName;
 	m_flTime = 0;
 }
 
-CPerfBlock* CPerfBlock::GetChild(const tstring& sName)
+CPerfBlock* CPerfBlock::GetChild(const char* pszName)
 {
-	tmap<tstring, CPerfBlock*>::iterator it = m_apPerfBlocks.find(sName);
+	tmap<const char*, CPerfBlock*>::iterator it = m_apPerfBlocks.find(pszName);
 
 	if (it == m_apPerfBlocks.end())
 		return NULL;
@@ -56,10 +56,10 @@ CPerfBlock* CPerfBlock::GetChild(const tstring& sName)
 	return it->second;
 }
 
-CPerfBlock* CPerfBlock::AddChild(const tstring& sName)
+CPerfBlock* CPerfBlock::AddChild(const char* pszName)
 {
-	CPerfBlock* pChild = new CPerfBlock(sName, this);
-	m_apPerfBlocks[sName] = pChild;
+	CPerfBlock* pChild = new CPerfBlock(pszName, this);
+	m_apPerfBlocks[pszName] = pChild;
 	return pChild;
 }
 
@@ -67,7 +67,7 @@ void CPerfBlock::BeginFrame()
 {
 	m_flTime = 0;
 
-	for (tmap<tstring, CPerfBlock*>::iterator it = m_apPerfBlocks.begin(); it != m_apPerfBlocks.end(); it++)
+	for (tmap<const char*, CPerfBlock*>::iterator it = m_apPerfBlocks.begin(); it != m_apPerfBlocks.end(); it++)
 		it->second->BeginFrame();
 }
 
@@ -201,7 +201,7 @@ void CProfiler::Render(CPerfBlock* pBlock, float& flLeft, float& flTop)
 	sName += sprintf(tstring(": %d ms"), (int)(pBlock->GetTime()*1000));
 	glgui::CLabel::PaintText(sName, sName.length(), "sans-serif", 10, (float)flLeft, (float)flTop, clrBlock);
 
-	for (tmap<tstring, CPerfBlock*>::iterator it = pBlock->m_apPerfBlocks.begin(); it != pBlock->m_apPerfBlocks.end(); it++)
+	for (tmap<const char*, CPerfBlock*>::iterator it = pBlock->m_apPerfBlocks.begin(); it != pBlock->m_apPerfBlocks.end(); it++)
 		Render(it->second, flLeft, flTop);
 
 	flLeft -= 15;

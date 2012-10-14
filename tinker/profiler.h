@@ -27,44 +27,44 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON A
 class CProfileScope
 {
 public:
-								CProfileScope(const tstring& sName);
-								~CProfileScope();
+	CProfileScope(const char* pszName);
+	~CProfileScope();
 
 public:
-	tstring						GetName() { return m_sName; };
+	const char*                 GetName() { return m_pszName; };
 
 protected:
-	tstring						m_sName;
+	const char*                 m_pszName;
 };
 
 class CPerfBlock
 {
 public:
-								CPerfBlock(const tstring& sName, CPerfBlock* pParent);
+								CPerfBlock(const char* pszName, CPerfBlock* pParent);
 
 public:
 	CPerfBlock*					GetParent() { return m_pParent; };
 
-	CPerfBlock*					GetChild(const tstring& sName);
-	CPerfBlock*					AddChild(const tstring& sName);
+	CPerfBlock*					GetChild(const char* pszName);
+	CPerfBlock*					AddChild(const char* pszName);
 
 	void						BeginFrame();
 
 	void						BlockStarted();
 	void						BlockEnded();
 
-	tstring						GetName() { return m_sName; };
+	const char*                 GetName() { return m_pszName; };
 	double						GetTime() { return m_flTime; };
 
 public:
 	CPerfBlock*					m_pParent;
 
-	tstring						m_sName;
+	const char*                 m_pszName;
 	double						m_flTime;
 
 	double						m_flTimeBlockStarted;
 
-	tmap<tstring, CPerfBlock*>	m_apPerfBlocks;
+	tmap<const char*, CPerfBlock*> m_apPerfBlocks;
 };
 
 class CProfiler

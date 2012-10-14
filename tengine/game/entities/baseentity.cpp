@@ -939,7 +939,6 @@ void CBaseEntity::Render() const
 				}
 			}
 
-			TPROF("CBaseEntity::OnRender");
 			OnRender(&r);
 		}
 	} while (false);

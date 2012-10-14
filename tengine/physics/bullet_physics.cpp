@@ -931,8 +931,6 @@ CPhysicsManager::~CPhysicsManager()
 
 void CMotionState::getWorldTransform(btTransform& mCenterOfMass) const
 {
-	TPROF("CMotionState::getWorldTransform");
-
 	if (m_pPhysics->GetPhysicsEntity(m_hEntity)->m_bCenterMassOffset)
 	{
 		Matrix4x4 mCenter;
@@ -946,8 +944,6 @@ void CMotionState::getWorldTransform(btTransform& mCenterOfMass) const
 
 void CMotionState::setWorldTransform(const btTransform& mCenterOfMass)
 {
-	TPROF("CMotionState::setWorldTransform");
-
 	Matrix4x4 mGlobal;
 	mCenterOfMass.getOpenGLMatrix(mGlobal);
 

@@ -213,8 +213,6 @@ CVar show_physics("debug_show_physics", "no");
 
 void CGameRenderer::FinishRendering(class CRenderingContext* pContext)
 {
-	TPROF("CGameRenderer::FinishRendering");
-
 	BaseClass::FinishRendering(pContext);
 
 	if (show_physics.GetBool() && ShouldRenderPhysicsDebug() && !CWorkbench::IsActive())

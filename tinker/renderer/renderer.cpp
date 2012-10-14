@@ -287,8 +287,6 @@ void CRenderer::ModifyContext(class CRenderingContext* pContext)
 
 void CRenderer::SetupFrame(class CRenderingContext* pContext)
 {
-	TPROF("CRenderer::SetupFrame");
-
 	pContext->ClearDepth();
 
 	if (m_bDrawBackground)
@@ -362,8 +360,6 @@ void CRenderer::FinishRendering(class CRenderingContext* pContext)
 {
 	if (m_iScreenSamples)
 		glDisable(GL_MULTISAMPLE);
-
-	TPROF("CRenderer::FinishRendering");
 
 	if (show_frustum.GetBool())
 	{

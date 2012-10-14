@@ -111,8 +111,6 @@ CVar planet_rotscale("planet_rotscale", "1");
 
 void CPlanet::Think()
 {
-	TPROF("CPlanet::Think");
-
 	BaseClass::Think();
 
 	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*((float)GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
@@ -187,8 +185,6 @@ void CPlanet::PostRender() const
 
 	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
-
-	TPROF("CPlanet::PostRender");
 
 	if (!r_planets.GetBool())
 		return;
