@@ -73,7 +73,7 @@ void CSPCharacter::Think()
 		m_flRollFromSpace = GetViewAngles().r;
 	}
 
-	if (!HasMoveParent())
+	if (!HasMoveParent() || !pPlanet)
 		SetMoveParent(pPlanet);
 
 	if (pPlanet && !bHadParent)
