@@ -15,7 +15,7 @@ public:
 	void        PostRender() const;
 
 	virtual float                   MeleeAttackTime() const { return 0.5f; }
-	virtual float                   MeleeAttackDamage() const { return 10; }
+	virtual float                   MeleeAttackDamage() const { return 1; }
 
 	CScalableFloat  CharacterSpeed();
 };

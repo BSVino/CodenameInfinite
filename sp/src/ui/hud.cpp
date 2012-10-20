@@ -190,6 +190,10 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 		}
 	}
 
+	// Paint health blocks.
+	for (size_t i = 0; i < pLocalPlayer->GetHealth(); i++)
+		glgui::CBaseControl::PaintRect(w-20, h-40*(i+1), 10, 30, Color(255, 0, 0, 255), 1, true);
+
 	Debug_Paint();
 }
 

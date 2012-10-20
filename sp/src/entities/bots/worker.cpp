@@ -29,6 +29,8 @@ void CWorkerBot::Spawn()
 
 	BaseClass::Spawn();
 
+	SetTotalHealth(4);
+
 	SetTask(TASK_MINE);
 }
 

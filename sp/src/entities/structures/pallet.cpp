@@ -33,6 +33,8 @@ void CPallet::Spawn()
 
 	BaseClass::Spawn();
 
+	SetTotalHealth(20);
+
 	m_iQuantity = 0;
 }
 

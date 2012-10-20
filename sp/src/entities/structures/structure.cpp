@@ -25,9 +25,11 @@ INPUTS_TABLE_END();
 
 void CStructure::Spawn()
 {
+	m_bTakeDamage = true;
+
 	BaseClass::Spawn();
 
-	m_bTakeDamage = true;
+	SetTotalHealth(50);
 }
 
 void CStructure::SetOwner(class CSPPlayer* pOwner)

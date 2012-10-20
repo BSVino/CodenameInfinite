@@ -37,6 +37,8 @@ void CSpire::Spawn()
 
 	BaseClass::Spawn();
 
+	SetTotalHealth(100);
+
 	m_flNextMonster = 0;
 }
 

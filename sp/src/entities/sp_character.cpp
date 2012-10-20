@@ -48,6 +48,8 @@ void CSPCharacter::Spawn()
 {
 	BaseClass::Spawn();
 
+	SetTotalHealth(10);
+
 	m_flMaxStepSize = TFloat(0.1f, SCALE_METER);
 }
 
