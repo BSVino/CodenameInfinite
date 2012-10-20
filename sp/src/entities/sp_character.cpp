@@ -646,6 +646,12 @@ CScalableFloat CSPCharacter::CharacterSpeed()
 	return CScalableFloat(5.0f, SCALE_METER);
 }
 
+const TVector CSPCharacter::MeleeAttackSphereCenter() const
+{
+	Vector vecForward = GameData().TransformVectorLocalToPhysics(AngleVector(GetViewAngles()));
+	return GetPhysicsTransform().GetTranslation() + GetPhysicsTransform().GetUpVector()*((float)EyeHeight()*0.7f) + vecForward * MeleeAttackSphereRadius();
+}
+
 size_t CSPCharacter::GiveBlocks(item_t eBlock, size_t iNumber, CBaseEntity* pGiveTo)
 {
 	iNumber = std::min(GetInventory(eBlock), iNumber);

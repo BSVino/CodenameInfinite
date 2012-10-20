@@ -92,7 +92,7 @@ const Vector CSPEntityData::GetRenderOrigin() const
 	return GetScalableRenderTransform().GetTranslation().GetUnits(eScale);
 }
 
-const DoubleVector CSPEntityData::TransformPointPhysicsToLocal(const Vector& v)
+const DoubleVector CSPEntityData::TransformPointPhysicsToLocal(const Vector& v) const
 {
 	CPlanet* pPlanet = GetPlanet();
 	if (!pPlanet)
@@ -110,7 +110,7 @@ const DoubleVector CSPEntityData::TransformPointPhysicsToLocal(const Vector& v)
 	return pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * v;
 }
 
-const Vector CSPEntityData::TransformPointLocalToPhysics(const DoubleVector& v)
+const Vector CSPEntityData::TransformPointLocalToPhysics(const DoubleVector& v) const
 {
 	CPlanet* pPlanet = GetPlanet();
 	if (!pPlanet)
@@ -128,7 +128,7 @@ const Vector CSPEntityData::TransformPointLocalToPhysics(const DoubleVector& v)
 	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * v;
 }
 
-const Vector CSPEntityData::TransformVectorLocalToPhysics(const Vector& v)
+const Vector CSPEntityData::TransformVectorLocalToPhysics(const Vector& v) const
 {
 	CPlanet* pPlanet = GetPlanet();
 	if (!pPlanet)
@@ -154,4 +154,14 @@ void CSPEntityData::SetPlanet(CPlanet* pPlanet)
 CPlanet* CSPEntityData::GetPlanet() const
 {
 	return m_hPlanet;
+}
+
+void CSPEntityData::SetPlayerOwner(CSPPlayer* pPlayer)
+{
+	m_hPlayerOwner = pPlayer;
+}
+
+CSPPlayer* CSPEntityData::GetPlayerOwner() const
+{
+	return m_hPlayerOwner;
 }

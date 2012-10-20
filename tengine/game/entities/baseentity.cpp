@@ -832,9 +832,14 @@ void CBaseEntity::Killed(CBaseEntity* pKilledBy)
 	m_flTimeKilled = GameServer()->GetGameTime();
 
 	OnKilled(pKilledBy);
-	Game()->OnKilled(this);
+	Game()->OnEntityKilled(this);
 
 	CallOutput("OnKilled");
+}
+
+void CBaseEntity::OnKilled(CBaseEntity* pKilledBy)
+{
+	Delete();
 }
 
 void CBaseEntity::SetActive(bool bActive)

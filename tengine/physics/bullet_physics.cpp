@@ -106,7 +106,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 		if (pCapsuleShape)
 		{
 			// Varying character sizes not yet supported!
-			TAssert(pCapsuleShape->getRadius() == flRadius);
+			TAssert(fabs(pCapsuleShape->getRadius() - flRadius) < 0.00001f);
 			TAssert(fabs(pCapsuleShape->getHalfHeight()*2 - flRadius) - flHeight < 0.001f);
 		}
 #endif
@@ -871,7 +871,7 @@ void CBulletPhysics::TraceLine(CTraceResult& tr, const Vector& v1, const Vector&
 	vecFrom = ToBTVector(v1);
 	vecTo = ToBTVector(v2);
 
-	CClosestRayResultCallback callback(vecFrom, vecTo, GetPhysicsEntity(pIgnore)->m_pRigidBody);
+	CClosestRayResultCallback callback(vecFrom, vecTo, pIgnore?GetPhysicsEntity(pIgnore)->m_pRigidBody:nullptr);
 
 	m_pDynamicsWorld->rayTest(vecFrom, vecTo, callback);
 
@@ -881,6 +881,31 @@ void CBulletPhysics::TraceLine(CTraceResult& tr, const Vector& v1, const Vector&
 		tr.m_vecHit = ToTVector(callback.m_hitPointWorld);
 		tr.m_pHit = CEntityHandle<CBaseEntity>((size_t)callback.m_collisionObject->getUserPointer()).GetPointer();
 	}
+}
+
+void CBulletPhysics::CheckSphere(CTraceResult& tr, float flRadius, const Vector& vecCenter, class CBaseEntity* pIgnore)
+{
+	btTransform mTransform = btTransform::getIdentity();
+	mTransform.setOrigin(ToBTVector(vecCenter));
+
+	CPhysicsEntity* pIgnorePhysicsEntity = pIgnore?GetPhysicsEntity(pIgnore):nullptr;
+	btCollisionObject* pIgnoreCollisionObject = nullptr;
+	if (pIgnorePhysicsEntity)
+	{
+		if (pIgnorePhysicsEntity->m_pGhostObject)
+			pIgnoreCollisionObject = pIgnorePhysicsEntity->m_pGhostObject;
+		else
+			pIgnoreCollisionObject = pIgnorePhysicsEntity->m_pRigidBody;
+	}
+
+	CAllContactResultsCallback callback(tr, pIgnoreCollisionObject);
+
+	std::shared_ptr<btSphereShape> pSphereShape(new btSphereShape(flRadius));
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(0, nullptr, pSphereShape.get());
+	std::shared_ptr<btRigidBody> pSphere(new btRigidBody(rbInfo));
+	pSphere->setWorldTransform(mTransform);
+
+	m_pDynamicsWorld->contactTest(pSphere.get(), callback);
 }
 
 void CBulletPhysics::CharacterJump(class CBaseEntity* pEnt)

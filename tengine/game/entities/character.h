@@ -39,7 +39,7 @@ public:
 	virtual bool					GetNoClip() const { return m_bNoClip; }
 
 	virtual bool					CanAttack() const;
-	virtual void					Attack();
+	virtual void					MeleeAttack();
 	virtual bool					IsAttacking() const;
 
 	virtual void					MoveToPlayerStart();
@@ -56,10 +56,10 @@ public:
 	virtual TFloat					JumpStrength() { return 150.0f; }
 	virtual TFloat					CharacterSpeed();
 
-	virtual float					AttackTime() const { return 0.3f; }
-	virtual float					AttackDamage() const { return 50; }
-	virtual float					AttackSphereRadius() const { return 40.0f; }
-	virtual const TVector			AttackSphereCenter() const { return GetGlobalCenter(); }
+	virtual float                   MeleeAttackTime() const { return 0.3f; }
+	virtual float                   MeleeAttackDamage() const { return 50; }
+	virtual float                   MeleeAttackSphereRadius() const { return 40.0f; }
+	virtual const TVector           MeleeAttackSphereCenter() const;
 
 	virtual bool					ShouldCollide() const { return false; }
 

@@ -41,6 +41,45 @@ protected:
 	btRigidBody*     m_pIgnore;
 };
 
+class CAllContactResultsCallback : public btCollisionWorld::ContactResultCallback
+{
+public:
+	CAllContactResultsCallback(CTraceResult& tr, btCollisionObject* pIgnore=nullptr)
+		: m_tr(tr), btCollisionWorld::ContactResultCallback()
+	{
+		m_pIgnore = pIgnore;
+	}
+
+	virtual btScalar addSingleResult(btManifoldPoint& cp,	const btCollisionObject* colObj0,int partId0,int index0,const btCollisionObject* colObj1,int partId1,int index1)
+	{
+		if (colObj0 == m_pIgnore)
+			return 1.0;
+
+		if (colObj1 == m_pIgnore)
+			return 1.0;
+
+		CTraceResult::CTraceHit& th = m_tr.m_aHits.push_back();
+
+		th.m_flFraction = cp.getDistance();
+		th.m_pHit = CEntityHandle<CBaseEntity>((size_t)colObj1->getUserPointer()).GetPointer();
+		th.m_vecHit = ToTVector(cp.getPositionWorldOnB());
+
+		if (th.m_flFraction < m_tr.m_flFraction)
+		{
+			m_tr.m_flFraction = th.m_flFraction;
+			m_tr.m_pHit = th.m_pHit;
+			m_tr.m_vecHit = th.m_vecHit;
+		}
+
+		return 0.0;
+	}
+
+protected:
+	CTraceResult&        m_tr;
+
+	btCollisionObject*   m_pIgnore;
+};
+
 class CMotionState : public btMotionState
 {
 public:
@@ -132,6 +171,7 @@ public:
 	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta);
 
 	virtual void            TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore=nullptr);
+	virtual void            CheckSphere(CTraceResult& tr, float flRadius, const Vector& vecCenter, class CBaseEntity* pIgnore=nullptr);
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt);
 

@@ -47,6 +47,8 @@ public:
 
 	virtual bool                TakesBlocks() { return true; }
 
+	virtual float               MeleeAttackSphereRadius() const { return 1.2f; }
+
 protected:
 	bool						m_bFlying;
 	bool						m_bWalkSpeedOverride;

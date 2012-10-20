@@ -12,6 +12,8 @@ public:
 	void        Precache();
 	void        Spawn();
 
+	void        Think();
+
 	bool        ShouldRender() const;
 	void        PostRender() const;
 
@@ -27,4 +29,6 @@ private:
 	tstring     m_sBaseName;
 
 	CVoxelTree  m_oVoxelTree;
+
+	double      m_flNextMonster;
 };

@@ -17,6 +17,7 @@
 #include "ui/hud.h"
 #include "planet/terrain_chunks.h"
 #include "planet/terrain_lumps.h"
+#include "entities/bots/helper.h"
 
 CGame* CreateGame()
 {
@@ -66,8 +67,10 @@ void CSPGame::SetupGame(tstring sType)
 		Game()->AddPlayer(pPlayer);
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
-		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0.11f, 0, 0), SCALE_MEGAMETER));
+		pCharacter->GetHelperBot()->GameData().SetPlayerOwner(pPlayer);
+		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0, 0, 0), SCALE_MEGAMETER));
 		pCharacter->SetViewAngles(EAngle(0, 140, 0));
+		pCharacter->GameData().SetPlayerOwner(pPlayer);
 		pPlayer->SetCharacter(pCharacter);
 
 		pPlayer->AddSpires(1);
@@ -141,6 +144,14 @@ void CSPGame::Think()
 			}
 		}
 	}
+}
+
+bool CSPGame::TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker)
+{
+	if (pVictim->GameData().GetPlayerOwner() == pAttacker->GameData().GetPlayerOwner())
+		return false;
+
+	return true;
 }
 
 extern bool ValidPlayerAliveConditions(CPlayer *pPlayer, class CLesson *pLesson);

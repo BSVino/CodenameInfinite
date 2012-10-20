@@ -114,6 +114,11 @@ void CGame::OnDeleted(CBaseEntity* pEntity)
 	RemovePlayer(dynamic_cast<CPlayer*>(pEntity));
 }
 
+bool CGame::TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker)
+{
+	return true;
+}
+
 CPlayer* CGame::GetPlayer(size_t i) const
 {
 	if (i >= m_ahPlayers.size())

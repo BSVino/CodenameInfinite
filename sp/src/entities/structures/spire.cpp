@@ -8,6 +8,8 @@
 #include "entities/sp_playercharacter.h"
 #include "game/gameserver.h"
 #include "entities/bots/worker.h"
+#include "entities/enemies/eater.h"
+#include "entities/star.h"
 
 REGISTER_ENTITY(CSpire);
 
@@ -16,6 +18,7 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSpire);
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sBaseName);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextMonster);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSpire);
@@ -33,6 +36,67 @@ void CSpire::Spawn()
 	m_aabbPhysBoundingBox = AABB(Vector(-1.0f, -1.0f, -1.0f), Vector(1.0f, 15.0f, 1.0f));
 
 	BaseClass::Spawn();
+
+	m_flNextMonster = 0;
+}
+
+void CSpire::Think()
+{
+	BaseClass::Think();
+
+	if (GameServer()->GetGameTime() > m_flNextMonster)
+	{
+		CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
+		Vector vecToStar = (pStar->GetGlobalOrigin() - GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+		float flTimeOfDay = vecToStar.Dot(GetGlobalTransform().GetUpVector());
+
+		if (flTimeOfDay < -0.15f)
+		{
+			TVector vecSpire = GetLocalOrigin();
+			TVector vecSpawnSpot;
+			bool bFoundSpot = false;
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				float flDistance = RandomFloat(50, 100);
+
+				float flDegree = RandomFloat(0, 2*M_PI);
+
+				Vector vecRight = GetLocalTransform().GetRightVector();
+				Vector vecForward = GetLocalTransform().GetForwardVector();
+
+				Vector vecOffset = sin(flDegree) * vecRight + cos(flDegree) * vecForward;
+
+				vecSpawnSpot = vecSpire + vecOffset * flDistance;
+
+				DoubleVector vecSpawnSpotMeters = vecSpawnSpot.GetUnits(SCALE_METER);
+
+				CTraceResult tr;
+				GamePhysics()->TraceLine(tr, GameData().TransformPointLocalToPhysics(vecSpawnSpotMeters) + Vector(0, 100, 0), GameData().TransformPointLocalToPhysics(vecSpawnSpotMeters) - Vector(0, 100, 0));
+
+				if (tr.m_flFraction < 1)
+					vecSpawnSpot = TVector(GameData().TransformPointPhysicsToLocal(tr.m_vecHit));
+				else
+					continue;
+
+//				if (SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(SCALE_METER, vecSpawnSpot.GetUnits(SCALE_METER), 1))
+//					continue;
+
+				bFoundSpot = true;
+				break;
+			}
+
+			if (bFoundSpot)
+			{
+				CEater* pMonster = GameServer()->Create<CEater>("CEater");
+				pMonster->GameData().SetPlanet(GameData().GetPlanet());
+				pMonster->SetMoveParent(GameData().GetPlanet());
+				pMonster->SetLocalOrigin(vecSpawnSpot);
+			}
+		}
+
+		m_flNextMonster = GameServer()->GetGameTime() + 20;
+	}
 }
 
 bool CSpire::ShouldRender() const
@@ -83,6 +147,7 @@ void CSpire::PostConstruction()
 	BaseClass::PostConstruction();
 
 	CWorkerBot* pWorker = GameServer()->Create<CWorkerBot>("CWorkerBot");
+	pWorker->GameData().SetPlayerOwner(GameData().GetPlayerOwner());
 	pWorker->GameData().SetPlanet(GameData().GetPlanet());
 	pWorker->SetOwner(GetOwner());
 	pWorker->SetMoveParent(GameData().GetPlanet());

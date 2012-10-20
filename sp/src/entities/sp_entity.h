@@ -7,6 +7,7 @@
 #include "../sp_common.h"
 
 class CPlanet;
+class CSPPlayer;
 
 class CSPEntityData : public CBaseEntityData
 {
@@ -23,14 +24,18 @@ public:
 	virtual const Matrix4x4         GetRenderTransform() const;
 	virtual const Vector            GetRenderOrigin() const;
 
-	const DoubleVector          TransformPointPhysicsToLocal(const Vector& v);
-	const Vector                TransformPointLocalToPhysics(const DoubleVector& v);
-	const Vector                TransformVectorLocalToPhysics(const Vector& v);
+	const DoubleVector          TransformPointPhysicsToLocal(const Vector& v) const;
+	const Vector                TransformPointLocalToPhysics(const DoubleVector& v) const;
+	const Vector                TransformVectorLocalToPhysics(const Vector& v) const;
 
 	void                        SetPlanet(CPlanet* pPlanet);
 	CPlanet*                    GetPlanet() const;
 
+	void                        SetPlayerOwner(CSPPlayer* pPlanet);
+	CSPPlayer*                  GetPlayerOwner() const;
+
 private:
+	CEntityHandle<CSPPlayer>    m_hPlayerOwner;
 	CEntityHandle<CPlanet>      m_hPlanet;
 };
 

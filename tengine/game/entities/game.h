@@ -38,10 +38,13 @@ public:
 	void										AddPlayer(CPlayer* pPlayer);
 	void										RemovePlayer(CPlayer* pPlayer);
 
-	virtual void								OnDeleted();
+	virtual void                                OnEntityKilled(CBaseEntity* pKilledBy) {};
 
-	virtual void								OnTakeDamage(class CBaseEntity* pVictim, class CBaseEntity* pAttacker, class CBaseEntity* pInflictor, float flDamage, bool bDirectHit, bool bKilled) {};
+	virtual void								OnDeleted();
 	virtual void								OnDeleted(class CBaseEntity* pEntity);
+
+	virtual bool                                TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker);
+	virtual void								OnTakeDamage(class CBaseEntity* pVictim, class CBaseEntity* pAttacker, class CBaseEntity* pInflictor, float flDamage, bool bDirectHit, bool bKilled) {};
 
 	size_t										GetNumPlayers() const { return m_ahPlayers.size(); };
 	CPlayer*									GetPlayer(size_t i) const;

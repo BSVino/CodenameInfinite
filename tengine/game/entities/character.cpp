@@ -244,13 +244,13 @@ void CCharacter::SetNoClip(bool bOn)
 
 bool CCharacter::CanAttack() const
 {
-	if (m_flLastAttack >= 0 && GameServer()->GetGameTime() - m_flLastAttack < AttackTime())
+	if (m_flLastAttack >= 0 && GameServer()->GetGameTime() - m_flLastAttack < MeleeAttackTime())
 		return false;
 
 	return true;
 }
 
-void CCharacter::Attack()
+void CCharacter::MeleeAttack()
 {
 	if (!CanAttack())
 		return;
@@ -258,13 +258,15 @@ void CCharacter::Attack()
 	m_flLastAttack = GameServer()->GetGameTime();
 	m_vecMoveVelocity = TVector();
 
-	TFloat flAttackSphereRadius = AttackSphereRadius();
-	TVector vecDamageSphereCenter = AttackSphereCenter();
+	float flAttackSphereRadius = MeleeAttackSphereRadius();
+	Vector vecDamageSphereCenter = MeleeAttackSphereCenter();
 
-	size_t iMaxEntities = GameServer()->GetMaxEntities();
-	for (size_t j = 0; j < iMaxEntities; j++)
+	CTraceResult tr;
+	GamePhysics()->CheckSphere(tr, flAttackSphereRadius, vecDamageSphereCenter, this);
+
+	for (size_t j = 0; j < tr.m_aHits.size(); j++)
 	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(j);
+		CBaseEntity* pEntity = tr.m_aHits[j].m_pHit;
 
 		if (!pEntity)
 			continue;
@@ -278,12 +280,11 @@ void CCharacter::Attack()
 		if (pEntity == this)
 			continue;
 
-		TFloat flRadius = pEntity->GetBoundingRadius() + flAttackSphereRadius;
-		flRadius = flRadius*flRadius;
-		if ((vecDamageSphereCenter - pEntity->GetGlobalCenter()).LengthSqr() > flRadius)
+		if (!Game()->TakesDamageFrom(pEntity, this))
 			continue;
 
-		pEntity->TakeDamage(this, this, DAMAGE_GENERIC, AttackDamage());
+		//TMsg(tstring(GetClassName()) + " hit " + tstring(pEntity->GetClassName()) + "\n");
+		pEntity->TakeDamage(this, this, DAMAGE_GENERIC, MeleeAttackDamage());
 	}
 }
 
@@ -292,7 +293,7 @@ bool CCharacter::IsAttacking() const
 	if (m_flLastAttack < 0)
 		return false;
 
-	return (GameServer()->GetGameTime() - m_flLastAttack < AttackTime());
+	return (GameServer()->GetGameTime() - m_flLastAttack < MeleeAttackTime());
 }
 
 void CCharacter::MoveToPlayerStart()
@@ -391,6 +392,11 @@ TFloat CCharacter::CharacterSpeed()
 		return BaseCharacterSpeed() * sv_noclip_multiplier.GetFloat();
 	else
 		return BaseCharacterSpeed();
+}
+
+const TVector CCharacter::MeleeAttackSphereCenter() const
+{
+	return GetPhysicsTransform().GetTranslation() + GetPhysicsTransform().GetUpVector()*((float)EyeHeight()*0.7f) + AngleVector(GetViewAngles()) * MeleeAttackSphereRadius();
 }
 
 void CCharacter::SetGroundEntity(CBaseEntity* pEntity)

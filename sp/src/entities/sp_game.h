@@ -17,6 +17,8 @@ public:
 
 	virtual void			Think();
 
+	virtual bool            TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker);
+
 	class CSPPlayer*        GetLocalSPPlayer();
 	class CPlayerCharacter*	GetLocalPlayerCharacter();
 	class CSPRenderer*		GetSPRenderer();

@@ -24,9 +24,28 @@ public:
 	}
 
 public:
-	float              m_flFraction;
-	Vector             m_vecHit;
-	class CBaseEntity* m_pHit;
+	class CTraceHit
+	{
+	public:
+		CTraceHit()
+		{
+			m_flFraction = 1.0f;
+			m_pHit = nullptr;
+		}
+
+	public:
+		float              m_flFraction;
+		Vector             m_vecHit;
+		class CBaseEntity* m_pHit;
+	};
+
+	// All hits.
+	tvector<CTraceHit>     m_aHits;
+
+	// Nearest result.
+	float                  m_flFraction;
+	Vector                 m_vecHit;
+	class CBaseEntity*     m_pHit;
 };
 
 class CPhysicsModel
@@ -66,6 +85,7 @@ public:
 	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta) {};
 
 	virtual void            TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore=nullptr) {};
+	virtual void            CheckSphere(CTraceResult& tr, float flRadius, const Vector& vecCenter, class CBaseEntity* pIgnore=nullptr) {};
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt) {};
 };

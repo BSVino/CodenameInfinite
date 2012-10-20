@@ -127,6 +127,11 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		return;
 	}
 
+	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 1)
+	{
+		GetPlayerCharacter()->MeleeAttack();
+	}
+
 	if (iButton == TINKER_KEY_MOUSE_RIGHT && iState == 1)
 	{
 		Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();

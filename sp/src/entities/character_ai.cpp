@@ -3,13 +3,16 @@
 #include "entities/structures/pallet.h"
 #include "entities/structures/mine.h"
 #include "entities/items/pickup.h"
+#include "entities/enemies/eater.h"
+#include "entities/sp_playercharacter.h"
 
 void CSPCharacter::TaskThink()
 {
-	if (m_eTask == TASK_MINE)
-	{
+	if (m_eTask)
 		m_vecGoalVelocity = Vector(0, 0, 0);
 
+	if (m_eTask == TASK_MINE)
+	{
 		if (IsHoldingABlock())
 		{
 			// Let's head to the pallete
@@ -47,6 +50,21 @@ void CSPCharacter::TaskThink()
 			pMine->PerformStructureTask(this);
 		}
 	}
+	else if (m_eTask == TASK_ATTACK)
+	{
+		CBaseEntity* pEnemy = m_hEnemy;
+
+		if (!pEnemy)
+			m_hEnemy = pEnemy = FindBestEnemy();
+
+		if (!pEnemy)
+			return;
+
+		MoveTo(pEnemy, 0);
+
+		if ((pEnemy->GetGlobalOrigin() - GetGlobalOrigin()).Length() < MeleeAttackSphereRadius()*2)
+			MeleeAttack();
+	}
 }
 
 bool CSPCharacter::MoveTo(CBaseEntity* pTarget, float flMoveDistance)
@@ -60,7 +78,12 @@ bool CSPCharacter::MoveTo(CBaseEntity* pTarget, float flMoveDistance)
 		return true;
 
 	Vector vecDirection = vecToTarget/flDistance;
-	SetViewAngles(VectorAngles(GetGlobalToLocalTransform().TransformVector(vecDirection)));
+
+	if (HasMoveParent())
+		SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetUnits(SCALE_METER).TransformVector(vecDirection)));
+	else
+		SetViewAngles(VectorAngles(vecDirection));
+
 	m_vecGoalVelocity = Vector(1, 0, 0);
 
 	return false;
@@ -140,4 +163,35 @@ CPickup* CSPCharacter::FindNearbyPickup() const
 	}
 
 	return nullptr;
+}
+
+CBaseEntity* CSPCharacter::FindBestEnemy() const
+{
+	CBaseEntity* pEnemy = nullptr;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+		CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(pEntity);
+		if (!pStructure && !pCharacter)
+			continue;
+
+		if (dynamic_cast<CEater*>(pEntity))
+			continue;
+
+		if (!pEnemy)
+		{
+			pEnemy = pEntity;
+			continue;
+		}
+
+		if ((pEntity->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < (pEnemy->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr())
+			pEnemy = pEntity;
+	}
+
+	return pEnemy;
 }

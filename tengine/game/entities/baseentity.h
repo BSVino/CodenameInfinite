@@ -611,7 +611,7 @@ public:
 	DECLARE_ENTITY_OUTPUT(OnTakeDamage);
 	void									Kill();
 	void									Killed(CBaseEntity* pKilledBy);
-	virtual void							OnKilled(CBaseEntity* pKilledBy) {};
+	virtual void							OnKilled(CBaseEntity* pKilledBy);
 	DECLARE_ENTITY_OUTPUT(OnKilled);
 
 	void									SetActive(bool bActive);

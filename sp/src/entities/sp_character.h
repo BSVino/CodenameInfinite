@@ -22,6 +22,7 @@ typedef enum
 {
 	TASK_NONE = 0,
 	TASK_MINE,
+	TASK_ATTACK,
 	TASK_TOTAL,
 } task_t;
 
@@ -66,6 +67,7 @@ public:
 	class CPallet*              FindNearestPallet(item_t eBlock) const;
 	class CMine*                FindNearestMine() const;
 	CPickup*                    FindNearbyPickup() const;
+	CBaseEntity*                FindBestEnemy() const;
 
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE);
 	CPlanet*					GetNearestPlanet(findplanet_t eFindPlanet = FINDPLANET_INATMOSPHERE) const;
@@ -94,6 +96,9 @@ public:
 	virtual float               GetAtmosphereLerpTime() const { return 1; }
 	virtual float               GetAtmosphereLerp() const { return 0.3f; }
 	virtual bool                ApplyGravity() const { return true; }
+
+	virtual const TVector       MeleeAttackSphereCenter() const;
+	virtual float               MeleeAttackSphereRadius() const { return 0.8f; }
 
 	virtual size_t              MaxInventory() const { return 1; }
 	virtual size_t              MaxSlots() const { return 1; }
@@ -125,6 +130,7 @@ protected:
 
 	task_t                      m_eTask;
 	CEntityHandle<CStructure>   m_hMine;
+	CEntityHandle<CBaseEntity>  m_hEnemy;
 };
 
 #endif
