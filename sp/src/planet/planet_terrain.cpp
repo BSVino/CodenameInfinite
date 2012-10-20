@@ -525,21 +525,21 @@ void CPlanetTerrain::CreateShell2VBO()
 	tvector<float> aflVerts;
 	tvector<unsigned int> aiVerts;
 	size_t iTriangles = BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iHighLevels, iRows);
-	m_iShell2IBOSize = iTriangles*3;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
 	oLock.Lock();
 	TAssert(!m_aflShell2Drop.size());
 	swap(m_aflShell2Drop, aflVerts);
-	swap(m_aiShell2Drop, aiVerts);
+
+	// If there's already a shell 2 IBO then we don't need this one.
+	if (!m_iShell2IBO)
+		swap(m_aiShell2Drop, aiVerts);
 }
 
 // This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
 void CPlanetTerrain::RebuildShell2Indices()
 {
-	TAssert(m_iShell2IBO);
-
 	int iHighLevels = m_pPlanet->LumpDepth();
 
 	tvector<CTerrainCoordinate> aiLumpCoordinates;
