@@ -130,6 +130,9 @@ void CSpire::PostRender() const
 
 	c.UseMaterial("textures/spire.mat");
 
+	if (GameServer()->GetGameTime() < m_flLastTakeDamage + 0.2)
+		c.SetUniform("vecColor", Vector4D(1, 0, 0, 1));
+
 	c.BeginRenderTriFan();
 		c.TexCoord(0.0f, 1.0f);
 		c.Vertex(-vecRight + vecUp * m_aabbPhysBoundingBox.m_vecMaxs.y);

@@ -53,6 +53,10 @@ void CEater::PostRender() const
 
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
+	c.UseMaterial("textures/eater.mat");
+	if (GameServer()->GetGameTime() < m_flLastTakeDamage + 0.2)
+		c.SetUniform("vecColor", Vector4D(1, 0, 0, 1));
+
 	c.ResetTransformations();
 	c.Transform(BaseGetRenderTransform());
 	c.Translate(GetLocalUpVector() * (m_aabbPhysBoundingBox.m_vecMaxs-m_aabbPhysBoundingBox.m_vecMins)/2);

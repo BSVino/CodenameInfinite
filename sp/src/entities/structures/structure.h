@@ -20,6 +20,8 @@ class CStructure : public CBaseEntity
 	REGISTER_ENTITY_CLASS(CStructure, CBaseEntity);
 
 public:
+	void                    Spawn();
+
 	void                    SetOwner(class CSPPlayer* pOwner);
 	CSPPlayer*              GetOwner() const;
 

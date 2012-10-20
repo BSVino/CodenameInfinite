@@ -53,6 +53,10 @@ void CWorkerBot::PostRender() const
 
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
+	c.UseMaterial("textures/workerbot.mat");
+	if (GameServer()->GetGameTime() < m_flLastTakeDamage + 0.2)
+		c.SetUniform("vecColor", Vector4D(1, 0, 0, 1));
+
 	c.ResetTransformations();
 	c.Transform(BaseGetRenderTransform());
 

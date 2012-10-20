@@ -23,6 +23,13 @@ SAVEDATA_TABLE_END();
 INPUTS_TABLE_BEGIN(CStructure);
 INPUTS_TABLE_END();
 
+void CStructure::Spawn()
+{
+	BaseClass::Spawn();
+
+	m_bTakeDamage = true;
+}
+
 void CStructure::SetOwner(class CSPPlayer* pOwner)
 {
 	m_hOwner = pOwner;

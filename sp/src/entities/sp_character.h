@@ -45,6 +45,7 @@ public:
 	virtual bool                ShouldRender() const;
 	virtual const Matrix4x4     GetRenderTransform() const;
 	virtual const Vector        GetRenderOrigin() const;
+	virtual void                ModifyContext(class CRenderingContext* pContext) const;
 
 	virtual bool                CanPickUp(class CPickup* pPickup) const;
 	void                        PickUp(class CPickup* pPickup);

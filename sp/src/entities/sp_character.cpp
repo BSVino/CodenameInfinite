@@ -1,6 +1,7 @@
 #include "sp_character.h"
 
 #include <tinker/application.h>
+#include <tinker/renderer/renderingcontext.h>
 
 #include "planet/planet.h"
 #include "planet/planet_terrain.h"
@@ -139,6 +140,19 @@ const Vector CSPCharacter::GetRenderOrigin() const
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	TAssert(eScale != SCALE_NONE);
 	return GetScalableRenderTransform().GetTranslation().GetUnits(eScale);
+}
+
+void CSPCharacter::ModifyContext(CRenderingContext* pContext) const
+{
+	BaseClass::ModifyContext(pContext);
+
+	if (GameServer()->GetGameTime() < m_flLastTakeDamage + 0.2)
+	{
+		if (!pContext->m_pShader)
+			pContext->UseProgram("model");
+
+		pContext->SetUniform("vecColor", Vector4D(1, 0, 0, 1));
+	}
 }
 
 bool CSPCharacter::CanPickUp(CPickup* pPickup) const
