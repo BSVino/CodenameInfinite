@@ -1,6 +1,7 @@
 #include "terrain_lumps.h"
 
 #include <parallelize.h>
+#include <geometry.h>
 
 #include <renderer/renderingcontext.h>
 #include <tinker/cvar.h>
@@ -414,7 +415,7 @@ void CTerrainLump::GenerateTerrain()
 	oLock.Unlock();
 
 	m_bKDTreeAvailable = false;
-	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain);
+	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows);
 	m_bKDTreeAvailable = true;
 }
 
@@ -627,6 +628,76 @@ bool CTerrainLump::FindApproximateElevation(const DoubleVector& vec3DLocal, floa
 		flElevation = (float)flVerticalDistance * (1/flScale);
 
 	return true;
+}
+
+tvector<CTerrainArea> CTerrainLump::FindNearbyAreas(const DoubleVector& vec3DLocal, float flChunkDistance) const
+{
+	if (!m_bKDTreeAvailable)
+		return tvector<CTerrainArea>();
+
+	tvector<CTerrainArea> avecAreas;
+
+	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pManager->m_pPlanet->GetScale(), SCALE_METER);
+
+	Vector vec3DLumpLocal = m_mPlanetToLump * (vec3DLocal * flScale);
+
+	size_t iChunkDepth = m_pManager->m_pPlanet->ChunkDepth()-m_pManager->m_pPlanet->LumpDepth();
+	float flChunkWidth = 1/pow(2.0f, (float)iChunkDepth);
+	float flChunkSize = sqrt(flChunkWidth*flChunkWidth+flChunkWidth*flChunkWidth);
+
+	float flChunkDistanceMeters = flChunkDistance*flScale;
+	float flChunkDistanceMetersSqr = flChunkDistanceMeters*flChunkDistanceMeters;
+
+	// Could use a vector but I want to try out alloca
+	size_t* aiSearchStack = (size_t*)alloca(40*sizeof(size_t));
+	size_t* piSearchStackTop = aiSearchStack;
+
+	(*piSearchStackTop++) = 0;
+
+	while (piSearchStackTop - aiSearchStack > 0)
+	{
+		auto& oNode = m_aKDNodes[*(piSearchStackTop-1)];
+
+		// If the distance to the bounding box is greater than our search distance
+		// then all points within will be as well.
+		if (DistanceToAABBSqr(vec3DLumpLocal, oNode.oBounds) > flChunkDistanceMetersSqr)
+		{
+			piSearchStackTop--;
+			continue;
+		}
+
+		if (oNode.iLeft == ~0)
+		{
+			// No children, search points contained.
+			size_t iEndPoint = oNode.iFirstPoint + oNode.iNumPoints;
+			for (size_t i = oNode.iFirstPoint+1; i < iEndPoint; i++)
+			{
+				const CKDPointTreePoint& oPoint = m_aKDPoints[i];
+				double flDistanceSqr = (oPoint.vec3DPosition-vec3DLumpLocal).LengthSqr();
+
+				if (flDistanceSqr < flChunkDistanceMetersSqr)
+				{
+					// Add the point.
+					CTerrainArea& vecArea = avecAreas.push_back();
+					vecArea.flDistanceToPlayer = sqrt(flDistanceSqr)/flScale;
+					vecArea.vecMin = oPoint.vec2DMin;
+					vecArea.vecMax = oPoint.vec2DMax;
+					push_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
+				}
+			}
+
+			piSearchStackTop--;
+			continue;
+		}
+
+		piSearchStackTop--;
+		(*piSearchStackTop++) = oNode.iLeft;
+		(*piSearchStackTop++) = oNode.iRight;
+	}
+
+	sort_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
+
+	return avecAreas;
 }
 
 void CTerrainLump::GetCoordinates(unsigned short& x, unsigned short& y) const

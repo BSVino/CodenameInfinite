@@ -122,8 +122,8 @@ CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
 	return m_apChunks[iChunk];
 }
 
-CVar terrain_chunkcheck("terrain_chunkcheck", "0.5");
-CVar chunk_distance("chunk_distance", "0.0003");
+CVar terrain_chunkcheck("terrain_chunkcheck", "0.3");
+CVar chunk_distance("chunk_distance", "0.0007");
 
 void CTerrainChunkManager::Think()
 {
@@ -290,7 +290,10 @@ void CTerrainChunkManager::AddNearbyChunks()
 		if (pLump->m_bGeneratingLowRes)
 			continue;
 
-		tvector<CTerrainArea> avecAreas = m_pPlanet->m_apTerrain[pLump->m_iTerrain]->FindNearbyAreas(m_pPlanet->ChunkDepth(), m_pPlanet->LumpDepth(), pLump->m_vecMin, pLump->m_vecMax, m_pPlanet->m_vecCharacterLocalOrigin, flChunkDistance);
+		if (!pLump->m_bKDTreeAvailable)
+			continue;
+
+		tvector<CTerrainArea> avecAreas = pLump->FindNearbyAreas(m_pPlanet->m_vecCharacterLocalOrigin, (float)flChunkDistance);
 
 		size_t iMaxAreas = std::min((size_t)2, avecAreas.size());
 		for (size_t j = 0; j < iMaxAreas; j++)

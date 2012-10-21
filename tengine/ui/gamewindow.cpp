@@ -27,6 +27,8 @@ CGameWindow::CGameWindow(int argc, char** argv)
 	TPortal_Startup();
 
 	m_bHaveLastMouse = false;
+
+	m_pChatBox = nullptr;
 }
 
 void CGameWindow::OpenWindow()

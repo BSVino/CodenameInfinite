@@ -476,6 +476,126 @@ inline float DistanceToPolygon(const Vector& p, tvector<Vector>& v, Vector n)
 	return flClosestPoint;
 }
 
+inline float DistanceToPlaneSqr(const Vector& p, const Vector& v, const Vector& n)
+{
+	float sb, sn, sd;
+
+	sn = -n.Dot(p - v);
+	sd = n.Dot(n);
+	sb = sn/sd;
+
+	Vector b = p + n * sb;
+	return (p - b).LengthSqr();
+}
+
+inline float DistanceToLineSqr(const Vector& p, const Vector& v1, const Vector& v2)
+{
+	Vector v = v2 - v1;
+	Vector w = p - v1;
+
+	float c1 = w.Dot(v);
+	float c2 = v.Dot(v);
+
+	float b = c1/c2;
+
+	Vector vb = v1 + v*b;
+	return (vb - p).LengthSqr();
+}
+
+inline float DistanceToAABBSqr(const Vector& p, const AABB& aabb)
+{
+	if (p.x < aabb.m_vecMins.x)
+	{
+		if (p.y < aabb.m_vecMins.y)
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return p.DistanceSqr(aabb.m_vecMins);
+			else if (p.z > aabb.m_vecMaxs.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMins.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToLineSqr(p, aabb.m_vecMins, Vector(aabb.m_vecMins.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z));
+		}
+		else if (p.y > aabb.m_vecMaxs.y)
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z), Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z));
+		}
+		else
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return DistanceToLineSqr(p, aabb.m_vecMins, Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMins.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z), Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToPlaneSqr(p, aabb.m_vecMins, Vector(-1, 0, 0));
+		}
+	}
+	else if (p.x > aabb.m_vecMaxs.x)
+	{
+		if (p.y < aabb.m_vecMins.y)
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMins.z), Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z));
+		}
+		else if (p.y > aabb.m_vecMaxs.y)
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return p.DistanceSqr(Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z), Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z));
+		}
+		else
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMins.z), Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z), Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToPlaneSqr(p, aabb.m_vecMaxs, Vector(1, 0, 0));
+		}
+	}
+	else
+	{
+		if (p.y < aabb.m_vecMins.y)
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return DistanceToLineSqr(p, aabb.m_vecMins, Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMins.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z), Vector(aabb.m_vecMaxs.x, aabb.m_vecMins.y, aabb.m_vecMaxs.z));
+			else
+				return DistanceToPlaneSqr(p, aabb.m_vecMins, Vector(0, -1, 0));
+		}
+		else if (p.y > aabb.m_vecMaxs.y)
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z), Vector(aabb.m_vecMaxs.x, aabb.m_vecMaxs.y, aabb.m_vecMins.z));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return DistanceToLineSqr(p, Vector(aabb.m_vecMins.x, aabb.m_vecMaxs.y, aabb.m_vecMaxs.z), aabb.m_vecMaxs);
+			else
+				return DistanceToPlaneSqr(p, aabb.m_vecMaxs, Vector(0, 1, 0));
+		}
+		else
+		{
+			if (p.z < aabb.m_vecMins.z)
+				return DistanceToPlaneSqr(p, aabb.m_vecMins, Vector(0, 0, -1));
+			else if (p.z > aabb.m_vecMaxs.z)
+				return DistanceToPlaneSqr(p, aabb.m_vecMaxs, Vector(0, 0, 1));
+			else
+				return 0;
+		}
+	}
+}
+
 inline float TriangleArea(const Vector& a, const Vector& b, const Vector& c)
 {
 	return (a-b).Cross(a-c).Length()/2;

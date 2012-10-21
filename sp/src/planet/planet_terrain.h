@@ -44,8 +44,9 @@ public:
 class CKDPointTreePoint
 {
 public:
-	DoubleVector		vec3DPosition;
-	DoubleVector2D		vec2DPosition;
+	DoubleVector        vec3DPosition;
+	DoubleVector2D      vec2DMin;
+	DoubleVector2D      vec2DMax;
 };
 
 class CKDPointTreeNode
@@ -83,7 +84,7 @@ public:
 	static size_t               BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt = false);
 	static size_t               BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows);
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows, bool bSkirt = false);
-	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain);
+	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows);
 	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bSkirt = false);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();

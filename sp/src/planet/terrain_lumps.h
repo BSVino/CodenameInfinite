@@ -35,6 +35,7 @@ public:
 	void								Render();
 
 	bool                                FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
+	tvector<CTerrainArea>               FindNearbyAreas(const DoubleVector& vec3DLocal, float flChunkDistance) const;
 
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;

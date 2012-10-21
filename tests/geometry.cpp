@@ -4,11 +4,42 @@
 #include <tstring.h>
 #include <mesh.h>
 #include <tvector.h>
+#include <geometry.h>
 
 #include <tinker/shell.h>
 
 void test_mesh()
 {
+	{
+		AABB aabb(Vector(-1, -1, -1), Vector(1, 1, 1));
+		TAssert(DistanceToAABBSqr(Vector(2, 0, 0), aabb) == 1);
+		TAssert(DistanceToAABBSqr(Vector(-2, 0, 0), aabb) == 1);
+		TAssert(DistanceToAABBSqr(Vector(0, 2, 0), aabb) == 1);
+		TAssert(DistanceToAABBSqr(Vector(0, -2, 0), aabb) == 1);
+		TAssert(DistanceToAABBSqr(Vector(0, 0, 2), aabb) == 1);
+		TAssert(DistanceToAABBSqr(Vector(0, 0, -2), aabb) == 1);
+		TAssert(DistanceToAABBSqr(Vector(2, 2, 0), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(-2, 2, 0), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(2, -2, 0), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(-2, -2, 0), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(0, 2, 2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(0, 2, -2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(0, -2, 2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(0, -2, -2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(2, 0, 2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(2, 0, -2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(-2, 0, 2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(-2, 0, -2), aabb) == 2);
+		TAssert(DistanceToAABBSqr(Vector(2, 2, 2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(-2, 2, 2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(2, -2, 2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(2, 2, -2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(-2, -2, 2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(2, -2, -2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(-2, 2, -2), aabb) == 3);
+		TAssert(DistanceToAABBSqr(Vector(-2, -2, -2), aabb) == 3);
+	}
+
 	{
 		// Triangular base
 		tvector<Vector> avecPoints;

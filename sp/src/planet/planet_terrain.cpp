@@ -492,7 +492,7 @@ public:
 	int    iPointListLast;
 };
 
-void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain)
+void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows)
 {
 	aPoints.reserve(avecTerrain.size());
 	aNodes.reserve(avecTerrain.size());
@@ -502,13 +502,19 @@ void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDP
 	oTop.oBounds.m_vecMins = avecTerrain[0].vecPhys;
 	oTop.oBounds.m_vecMaxs = avecTerrain[0].vecPhys;
 
-	for (size_t i = 0; i < avecTerrain.size(); i++)
+	for (size_t x = 0; x < iRows-1; x++)
 	{
-		CKDPointTreePoint& oPoint = aPoints.push_back();
-		oPoint.vec3DPosition = avecTerrain[i].vecPhys;
-		oPoint.vec2DPosition = avecTerrain[i].vec2DPosition;
+		for (size_t y = 0; y < iRows-1; y++)
+		{
+			CKDPointTreePoint& oPoint = aPoints.push_back();
 
-		oTop.oBounds.Expand(oPoint.vec3DPosition);
+			// Find the center of these four points. This center point will represent the entire area.
+			oPoint.vec3DPosition = (avecTerrain[x*iRows+y].vecPhys + avecTerrain[(x+1)*iRows+y].vecPhys + avecTerrain[x*iRows+y+1].vecPhys + avecTerrain[(x+1)*iRows+y+1].vecPhys)/4;
+			oPoint.vec2DMin = avecTerrain[x*iRows+y].vec2DPosition;
+			oPoint.vec2DMax = avecTerrain[(x+1)*iRows+y+1].vec2DPosition;
+
+			oTop.oBounds.Expand(oPoint.vec3DPosition);
+		}
 	}
 
 	tvector<CCurrentNode> aiCurrentNode;
