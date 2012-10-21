@@ -266,6 +266,21 @@ void CTerrainLumpManager::Render()
 	}
 }
 
+bool CTerrainLumpManager::FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const
+{
+	for (size_t i = 0; i < m_apLumps.size(); i++)
+	{
+		float flReturnedElevation;
+		if (m_apLumps[i]->FindApproximateElevation(vec3DLocal, flReturnedElevation))
+		{
+			flElevation = flReturnedElevation;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool CTerrainLumpManager::IsGenerating() const
 {
 	return !s_pLumpGenerator->AreAllJobsDone();
@@ -290,6 +305,8 @@ CTerrainLump::CTerrainLump(CTerrainLumpManager* pManager, size_t iLump, size_t i
 	size_t iResolution = (size_t)pow(2.0f, (float)m_pManager->m_pPlanet->LumpDepth());
 	m_iX = (size_t)RemapVal((vecMin.x+vecMax.x)/2, 0, 1, 0, iResolution);
 	m_iY = (size_t)RemapVal((vecMin.y+vecMax.y)/2, 0, 1, 0, iResolution);
+
+	m_bKDTreeAvailable = false;
 }
 
 CTerrainLump::~CTerrainLump()
@@ -394,6 +411,11 @@ void CTerrainLump::GenerateTerrain()
 		TAssert(!m_aflLowResDrop.size());
 		swap(m_aflLowResDrop, aflVerts);
 		swap(m_aiLowResDrop, aiVerts);
+	oLock.Unlock();
+
+	m_bKDTreeAvailable = false;
+	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain);
+	m_bKDTreeAvailable = true;
 }
 
 // This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
@@ -506,6 +528,105 @@ void CTerrainLump::Render()
 	r.SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
 	r.SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
 	r.EndRenderVertexArrayIndexed(m_iLowResTerrainIBO, m_iLowResTerrainIBOSize);
+}
+
+bool CTerrainLump::FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const
+{
+	if (!m_bKDTreeAvailable)
+		return false;
+
+	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pManager->m_pPlanet->GetScale(), SCALE_METER);
+
+	DoubleVector vec3DLumpLocal = m_mPlanetToLump * (vec3DLocal * flScale);
+
+	size_t iCurrent = 0;
+	auto& oTop = m_aKDNodes[0];
+
+	if (!oTop.oBounds.Inside2D(vec3DLumpLocal))
+		return false;
+
+	while (m_aKDNodes[iCurrent].iLeft != ~0)
+	{
+		auto& oNode = m_aKDNodes[iCurrent];
+		auto& oLeftChild = m_aKDNodes[oNode.iLeft];
+		auto& oRightChild = m_aKDNodes[oNode.iRight];
+
+		if (oNode.iSplitAxis == 1)
+		{
+			if (vec3DLumpLocal.y < oLeftChild.oBounds.m_vecMaxs.y)
+				iCurrent = oNode.iLeft;
+			else
+				iCurrent = oNode.iRight;
+
+			continue;
+		}
+
+		bool bInsideLeft2D = oLeftChild.oBounds.Inside2D(vec3DLumpLocal);
+		bool bInsideRight2D = oRightChild.oBounds.Inside2D(vec3DLumpLocal);
+
+		TAssert(bInsideLeft2D || bInsideRight2D);
+		if (!bInsideLeft2D && !bInsideRight2D)
+			return false;
+
+		if (bInsideLeft2D && !bInsideRight2D)
+		{
+			iCurrent = oNode.iLeft;
+			continue;
+		}
+
+		if (!bInsideLeft2D && bInsideRight2D)
+		{
+			iCurrent = oNode.iRight;
+			continue;
+		}
+
+		TAssert(false);
+		return false;
+	}
+
+	while (!m_aKDNodes[iCurrent].iNumPoints)
+		iCurrent = m_aKDNodes[iCurrent].iParent;
+
+	auto& oFinalNode = m_aKDNodes[iCurrent];
+	size_t iEndPoint = oFinalNode.iFirstPoint + oFinalNode.iNumPoints;
+
+	double flClosestDistance2DSqr = (m_aKDPoints[oFinalNode.iFirstPoint].vec3DPosition-vec3DLumpLocal).Length2DSqr();
+	size_t iClosestPoint = oFinalNode.iFirstPoint;
+
+	for (size_t i = oFinalNode.iFirstPoint+1; i < iEndPoint; i++)
+	{
+		double flDistance2DSqr = (m_aKDPoints[i].vec3DPosition-vec3DLumpLocal).Length2DSqr();
+
+		if (flDistance2DSqr < flClosestDistance2DSqr)
+		{
+			flClosestDistance2DSqr = flDistance2DSqr;
+			iClosestPoint = i;
+		}
+	}
+
+	double fl2DDistance = (m_aKDPoints[iClosestPoint].vec3DPosition -vec3DLumpLocal).Length2D();
+
+	if (iClosestPoint == 0)
+	{
+		if (fl2DDistance > (m_aKDPoints[iClosestPoint].vec3DPosition-m_aKDPoints[iClosestPoint+1].vec3DPosition).Length2D()*10)
+			return false;
+	}
+	else
+	{
+		if (fl2DDistance > (m_aKDPoints[iClosestPoint].vec3DPosition-m_aKDPoints[iClosestPoint-1].vec3DPosition).Length2D()*10)
+			return false;
+	}
+
+	DoubleVector vecClosestPoint = vec3DLumpLocal;
+	vecClosestPoint.y = m_aKDPoints[iClosestPoint].vec3DPosition.y;
+	double flVerticalDistance = vecClosestPoint.Distance(vec3DLumpLocal);
+
+	if (vecClosestPoint.y > vec3DLumpLocal.y)
+		flElevation = 0;
+	else
+		flElevation = (float)flVerticalDistance * (1/flScale);
+
+	return true;
 }
 
 void CTerrainLump::GetCoordinates(unsigned short& x, unsigned short& y) const

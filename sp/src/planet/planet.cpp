@@ -356,6 +356,11 @@ void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerra
 	TAssert(vec2DCoord.y <= 1);
 }
 
+bool CPlanet::FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const
+{
+	return GetLumpManager()->FindApproximateElevation(vec3DLocal, flElevation);
+}
+
 void CPlanet::SetRadius(const CScalableFloat& flRadius)
 {
 	m_flRadius = flRadius;

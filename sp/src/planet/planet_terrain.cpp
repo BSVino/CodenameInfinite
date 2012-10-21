@@ -483,6 +483,121 @@ size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const 
 	return iTriangles;
 }
 
+class CCurrentNode
+{
+public:
+	size_t iNode;
+	int    iPointListFirst;
+	int    iPointListSplit;
+	int    iPointListLast;
+};
+
+void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain)
+{
+	aPoints.reserve(avecTerrain.size());
+	aNodes.reserve(avecTerrain.size());
+
+	CKDPointTreeNode& oTop = aNodes.push_back();
+
+	oTop.oBounds.m_vecMins = avecTerrain[0].vecPhys;
+	oTop.oBounds.m_vecMaxs = avecTerrain[0].vecPhys;
+
+	for (size_t i = 0; i < avecTerrain.size(); i++)
+	{
+		CKDPointTreePoint& oPoint = aPoints.push_back();
+		oPoint.vec3DPosition = avecTerrain[i].vecPhys;
+		oPoint.vec2DPosition = avecTerrain[i].vec2DPosition;
+
+		oTop.oBounds.Expand(oPoint.vec3DPosition);
+	}
+
+	tvector<CCurrentNode> aiCurrentNode;
+	aiCurrentNode.reserve(40);
+	CCurrentNode& oFirst = aiCurrentNode.push_back();
+	oFirst.iNode = 0;
+	oFirst.iPointListFirst = 0;
+	oFirst.iPointListLast = aPoints.size()-1;
+
+	while (aiCurrentNode.size())
+	{
+		CCurrentNode& oCurrentIndex = aiCurrentNode.back();
+		CKDPointTreeNode& oNode = aNodes[oCurrentIndex.iNode];
+
+		if (oNode.iLeft == ~0 && oCurrentIndex.iPointListLast - oCurrentIndex.iPointListFirst > 5)
+		{
+			Vector vecBoundsSize = oNode.oBounds.Size();
+
+			// Find the largest axis.
+			if (vecBoundsSize.x > vecBoundsSize.y)
+				oNode.iSplitAxis = 0;
+			else
+				oNode.iSplitAxis = 1;
+			if (vecBoundsSize.z > vecBoundsSize[oNode.iSplitAxis])
+				oNode.iSplitAxis = 2;
+
+			// Use better algorithm!
+			oNode.flSplitPos = oNode.oBounds.m_vecMins[oNode.iSplitAxis] + vecBoundsSize[oNode.iSplitAxis]/2;
+
+			// Partially sort the points list using the quicksort method around the selected point.
+			oCurrentIndex.iPointListSplit = oCurrentIndex.iPointListFirst;
+			for (size_t i = oCurrentIndex.iPointListFirst; i <= (size_t)oCurrentIndex.iPointListLast; i++)
+			{
+				if (aPoints[i].vec3DPosition[oNode.iSplitAxis] < oNode.flSplitPos)
+				{
+					std::swap(aPoints[i], aPoints[oCurrentIndex.iPointListSplit]);
+					oCurrentIndex.iPointListSplit++;
+				}
+			}
+
+			// iSplitIndex is now index of the first point above the split axis. Points on each side of the split are not yet sorted.
+
+			aNodes.push_back();
+			CKDPointTreeNode& oRightChild = aNodes.push_back();
+			CKDPointTreeNode& oLeftChild = *(aNodes.end()-2);
+
+			// aNodes.push_back() may have invalidated old pointers so grab this again.
+			CKDPointTreeNode& oNode = aNodes[oCurrentIndex.iNode];
+
+			oLeftChild.iParent = oCurrentIndex.iNode;
+			oRightChild.iParent = oCurrentIndex.iNode;
+
+			oLeftChild.oBounds = oRightChild.oBounds = oNode.oBounds;
+
+			oLeftChild.oBounds.m_vecMaxs[oNode.iSplitAxis] = oNode.flSplitPos;
+			oRightChild.oBounds.m_vecMins[oNode.iSplitAxis] = oNode.flSplitPos;
+
+			oNode.iLeft = aNodes.size()-2;
+			oNode.iRight = aNodes.size()-1;
+
+			// Stash there before aiCurrentNode.push_back() invalidates oCurrentIndex
+			size_t iFirst = oCurrentIndex.iPointListFirst;
+			size_t iSplit = oCurrentIndex.iPointListSplit;
+			size_t iLast = oCurrentIndex.iPointListLast;
+
+			aiCurrentNode.push_back();
+			CCurrentNode& oRightChildIndex = aiCurrentNode.push_back();
+			CCurrentNode& oLeftChildIndex = *(aiCurrentNode.end()-2);
+
+			oLeftChildIndex.iNode = oNode.iLeft;
+			oLeftChildIndex.iPointListFirst = iFirst;
+			oLeftChildIndex.iPointListLast = iSplit-1;
+
+			oRightChildIndex.iNode = oNode.iRight;
+			oRightChildIndex.iPointListFirst = iSplit;
+			oRightChildIndex.iPointListLast = iLast;
+		}
+		else
+		{
+			oNode.iNumPoints = oCurrentIndex.iPointListLast>=oCurrentIndex.iPointListFirst?(oCurrentIndex.iPointListLast - oCurrentIndex.iPointListFirst + 1):0;
+			oNode.iFirstPoint = oCurrentIndex.iPointListFirst;
+
+			aiCurrentNode.pop_back();
+		}
+	}
+
+	aNodes.set_capacity(aNodes.size());
+}
+
 void CPlanetTerrain::CreateShell1VBO()
 {
 	if (m_iShell1VBO)

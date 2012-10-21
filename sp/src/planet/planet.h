@@ -41,6 +41,7 @@ public:
 	void						SetRandomSeed(size_t iSeed);
 
 	void                        GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord);
+	bool                        FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
 
 	void						SetRadius(const CScalableFloat& flRadius);
 	CScalableFloat				GetRadius() const { return m_flRadius; }
@@ -64,8 +65,8 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
-	const class CTerrainLumpManager* GetLumpManager() { return m_pLumpManager; }
-	const class CTerrainChunkManager* GetChunkManager() { return m_pChunkManager; }
+	const class CTerrainLumpManager* GetLumpManager() const { return m_pLumpManager; }
+	const class CTerrainChunkManager* GetChunkManager() const { return m_pChunkManager; }
 	size_t						LumpDepth() { return m_iLumpDepth; };      // The depth at which lumps first appear.
 	size_t						ChunkDepth() { return m_iMeterDepth-7; };  // The depth at which chunks first appear.
 	size_t						MeterDepth() { return m_iMeterDepth; };    // The deepest depth.

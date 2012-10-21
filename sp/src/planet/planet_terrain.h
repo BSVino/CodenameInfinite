@@ -41,6 +41,36 @@ public:
 	unsigned short  y;
 };
 
+class CKDPointTreePoint
+{
+public:
+	DoubleVector		vec3DPosition;
+	DoubleVector2D		vec2DPosition;
+};
+
+class CKDPointTreeNode
+{
+public:
+	CKDPointTreeNode()
+	{
+		iParent = iLeft = iRight = ~0;
+		iNumPoints = 0;
+	}
+
+public:
+	size_t              iParent;    // Indices into node vector
+	size_t              iLeft;
+	size_t              iRight;
+
+	size_t              iFirstPoint;    // Index into point vector
+	size_t              iNumPoints;
+
+	AABB                oBounds;
+
+	size_t              iSplitAxis;
+	float               flSplitPos;
+};
+
 class CPlanetTerrain
 {
 	friend class CPlanet;
@@ -53,6 +83,7 @@ public:
 	static size_t               BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt = false);
 	static size_t               BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows);
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows, bool bSkirt = false);
+	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain);
 	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bSkirt = false);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();

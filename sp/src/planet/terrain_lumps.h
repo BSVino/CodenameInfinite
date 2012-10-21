@@ -34,6 +34,8 @@ public:
 
 	void								Render();
 
+	bool                                FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
+
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
 	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
@@ -62,6 +64,10 @@ protected:
 	size_t								m_iLowResTerrainIBO;
 	size_t								m_iLowResTerrainIBOSize;
 
+	bool                                m_bKDTreeAvailable;
+	tvector<CKDPointTreeNode>           m_aKDNodes;
+	tvector<CKDPointTreePoint>          m_aKDPoints;
+
 	bool                                m_bGeneratingLowRes;
 	tvector<float>                      m_aflLowResDrop;
 	tvector<unsigned int>               m_aiLowResDrop;
@@ -86,6 +92,8 @@ public:
 	void								GenerateLump(size_t iLump);
 	void								Render();
 
+	bool                                FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
+
 	bool                                IsGenerating() const;
 
 private:
@@ -93,7 +101,7 @@ private:
 
 protected:
 	class CPlanet*						m_pPlanet;
-	tvector<CTerrainLump*>             m_apLumps;
+	tvector<CTerrainLump*>              m_apLumps;
 
 	double								m_flNextLumpCheck;
 

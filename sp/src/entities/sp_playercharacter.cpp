@@ -239,6 +239,13 @@ void CPlayerCharacter::ApproximateElevation()
 
 	DoubleVector vec3DOrigin = pPlanet->GetCharacterLocalOrigin();
 
+	float flElevation;
+	if (pPlanet->FindApproximateElevation(vec3DOrigin, flElevation))
+	{
+		m_flApproximateElevation = flElevation;
+		return;
+	}
+
 	size_t iTerrain;
 	DoubleVector2D vecApprox2DCoord;
 	pPlanet->GetApprox2DPosition(vec3DOrigin, iTerrain, vecApprox2DCoord);
