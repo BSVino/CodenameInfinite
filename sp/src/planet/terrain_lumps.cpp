@@ -271,6 +271,9 @@ bool CTerrainLumpManager::FindApproximateElevation(const DoubleVector& vec3DLoca
 {
 	for (size_t i = 0; i < m_apLumps.size(); i++)
 	{
+		if (!m_apLumps[i])
+			continue;
+
 		float flReturnedElevation;
 		if (m_apLumps[i]->FindApproximateElevation(vec3DLocal, flReturnedElevation))
 		{
@@ -406,6 +409,10 @@ void CTerrainLump::GenerateTerrain()
 	size_t iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows, true);
 	m_iLowResTerrainIBOSize = iTriangles*3;
 
+	m_bKDTreeAvailable = false;
+	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows);
+	m_bKDTreeAvailable = true;
+
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pManager->s_pLumpGenerator->GetLock();
 	oLock.Lock();
@@ -413,10 +420,6 @@ void CTerrainLump::GenerateTerrain()
 		swap(m_aflLowResDrop, aflVerts);
 		swap(m_aiLowResDrop, aiVerts);
 	oLock.Unlock();
-
-	m_bKDTreeAvailable = false;
-	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows);
-	m_bKDTreeAvailable = true;
 }
 
 // This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
@@ -436,7 +439,7 @@ void CTerrainLump::RebuildIndices()
 		if (!pChunk)
 			continue;
 
-		if (pChunk->IsGeneratingLowRes())
+		if (pChunk->IsGeneratingTerrain())
 			continue;
 
 		if (pChunk->GetTerrain() != m_iTerrain)
@@ -452,7 +455,7 @@ void CTerrainLump::RebuildIndices()
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iResolution);
 
 	tvector<unsigned int> aiVerts;
-	size_t iTriangles = CPlanetTerrain::BuildMeshIndices(aiVerts, aiChunkCoordinates, iResolution, iQuadsPerRow, true);
+	size_t iTriangles = CPlanetTerrain::BuildMeshIndices(aiVerts, aiChunkCoordinates, iQuadsPerRow+1, true);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pManager->s_pLumpGenerator->GetLock();

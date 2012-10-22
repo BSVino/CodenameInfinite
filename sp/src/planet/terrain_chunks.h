@@ -15,6 +15,8 @@ public:
 	size_t                      iChunk;
 };
 
+#define CHUNK_TERRAIN_LODS 4
+
 class CTerrainChunk
 {
 	friend class CTerrainChunkManager;
@@ -34,7 +36,7 @@ public:
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
 	size_t                              GetLump() const;
-	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
+	bool                                IsGeneratingTerrain() const { return m_bGeneratingTerrain; }
 	size_t                              GetPhysicsEntity() const { return m_iPhysicsEntity; }
 	bool                                HasPhysicsEntity() const { return m_iPhysicsEntity != ~0; }
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
@@ -63,13 +65,13 @@ protected:
 	DoubleMatrix4x4                     m_mPlanetToChunk;
 	DoubleMatrix4x4                     m_mChunkToPlanet;
 
-	size_t								m_iLowResTerrainVBO;
-	size_t								m_iLowResTerrainIBO;
-	size_t								m_iLowResTerrainIBOSize;
+	size_t                              m_iTerrainVBO;
+	CTerrainLOD                         m_aiTerrainLODs[CHUNK_TERRAIN_LODS][CHUNK_TERRAIN_LODS];
 
-	bool                                m_bGeneratingLowRes;
-	tvector<float>                      m_aflLowResDrop;
-	tvector<unsigned int>               m_aiLowResDrop;
+	bool                                m_bGeneratingTerrain;
+	bool                                m_bGenerationDone;
+	tvector<float>                      m_aflVBODrop;
+	tvector<CTerrainLODDrop>            m_aLODDrops;
 
 	bool                                m_bLoadIntoPhysics;
 	tvector<float>                      m_aflPhysicsVerts;

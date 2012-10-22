@@ -72,6 +72,42 @@ public:
 	float               flSplitPos;
 };
 
+typedef enum
+{
+	LOD_HIGH,
+	LOD_MED,
+	LOD_LOW,
+	LOD_TOTAL,
+} lod_type;
+
+class CTerrainLOD
+{
+public:
+	CTerrainLOD()
+	{
+		memset(this, 0, sizeof(CTerrainLOD));
+	}
+
+	~CTerrainLOD();
+
+public:
+	void         UnloadAll();
+
+public:
+	DoubleVector vecCenter;
+	size_t       iLODIBO[LOD_TOTAL], iLODIBOSize[LOD_TOTAL];
+};
+
+class CTerrainLODDrop
+{
+public:
+	size_t                 x, y;
+	lod_type               m_eType;
+
+	tvector<unsigned int>  m_aiDrop;
+	size_t                 m_iSize;
+};
+
 class CPlanetTerrain
 {
 	friend class CPlanet;
@@ -82,8 +118,10 @@ public:
 public:
 	void						Think();
 	static size_t               BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt = false);
+	static size_t               BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt = false);
 	static size_t               BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows);
-	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows, bool bSkirt = false);
+	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iRows, bool bSkirt = false);
+	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iX, size_t iY, size_t iStep, size_t iRowsToIndex, size_t iRowsTotal, bool bSkirt = false);
 	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows);
 	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bSkirt = false);
 	void						CreateShell1VBO();

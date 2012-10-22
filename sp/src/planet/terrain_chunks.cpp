@@ -98,7 +98,7 @@ void CTerrainChunkManager::LumpRemoved(size_t iLump)
 
 void CTerrainChunkManager::RemoveChunkNoLock(size_t iChunk)
 {
-	if (m_apChunks[iChunk] && m_apChunks[iChunk]->m_bGeneratingLowRes)
+	if (m_apChunks[iChunk] && m_apChunks[iChunk]->m_bGeneratingTerrain)
 		return;
 
 	if (m_apChunks[iChunk]->HasPhysicsEntity())
@@ -140,7 +140,7 @@ void CTerrainChunkManager::Think()
 			{
 				if (m_apChunks[i])
 				{
-					if (m_apChunks[i]->m_bGeneratingLowRes)
+					if (m_apChunks[i]->m_bGeneratingTerrain)
 					{
 						iChunksRemaining++;
 						continue;
@@ -313,7 +313,7 @@ void CTerrainChunkManager::GenerateChunk(size_t iChunk)
 		if (iChunk >= m_apChunks.size() || !m_apChunks[iChunk])
 			return;
 
-		m_apChunks[iChunk]->m_bGeneratingLowRes = true;
+		m_apChunks[iChunk]->m_bGeneratingTerrain = true;
 	oLock.Unlock();
 
 	m_apChunks[iChunk]->GenerateTerrain();
@@ -382,7 +382,7 @@ void CTerrainChunkManager::Render()
 		if (!pChunk)
 			continue;
 
-		if (pChunk->IsGeneratingLowRes())
+		if (pChunk->IsGeneratingTerrain())
 			continue;
 
 		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScale(eRenderScale, Vector(pChunk->GetLocalCenter()*flScale-vecCharacterOrigin), (float)(pChunk->GetRadius()*flScale)))
@@ -419,7 +419,9 @@ CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size
 	DoubleVector vecWorldMax = pTerrain->CoordToWorld(m_vecMax) + pTerrain->GenerateOffset(m_vecMax);
 	m_aabbBounds = TemplateAABB<double>(vecWorldMin, vecWorldMax);
 
-	m_iLowResTerrainVBO = 0;
+	m_bGeneratingTerrain = false;
+	m_bGenerationDone = false;
+
 	m_bLoadIntoPhysics = false;
 	m_iPhysicsMesh = ~0;
 	m_iPhysicsEntity = ~0;
@@ -431,12 +433,6 @@ CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size
 
 CTerrainChunk::~CTerrainChunk()
 {
-	if (m_iLowResTerrainVBO)
-	{
-		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainVBO);
-		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainIBO);
-	}
-
 	if (m_iPhysicsEntity != ~0)
 	{
 		GamePhysics()->RemoveExtra(m_iPhysicsEntity);
@@ -454,7 +450,7 @@ void CTerrainChunk::Initialize()
 
 void CTerrainChunk::Think()
 {
-	if (m_bGeneratingLowRes)
+	if (m_bGeneratingTerrain)
 	{
 		bool bUpdateTerrain = false;
 		CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
@@ -478,14 +474,24 @@ void CTerrainChunk::Think()
 					m_pManager->FindCenterChunk();
 			}
 
-			if (m_aflLowResDrop.size())
+			if (m_aflVBODrop.size())
 			{
-				m_iLowResTerrainVBO = CRenderer::LoadVertexDataIntoGL(m_aflLowResDrop.size() * sizeof(float), m_aflLowResDrop.data());
-				m_iLowResTerrainIBO = CRenderer::LoadIndexDataIntoGL(m_aiLowResDrop.size() * sizeof(unsigned int), m_aiLowResDrop.data());
-				m_bGeneratingLowRes = false;
-				m_aflLowResDrop.set_capacity(0);
-				m_aiLowResDrop.set_capacity(0);
+				m_iTerrainVBO = CRenderer::LoadVertexDataIntoGL(m_aflVBODrop.size() * sizeof(float), m_aflVBODrop.data());
+				m_aflVBODrop.set_capacity(0);
 				bUpdateTerrain = true;
+			}
+
+			while (m_aLODDrops.size())
+			{
+				m_aiTerrainLODs[m_aLODDrops.back().x][m_aLODDrops.back().y].iLODIBO[m_aLODDrops.back().m_eType] = CRenderer::LoadIndexDataIntoGL(m_aLODDrops.back().m_aiDrop.size() * sizeof(unsigned int), m_aLODDrops.back().m_aiDrop.data());
+				m_aiTerrainLODs[m_aLODDrops.back().x][m_aLODDrops.back().y].iLODIBOSize[m_aLODDrops.back().m_eType] = m_aLODDrops.back().m_iSize;
+				m_aLODDrops.pop_back();
+			}
+
+			if (m_bGenerationDone)
+			{
+				bUpdateTerrain = true;
+				m_bGeneratingTerrain = false;
 			}
 		}
 		oLock.Unlock();
@@ -500,13 +506,11 @@ void CTerrainChunk::Think()
 
 void CTerrainChunk::GenerateTerrain()
 {
-	if (m_iLowResTerrainVBO)
+	for (size_t x = 0; x < CHUNK_TERRAIN_LODS; x++)
 	{
-		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainVBO);
-		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainIBO);
+		for (size_t y = 0; y < CHUNK_TERRAIN_LODS; y++)
+			m_aiTerrainLODs[x][y].UnloadAll();
 	}
-
-	m_iLowResTerrainVBO = 0;
 
 	int iHighestLevel = m_pManager->m_pPlanet->MeterDepth();
 	int iLowestLevel = m_pManager->m_pPlanet->ChunkDepth();
@@ -544,22 +548,62 @@ void CTerrainChunk::GenerateTerrain()
 	m_bLoadIntoPhysics = true;
 
 	tvector<float> aflVerts;
-	tvector<unsigned int> aiVerts;
-	iTriangles = CPlanetTerrain::BuildIndexedVerts(aflVerts, aiVerts, avecTerrain, iResolution, iRows, true);
-	m_iLowResTerrainIBOSize = iTriangles*3;
+	iTriangles = CPlanetTerrain::BuildVerts(aflVerts, avecTerrain, iResolution, iRows, true);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
 	oLock.Lock();
-		TAssert(!m_aflLowResDrop.size());
-		swap(m_aflLowResDrop, aflVerts);
-		swap(m_aiLowResDrop, aiVerts);
+		TAssert(!m_aflVBODrop.size());
+		swap(m_aflVBODrop, aflVerts);
 	oLock.Unlock();
+
+	tvector<unsigned int> aiVerts;
+	for (size_t x = 0; x < CHUNK_TERRAIN_LODS; x++)
+	{
+		for (size_t y = 0; y < CHUNK_TERRAIN_LODS; y++)
+		{
+			size_t iX = x*iRows/CHUNK_TERRAIN_LODS;
+			size_t iY = y*iRows/CHUNK_TERRAIN_LODS;
+
+			size_t iX3 = (x+1)*iRows/CHUNK_TERRAIN_LODS-1;
+			size_t iY3 = (y+1)*iRows/CHUNK_TERRAIN_LODS-1;
+
+			size_t iX2 = (iX + iX3)/2;
+			size_t iY2 = (iY + iY3)/2;
+
+			DoubleVector vecCenter;
+			vecCenter = (avecTerrain[(iX*iRows)+iY].vec3DPosition + avecTerrain[(iX2*iRows)+iY2].vec3DPosition + avecTerrain[(iX3*iRows)+iY3].vec3DPosition)/3;
+			m_aiTerrainLODs[y][x].vecCenter = vecCenter + m_vecLocalCenter;
+
+			for (size_t i = 0; i < LOD_TOTAL; i++)
+			{
+				aiVerts.clear();
+
+				size_t iStep = (size_t)pow((float)2, (float)i);
+				size_t iLODTriangles = CPlanetTerrain::BuildMeshIndices(aiVerts, tvector<CTerrainCoordinate>(), iX, iY, iStep, iRows/CHUNK_TERRAIN_LODS, iRows, false);
+
+				CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
+				oLock.Lock();
+					CTerrainLODDrop& oDrop = m_aLODDrops.push_back();
+					oDrop.m_aiDrop = aiVerts;
+					oDrop.x = x;
+					oDrop.y = y;
+					oDrop.m_eType = (lod_type)i;
+					oDrop.m_iSize = iLODTriangles*3;
+				oLock.Unlock();
+			}
+		}
+	}
+
+	m_bGenerationDone = true;
 }
+
+CVar chunk_lod_min_distance("chunk_lod_min_distance", "0.0");
+CVar chunk_lod_max_distance("chunk_lod_max_distance", "0.00015");
 
 void CTerrainChunk::Render()
 {
-	if (!m_iLowResTerrainVBO)
+	if (!m_iTerrainVBO)
 		return;
 
 	scale_t eRenderScale = SPGame()->GetSPRenderer()->GetRenderingScale();
@@ -620,12 +664,26 @@ void CTerrainChunk::Render()
 	float flAtmosphere = (float)RemapValClamped(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1.0, 0.0);
 	r.SetUniform("flAtmosphere", flAtmosphere);
 
-	r.BeginRenderVertexArray(m_iLowResTerrainVBO);
-	r.SetPositionBuffer(0u, 10*sizeof(float));
-	r.SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
-	r.SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
-	r.SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
-	r.EndRenderVertexArrayIndexed(m_iLowResTerrainIBO, m_iLowResTerrainIBOSize);
+	float flLODMinDistanceSqr = chunk_lod_min_distance.GetFloat()*chunk_lod_min_distance.GetFloat();
+	float flLODMaxDistanceSqr = chunk_lod_max_distance.GetFloat()*chunk_lod_max_distance.GetFloat();
+
+	// Todo: Can I frustum cull these individually?
+	for (size_t x = 0; x < CHUNK_TERRAIN_LODS; x++)
+	{
+		for (size_t y = 0; y < CHUNK_TERRAIN_LODS; y++)
+		{
+			double flDistanceSqr = (m_aiTerrainLODs[x][y].vecCenter - m_pManager->m_pPlanet->GetCharacterLocalOrigin()).LengthSqr();
+			float flLOD = RemapValClamped((float)flDistanceSqr, flLODMinDistanceSqr, flLODMaxDistanceSqr, 0, (float)LOD_TOTAL-1);
+			lod_type eLOD = (lod_type)(int)flLOD;
+
+			r.BeginRenderVertexArray(m_iTerrainVBO);
+			r.SetPositionBuffer(0u, 10*sizeof(float));
+			r.SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
+			r.SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
+			r.SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
+			r.EndRenderVertexArrayIndexed(m_aiTerrainLODs[x][y].iLODIBO[eLOD], m_aiTerrainLODs[x][y].iLODIBOSize[eLOD]);
+		}
+	}
 }
 
 void CTerrainChunk::GetCoordinates(unsigned short& x, unsigned short& y) const

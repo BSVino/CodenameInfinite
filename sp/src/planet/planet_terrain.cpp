@@ -79,6 +79,7 @@ void CPlanetTerrain::Think()
 
 size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecOrigin, bool bSkirt)
 {
+	bSkirt = false;
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iDepth);
 	size_t iVertsPerRow = iQuadsPerRow + 1;
 	avecTerrain.resize(iVertsPerRow*iVertsPerRow);
@@ -330,46 +331,26 @@ void BuildSkirt(tvector<unsigned int>& aiIndices, size_t iRows)
 
 size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsigned int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt)
 {
+	bSkirt = false;
+	BuildMeshIndices(aiIndices, tvector<CTerrainCoordinate>(), iRows, bSkirt);
+
+	return BuildVerts(aflVerts, avecTerrain, iLevels, iRows, bSkirt);
+}
+
+size_t CPlanetTerrain::BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt)
+{
+	bSkirt = false;
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
 	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
 	if (bSkirt)
 		iTriangles += (int)pow(2.0f, (float)iLevels) * 4 * 2;
 
-	aiIndices.reserve(iTriangles * 3);
-
 	aflVerts.reserve(avecTerrain.size()*iVertSize);
 
 	size_t iTerrainSize = avecTerrain.size();
 	for (size_t x = 0; x < iTerrainSize; x++)
 		PushVert(aflVerts, avecTerrain[x]);
-
-	for (size_t x = 0; x < iRows-1; x++)
-	{
-		for (size_t y = 0; y < iRows-1; y++)
-		{
-			unsigned int i1 = y*iRows + x;
-			unsigned int i2 = y*iRows + (x+1);
-			unsigned int i3 = (y+1)*iRows + (x+1);
-			unsigned int i4 = (y+1)*iRows + x;
-
-			TAssert(i1 < iTerrainSize);
-			TAssert(i2 < iTerrainSize);
-			TAssert(i3 < iTerrainSize);
-			TAssert(i4 < iTerrainSize);
-
-			aiIndices.push_back(i1);
-			aiIndices.push_back(i2);
-			aiIndices.push_back(i3);
-
-			aiIndices.push_back(i1);
-			aiIndices.push_back(i3);
-			aiIndices.push_back(i4);
-		}
-	}
-
-	if (bSkirt)
-		BuildSkirt(aiIndices, iRows);
 
 	return iTriangles;
 }
@@ -433,39 +414,51 @@ size_t CPlanetTerrain::BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<i
 	return iTriangles;
 }
 
-size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iLevels, size_t iRows, bool bSkirt)
+size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iRows, bool bSkirt)
 {
+	return BuildMeshIndices(aiIndices, aiExclude, 0, 0, 1, iRows-1, iRows, bSkirt);
+}
+
+size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iX, size_t iY, size_t iStep, size_t iRowsToIndex, size_t iRowsTotal, bool bSkirt)
+{
+	bSkirt = false;
+	if ((iX || iY) && bSkirt)
+		TUnimplemented();
+
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
 
-	size_t iTriangles = (int)pow(4.0f, (float)iLevels) * 2;
+	size_t iTriangles = iRowsToIndex*iRowsToIndex*2;
 	if (bSkirt)
-		iTriangles += (int)pow(2.0f, (float)iLevels) * 4 * 2;
+		iTriangles += iRowsToIndex*2;
 
 	aiIndices.reserve(iTriangles * 3);
 
-	size_t iVertsPerRow = iRows+1;
+	iTriangles = 0;
 
-	for (size_t x = 0; x < iRows; x++)
+	for (size_t x = iX; x < iX+iRowsToIndex; x += iStep)
 	{
-		for (size_t y = 0; y < iRows; y++)
+		for (size_t y = iY; y < iY+iRowsToIndex; y += iStep)
 		{
-			bool bSkip = false;
-			for (size_t i = 0; i < aiExclude.size(); i++)
+			if (iStep == 1)
 			{
-				if (x == aiExclude[i].x && y == aiExclude[i].y)
-					bSkip = true;
+				bool bSkip = false;
+				for (size_t i = 0; i < aiExclude.size(); i++)
+				{
+					if (x == aiExclude[i].x && y == aiExclude[i].y)
+					{
+						bSkip = true;
+						break;
+					}
+				}
+
+				if (bSkip)
+					continue;
 			}
 
-			if (bSkip)
-			{
-				iTriangles--;
-				continue;
-			}
-
-			unsigned int i1 = y*iVertsPerRow + x;
-			unsigned int i2 = y*iVertsPerRow + (x+1);
-			unsigned int i3 = (y+1)*iVertsPerRow + (x+1);
-			unsigned int i4 = (y+1)*iVertsPerRow + x;
+			unsigned int i1 = y*iRowsTotal + x;
+			unsigned int i2 = y*iRowsTotal + (x+iStep);
+			unsigned int i3 = (y+iStep)*iRowsTotal + (x+iStep);
+			unsigned int i4 = (y+iStep)*iRowsTotal + x;
 
 			aiIndices.push_back(i1);
 			aiIndices.push_back(i2);
@@ -474,11 +467,15 @@ size_t CPlanetTerrain::BuildMeshIndices(tvector<unsigned int>& aiIndices, const 
 			aiIndices.push_back(i1);
 			aiIndices.push_back(i3);
 			aiIndices.push_back(i4);
+
+			iTriangles += 2;
 		}
 	}
 
 	if (bSkirt)
-		BuildSkirt(aiIndices, iVertsPerRow);
+		BuildSkirt(aiIndices, iRowsTotal);
+
+	aiIndices.set_capacity(aiIndices.size());
 
 	return iTriangles;
 }
@@ -683,7 +680,7 @@ void CPlanetTerrain::RebuildShell2Indices()
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iHighLevels);
 
 	tvector<unsigned int> aiVerts;
-	size_t iTriangles = BuildMeshIndices(aiVerts, aiLumpCoordinates, iHighLevels, iQuadsPerRow);
+	size_t iTriangles = BuildMeshIndices(aiVerts, aiLumpCoordinates, iQuadsPerRow+1);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pPlanet->s_pShell2Generator->GetLock();
@@ -916,4 +913,17 @@ const DoubleVector CPlanetTerrain::CoordToWorld(const DoubleVector2D& v) const
 		vecCubePoint = DoubleVector(-x, y, vecDirection[2]);
 
 	return vecCubePoint.Normalized() * m_pPlanet->GetRadius().GetUnits(m_pPlanet->GetScale());
+}
+
+CTerrainLOD::~CTerrainLOD()
+{
+	UnloadAll();
+}
+
+void CTerrainLOD::UnloadAll()
+{
+	for (size_t i = 0; i < LOD_TOTAL; i++)
+		CRenderer::UnloadVertexDataFromGL(iLODIBO[i]);
+
+	memset(this, 0, sizeof(CTerrainLOD));
 }
