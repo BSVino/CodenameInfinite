@@ -334,10 +334,10 @@ size_t CPlanetTerrain::BuildIndexedVerts(tvector<float>& aflVerts, tvector<unsig
 	bSkirt = false;
 	BuildMeshIndices(aiIndices, tvector<CTerrainCoordinate>(), iRows, bSkirt);
 
-	return BuildVerts(aflVerts, avecTerrain, iLevels, iRows, bSkirt);
+	return BuildVertsForIndex(aflVerts, avecTerrain, iLevels, iRows, bSkirt);
 }
 
-size_t CPlanetTerrain::BuildVerts(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt)
+size_t CPlanetTerrain::BuildVertsForIndex(tvector<float>& aflVerts, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows, bool bSkirt)
 {
 	bSkirt = false;
 	size_t iVertSize = 10;	// position, normal, two texture coords. 3 + 3 + 2 + 2 = 10
@@ -346,7 +346,7 @@ size_t CPlanetTerrain::BuildVerts(tvector<float>& aflVerts, const tvector<CTerra
 	if (bSkirt)
 		iTriangles += (int)pow(2.0f, (float)iLevels) * 4 * 2;
 
-	aflVerts.reserve(avecTerrain.size()*iVertSize);
+	aflVerts.reserve(iTriangles*3*iVertSize);
 
 	size_t iTerrainSize = avecTerrain.size();
 	for (size_t x = 0; x < iTerrainSize; x++)
@@ -621,7 +621,7 @@ void CPlanetTerrain::CreateShell1VBO()
 	size_t iTriangles = BuildVerts(aflVerts, avecTerrain, iHighLevels, iRows);
 
 	m_iShell1VBO = CRenderer::LoadVertexDataIntoGL(aflVerts.size() * sizeof(float), aflVerts.data());
-	m_iShell1VBOSize = iTriangles * 3;
+	m_iShell1VBOSize = aflVerts.size();
 }
 
 void CPlanetTerrain::CreateShell2VBO()

@@ -548,7 +548,7 @@ void CTerrainChunk::GenerateTerrain()
 	m_bLoadIntoPhysics = true;
 
 	tvector<float> aflVerts;
-	iTriangles = CPlanetTerrain::BuildVerts(aflVerts, avecTerrain, iResolution, iRows, true);
+	iTriangles = CPlanetTerrain::BuildVertsForIndex(aflVerts, avecTerrain, iResolution, iRows, true);
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
 	CMutexLocker oLock = m_pManager->s_pChunkGenerator->GetLock();
