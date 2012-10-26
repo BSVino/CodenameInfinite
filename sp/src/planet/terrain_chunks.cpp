@@ -308,7 +308,6 @@ void CTerrainChunkManager::GenerateChunk(size_t iChunk)
 	CMutexLocker oLock = s_pChunkGenerator->GetLock();
 	oLock.Lock();
 		TAssert(iChunk >= 0 && iChunk < m_apChunks.size());
-		TAssert(m_apChunks[iChunk]);
 
 		if (iChunk >= m_apChunks.size() || !m_apChunks[iChunk])
 			return;

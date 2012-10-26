@@ -130,7 +130,10 @@ void CPlanet::RenderUpdate()
 
 	CSPCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 
-	m_vecCharacterLocalOrigin = (GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
+	if (pCharacter->GetMoveParent() == this)
+		m_vecCharacterLocalOrigin = pCharacter->GetLocalOrigin().GetUnits(GetScale());
+	else
+		m_vecCharacterLocalOrigin = (GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
 
 	Vector vecOrigin = (GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).GetUnits(GetScale());
 	Vector vecOutside = vecOrigin + vecUp * (float)GetRenderRadius().GetUnits(GetScale());
