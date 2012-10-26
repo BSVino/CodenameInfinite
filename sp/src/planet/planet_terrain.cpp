@@ -791,13 +791,16 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 		50000,
 	};
 
+	// This algorithm was designed on an Earth-radius planet so it should be scaled for whatever radius the target planet is.
+	double flRadiusScalar = (m_pPlanet->GetRadius()/CScalableFloat(6.3781f, SCALE_MEGAMETER)).GetUnits(SCALE_METER);
+
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{
 		double flXFactor = vecAdjustedCoordinate.x * aflFreqFactors[i];
 		double flYFactor = vecAdjustedCoordinate.y * aflFreqFactors[i];
-		double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * aflHeightFactors[i];
-		double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * aflHeightFactors[i];
-		double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * aflHeightFactors[i];
+		double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
+		double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
+		double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
 
 		double a = m_pPlanet->m_aNoiseArray[i][3].Noise(vecAdjustedCoordinate.x * aflAlphaFreqFactors[i], vecAdjustedCoordinate.y * aflAlphaFreqFactors[i]);
 
