@@ -373,7 +373,12 @@ void CTerrainChunkManager::Render()
 	}
 
 	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), eRenderScale);
-	DoubleVector vecCharacterOrigin = (m_pPlanet->GetGlobalToLocalTransform() * SPGame()->GetLocalPlayerCharacter()->GetGlobalOrigin()).GetUnits(eRenderScale);
+
+	DoubleVector vecCharacterOrigin;
+	if (SPGame()->GetLocalPlayerCharacter()->GetMoveParent() == m_pPlanet)
+		vecCharacterOrigin = SPGame()->GetLocalPlayerCharacter()->GetLocalOrigin().GetUnits(eRenderScale);
+	else
+		vecCharacterOrigin = (m_pPlanet->GetGlobalToLocalTransform() * SPGame()->GetLocalPlayerCharacter()->GetGlobalOrigin()).GetUnits(eRenderScale);
 
 	for (size_t i = 0; i < m_apChunks.size(); i++)
 	{
