@@ -32,7 +32,11 @@ CScalableMatrix CSPEntityData::GetScalableRenderTransform() const
 
 	if (pCharacterPlanet == m_pEntity)
 	{
-		CScalableVector vecCharacterOrigin = m_pEntity->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin();
+		CScalableVector vecCharacterOrigin;
+		if (pCharacter->GetMoveParent() == m_pEntity)
+			vecCharacterOrigin = pCharacter->GetLocalOrigin();
+		else
+			vecCharacterOrigin = m_pEntity->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin();
 
 		CScalableMatrix mTransform;
 		mTransform.SetTranslation(-vecCharacterOrigin);
