@@ -12,6 +12,11 @@
 #include "entities/bots/helper.h"
 #include "entities/structures/spire.h"
 
+// For debug shit
+#include "planet/planet_terrain.h"
+#include "planet/terrain_lumps.h"
+#include "planet/terrain_chunks.h"
+
 #include "hudmenu.h"
 
 CSPHUD::CSPHUD()
@@ -194,7 +199,7 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 	for (size_t i = 0; i < pLocalPlayer->GetHealth(); i++)
 		glgui::CBaseControl::PaintRect(w-20, h-40*(i+1), 10, 30, Color(255, 0, 0, 255), 1, true);
 
-	Debug_Paint();
+	Debug_Paint(w, h);
 }
 
 void CSPHUD::PlaceBlockCallback(const tstring& sArgs)
@@ -235,11 +240,59 @@ void CSPHUD::ConstructPalletCallback(const tstring& sArgs)
 	pPlayer->EnterConstructionMode(STRUCTURE_PALLET);
 }
 
-void CSPHUD::Debug_Paint()
-{
-	Vector vecUp;
-	Vector vecForward;
-	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
+CVar terrain_debug("terrain_debug", "off");
 
+void CSPHUD::Debug_Paint(float w, float h)
+{
 	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	if (terrain_debug.GetBool() && pLocalCharacter && pLocalCharacter->GameData().GetPlanet())
+	{
+		CPlanet* pPlanet = pLocalCharacter->GameData().GetPlanet();
+		size_t iShells = 0;
+		for (size_t i = 0; i < 6; i++)
+		{
+			if (pPlanet->GetTerrain(i)->IsShell2Done())
+				iShells++;
+		}
+
+		tstring sPlanet = sprintf("Planet shells: %d/6", iShells);
+		glgui::CLabel::PaintText(sPlanet, -1, "sans-serif", 10, w-250, 15);
+
+		const CTerrainLumpManager* pLumpManager = pPlanet->GetLumpManager();
+		size_t iActiveLumps = 0;
+		size_t iGeneratingLumps = 0;
+		for (size_t i = 0; i < pLumpManager->GetNumLumps(); i++)
+		{
+			CTerrainLump* pLump = pLumpManager->GetLump(i);
+			if (pLump)
+			{
+				iActiveLumps++;
+
+				if (pLump->IsGeneratingLowRes())
+					iGeneratingLumps++;
+			}
+		}
+
+		tstring sLumps = sprintf("Lumps: %d slots, %d active, %d generating", pLumpManager->GetNumLumps(), iActiveLumps, iGeneratingLumps);
+		glgui::CLabel::PaintText(sLumps, -1, "sans-serif", 10, w-250, 30);
+
+		const CTerrainChunkManager* pChunkManager = pPlanet->GetChunkManager();
+		size_t iActiveChunks = 0;
+		size_t iGeneratingChunks = 0;
+		for (size_t i = 0; i < pChunkManager->GetNumChunks(); i++)
+		{
+			CTerrainChunk* pChunk = pChunkManager->GetChunk(i);
+			if (pChunk)
+			{
+				iActiveChunks++;
+
+				if (pChunk->IsGeneratingTerrain())
+					iGeneratingChunks++;
+			}
+		}
+
+		tstring sChunks = sprintf("Chunks: %d slots, %d active, %d generating", pChunkManager->GetNumChunks(), iActiveChunks, iGeneratingChunks);
+		glgui::CLabel::PaintText(sChunks, -1, "sans-serif", 10, w-250, 45);
+	}
 }

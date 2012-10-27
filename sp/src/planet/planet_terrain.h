@@ -140,6 +140,8 @@ public:
 	Vector						GetDirection() const { return m_vecDirection; }
 	class CPlanet*				GetPlanet() const { return m_pPlanet; }
 
+	bool                        IsShell2Done() const { return !!m_iShell2IBO; }
+
 protected:
 	class CPlanet*				m_pPlanet;
 	Vector						m_vecDirection;

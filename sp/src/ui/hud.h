@@ -31,7 +31,7 @@ public:
 	EVENT_CALLBACK(CSPHUD, ConstructMine);
 	EVENT_CALLBACK(CSPHUD, ConstructPallet);
 
-	virtual void    Debug_Paint();
+	virtual void    Debug_Paint(float w, float h);
 
 private:
 	glgui::CControl<CHUDMenu>    m_ahMenus[MENU_TOTAL];

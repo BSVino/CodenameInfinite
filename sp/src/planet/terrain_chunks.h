@@ -37,6 +37,7 @@ public:
 	size_t                              GetTerrain() const;
 	size_t                              GetLump() const;
 	bool                                IsGeneratingTerrain() const { return m_bGeneratingTerrain; }
+	bool                                IsGenerationDone() const { return m_bGenerationDone; }
 	size_t                              GetPhysicsEntity() const { return m_iPhysicsEntity; }
 	bool                                HasPhysicsEntity() const { return m_iPhysicsEntity != ~0; }
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
