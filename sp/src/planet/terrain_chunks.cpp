@@ -227,7 +227,11 @@ void CTerrainChunkManager::FindCenterChunk()
 		return;
 
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	DoubleMatrix4x4 mLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalTransform()).GetUnits(SCALE_METER);
+	DoubleMatrix4x4 mLocalMeters;
+	if (pCharacter->GetMoveParent() == pCharacter->GameData().GetPlanet())
+		mLocalMeters = pCharacter->GetLocalTransform().GetUnits(SCALE_METER);
+	else
+		mLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalTransform()).GetUnits(SCALE_METER);
 	DoubleVector vecLocalMeters = mLocalMeters.GetTranslation();
 
 	double flNearest;
