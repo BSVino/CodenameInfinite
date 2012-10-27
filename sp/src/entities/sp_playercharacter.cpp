@@ -52,7 +52,7 @@ void CPlayerCharacter::Spawn()
 	m_hHelper->SetPlayerCharacter(this);
 }
 
-CVar sv_approximateelevation("sv_approximateelevation", "1");
+CVar sv_approximateelevation("sv_approximateelevation", "0.3");
 
 void CPlayerCharacter::Think()
 {
@@ -64,23 +64,33 @@ void CPlayerCharacter::Think()
 	if (GameServer()->GetGameTime() > m_flNextSurfaceCheck)
 	{
 		CPlanet* pPlanet = GetNearestPlanet();
-		if (pPlanet && pPlanet->GetChunkManager()->HasGroupCenter())
+		if (pPlanet)
 		{
-			CTraceResult tr;
-			GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() - Vector(0, 1000, 0), this);
-
-			if (tr.m_flFraction == 1)
+			if (m_flApproximateElevation < -0.0005)
 			{
-				// There is no ground below the player. Is there ground above the player?
-				GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() + Vector(0, 1000, 0), this);
+				double flDistanceUp = -m_flApproximateElevation + 0.0001;
+				SetLocalOrigin(GetLocalOrigin() + TVector(DoubleVector(GetLocalUpVector()) * flDistanceUp, pPlanet->GetScale()));
 
-				if (tr.m_flFraction != 1)
+				TMsg("Approximate Elevation detected player under terrain. Raised player to ground level.\n");
+			}
+			else if (pPlanet->GetChunkManager()->HasGroupCenter())
+			{
+				CTraceResult tr;
+				GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() - Vector(0, 1000, 0), this);
+
+				if (tr.m_flFraction == 1)
 				{
-					Matrix4x4 mNewTransform = GetPhysicsTransform();
-					mNewTransform.SetTranslation(tr.m_vecHit + Vector(0, 1, 0));
-					SetPhysicsTransform(mNewTransform);
+					// There is no ground below the player. Is there ground above the player?
+					GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() + Vector(0, 1000, 0), this);
 
-					TMsg("Raised player to ground level.\n");
+					if (tr.m_flFraction != 1)
+					{
+						Matrix4x4 mNewTransform = GetPhysicsTransform();
+						mNewTransform.SetTranslation(tr.m_vecHit + Vector(0, 1, 0));
+						SetPhysicsTransform(mNewTransform);
+
+						TMsg("Traceline detected player under terrain. Raised player to ground level.\n");
+					}
 				}
 			}
 		}

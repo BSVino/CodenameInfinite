@@ -626,7 +626,7 @@ bool CTerrainLump::FindApproximateElevation(const DoubleVector& vec3DLocal, floa
 	double flVerticalDistance = vecClosestPoint.Distance(vec3DLumpLocal);
 
 	if (vecClosestPoint.y > vec3DLumpLocal.y)
-		flElevation = 0;
+		flElevation = -(float)flVerticalDistance * (1/flScale);
 	else
 		flElevation = (float)flVerticalDistance * (1/flScale);
 

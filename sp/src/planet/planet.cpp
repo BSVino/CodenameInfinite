@@ -254,7 +254,7 @@ void CPlanet::PostRender() const
 		double flElevation = pCharacter->GetApproximateElevation();
 		double flNoShellElevation = flElevation + 0.0001;
 		double flPlayerDistanceSqr = m_vecCharacterLocalOrigin.LengthSqr();
-		if (flPlayerDistanceSqr < flNoShellElevation*flNoShellElevation)
+		if (flNoShellElevation < 0 || flPlayerDistanceSqr < flNoShellElevation*flNoShellElevation)
 			bShowShells = false;
 	}
 
