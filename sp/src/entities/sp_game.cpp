@@ -88,7 +88,7 @@ void CSPGame::SetupGame(tstring sType)
 		pPlanet->SetPlanetName("Mars");
 		pPlanet->SetGlobalOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
 		pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
-		pPlanet->SetAtmosphereThickness(CScalableFloat(25.0f, SCALE_KILOMETER));
+		pPlanet->SetAtmosphereThickness(CScalableFloat(35.0f, SCALE_KILOMETER));
 		pPlanet->SetMinutesPerRevolution(20);
 		pPlanet->SetAtmosphereColor(Color(0.64f, 0.25f, 0.25f));
 		pPlanet->SetRandomSeed(1);

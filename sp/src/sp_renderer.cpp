@@ -89,6 +89,8 @@ void CSPRenderer::StartRendering(class CRenderingContext* pContext)
 
 	BuildScaleFrustums();
 
+	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
+
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
@@ -109,7 +111,7 @@ void CSPRenderer::StartRendering(class CRenderingContext* pContext)
 			continue;
 		}
 
-		if (pStar->GetGlobalOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition) < m_hClosestStar->GetGlobalOrigin().GetUnits(SCALE_METER).DistanceSqr(m_vecCameraPosition))
+		if ((pStar->GetGlobalOrigin()-pLocalPlayer->GetGlobalOrigin()).LengthSqr() < (m_hClosestStar->GetGlobalOrigin()-pLocalPlayer->GetGlobalOrigin()).LengthSqr())
 			m_hClosestStar = pStar;
 	}
 
