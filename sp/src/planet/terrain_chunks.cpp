@@ -107,11 +107,14 @@ void CTerrainChunkManager::RemoveChunkNoLock(size_t iChunk)
 		m_iActiveChunks--;
 	}
 
-	if (!m_iActiveChunks)
-		m_bHaveGroupCenter = false;
-
 	delete m_apChunks[iChunk];
 	m_apChunks[iChunk] = NULL;
+
+	if (!m_iActiveChunks)
+	{
+		m_bHaveGroupCenter = false;
+		GamePhysics()->RemoveAllEntities();
+	}
 }
 
 CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
@@ -269,16 +272,44 @@ void CTerrainChunkManager::FindCenterChunk()
 	m_mGroupToPlanet = pChunk->GetChunkToPlanet();
 	m_mPlanetToGroup = pChunk->GetPlanetToChunk();
 
-	Matrix4x4 mChunkPlayer = m_mPlanetToGroup * mLocalMeters;
-
-	// For the purposes of physics, the player to stands up straight.
-	mChunkPlayer.SetUpVector(Vector(0, 1, 0));
-	mChunkPlayer.SetRightVector(mChunkPlayer.GetForwardVector().Cross(mChunkPlayer.GetUpVector()).Normalized());
-	mChunkPlayer.SetForwardVector(mChunkPlayer.GetUpVector().Cross(mChunkPlayer.GetRightVector()).Normalized());
-
-	pCharacter->SetGroupTransform(mChunkPlayer);
-
 	m_bHaveGroupCenter = true;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		if (!pEntity->IsInPhysics())
+			continue;
+
+		if (pEntity->GameData().GetPlanet() != m_pPlanet)
+			continue;
+
+		collision_type_t eCollisionType = CT_STATIC_MESH;
+
+		DoubleMatrix4x4 mEntityLocalMeters;
+		if (pEntity->GetMoveParent() == pEntity->GameData().GetPlanet())
+			mEntityLocalMeters = pEntity->GetLocalTransform().GetUnits(SCALE_METER);
+		else
+			mEntityLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pEntity->GetGlobalTransform()).GetUnits(SCALE_METER);
+
+		Matrix4x4 mChunkEntity = m_mPlanetToGroup * mEntityLocalMeters;
+
+		// For the purposes of physics, stand stuff up straight.
+		mChunkEntity.SetUpVector(Vector(0, 1, 0));
+		mChunkEntity.SetRightVector(mChunkEntity.GetForwardVector().Cross(mChunkEntity.GetUpVector()).Normalized());
+		mChunkEntity.SetForwardVector(mChunkEntity.GetUpVector().Cross(mChunkEntity.GetRightVector()).Normalized());
+
+		CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(pEntity);
+		if (pCharacter)
+			eCollisionType = CT_CHARACTER;
+
+		pEntity->SetPhysicsTransform(mChunkEntity);
+
+		if (!GamePhysics()->IsEntityAdded(pEntity))
+			GamePhysics()->AddEntity(pEntity, eCollisionType);
+	}
 }
 
 void CTerrainChunkManager::AddNearbyChunks()

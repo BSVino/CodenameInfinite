@@ -79,6 +79,7 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 	pStructure->GameData().SetPlanet(pOwner->GetPlayerCharacter()->GameData().GetPlanet());
 	pStructure->SetOwner(pOwner);
 	pStructure->SetSpire(pSpire);
+	pStructure->SetGlobalOrigin(pOwner->GetPlayerCharacter()->GameData().GetPlanet()->GetGlobalOrigin());     // Avoid floating point precision problems
 	pStructure->SetMoveParent(pOwner->GetPlayerCharacter()->GameData().GetPlanet());
 	pStructure->SetLocalOrigin(vecOrigin);
 	if (pStructure->GameData().GetPlanet())
@@ -107,5 +108,66 @@ const Matrix4x4 CStructure::GetPhysicsTransform() const
 	if (!pPlanet->GetChunkManager()->HasGroupCenter())
 		return GetLocalTransform();
 
-	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * Matrix4x4(GetLocalTransform());
+	return GameData().GetGroupTransform();
+}
+
+void CStructure::SetPhysicsTransform(const Matrix4x4& m)
+{
+	CPlanet* pPlanet = GameData().GetPlanet();
+	if (!pPlanet)
+	{
+		SetLocalTransform(TMatrix(m));
+		return;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		SetLocalTransform(TMatrix(m));
+		return;
+	}
+
+	GameData().SetGroupTransform(m);
+
+	TMatrix mLocalTransform(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m);
+
+	CBaseEntity* pMoveParent = GetMoveParent();
+	TAssert(pMoveParent);
+	if (pMoveParent)
+	{
+		while (pMoveParent != pPlanet)
+		{
+			mLocalTransform = pMoveParent->GetLocalTransform().InvertedRT() * mLocalTransform;
+			pMoveParent = pMoveParent->GetMoveParent();
+		}
+	}
+
+	SetLocalTransform(mLocalTransform);
+}
+
+void CStructure::PostSetLocalTransform(const TMatrix& m)
+{
+	BaseClass::PostSetLocalTransform(m);
+
+	CPlanet* pPlanet = GameData().GetPlanet();
+	if (!pPlanet)
+		return;
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+		return;
+
+	TMatrix mLocalTransform = m;
+
+	CBaseEntity* pMoveParent = GetMoveParent();
+	if (pMoveParent)
+	{
+		while (pMoveParent != pPlanet)
+		{
+			mLocalTransform = pMoveParent->GetLocalTransform() * mLocalTransform;
+			pMoveParent = pMoveParent->GetMoveParent();
+		}
+	}
+	else
+		mLocalTransform = pPlanet->GetGlobalToLocalTransform() * m;
+
+	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER));
 }

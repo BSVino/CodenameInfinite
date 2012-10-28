@@ -33,6 +33,8 @@ public:
 	virtual void            PerformStructureTask(class CSPCharacter* pCharacter) {};
 
 	virtual const Matrix4x4 GetPhysicsTransform() const;
+	virtual void            SetPhysicsTransform(const Matrix4x4& m);
+	virtual void            PostSetLocalTransform(const TMatrix& m);
 
 	virtual bool            TakesBlocks() const { return false; }
 	virtual size_t          TakeBlocks(item_t eBlock, size_t iNumber) { return 0; }

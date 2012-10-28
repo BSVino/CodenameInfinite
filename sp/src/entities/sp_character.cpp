@@ -79,7 +79,7 @@ void CSPCharacter::Think()
 	if (pPlanet && !bHadParent)
 		EnteredAtmosphere();
 
-	if (pPlanet && IsInPhysics())
+	if (pPlanet && IsInPhysics() && GamePhysics()->IsEntityAdded(this))
 		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
 
 	if (pPlanet && ApplyGravity())
@@ -291,7 +291,7 @@ const Matrix4x4 CSPCharacter::GetPhysicsTransform() const
 	if (!pPlanet->GetChunkManager()->HasGroupCenter())
 		return GetLocalTransform();
 
-	return m_mGroupTransform;
+	return GameData().GetGroupTransform();
 }
 
 void CSPCharacter::SetPhysicsTransform(const Matrix4x4& m)
@@ -309,7 +309,7 @@ void CSPCharacter::SetPhysicsTransform(const Matrix4x4& m)
 		return;
 	}
 
-	m_mGroupTransform = m;
+	GameData().SetGroupTransform(m);
 
 	TMatrix mLocalTransform(pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform() * m);
 
@@ -352,7 +352,7 @@ void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
 	else
 		mLocalTransform = pPlanet->GetGlobalToLocalTransform() * m;
 
-	m_mGroupTransform = pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER);
+	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER));
 }
 
 void CSPCharacter::SetGroundEntity(CBaseEntity* pEntity)

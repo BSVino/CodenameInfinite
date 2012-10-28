@@ -34,9 +34,16 @@ public:
 	void                        SetPlayerOwner(CSPPlayer* pPlanet);
 	CSPPlayer*                  GetPlayerOwner() const;
 
+	void                        SetGroupTransform(const Matrix4x4& m) { m_mGroupTransform = m; }
+	const Matrix4x4&            GetGroupTransform() const { return m_mGroupTransform; }
+
 private:
 	CEntityHandle<CSPPlayer>    m_hPlayerOwner;
 	CEntityHandle<CPlanet>      m_hPlanet;
+
+	// Transform from the center of the nearest chunk group.
+	// Use a persistent transform to avoid floating point problems converting back to double all the time.
+	Matrix4x4                   m_mGroupTransform;
 };
 
 #endif

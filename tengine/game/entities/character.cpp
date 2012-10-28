@@ -76,7 +76,7 @@ void CCharacter::Think()
 	else
 		MoveThink();
 
-	if (IsInPhysics())
+	if (IsInPhysics() && GamePhysics()->IsEntityAdded(this))
 		return;
 
 	Simulate();
@@ -177,7 +177,7 @@ void CCharacter::MoveThink()
 	else
 		vecLocalVelocity = TVector();
 
-	if (IsInPhysics())
+	if (IsInPhysics() && GamePhysics()->IsEntityAdded(this))
 		GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
 	else
 		SetLocalVelocity(vecLocalVelocity);

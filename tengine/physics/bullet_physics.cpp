@@ -536,6 +536,22 @@ void CBulletPhysics::RemoveAllEntities()
 	}
 }
 
+bool CBulletPhysics::IsEntityAdded(CBaseEntity* pEntity)
+{
+	TAssert(pEntity);
+	if (!pEntity)
+		return false;
+
+	size_t iHandle = pEntity->GetHandle();
+
+	if (m_aEntityList.size() <= iHandle)
+		return false;
+
+	CPhysicsEntity* pPhysicsEntity = &m_aEntityList[iHandle];
+
+	return (pPhysicsEntity->m_pCharacterController || pPhysicsEntity->m_pExtraShape || pPhysicsEntity->m_pGhostObject || pPhysicsEntity->m_pRigidBody || pPhysicsEntity->m_pTriggerController);
+}
+
 void CBulletPhysics::LoadCollisionMesh(const tstring& sModel, size_t iTris, int* aiTris, size_t iVerts, float* aflVerts)
 {
 	size_t iModel = CModelLibrary::FindModel(sModel);

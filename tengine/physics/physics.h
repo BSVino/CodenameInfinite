@@ -60,6 +60,7 @@ public:
 	virtual size_t          AddExtraCube(const Vector& vecCenter, float flSize) { return ~0; };
 	virtual void            RemoveExtra(size_t iExtra) {};               // Input is result from AddExtra*
 	virtual void			RemoveAllEntities() {};
+	virtual bool            IsEntityAdded(class CBaseEntity* pEnt) { return false; };
 
 	virtual void			LoadCollisionMesh(const tstring& sModel, size_t iTris, int* aiTris, size_t iVerts, float* aflVerts) {};
 	virtual void			UnloadCollisionMesh(const tstring& sModel) {};

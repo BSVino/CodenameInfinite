@@ -47,6 +47,7 @@ void CMine::Think()
 		CPickup* pMined = GameServer()->Create<CPickup>("CPickup");
 		pMined->GameData().SetPlayerOwner(GameData().GetPlayerOwner());
 		pMined->GameData().SetPlanet(GameData().GetPlanet());
+		pMined->SetGlobalTransform(GameData().GetPlanet()->GetGlobalTransform()); // Avoid floating point precision problems
 		pMined->SetMoveParent(GameData().GetPlanet());
 		pMined->SetLocalTransform(GetLocalTransform());
 		pMined->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector());

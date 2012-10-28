@@ -131,7 +131,7 @@ void CPlayerCharacter::MoveThink()
 	else
 		vecLocalVelocity = CScalableVector();
 
-	if (IsInPhysics())
+	if (IsInPhysics() && GamePhysics()->IsEntityAdded(this))
 	{
 		if (GetNearestPlanet() && GetNearestPlanet()->GetChunkManager()->HasGroupCenter())
 			GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
