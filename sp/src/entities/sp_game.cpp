@@ -98,6 +98,22 @@ void CSPGame::SetupGame(tstring sType)
 		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
 		pStar->SetLightColor(Color(255, 242, 143));
 
+		TVector vecProxima(Vector(300000, 0, 200000), SCALE_GIGAMETER);
+
+		pStar = GameServer()->Create<CStar>("CStar");
+		pStar->SetGlobalOrigin(vecProxima);
+		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
+		pStar->SetLightColor(Color(255, 242, 143));
+
+		pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+		pPlanet->SetPlanetName("Proxima");
+		pPlanet->SetGlobalOrigin(vecProxima + CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));
+		pPlanet->SetRadius(CScalableFloat(5.0f, SCALE_MEGAMETER));
+		pPlanet->SetAtmosphereThickness(CScalableFloat(45.0f, SCALE_KILOMETER));
+		pPlanet->SetMinutesPerRevolution(10);
+		pPlanet->SetAtmosphereColor(Color(0.31f, 0.64f, 0.25f));
+		pPlanet->SetRandomSeed(2);
+
 		pCharacter->StandOnNearestPlanet();
 
 		Application()->SetMouseCursorEnabled(false);

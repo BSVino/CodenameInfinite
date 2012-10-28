@@ -285,7 +285,7 @@ const TFloat CBaseEntity::GetBoundingRadius() const
 		size_t iWidth = m_hMaterialModel->m_ahTextures[0]->m_iWidth;
 		size_t iHeight = m_hMaterialModel->m_ahTextures[0]->m_iHeight;
 
-		return (GetGlobalTransform() * ((TVector(0, (float)iWidth, (float)iHeight)/2) * m_vecScale.Get())).Length()/2.0f;
+		return (GetGlobalTransform() * ((TVector(0, (float)iWidth, (float)iHeight)/2.0f) * m_vecScale.Get())).Length()/2.0f;
 	}
 
 	return (m_aabbVisBoundingBox.Size()*m_vecScale.Get()).Length()/2;
@@ -337,6 +337,10 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 	if (m_hMoveParent.GetPointer() == pParent)
 		return;
 
+#ifdef _DEBUG
+	TMatrix mDebugPreviousGlobal = GetGlobalTransform();
+#endif
+
 	if (m_hMoveParent != NULL)
 	{
 		TMatrix mPreviousGlobal = GetGlobalTransform();
@@ -372,7 +376,13 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 	m_hMoveParent = pParent;
 
 	if (!pParent)
+	{
+#ifdef _DEBUG
+//		TAssert(m_mLocalTransform == mDebugPreviousGlobal);
+#endif
+
 		return;
+	}
 
 	pParent->m_ahMoveChildren.push_back(this);
 
@@ -392,6 +402,11 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 		m_vecLocalVelocity = TVector(0, 0, 0);
 
 	InvalidateGlobalTransforms();
+
+#ifdef _DEBUG
+	TAssert(GetGlobalTransform().GetAngles() == mDebugPreviousGlobal.GetAngles());
+	TAssert((GetGlobalTransform().GetTranslation()-mDebugPreviousGlobal.GetTranslation()).LengthSqr() < 0.05f);
+#endif
 }
 
 void CBaseEntity::InvalidateGlobalTransforms()
@@ -637,9 +652,9 @@ void CBaseEntity::SetLocalOrigin(const TVector& vecOrigin)
 	m_vecLocalOrigin = mNew.GetTranslation();
 	m_mLocalTransform = mNew;
 
-	PostSetLocalTransform(mNew);
-
 	InvalidateGlobalTransforms();
+
+	PostSetLocalTransform(mNew);
 };
 
 const TVector CBaseEntity::GetLastGlobalOrigin() const

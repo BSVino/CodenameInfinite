@@ -78,7 +78,7 @@ void CGameRenderer::Render()
 
 bool DistanceCompare(CBaseEntity* a, CBaseEntity* b)
 {
-	Vector vecCamera = GameServer()->GetCameraManager()->GetCameraPosition();
+	TVector vecCamera = GameServer()->GetCameraManager()->GetCameraPosition();
 	return ((a->GetGlobalOrigin() - vecCamera).LengthSqr() > (b->GetGlobalOrigin() - vecCamera).LengthSqr());
 }
 

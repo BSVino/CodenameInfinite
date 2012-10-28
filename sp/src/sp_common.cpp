@@ -351,6 +351,11 @@ CScalableFloat CScalableFloat::AddDifferent(const CScalableFloat& u) const
 	return flReturn;
 }
 
+CScalableFloat CScalableFloat::operator-(double u) const
+{
+	return (*this) + CScalableFloat(u, SCALE_METER);
+}
+
 CScalableFloat CScalableFloat::operator+(const CScalableFloat& u) const
 {
 	if (m_bPositive == u.m_bPositive)
@@ -717,6 +722,11 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 
 CScalableFloat CScalableFloat::operator*(float f) const
 {
+	return (*this * (double)f);
+}
+
+CScalableFloat CScalableFloat::operator*(double f) const
+{
 	if (f == 0)
 		return CScalableFloat();
 
@@ -747,7 +757,7 @@ CScalableFloat CScalableFloat::operator*(float f) const
 	
 	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
 	{
-		float flValue = m_aiScaleStack[i] * f;
+		double flValue = m_aiScaleStack[i] * f;
 
 		if (flValue == 0)
 			continue;
@@ -1349,6 +1359,13 @@ CScalableVector::CScalableVector(Vector vecMeters)
 	z = CScalableFloat(vecMeters.z, SCALE_METER);
 }
 
+CScalableVector::CScalableVector(DoubleVector vecMeters)
+{
+	x = CScalableFloat(vecMeters.x, SCALE_METER);
+	y = CScalableFloat(vecMeters.y, SCALE_METER);
+	z = CScalableFloat(vecMeters.z, SCALE_METER);
+}
+
 DoubleVector CScalableVector::GetUnits(scale_t eScale) const
 {
 	DoubleVector vecResult = Vector(0,0,0);
@@ -1405,6 +1422,17 @@ CScalableVector CScalableVector::operator-() const
 	v.y = -y;
 	v.z = -z;
 	return v;
+}
+
+CScalableVector CScalableVector::operator-( const DoubleVector& v ) const
+{
+	CScalableVector vecReturn;
+
+	vecReturn.x = x - v.x;
+	vecReturn.y = y - v.y;
+	vecReturn.z = z - v.z;
+
+	return vecReturn;
 }
 
 CScalableVector CScalableVector::operator+( const CScalableVector& v ) const
@@ -1534,7 +1562,7 @@ CScalableVector::operator Vector() const
 	return GetUnits(SCALE_METER);
 }
 
-CScalableMatrix::CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition)
+CScalableMatrix::CScalableMatrix(const DoubleVector& vecForward, const DoubleVector& vecUp, const DoubleVector& vecRight, const CScalableVector& vecPosition)
 {
 	SetForwardVector(vecForward);
 	SetUpVector(vecUp);
@@ -1821,38 +1849,38 @@ CScalableMatrix CScalableMatrix::InvertedRT() const
 	return t;
 }
 
-Vector CScalableMatrix::GetRow(int i) const
+DoubleVector CScalableMatrix::GetRow(int i) const
 {
-	return Vector(m[i][0], m[i][1], m[i][2]);
+	return DoubleVector(m[i][0], m[i][1], m[i][2]);
 }
 
-void CScalableMatrix::SetColumn(int i, const Vector& vecColumn)
+void CScalableMatrix::SetColumn(int i, const DoubleVector& vecColumn)
 {
 	m[0][i] = vecColumn.x;
 	m[1][i] = vecColumn.y;
 	m[2][i] = vecColumn.z;
 }
 
-Vector CScalableMatrix::GetColumn(int i) const
+DoubleVector CScalableMatrix::GetColumn(int i) const
 {
-	return Vector(m[0][i], m[1][i], m[2][i]);
+	return DoubleVector(m[0][i], m[1][i], m[2][i]);
 }
 
-void CScalableMatrix::SetForwardVector(const Vector& v)
+void CScalableMatrix::SetForwardVector(const DoubleVector& v)
 {
 	m[0][0] = v.x;
 	m[0][1] = v.y;
 	m[0][2] = v.z;
 }
 
-void CScalableMatrix::SetUpVector(const Vector& v)
+void CScalableMatrix::SetUpVector(const DoubleVector& v)
 {
 	m[1][0] = v.x;
 	m[1][1] = v.y;
 	m[1][2] = v.z;
 }
 
-void CScalableMatrix::SetRightVector(const Vector& v)
+void CScalableMatrix::SetRightVector(const DoubleVector& v)
 {
 	m[2][0] = v.x;
 	m[2][1] = v.y;
@@ -1872,7 +1900,7 @@ DoubleMatrix4x4 CScalableMatrix::GetUnits(scale_t eScale) const
 CScalableMatrix::operator Quaternion() const
 {
 	Matrix4x4 r;
-	r.Init(m[0][0], m[0][1], m[0][2], 0, m[1][0], m[1][1], m[1][2], 0, m[2][0], m[2][1], m[2][2], 0, 0, 0, 0, 1);
+	r.Init((float)m[0][0], (float)m[0][1], (float)m[0][2], 0, (float)m[1][0], (float)m[1][1], (float)m[1][2], 0, (float)m[2][0], (float)m[2][1], (float)m[2][2], 0, 0, 0, 0, 1);
 	Quaternion q(r);
 	return q;
 }

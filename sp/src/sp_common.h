@@ -53,6 +53,8 @@ public:
 	CScalableFloat			AddSimilar(const CScalableFloat& u) const;
 	CScalableFloat			AddDifferent(const CScalableFloat& u) const;
 
+	CScalableFloat			operator-(double u) const;
+
 	CScalableFloat			operator+(const CScalableFloat& u) const;
 	CScalableFloat			operator-(const CScalableFloat& u) const;
 
@@ -64,6 +66,8 @@ public:
 
 	CScalableFloat			operator*(float f) const;
 	CScalableFloat			operator/(float f) const;
+	CScalableFloat			operator*(double f) const;
+	CScalableFloat			operator/(double f) const;
 
 	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g) const;
 	CScalableFloat			AddMultiple(const CScalableFloat& f, const CScalableFloat& g, const CScalableFloat& h) const;
@@ -79,6 +83,8 @@ public:
 	bool					operator>(const CScalableFloat& u) const;
 	bool					operator<(float flMeters) const;
 	bool					operator>(float flMeters) const;
+	bool					operator<(double flMeters) const;
+	bool					operator>(double flMeters) const;
 
 	bool					operator<=(const CScalableFloat& u) const;
 	bool					operator>=(const CScalableFloat& u) const;
@@ -138,6 +144,7 @@ public:
 							CScalableVector(Vector vecUnits, scale_t eScale);
 							CScalableVector(DoubleVector vecUnits, scale_t eScale);
 							CScalableVector(Vector vecMeters);
+							CScalableVector(DoubleVector vecMeters);
 
 public:
 	DoubleVector			GetUnits(scale_t eScale) const;
@@ -155,6 +162,8 @@ public:
 
 	CScalableVector			operator-(void) const;
 
+	CScalableVector			operator-(const DoubleVector& v) const;
+
 	CScalableVector			operator+(const CScalableVector& v) const;
 	CScalableVector			operator-(const CScalableVector& v) const;
 
@@ -163,8 +172,15 @@ public:
 
 	CScalableVector			operator*(float f) const;
 	CScalableVector			operator/(float f) const;
+	CScalableVector			operator*(double f) const;
+	CScalableVector			operator/(double f) const;
 
 	CScalableVector			operator*( const CScalableVector& v ) const;
+
+	friend CScalableVector operator*( double f, const CScalableVector& v )
+	{
+		return CScalableVector( v.x*f, v.y*f, v.z*f );
+	}
 
 	friend CScalableVector operator*( float f, const CScalableVector& v )
 	{
@@ -183,6 +199,7 @@ public:
 	bool					operator==(const CScalableVector& u) const;
 
 	operator Vector() const;
+	operator DoubleVector() const;
 
 public:
 	CScalableFloat			x, y, z;
@@ -194,7 +211,7 @@ class CScalableMatrix
 {
 public:
 							CScalableMatrix() { Identity(); }
-	explicit                CScalableMatrix(const Vector& vecForward, const Vector& vecUp, const Vector& vecRight, const CScalableVector& vecPosition = CScalableVector());
+	explicit                CScalableMatrix(const DoubleVector& vecForward, const DoubleVector& vecUp, const DoubleVector& vecRight, const CScalableVector& vecPosition = CScalableVector());
 	explicit                CScalableMatrix(const EAngle& angDirection, const CScalableVector& vecPosition=CScalableVector(0,0,0));
 	explicit                CScalableMatrix(const Matrix4x4& mOther);
 	explicit                CScalableMatrix(const DoubleMatrix4x4& mOther);
@@ -237,17 +254,17 @@ public:
 	void					InvertRT();
 	CScalableMatrix			InvertedRT() const;
 
-	void					SetColumn(int i, const Vector& vecColumn);
-	Vector					GetColumn(int i) const;
+	void                    SetColumn(int i, const DoubleVector& vecColumn);
+	DoubleVector            GetColumn(int i) const;
 
-	Vector					GetRow(int i) const;
+	DoubleVector            GetRow(int i) const;
 
-	void                    SetForwardVector(const Vector& vecForward);
-	void                    SetUpVector(const Vector& vecUp);
-	void                    SetRightVector(const Vector& vecRight);
-	Vector					GetForwardVector() const { return GetRow(0); }
-	Vector					GetUpVector() const { return GetRow(1); }
-	Vector					GetRightVector() const { return GetRow(2); }
+	void                    SetForwardVector(const DoubleVector& vecForward);
+	void                    SetUpVector(const DoubleVector& vecUp);
+	void                    SetRightVector(const DoubleVector& vecRight);
+	DoubleVector            GetForwardVector() const { return GetRow(0); }
+	DoubleVector            GetUpVector() const { return GetRow(1); }
+	DoubleVector            GetRightVector() const { return GetRow(2); }
 
 	class DoubleMatrix4x4   GetUnits(scale_t eScale) const;
 
@@ -255,11 +272,16 @@ public:
 	operator Matrix4x4() const;
 
 public:
-	float					m[3][3];
+	double                  m[3][3];
 	CScalableVector			mt;
 };
 
 inline CScalableVector operator*( Vector v, const CScalableFloat& f )
+{
+	return CScalableVector( f*v.x, f*v.y, f*v.z );
+}
+
+inline CScalableVector operator*( DoubleVector v, const CScalableFloat& f )
 {
 	return CScalableVector( f*v.x, f*v.y, f*v.z );
 }

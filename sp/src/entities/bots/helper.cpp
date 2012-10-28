@@ -48,7 +48,7 @@ void CHelperBot::TeleportToPlayer()
 	if (!m_hPlayer)
 		return;
 
-	SetGlobalOrigin(m_hPlayer->GetGlobalOrigin() + m_hPlayer->GetUpVector()*1.5 + m_hPlayer->GetGlobalTransform().GetRightVector()*2);
+	SetGlobalOrigin(m_hPlayer->GetGlobalOrigin() + m_hPlayer->GetUpVector()*1.5 + m_hPlayer->GetGlobalTransform().GetRightVector()*2.0f);
 }
 
 void CHelperBot::SetPlayerCharacter(CPlayerCharacter* pPlayer)

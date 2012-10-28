@@ -136,8 +136,8 @@ CScalableVector CSPCamera::GetThirdPersonCameraPosition()
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 
-	CScalableVector vecThird = vecEyeHeight - pCharacter->GetGlobalTransform().GetForwardVector() * cam_third_back.GetFloat();
-	vecThird += pCharacter->GetGlobalTransform().GetRightVector() * cam_third_right.GetFloat();
+	CScalableVector vecThird = vecEyeHeight - pCharacter->GetGlobalTransform().GetForwardVector() * (double)cam_third_back.GetFloat();
+	vecThird += TVector(pCharacter->GetGlobalTransform().GetRightVector() * (double)cam_third_right.GetFloat());
 
 	return vecThird;
 }
@@ -150,7 +150,7 @@ Vector CSPCamera::GetThirdPersonCameraDirection()
 		return Vector();
 
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
-	vecEyeHeight += pCharacter->GetGlobalTransform().GetRightVector() * cam_third_right.GetFloat();
+	vecEyeHeight += TVector(pCharacter->GetGlobalTransform().GetRightVector() * cam_third_right.GetFloat());
 
 	return (vecEyeHeight - GetThirdPersonCameraPosition()).GetUnits(SCALE_METER);
 }

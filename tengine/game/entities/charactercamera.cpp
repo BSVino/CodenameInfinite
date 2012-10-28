@@ -46,7 +46,7 @@ void CCharacterCamera::CameraThink()
 	else
 	{
 		TUnimplemented();
-		SetGlobalOrigin(pCharacter->GetGlobalOrigin() + pCharacter->EyeHeight() * pCharacter->GetUpVector());
+		SetGlobalOrigin(pCharacter->GetGlobalOrigin() + pCharacter->GetUpVector() * (TFloat)pCharacter->EyeHeight());
 		SetGlobalAngles(pCharacter->GetViewAngles());
 	}
 }
@@ -61,9 +61,9 @@ TVector CCharacterCamera::GetThirdPersonCameraPosition()
 
 	TMatrix mView = TMatrix(pCharacter->GetThirdPersonCameraAngles(), TVector());
 	TVector vecThird = pCharacter->GetGlobalTransform().GetTranslation() + vecEyeHeight;
-	vecThird -= mView.GetForwardVector() * m_flBack;
-	vecThird += mView.GetRightVector() * m_flSide;
-	vecThird += mView.GetUpVector() * m_flUp;
+	vecThird -= Vector(mView.GetForwardVector()) * m_flBack;
+	vecThird += Vector(mView.GetRightVector()) * m_flSide;
+	vecThird += Vector(mView.GetUpVector()) * m_flUp;
 
 	return vecThird;
 }

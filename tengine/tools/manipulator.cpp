@@ -95,7 +95,7 @@ bool CManipulatorTool::MouseInput(int iButton, tinker_mouse_state_t iState)
 
 	Matrix4x4 mTransform = m_trsTransform.GetMatrix4x4(false, false);
 
-	float flScale = (float)(GameServer()->GetCameraManager()->GetCameraPosition() - mTransform.GetTranslation()).Length()/10.0f;
+	float flScale = (float)(Vector(GameServer()->GetCameraManager()->GetCameraPosition()) - mTransform.GetTranslation()).Length()/10.0f;
 	Vector vecX = (Vector(1, 0, 0)*flScale);
 	Vector vecY = (Vector(0, 1, 0)*flScale);
 	Vector vecZ = (Vector(0, 0, 1)*flScale);
@@ -158,7 +158,7 @@ void CManipulatorTool::Render()
 
 	Matrix4x4 mTransform = GetTransform(false, false);
 
-	float flScale = (float)(GameServer()->GetCameraManager()->GetCameraPosition() - mTransform.GetTranslation()).Length()/10.0f;
+	float flScale = (float)(Vector(GameServer()->GetCameraManager()->GetCameraPosition()) - mTransform.GetTranslation()).Length()/10.0f;
 
 	if (flScale < 0.001f)
 		flScale = 0.001f;
@@ -267,7 +267,7 @@ TRS CManipulatorTool::GetNewTRS()
 	}
 	else if (GetTransfromType() == MT_SCALE)
 	{
-		float flScale = (float)(GameServer()->GetCameraManager()->GetCameraPosition() - trs.m_vecTranslation).Length()/10.0f;
+		float flScale = (float)(Vector(GameServer()->GetCameraManager()->GetCameraPosition()) - trs.m_vecTranslation).Length()/10.0f;
 
 		Vector vecTranslation = vecNewTranslation - vecOldTranslation;
 		Vector vecScaling = RemapVal<Vector>(vecTranslation, Vector(0, 0, 0), Vector(1, 1, 1)*flScale, Vector(1, 1, 1), Vector(2, 2, 2));
