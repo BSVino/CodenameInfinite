@@ -98,7 +98,7 @@ void CSPGame::SetupGame(tstring sType)
 		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
 		pStar->SetLightColor(Color(255, 242, 143));
 
-		TVector vecProxima(Vector(300000, 0, 200000), SCALE_GIGAMETER);
+		TVector vecProxima(Vector(30000, 0, 20000), SCALE_TERAMETER);
 
 		pStar = GameServer()->Create<CStar>("CStar");
 		pStar->SetGlobalOrigin(vecProxima);

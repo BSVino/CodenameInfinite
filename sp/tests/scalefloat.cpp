@@ -80,4 +80,21 @@ void test_scalefloat()
 	TAssert(CScalableFloat(1000) != CScalableFloat(2000));
 	TAssert(!(CScalableFloat(1000) == CScalableFloat(2000)));
 	TAssert(!(CScalableFloat(1000) != CScalableFloat(1000)));
+
+	// Test that overflow works properly.
+	TAssert(CScalableFloat(500.0, SCALE_HIGHEST) * CScalableFloat(3.0) == CScalableFloat(1500.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(1500.0, SCALE_HIGHEST) / CScalableFloat(2.0) == CScalableFloat(750.0, SCALE_HIGHEST));
+
+	TAssert(CScalableFloat(500.0, SCALE_HIGHEST) * 3.0 == CScalableFloat(1500.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(1500.0, SCALE_HIGHEST) / 2.0 == CScalableFloat(750.0, SCALE_HIGHEST));
+
+	TAssert(CScalableFloat(1000.0, SCALE_HIGHEST).AddMultiple(CScalableFloat(-500.0, SCALE_HIGHEST), CScalableFloat(-500.0, SCALE_HIGHEST), CScalableFloat()) == CScalableFloat());
+
+	TAssert(CScalableFloat(1000.0, SCALE_HIGHEST) == CScalableFloat(1000.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(1100.0, SCALE_HIGHEST) == CScalableFloat(1100.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(11000.0, SCALE_HIGHEST) == CScalableFloat(11000.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(1100.0, SCALE_HIGHEST) > CScalableFloat(1000.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(1000.0, SCALE_HIGHEST) < CScalableFloat(1100.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(-1100.0, SCALE_HIGHEST) < CScalableFloat(-1000.0, SCALE_HIGHEST));
+	TAssert(CScalableFloat(-1000.0, SCALE_HIGHEST) > CScalableFloat(-1100.0, SCALE_HIGHEST));
 }
