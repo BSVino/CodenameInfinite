@@ -6,6 +6,7 @@
 #include "entities/sp_playercharacter.h"
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
+#include "ui/command_menu.h"
 
 REGISTER_ENTITY(CWorkerBot);
 
@@ -30,8 +31,6 @@ void CWorkerBot::Spawn()
 	BaseClass::Spawn();
 
 	SetTotalHealth(4);
-
-	SetTask(TASK_MINE);
 }
 
 void CWorkerBot::Think()
@@ -119,6 +118,24 @@ void CWorkerBot::PostRender() const
 			c.Vertex(vecForward + vecUp);
 		c.EndRender();
 	}
+}
+
+void CWorkerBot::SetupMenuButtons()
+{
+	CCommandMenu* pMenu = GameData().GetCommandMenu();
+
+	pMenu->SetButton(0, "Mine", "mine");
+	pMenu->SetButton(5, "Sit tight", "nothing");
+}
+
+void CWorkerBot::MenuCommand(const tstring& sCommand)
+{
+	if (sCommand == "mine")
+		SetTask(TASK_MINE);
+	else
+		SetTask(TASK_NONE);
+
+	GameData().CloseCommandMenu();
 }
 
 CScalableFloat CWorkerBot::CharacterSpeed()

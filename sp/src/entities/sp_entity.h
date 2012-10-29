@@ -14,6 +14,9 @@ class CSPEntityData : public CBaseEntityData
 	DECLARE_CLASS(CSPEntityData, CBaseEntityData);
 
 public:
+	CSPEntityData();
+
+public:
 	// For purposes of rendering and physics, units are assumed to be in this scale.
 	virtual scale_t					GetScale() const { return SCALE_METER; }
 	virtual bool					ShouldRenderAtScale(scale_t eScale) const;
@@ -37,6 +40,10 @@ public:
 	void                        SetGroupTransform(const Matrix4x4& m) { m_mGroupTransform = m; }
 	const Matrix4x4&            GetGroupTransform() const { return m_mGroupTransform; }
 
+	class CCommandMenu*         CreateCommandMenu(class CPlayerCharacter* pRequester);
+	void                        CloseCommandMenu();
+	class CCommandMenu*         GetCommandMenu() const;
+
 private:
 	CEntityHandle<CSPPlayer>    m_hPlayerOwner;
 	CEntityHandle<CPlanet>      m_hPlanet;
@@ -44,6 +51,8 @@ private:
 	// Transform from the center of the nearest chunk group.
 	// Use a persistent transform to avoid floating point problems converting back to double all the time.
 	Matrix4x4                   m_mGroupTransform;
+
+	class CCommandMenu*         m_pCommandMenu;
 };
 
 #endif

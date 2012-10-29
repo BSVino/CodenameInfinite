@@ -9,6 +9,12 @@
 #include "planet/planet.h"
 #include "entities/star.h"
 #include "planet/terrain_chunks.h"
+#include "ui/command_menu.h"
+
+CSPEntityData::CSPEntityData()
+{
+	m_pCommandMenu = nullptr;
+}
 
 bool CSPEntityData::ShouldRenderAtScale(scale_t eScale) const
 {
@@ -168,4 +174,27 @@ void CSPEntityData::SetPlayerOwner(CSPPlayer* pPlayer)
 CSPPlayer* CSPEntityData::GetPlayerOwner() const
 {
 	return m_hPlayerOwner;
+}
+
+CCommandMenu* CSPEntityData::CreateCommandMenu(CPlayerCharacter* pRequester)
+{
+	CloseCommandMenu();
+
+	m_pCommandMenu = new CCommandMenu(m_pEntity, pRequester);
+
+	return GetCommandMenu();
+}
+
+void CSPEntityData::CloseCommandMenu()
+{
+	if (!m_pCommandMenu)
+		return;
+
+	delete m_pCommandMenu;
+	m_pCommandMenu = nullptr;
+}
+
+CCommandMenu* CSPEntityData::GetCommandMenu() const
+{
+	return m_pCommandMenu;
 }

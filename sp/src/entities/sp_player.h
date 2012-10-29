@@ -6,6 +6,8 @@
 #include "structures/structure.h"
 #include "items/items.h"
 
+class CCommandMenu;
+
 class CSPPlayer : public CPlayer
 {
 	REGISTER_ENTITY_CLASS(CSPPlayer, CPlayer);
@@ -14,6 +16,8 @@ public:
 	CSPPlayer();
 
 public:
+	void                    Precache();
+
 	virtual void					MouseMotion(int x, int y);
 	virtual void                    MouseInput(int iButton, int iState);
 	virtual void					KeyPress(int c);
@@ -32,6 +36,9 @@ public:
 	bool                    FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGiveTo) const;
 	void                    FinishBlockPlace();
 
+	void                    CommandMenuOpened(CCommandMenu* pMenu);
+	void                    CommandMenuClosed(CCommandMenu* pMenu);
+
 	void                AddSpires(size_t iSpires);
 	size_t              GetNumSpires() { return m_aiStructures[STRUCTURE_SPIRE]; }
 
@@ -40,6 +47,8 @@ private:
 	item_t              m_eBlockPlaceMode;
 
 	size_t              m_aiStructures[STRUCTURE_TOTAL];
+
+	CCommandMenu*       m_pActiveCommandMenu;
 };
 
 #endif

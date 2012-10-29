@@ -90,6 +90,7 @@ SAVEDATA_TABLE_BEGIN(CBaseEntity);
 	SAVEDATA_DEFINE_OUTPUT(OnKilled);
 	SAVEDATA_DEFINE_OUTPUT(OnActivated);
 	SAVEDATA_DEFINE_OUTPUT(OnDeactivated);
+	SAVEDATA_DEFINE_OUTPUT(OnUsed);
 	SAVEDATA_DEFINE_HANDLE(CSaveData::DATA_STRING, tstring, m_sName, "Name");
 	SAVEDATA_EDITOR_VARIABLE("Name");
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sClassName);
@@ -141,6 +142,7 @@ INPUTS_TABLE_BEGIN(CBaseEntity);
 	INPUT_DEFINE(Deactivate);
 	INPUT_DEFINE(ToggleActive);
 	INPUT_DEFINE(SetActive);
+	INPUT_DEFINE(Use);
 	INPUT_DEFINE(RemoveOutput);
 	INPUT_DEFINE(Delete);
 INPUTS_TABLE_END();
@@ -901,6 +903,25 @@ void CBaseEntity::SetActive(const tvector<tstring>& sArgs)
 	bool bValue = (sArgs[0].comparei("yes") == 0 || sArgs[0].comparei("true") == 0 || sArgs[0].comparei("on") == 0 || stoi(sArgs[0]) != 0);
 
 	SetActive(bValue);
+}
+
+void CBaseEntity::Use(CBaseEntity* pUser)
+{
+	if (!IsActive())
+		return;
+
+	OnUse(pUser);
+
+	CallOutput("OnUsed");
+}
+
+void CBaseEntity::OnUse(CBaseEntity* pUser)
+{
+}
+
+void CBaseEntity::Use(const tvector<tstring>& sArgs)
+{
+	Use(nullptr);
 }
 
 CVar show_centers("debug_show_centers", "off");

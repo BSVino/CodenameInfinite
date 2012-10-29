@@ -60,6 +60,7 @@ set (CI_ITEM_SOURCES
 )
 
 set (CI_UI_SOURCES
+	ui/command_menu.cpp
 	ui/hud.cpp
 	ui/hudmenu.cpp
 )

@@ -5,9 +5,25 @@
 #include "entities/items/pickup.h"
 #include "entities/enemies/eater.h"
 #include "entities/sp_playercharacter.h"
+#include "ui/command_menu.h"
 
 void CSPCharacter::TaskThink()
 {
+	if (GameData().GetCommandMenu())
+	{
+		// Face the player and await instructions.
+
+		Vector vecDirection = (GameData().GetCommandMenu()->GetPlayerCharacter()->GetGlobalOrigin() - GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+
+		if (HasMoveParent())
+			SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetUnits(SCALE_METER).TransformVector(vecDirection)));
+		else
+			SetViewAngles(VectorAngles(vecDirection));
+
+		m_vecGoalVelocity = Vector(0, 0, 0);
+		return;
+	}
+
 	if (m_eTask)
 		m_vecGoalVelocity = Vector(0, 0, 0);
 

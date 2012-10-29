@@ -22,6 +22,8 @@ public:
 					CSPRenderer();
 
 public:
+	virtual void    Initialize();
+
 	virtual void	PreFrame();
 
 	virtual void	BuildScaleFrustums();
@@ -45,6 +47,8 @@ public:
 
 	virtual bool    ShouldCullByFrustum() const { return false; }
 
+	const CFrameBuffer*  GetCommandMenuBuffer() const { return &m_oCommandMenuBuffer; }
+
 protected:
 	CEntityHandle<CStar>	m_hClosestStar;
 
@@ -56,6 +60,8 @@ protected:
 	double			m_aiScaleModelViews[SCALESTACK_SIZE][16];
 	double			m_aiScaleProjections[SCALESTACK_SIZE][16];
 	int				m_aiScaleViewports[SCALESTACK_SIZE][4];
+
+	CFrameBuffer	m_oCommandMenuBuffer;
 };
 
 #endif

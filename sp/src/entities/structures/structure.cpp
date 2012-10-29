@@ -9,6 +9,7 @@
 #include "spire.h"
 #include "mine.h"
 #include "pallet.h"
+#include "ui/command_menu.h"
 
 REGISTER_ENTITY(CStructure);
 
@@ -50,6 +51,21 @@ void CStructure::SetSpire(CSpire* pSpire)
 CSpire* CStructure::GetSpire() const
 {
 	return m_hSpire;
+}
+
+void CStructure::Think()
+{
+	BaseClass::Think();
+
+	if (GameData().GetCommandMenu())
+		GameData().GetCommandMenu()->Think();
+}
+
+void CStructure::OnUse(CBaseEntity* pUser)
+{
+	CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(pUser);
+	if (pCharacter)
+		PerformStructureTask(pCharacter);
 }
 
 CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin)

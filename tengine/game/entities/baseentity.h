@@ -625,6 +625,11 @@ public:
 	DECLARE_ENTITY_OUTPUT(OnActivated);
 	DECLARE_ENTITY_OUTPUT(OnDeactivated);
 
+	void                                    Use(CBaseEntity* pUser);
+	virtual void                            OnUse(CBaseEntity* pUser);
+	DECLARE_ENTITY_INPUT(Use);
+	DECLARE_ENTITY_OUTPUT(OnUsed);
+
 	virtual bool							ShouldRender() const { return (size_t)m_iModel != ~0 || m_hMaterialModel.IsValid(); };
 	virtual bool							ShouldRenderModel() const { return true; };
 	virtual void							PreRender() const;

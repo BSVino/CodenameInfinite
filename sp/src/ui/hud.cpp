@@ -164,7 +164,7 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 
 	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
 	CHelperBot* pHelper = pLocalPlayer->GetHelperBot();
-	if (pHelper)
+	if (pHelper && !pHelper->GameData().GetCommandMenu())
 	{
 		CScalableVector vecScalablePlanet = pHelper->GameData().GetScalableRenderOrigin();
 

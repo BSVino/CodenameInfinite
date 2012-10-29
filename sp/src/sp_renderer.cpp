@@ -32,6 +32,13 @@ CSPRenderer::CSPRenderer()
 	m_eRenderingScale = SCALE_NONE;
 }
 
+void CSPRenderer::Initialize()
+{
+	BaseClass::Initialize();
+
+	m_oCommandMenuBuffer = CreateFrameBuffer(512, 512, (fb_options_e)(FB_TEXTURE));
+}
+
 void CSPRenderer::PreFrame()
 {
 	BaseClass::PreFrame();

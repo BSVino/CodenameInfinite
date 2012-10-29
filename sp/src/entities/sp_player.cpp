@@ -14,6 +14,7 @@
 #include "sp_renderer.h"
 #include "structures/structure.h"
 #include "structures/spire.h"
+#include "ui/command_menu.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
@@ -34,6 +35,12 @@ CSPPlayer::CSPPlayer()
 	m_eConstructionMode = STRUCTURE_NONE;
 	m_eBlockPlaceMode = ITEM_NONE;
 	memset(m_aiStructures, 0, sizeof(m_aiStructures));
+	m_pActiveCommandMenu = nullptr;
+}
+
+void CSPPlayer::Precache()
+{
+	PrecacheMaterial("textures/commandmenubutton.mat");
 }
 
 void CSPPlayer::MouseMotion(int x, int y)
@@ -115,6 +122,12 @@ void CSPPlayer::MouseMotion(int x, int y)
 
 void CSPPlayer::MouseInput(int iButton, int iState)
 {
+	if (m_pActiveCommandMenu)
+	{
+		if (m_pActiveCommandMenu->MouseInput(iButton, iState))
+			return;
+	}
+
 	if (m_eConstructionMode)
 	{
 		FinishConstruction();
@@ -144,9 +157,8 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 
 		if (tr.m_flFraction < 1)
 		{
-			CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
-			if (pStructure)
-				pStructure->PerformStructureTask(GetPlayerCharacter());
+			if (tr.m_pHit)
+				tr.m_pHit->Use(GetPlayerCharacter());
 		}
 	}
 
@@ -608,6 +620,26 @@ void CSPPlayer::FinishBlockPlace()
 		m_eBlockPlaceMode = ITEM_NONE;
 
 	SPWindow()->GetHUD()->BuildMenus();
+}
+
+void CSPPlayer::CommandMenuOpened(CCommandMenu* pMenu)
+{
+	if (m_pActiveCommandMenu)
+	{
+		CBaseEntity* pOwner = m_pActiveCommandMenu->GetOwner();
+		if (pOwner)
+			pOwner->GameData().CloseCommandMenu();
+	}
+
+	m_pActiveCommandMenu = pMenu;
+}
+
+void CSPPlayer::CommandMenuClosed(CCommandMenu* pMenu)
+{
+	if (m_pActiveCommandMenu != pMenu)
+		return;
+
+	m_pActiveCommandMenu = nullptr;
 }
 
 void CSPPlayer::AddSpires(size_t iSpires)
