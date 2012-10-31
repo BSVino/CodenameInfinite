@@ -45,7 +45,7 @@ CVoxelChunk* CVoxelTree::GetChunkIfExists(const IVector& vecChunk)
 
 IVector CVoxelTree::ToVoxelCoordinates(const CScalableVector& vecPlanetLocal) const
 {
-	Vector vecBlockPoint = m_pSpire->GetLocalTransform().InvertedRT() * vecPlanetLocal;
+	Vector vecBlockPoint = m_hSpire->GetLocalTransform().InvertedRT() * vecPlanetLocal;
 
 	IVector vecVoxel;
 
@@ -73,7 +73,7 @@ CScalableVector CVoxelTree::ToLocalCoordinates(const IVector& vecBlock) const
 	CScalableFloat y((float)vecBlock.y);
 	CScalableFloat z((float)vecBlock.z);
 
-	return m_pSpire->GetLocalTransform() * CScalableVector(x, y, z);
+	return m_hSpire->GetLocalTransform() * CScalableVector(x, y, z);
 }
 
 void CVoxelTree::RebuildChunkVBOs()

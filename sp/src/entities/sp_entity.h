@@ -8,6 +8,7 @@
 
 class CPlanet;
 class CSPPlayer;
+class CCommandMenu;
 
 class CSPEntityData : public CBaseEntityData
 {
@@ -43,6 +44,10 @@ public:
 	class CCommandMenu*         CreateCommandMenu(class CPlayerCharacter* pRequester);
 	void                        CloseCommandMenu();
 	class CCommandMenu*         GetCommandMenu() const;
+	void                        SetCommandMenuParameters(const Vector& vecRenderOffset, float flProjectionDistance, float flProjectionRadius);
+	const Vector&               GetCommandMenuRenderOffset() const { return m_vecCommandMenuRenderOffset; }
+	float                       GetCommandMenuProjectionDistance() const { return m_flCommandMenuProjectionDistance; }
+	float                       GetCommandMenuProjectionRadius() const { return m_flCommandMenuProjectionRadius; }
 
 private:
 	CEntityHandle<CSPPlayer>    m_hPlayerOwner;
@@ -52,7 +57,11 @@ private:
 	// Use a persistent transform to avoid floating point problems converting back to double all the time.
 	Matrix4x4                   m_mGroupTransform;
 
-	class CCommandMenu*         m_pCommandMenu;
+	CCommandMenu*     m_pCommandMenu;
+
+	Vector            m_vecCommandMenuRenderOffset;
+	float             m_flCommandMenuProjectionDistance;
+	float             m_flCommandMenuProjectionRadius;
 };
 
 #endif

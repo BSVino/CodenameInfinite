@@ -17,7 +17,14 @@ public:
 	bool        ShouldRender() const;
 	void        PostRender() const;
 
+	void        PerformStructureTask(CSPCharacter* pUser);
+	void        SetupMenuButtons();
+	void        MenuCommand(const tstring& sCommand);
+
 	void        PostConstruction();
+
+	void        StartBuildWorker();
+	void        EndBuild();
 
 	void        SetBaseName(const tstring& sName) { m_sBaseName = sName; }
 	tstring     GetBaseName() { return m_sBaseName; }
@@ -29,6 +36,8 @@ private:
 	tstring     m_sBaseName;
 
 	CVoxelTree  m_oVoxelTree;
+
+	double      m_flBuildStart;
 
 	double      m_flNextMonster;
 };

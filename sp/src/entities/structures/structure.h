@@ -30,9 +30,12 @@ public:
 
 	void                    Think();
 
+	void                    PostRender() const;
+
 	virtual void            PostConstruction() {};
 
 	virtual void            OnUse(CBaseEntity* pUser);
+	virtual void            SetupMenuButtons() {};
 	virtual void            PerformStructureTask(class CSPCharacter* pCharacter) {};
 
 	virtual const Matrix4x4 GetPhysicsTransform() const;

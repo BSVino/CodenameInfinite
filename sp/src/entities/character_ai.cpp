@@ -217,3 +217,11 @@ CBaseEntity* CSPCharacter::FindBestEnemy() const
 
 	return pEnemy;
 }
+
+void CSPCharacter::SetTask(task_t eTask)
+{
+	m_eTask = eTask;
+
+	m_hMine = nullptr;
+	m_hEnemy = nullptr;
+}

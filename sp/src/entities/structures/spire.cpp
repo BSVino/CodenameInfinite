@@ -1,5 +1,7 @@
 #include "spire.h"
 
+#include <tinker/cvar.h>
+
 #include <tengine/renderer/game_renderer.h>
 #include <tengine/renderer/game_renderingcontext.h>
 
@@ -10,6 +12,7 @@
 #include "entities/bots/worker.h"
 #include "entities/enemies/eater.h"
 #include "entities/star.h"
+#include "ui/command_menu.h"
 
 REGISTER_ENTITY(CSpire);
 
@@ -18,6 +21,7 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSpire);
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sBaseName);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flBuildStart);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextMonster);
 SAVEDATA_TABLE_END();
 
@@ -39,12 +43,20 @@ void CSpire::Spawn()
 
 	SetTotalHealth(100);
 
+	m_flBuildStart = 0;
 	m_flNextMonster = 0;
+
+	GameData().SetCommandMenuParameters(Vector(0, 1, 0), 0.5f, 1.0f);
 }
+
+CVar build_time_worker("build_time_worker", "4");
 
 void CSpire::Think()
 {
 	BaseClass::Think();
+
+	if (GameServer()->GetGameTime() > m_flBuildStart + build_time_worker.GetFloat())
+		EndBuild();
 
 	if (GameServer()->GetGameTime() > m_flNextMonster)
 	{
@@ -125,6 +137,9 @@ void CSpire::PostRender() const
 	if (vecPosition.LengthSqr() > 1000*1000)
 		return;
 
+	if (m_flBuildStart)
+		vecPosition += Vector(RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f));
+
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
 	c.ResetTransformations();
@@ -147,9 +162,55 @@ void CSpire::PostRender() const
 	c.EndRender();
 }
 
+void CSpire::PerformStructureTask(CSPCharacter* pUser)
+{
+	CPlayerCharacter* pPlayerCharacter = dynamic_cast<CPlayerCharacter*>(pUser);
+	if (pPlayerCharacter)
+	{
+		CCommandMenu* pMenu = GameData().CreateCommandMenu(pPlayerCharacter);
+		SetupMenuButtons();
+
+		if (!pMenu->GetNumActiveButtons())
+			GameData().CloseCommandMenu();
+	}
+}
+
+void CSpire::SetupMenuButtons()
+{
+	CCommandMenu* pMenu = GameData().GetCommandMenu();
+
+	pMenu->SetButton(0, "Worker", "worker");
+}
+
+void CSpire::MenuCommand(const tstring& sCommand)
+{
+	if (sCommand == "worker")
+		StartBuildWorker();
+
+	GameData().CloseCommandMenu();
+}
+
 void CSpire::PostConstruction()
 {
 	BaseClass::PostConstruction();
+
+	StartBuildWorker();
+}
+
+void CSpire::StartBuildWorker()
+{
+	if (m_flBuildStart)
+		return;
+
+	m_flBuildStart = GameServer()->GetGameTime();
+}
+
+void CSpire::EndBuild()
+{
+	if (!m_flBuildStart)
+		return;
+
+	m_flBuildStart = 0;
 
 	CWorkerBot* pWorker = GameServer()->Create<CWorkerBot>("CWorkerBot");
 	pWorker->GameData().SetPlayerOwner(GameData().GetPlayerOwner());

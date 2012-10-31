@@ -174,6 +174,7 @@ void CCommandMenu::Render() const
 		c.ResetTransformations();
 
 		Matrix4x4 mTransform = m_hOwner->BaseGetRenderTransform();
+		mTransform += m_hOwner->GetLocalTransform().TransformVector(m_hOwner->GameData().GetCommandMenuRenderOffset());
 		mTransform += vecToPlayer * flProjectionDistance;
 		mTransform.SetAngles(EAngle(0, 0, 0));
 		c.Transform(mTransform);
@@ -259,13 +260,17 @@ size_t CCommandMenu::GetNumActiveButtons() const
 
 void CCommandMenu::GetVectors(TVector& vecLocalCenter, Vector& vecProjectionDirection, Vector& vecUp, Vector& vecRight, float& flProjectionDistance, float& flProjectionRadius) const
 {
-	flProjectionDistance = 0.2f;
-	flProjectionRadius = 1.0f;
+	flProjectionDistance = m_hOwner->GameData().GetCommandMenuProjectionDistance();
+	flProjectionRadius = m_hOwner->GameData().GetCommandMenuProjectionRadius();
 	Vector vecPlayerUp = m_hPlayerCharacter->GetLocalUpVector();
-	vecProjectionDirection = (m_hPlayerCharacter->GetLocalOrigin() + m_hPlayerCharacter->EyeHeight() * DoubleVector(vecPlayerUp) - m_hOwner->GetLocalOrigin()).GetUnits(SCALE_METER).Normalized();
+
+	TVector vecPlayerEyes = m_hPlayerCharacter->GetLocalOrigin() + m_hPlayerCharacter->EyeHeight() * DoubleVector(vecPlayerUp);
+	TVector vecOwnerProjectionPoint = m_hOwner->GetLocalOrigin() + m_hOwner->GetLocalTransform().TransformVector(m_hOwner->GameData().GetCommandMenuRenderOffset());
+	vecProjectionDirection = (vecPlayerEyes - vecOwnerProjectionPoint).GetUnits(SCALE_METER).Normalized();
+
 	vecRight = vecPlayerUp.Cross(vecProjectionDirection).Normalized();
 	vecUp = vecProjectionDirection.Cross(vecRight).Normalized();
-	vecLocalCenter = m_hOwner->GetLocalOrigin() + vecProjectionDirection * flProjectionDistance;
+	vecLocalCenter = vecOwnerProjectionPoint + vecProjectionDirection * flProjectionDistance;
 }
 
 Vector2D CCommandMenu::GetButtonCenter(size_t iButton) const

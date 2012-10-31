@@ -14,6 +14,10 @@
 CSPEntityData::CSPEntityData()
 {
 	m_pCommandMenu = nullptr;
+
+	m_vecCommandMenuRenderOffset = Vector(0, 0, 0);
+	m_flCommandMenuProjectionDistance = 0.4f;
+	m_flCommandMenuProjectionRadius = 1.0f;
 }
 
 bool CSPEntityData::ShouldRenderAtScale(scale_t eScale) const
@@ -197,4 +201,11 @@ void CSPEntityData::CloseCommandMenu()
 CCommandMenu* CSPEntityData::GetCommandMenu() const
 {
 	return m_pCommandMenu;
+}
+
+void CSPEntityData::SetCommandMenuParameters(const Vector& vecRenderOffset, float flProjectionDistance, float flProjectionRadius)
+{
+	m_vecCommandMenuRenderOffset = vecRenderOffset;
+	m_flCommandMenuProjectionDistance = flProjectionDistance;
+	m_flCommandMenuProjectionRadius = flProjectionRadius;
 }

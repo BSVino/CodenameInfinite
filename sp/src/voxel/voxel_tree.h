@@ -2,6 +2,8 @@
 
 #include <tmap.h>
 
+#include <tengine/game/entities/baseentity.h>
+
 #include "sp_common.h"
 #include "entities/items/items.h"
 #include "voxel_chunk.h"
@@ -20,13 +22,13 @@ public:
 	IVector         ToVoxelCoordinates(const CScalableVector& vecPlanetLocal) const;
 	CScalableVector ToLocalCoordinates(const IVector& vecBlock) const;
 
-	void            SetSpire(class CSpire* pSpire) { m_pSpire = pSpire; }
-	class CSpire*   GetSpire() { return m_pSpire; }
+	void            SetSpire(class CSpire* pSpire) { m_hSpire = pSpire; }
+	class CSpire*   GetSpire() { return m_hSpire; }
 
 	void       RebuildChunkVBOs();
 
 private:
-	class CSpire*      m_pSpire;
+	CEntityHandle<CSpire>      m_hSpire;
 
 	tmap<IVector, CVoxelChunk> m_aChunks;
 };

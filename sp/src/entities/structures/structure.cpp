@@ -2,6 +2,8 @@
 
 #include <game/gameserver.h>
 
+#include <tengine/renderer/game_renderer.h>
+
 #include "entities/sp_player.h"
 #include "entities/sp_playercharacter.h"
 #include "planet/planet.h"
@@ -58,7 +60,23 @@ void CStructure::Think()
 	BaseClass::Think();
 
 	if (GameData().GetCommandMenu())
-		GameData().GetCommandMenu()->Think();
+	{
+		if (GameData().GetCommandMenu()->WantsToClose())
+			GameData().CloseCommandMenu();
+		else
+			GameData().GetCommandMenu()->Think();
+	}
+}
+
+void CStructure::PostRender() const
+{
+	BaseClass::PostRender();
+
+	if (!GameServer()->GetRenderer()->IsRenderingTransparent())
+		return;
+
+	if (GameData().GetCommandMenu())
+		GameData().GetCommandMenu()->Render();
 }
 
 void CStructure::OnUse(CBaseEntity* pUser)
