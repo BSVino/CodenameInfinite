@@ -23,6 +23,7 @@ typedef enum
 	TASK_NONE = 0,
 	TASK_MINE,
 	TASK_ATTACK,
+	TASK_FOLLOWME,
 	TASK_TOTAL,
 } task_t;
 

@@ -153,7 +153,7 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
 
 		CTraceResult tr;
-		GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*3, GetPlayerCharacter());
+		GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*4, GetPlayerCharacter());
 
 		if (tr.m_flFraction < 1)
 		{

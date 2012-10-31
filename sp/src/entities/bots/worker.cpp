@@ -125,6 +125,7 @@ void CWorkerBot::SetupMenuButtons()
 	CCommandMenu* pMenu = GameData().GetCommandMenu();
 
 	pMenu->SetButton(0, "Mine", "mine");
+	pMenu->SetButton(4, "On me", "follow");
 	pMenu->SetButton(5, "Sit tight", "nothing");
 }
 
@@ -132,6 +133,8 @@ void CWorkerBot::MenuCommand(const tstring& sCommand)
 {
 	if (sCommand == "mine")
 		SetTask(TASK_MINE);
+	else if (sCommand == "follow")
+		SetTask(TASK_FOLLOWME);
 	else
 		SetTask(TASK_NONE);
 

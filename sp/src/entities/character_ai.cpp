@@ -66,6 +66,12 @@ void CSPCharacter::TaskThink()
 			pMine->PerformStructureTask(this);
 		}
 	}
+	else if (m_eTask == TASK_FOLLOWME)
+	{
+		CPlayerCharacter* pOwner = GameData().GetPlayerOwner()->GetPlayerCharacter();
+		if (pOwner)
+			MoveTo(pOwner);
+	}
 	else if (m_eTask == TASK_ATTACK)
 	{
 		CBaseEntity* pEnemy = m_hEnemy;
