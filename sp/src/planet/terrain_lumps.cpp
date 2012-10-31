@@ -287,6 +287,15 @@ bool CTerrainLumpManager::FindApproximateElevation(const DoubleVector& vec3DLoca
 
 bool CTerrainLumpManager::IsGenerating() const
 {
+	for (size_t i = 0; i < m_apLumps.size(); i++)
+	{
+		if (!m_apLumps[i])
+			continue;
+
+		if (m_apLumps[i]->IsGeneratingLowRes())
+			return true;
+	}
+
 	return !s_pLumpGenerator->AreAllJobsDone();
 }
 

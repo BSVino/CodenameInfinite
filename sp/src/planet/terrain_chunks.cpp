@@ -433,6 +433,15 @@ void CTerrainChunkManager::Render()
 
 bool CTerrainChunkManager::IsGenerating() const
 {
+	for (size_t i = 0; i < m_apChunks.size(); i++)
+	{
+		if (!m_apChunks[i])
+			continue;
+
+		if (m_apChunks[i]->IsGeneratingTerrain())
+			return true;
+	}
+
 	return !s_pChunkGenerator->AreAllJobsDone();
 }
 
