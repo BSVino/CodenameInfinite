@@ -67,7 +67,8 @@ void CSPGame::SetupGame(tstring sType)
 		Game()->AddPlayer(pPlayer);
 
 		CPlayerCharacter* pCharacter = GameServer()->Create<CPlayerCharacter>("CPlayerCharacter");
-		pCharacter->GetHelperBot()->GameData().SetPlayerOwner(pPlayer);
+		if (pCharacter->GetHelperBot())
+			pCharacter->GetHelperBot()->GameData().SetPlayerOwner(pPlayer);
 		pCharacter->SetGlobalOrigin(CScalableVector(Vector(0, 0, 0), SCALE_MEGAMETER));
 		pCharacter->SetViewAngles(EAngle(0, 140, 0));
 		pCharacter->GameData().SetPlayerOwner(pPlayer);
