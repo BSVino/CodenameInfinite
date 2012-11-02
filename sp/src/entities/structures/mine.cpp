@@ -102,7 +102,7 @@ void CMine::PostRender() const
 		if (GetTotalTurnsToConstruct() == 1)
 			c.SetUniform("vecColor", Vector4D(1, 1, 1, 0.5f));
 		else
-			c.SetUniform("vecColor", Vector4D(1, 1, 1, RemapValClamped((float)GetTurnsToConstruct(), 1, (float)GetTotalTurnsToConstruct(), 0.65f, 0.25f)));
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, RemapValClamped((float)GetTurnsToConstruct(), 1, (float)GetTotalTurnsToConstruct(), 0.5f, 0.25f)));
 	}
 
 	c.BeginRenderTriFan();
@@ -128,4 +128,12 @@ void CMine::PerformStructureTask(CSPCharacter* pCharacter)
 		return;
 
 	m_flDiggingStarted = GameServer()->GetGameTime();
+}
+
+bool CMine::IsOccupied() const
+{
+	if (m_flDiggingStarted)
+		return true;
+
+	return BaseClass::IsOccupied();
 }

@@ -18,6 +18,7 @@ public:
 	void        PostRender() const;
 
 	void        PerformStructureTask(CSPCharacter* pUser);
+	bool        IsOccupied() const;
 	void        SetupMenuButtons();
 	void        MenuCommand(const tstring& sCommand);
 

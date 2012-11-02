@@ -16,6 +16,7 @@ public:
 	void        PostRender() const;
 
 	void        PerformStructureTask(class CSPCharacter* pCharacter);
+	bool        IsOccupied() const;
 
 private:
 	double      m_flDiggingStarted;

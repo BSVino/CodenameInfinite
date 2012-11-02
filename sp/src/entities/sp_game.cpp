@@ -240,8 +240,8 @@ bool ValidStructuresUnderConstructionConditions( CPlayer *pPlayer, class CLesson
 		if (!pStructure->IsUnderConstruction())
 			continue;
 
-		// If we're about to be completed don't worry about it.
-		if (pStructure->IsWorkingConstructionTurn() && pStructure->GetTurnsToConstruct() == 1)
+		// If we're working our construction turn don't worry about it.
+		if (pStructure->IsOccupied())
 			continue;
 
 		if ((pStructure->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).LengthSqr() > TFloat(1000).Squared())
@@ -279,6 +279,9 @@ bool ValidStructuresNotUnderConstructionConditions( CPlayer *pPlayer, class CLes
 			continue;
 
 		if (pStructure->IsUnderConstruction())
+			continue;
+
+		if (pStructure->IsOccupied())
 			continue;
 
 		if ((pStructure->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).LengthSqr() > TFloat(1000).Squared())

@@ -175,6 +175,14 @@ void CSpire::PerformStructureTask(CSPCharacter* pUser)
 	}
 }
 
+bool CSpire::IsOccupied() const
+{
+	if (m_flBuildStart)
+		return true;
+
+	return BaseClass::IsOccupied();
+}
+
 void CSpire::SetupMenuButtons()
 {
 	CCommandMenu* pMenu = GameData().GetCommandMenu();

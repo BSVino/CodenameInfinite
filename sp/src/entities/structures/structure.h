@@ -46,6 +46,7 @@ public:
 	virtual void            OnUse(CBaseEntity* pUser);
 	virtual void            SetupMenuButtons() {};
 	virtual void            PerformStructureTask(class CSPCharacter* pCharacter);
+	virtual bool            IsOccupied() const;
 
 	virtual const Matrix4x4 GetPhysicsTransform() const;
 	virtual void            SetPhysicsTransform(const Matrix4x4& m);

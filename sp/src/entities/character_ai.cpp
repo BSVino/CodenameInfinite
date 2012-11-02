@@ -31,7 +31,7 @@ void CSPCharacter::TaskThink()
 	{
 		CStructure* pBuild = m_hBuild;
 
-		if (!pBuild || !pBuild->IsUnderConstruction())
+		if (!pBuild || !pBuild->IsUnderConstruction() || pBuild->IsOccupied())
 			m_hBuild = pBuild = FindNearestBuildStructure();
 
 		if (!pBuild)
@@ -61,7 +61,7 @@ void CSPCharacter::TaskThink()
 			// Let's head to the mine
 			CStructure* pMine = m_hMine;
 
-			if (!pMine)
+			if (!pMine || pMine->IsOccupied())
 				m_hMine = pMine = FindNearestMine();
 
 			if (!pMine)
@@ -142,6 +142,9 @@ CStructure* CSPCharacter::FindNearestBuildStructure() const
 		if (!pStructure->IsUnderConstruction())
 			continue;
 
+		if (pStructure->IsOccupied())
+			continue;
+
 		if (!pNearestStructure)
 		{
 			pNearestStructure = pStructure;
@@ -171,6 +174,9 @@ CPallet* CSPCharacter::FindNearestPallet(item_t eBlock) const
 		if (pPallet->GetBlockQuantity() && pPallet->GetBlockType() != eBlock)
 			continue;
 
+		if (pPallet->IsUnderConstruction())
+			continue;
+
 		if (!pStructure)
 		{
 			pStructure = pPallet;
@@ -195,6 +201,9 @@ CMine* CSPCharacter::FindNearestMine() const
 
 		CMine* pMine = dynamic_cast<CMine*>(pEntity);
 		if (!pMine)
+			continue;
+
+		if (pMine->IsUnderConstruction())
 			continue;
 
 		if (!pStructure)

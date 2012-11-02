@@ -140,6 +140,14 @@ void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
 	}
 }
 
+bool CStructure::IsOccupied() const
+{
+	if (m_flConstructionTurnTime)
+		return true;
+
+	return false;
+}
+
 CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin)
 {
 	CStructure* pStructure = nullptr;
