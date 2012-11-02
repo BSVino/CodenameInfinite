@@ -183,6 +183,9 @@ pfnConditionsMet CInstructor::GetBaseConditions(const tstring& sConditions)
 	else if (sConditions == "ValidPlayerDead")
 		return ValidPlayerDeadConditions;
 
+	TAssert(false);
+	TError("Couldn't find lesson condition '" + sConditions + "'\n");
+
 	return nullptr;
 }
 

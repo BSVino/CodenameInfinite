@@ -126,7 +126,18 @@ void CStructure::OnUse(CBaseEntity* pUser)
 void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
 {
 	if (IsUnderConstruction() && !m_flConstructionTurnTime)
+	{
+		if (pCharacter->GetControllingPlayer())
+			pCharacter->GetControllingPlayer()->Instructor_LessonLearned("develop-structures");
+
 		m_flConstructionTurnTime = GameServer()->GetGameTime();
+	}
+
+	if (!IsUnderConstruction())
+	{
+		if (pCharacter->GetControllingPlayer())
+			pCharacter->GetControllingPlayer()->Instructor_LessonLearned("interact-with-structures");
+	}
 }
 
 CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin)

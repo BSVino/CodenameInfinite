@@ -25,7 +25,12 @@ void CBot::OnUse(CBaseEntity* pUser)
 		CCommandMenu* pMenu = GameData().CreateCommandMenu(pPlayerCharacter);
 		SetupMenuButtons();
 
-		if (!pMenu->GetNumActiveButtons())
+		if (pMenu->GetNumActiveButtons())
+		{
+			if (pPlayerCharacter->GetControllingPlayer())
+				pPlayerCharacter->GetControllingPlayer()->Instructor_LessonLearned("order-bots");
+		}
+		else
 			GameData().CloseCommandMenu();
 	}
 }

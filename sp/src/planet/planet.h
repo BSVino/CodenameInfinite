@@ -10,6 +10,7 @@
 
 class CPlanetTerrain;
 class CTerrainLump;
+class CStar;
 
 class CPlanet : public CBaseEntity
 {
@@ -38,10 +39,16 @@ public:
 
 	virtual const TFloat        GetBoundingRadius() const { return GetRadius(); };
 
+	float                       GetSunHeight(const TVector& vecGlobal) const; // 1 for noon, -1 for midnight, 0 for dawn/dusk
+	float                       GetTimeOfDay(const TVector& vecGlobal) const; // In radians, negative answers are night: 0 for dawn, pi/2 for noon, +/-pi for dusk, -pi/2 for midnight
+
 	void						SetRandomSeed(size_t iSeed);
 
 	void                        GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord);
 	bool                        FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
+
+	void                        SetStar(class CStar* pStar);
+	class CStar*                GetStar() const;
 
 	void						SetRadius(const CScalableFloat& flRadius);
 	CScalableFloat				GetRadius() const { return m_flRadius; }
@@ -77,6 +84,8 @@ public:
 
 protected:
 	size_t						m_iRandomSeed;
+
+	CEntityHandle<CStar>        m_hStar;
 
 	CScalableFloat				m_flRadius;
 	CScalableFloat				m_flAtmosphereThickness;

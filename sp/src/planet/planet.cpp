@@ -271,6 +271,37 @@ void CPlanet::PostRender() const
 		m_pChunkManager->Render();
 }
 
+float CPlanet::GetSunHeight(const TVector& vecGlobal) const
+{
+	CStar* pStar = m_hStar;
+	TAssert(pStar);
+	if (!pStar)
+		return 0;
+
+	Vector vecToStar = (pStar->GetGlobalOrigin() - vecGlobal).GetUnits(SCALE_METER).Normalized();
+	float flSunHeight = vecToStar.Dot((vecGlobal-GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized());
+
+	return flSunHeight;
+}
+
+float CPlanet::GetTimeOfDay(const TVector& vecGlobal) const
+{
+	CStar* pStar = m_hStar;
+	TAssert(pStar);
+	if (!pStar)
+		return 0;
+
+	Vector vecToStar = (pStar->GetGlobalOrigin() - vecGlobal).GetUnits(SCALE_METER).Normalized();
+	Vector vecToPoint = (vecGlobal-GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+	float flSunY = vecToStar.Dot(vecToPoint);
+	Vector vecX = vecToPoint.Cross(GetGlobalTransform().GetUpVector()).Normalized();
+	float flSunX = vecX.Dot(vecToStar);
+
+	float flTimeOfDay = atan2(flSunY, flSunX);
+
+	return flTimeOfDay;
+}
+
 void CPlanet::SetRandomSeed(size_t iSeed)
 {
 	m_iRandomSeed = iSeed;
@@ -362,6 +393,11 @@ void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerra
 bool CPlanet::FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const
 {
 	return GetLumpManager()->FindApproximateElevation(vec3DLocal, flElevation);
+}
+
+void CPlanet::SetStar(CStar* pStar)
+{
+	m_hStar = pStar;
 }
 
 void CPlanet::SetRadius(const CScalableFloat& flRadius)

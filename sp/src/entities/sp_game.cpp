@@ -76,7 +76,13 @@ void CSPGame::SetupGame(tstring sType)
 
 		pPlayer->AddSpires(1);
 
+		CStar* pStar = GameServer()->Create<CStar>("CStar");
+		pStar->SetGlobalOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
+		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
+		pStar->SetLightColor(Color(255, 242, 143));
+
 		CPlanet* pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+		pPlanet->SetStar(pStar);
 		pPlanet->SetPlanetName("Earth");
 		pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER));
 		pPlanet->SetRadius(CScalableFloat(6.3781f, SCALE_MEGAMETER));			// Radius of Earth, 6378.1 km
@@ -86,6 +92,7 @@ void CSPGame::SetupGame(tstring sType)
 		pPlanet->SetRandomSeed(0);
 
 		pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+		pPlanet->SetStar(pStar);
 		pPlanet->SetPlanetName("Mars");
 		pPlanet->SetGlobalOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
 		pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km
@@ -93,11 +100,6 @@ void CSPGame::SetupGame(tstring sType)
 		pPlanet->SetMinutesPerRevolution(20);
 		pPlanet->SetAtmosphereColor(Color(0.64f, 0.25f, 0.25f));
 		pPlanet->SetRandomSeed(1);
-
-		CStar* pStar = GameServer()->Create<CStar>("CStar");
-		pStar->SetGlobalOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
-		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
-		pStar->SetLightColor(Color(255, 242, 143));
 
 		TVector vecProxima(Vector(30000, 0, 20000), SCALE_TERAMETER);
 
@@ -107,6 +109,7 @@ void CSPGame::SetupGame(tstring sType)
 		pStar->SetLightColor(Color(255, 242, 143));
 
 		pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+		pPlanet->SetStar(pStar);
 		pPlanet->SetPlanetName("Proxima");
 		pPlanet->SetGlobalOrigin(vecProxima + CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));
 		pPlanet->SetRadius(CScalableFloat(5.0f, SCALE_MEGAMETER));
@@ -209,12 +212,162 @@ bool ValidPlayerFlyingConditions( CPlayer *pPlayer, class CLesson *pLesson )
 	return true;
 }
 
+bool ValidStructuresUnderConstructionConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	if (!ValidPlayerNotFlyingConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+		if (!pStructure)
+			continue;
+
+		if (!pStructure->IsUnderConstruction())
+			continue;
+
+		// If we're about to be completed don't worry about it.
+		if (pStructure->IsWorkingConstructionTurn() && pStructure->GetTurnsToConstruct() == 1)
+			continue;
+
+		if ((pStructure->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).LengthSqr() > TFloat(1000).Squared())
+			continue;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool ValidStructuresNotUnderConstructionConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	if (!ValidPlayerNotFlyingConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+		if (!pStructure)
+			continue;
+
+		if (pStructure->IsUnderConstruction())
+			continue;
+
+		if ((pStructure->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).LengthSqr() > TFloat(1000).Squared())
+			continue;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool ValidBotsWithoutOrdersConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	if (!ValidPlayerNotFlyingConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		CBot* pBot = dynamic_cast<CBot*>(pEntity);
+		if (!pBot)
+			continue;
+
+		if (pCharacter->GetHelperBot() == pBot)
+			continue;
+
+		if (pBot->GetTask() != TASK_NONE)
+			continue;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool ValidTimeOfDayAfterNoonConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	if (!ValidPlayerNotFlyingConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	CPlanet* pPlanet = pCharacter->GameData().GetPlanet();
+	if (!pPlanet)
+		return false;
+
+	float flTimeOfDay = pPlanet->GetTimeOfDay(pCharacter->GetGlobalOrigin());
+
+	if (flTimeOfDay > M_PI/2 && flTimeOfDay < M_PI)
+		return true;
+
+	return false;
+}
+
 pfnConditionsMet Game_GetInstructorConditions(const tstring& sConditions)
 {
 	if (sConditions == "ValidPlayerNotFlying")
 		return ValidPlayerNotFlyingConditions;
 	if (sConditions == "ValidPlayerFlying")
 		return ValidPlayerFlyingConditions;
+	if (sConditions == "ValidStructuresUnderConstruction")
+		return ValidStructuresUnderConstructionConditions;
+	if (sConditions == "ValidStructuresNotUnderConstruction")
+		return ValidStructuresNotUnderConstructionConditions;
+	if (sConditions == "ValidBotsWithoutOrders")
+		return ValidBotsWithoutOrdersConditions;
+	if (sConditions == "ValidTimeOfDayAfterNoon")
+		return ValidTimeOfDayAfterNoonConditions;
 
 	return CInstructor::GetBaseConditions(sConditions);
 }

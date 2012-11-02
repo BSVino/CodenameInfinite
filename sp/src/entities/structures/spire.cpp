@@ -58,13 +58,11 @@ void CSpire::Think()
 	if (GameServer()->GetGameTime() > m_flBuildStart + build_time_worker.GetFloat())
 		EndBuild();
 
-	if (GameServer()->GetGameTime() > m_flNextMonster)
+	if (GameServer()->GetGameTime() > m_flNextMonster && GameData().GetPlanet())
 	{
-		CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
-		Vector vecToStar = (pStar->GetGlobalOrigin() - GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
-		float flTimeOfDay = vecToStar.Dot(GetGlobalTransform().GetUpVector());
+		float flSunHeight = GameData().GetPlanet()->GetSunHeight(GetGlobalOrigin());
 
-		if (flTimeOfDay < -0.15f)
+		if (flSunHeight < -0.15f)
 		{
 			TVector vecSpire = GetLocalOrigin();
 			TVector vecSpawnSpot;
@@ -164,6 +162,8 @@ void CSpire::PostRender() const
 
 void CSpire::PerformStructureTask(CSPCharacter* pUser)
 {
+	BaseClass::PerformStructureTask(pUser);
+
 	CPlayerCharacter* pPlayerCharacter = dynamic_cast<CPlayerCharacter*>(pUser);
 	if (pPlayerCharacter)
 	{
