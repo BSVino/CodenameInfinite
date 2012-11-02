@@ -44,6 +44,12 @@ void CSPCharacter::TaskThink()
 	}
 	else if (m_eTask == TASK_MINE)
 	{
+		if (m_hWaitingForMine)
+		{
+			if (!m_hWaitingForMine->IsOccupied())
+				m_hWaitingForMine = nullptr;
+		}
+
 		if (IsHoldingABlock())
 		{
 			// Let's head to the pallete
@@ -56,7 +62,7 @@ void CSPCharacter::TaskThink()
 
 			GiveBlocks(m_aiInventoryTypes[0], 1, pPallet);
 		}
-		else
+		else if (!m_hWaitingForMine)
 		{
 			// Let's head to the mine
 			CStructure* pMine = m_hMine;
@@ -79,6 +85,7 @@ void CSPCharacter::TaskThink()
 			}
 
 			pMine->PerformStructureTask(this);
+			m_hWaitingForMine = pMine;
 		}
 	}
 	else if (m_eTask == TASK_FOLLOWME)
@@ -203,6 +210,9 @@ CMine* CSPCharacter::FindNearestMine() const
 		if (!pMine)
 			continue;
 
+		if (pMine->IsOccupied())
+			continue;
+
 		if (pMine->IsUnderConstruction())
 			continue;
 
@@ -231,7 +241,7 @@ CPickup* CSPCharacter::FindNearbyPickup() const
 		if (!pPickup)
 			continue;
 
-		if ((pPickup->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() > TFloat(5).Squared())
+		if ((pPickup->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() > TFloat(4).Squared())
 			continue;
 
 		return pPickup;
@@ -275,6 +285,8 @@ void CSPCharacter::SetTask(task_t eTask)
 {
 	m_eTask = eTask;
 
+	m_hBuild = nullptr;
+	m_hWaitingForMine = nullptr;
 	m_hMine = nullptr;
 	m_hEnemy = nullptr;
 }

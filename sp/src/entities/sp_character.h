@@ -131,6 +131,7 @@ protected:
 	task_t                      m_eTask;
 	CEntityHandle<CStructure>   m_hBuild;
 	CEntityHandle<CStructure>   m_hMine;
+	CEntityHandle<CStructure>   m_hWaitingForMine;
 	CEntityHandle<CBaseEntity>  m_hEnemy;
 };
 
