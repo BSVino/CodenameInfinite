@@ -27,6 +27,9 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiInventorySlots);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, item_t, m_aiInventoryTypes);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, task_t, m_eTask);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hBuild);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hMine);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CBaseEntity>, m_hEnemy);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPCharacter);

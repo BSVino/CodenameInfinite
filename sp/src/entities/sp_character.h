@@ -21,6 +21,7 @@ typedef enum {
 typedef enum
 {
 	TASK_NONE = 0,
+	TASK_BUILD,
 	TASK_MINE,
 	TASK_ATTACK,
 	TASK_FOLLOWME,
@@ -67,6 +68,7 @@ public:
 	// AI stuffs
 	virtual void                TaskThink();
 	virtual bool                MoveTo(CBaseEntity* pTarget, float flDistance=3); // return true if I'm there
+	class CStructure*           FindNearestBuildStructure() const;
 	class CPallet*              FindNearestPallet(item_t eBlock) const;
 	class CMine*                FindNearestMine() const;
 	CPickup*                    FindNearbyPickup() const;
@@ -127,6 +129,7 @@ protected:
 
 	// AI stuffs
 	task_t                      m_eTask;
+	CEntityHandle<CStructure>   m_hBuild;
 	CEntityHandle<CStructure>   m_hMine;
 	CEntityHandle<CBaseEntity>  m_hEnemy;
 };

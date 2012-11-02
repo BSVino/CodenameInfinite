@@ -22,6 +22,7 @@ public:
 	void        MenuCommand(const tstring& sCommand);
 
 	void        PostConstruction();
+	void        PostConstructionFinished();
 
 	void        StartBuildWorker();
 	void        EndBuild();

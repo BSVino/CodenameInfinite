@@ -581,7 +581,12 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGi
 
 	CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
 	if (pStructure && pStructure->TakesBlocks())
+	{
+		if (pStructure->IsUnderConstruction())
+			return false;
+
 		*pGiveTo = pStructure;
+	}
 	else
 	{
 		CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(tr.m_pHit);

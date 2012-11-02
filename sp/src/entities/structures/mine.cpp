@@ -29,6 +29,8 @@ void CMine::Spawn()
 {
 	m_aabbPhysBoundingBox = AABB(Vector(-1.0f, -0.2f, -1.0f), Vector(1.0f, 1.8f, 1.0f));
 
+	SetTurnsToConstruct(3);
+
 	BaseClass::Spawn();
 
 	m_flDiggingStarted = 0;
@@ -80,6 +82,9 @@ void CMine::PostRender() const
 	if (m_flDiggingStarted)
 		vecPosition += Vector(RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f));
 
+	if (IsWorkingConstructionTurn())
+		vecPosition += Vector(RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f));
+
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
 	c.ResetTransformations();
@@ -89,6 +94,16 @@ void CMine::PostRender() const
 
 	if (GameServer()->GetGameTime() < m_flLastTakeDamage + 0.2)
 		c.SetUniform("vecColor", Vector4D(1, 0, 0, 1));
+
+	if (IsUnderConstruction())
+	{
+		c.SetBlend(BLEND_ALPHA);
+
+		if (GetTotalTurnsToConstruct() == 1)
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, 0.5f));
+		else
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, RemapValClamped((float)GetTurnsToConstruct(), 1, (float)GetTotalTurnsToConstruct(), 0.65f, 0.25f)));
+	}
 
 	c.BeginRenderTriFan();
 		c.TexCoord(0.0f, 1.0f);
@@ -105,6 +120,9 @@ void CMine::PostRender() const
 void CMine::PerformStructureTask(CSPCharacter* pCharacter)
 {
 	BaseClass::PerformStructureTask(pCharacter);
+
+	if (IsUnderConstruction())
+		return;
 
 	if (m_flDiggingStarted)
 		return;

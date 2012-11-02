@@ -32,11 +32,20 @@ public:
 
 	void                    PostRender() const;
 
+	void                    SetTurnsToConstruct(int iTurns);
+	bool                    IsUnderConstruction() const { return m_iTurnsToConstruct > 0; }
+	bool                    IsWorkingConstructionTurn() const { return !!m_flConstructionTurnTime; }
+	int                     GetTurnsToConstruct() const { return m_iTurnsToConstruct; }
+	int                     GetTotalTurnsToConstruct() const { return m_iTotalTurnsToConstruct; }
+	void                    ConstructionTurn();
+	void                    FinishConstruction();
+
 	virtual void            PostConstruction() {};
+	virtual void            PostConstructionFinished() {};
 
 	virtual void            OnUse(CBaseEntity* pUser);
 	virtual void            SetupMenuButtons() {};
-	virtual void            PerformStructureTask(class CSPCharacter* pCharacter) {};
+	virtual void            PerformStructureTask(class CSPCharacter* pCharacter);
 
 	virtual const Matrix4x4 GetPhysicsTransform() const;
 	virtual void            SetPhysicsTransform(const Matrix4x4& m);
@@ -53,4 +62,8 @@ public:
 private:
 	CEntityHandle<CSPPlayer>  m_hOwner;
 	CEntityHandle<CSpire>     m_hSpire;
+
+	int             m_iTurnsToConstruct;
+	int             m_iTotalTurnsToConstruct;
+	double          m_flConstructionTurnTime;
 };

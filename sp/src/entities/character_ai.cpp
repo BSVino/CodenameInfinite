@@ -27,7 +27,22 @@ void CSPCharacter::TaskThink()
 	if (m_eTask)
 		m_vecGoalVelocity = Vector(0, 0, 0);
 
-	if (m_eTask == TASK_MINE)
+	if (m_eTask == TASK_BUILD)
+	{
+		CStructure* pBuild = m_hBuild;
+
+		if (!pBuild || !pBuild->IsUnderConstruction())
+			m_hBuild = pBuild = FindNearestBuildStructure();
+
+		if (!pBuild)
+			return;
+
+		if (!MoveTo(pBuild))
+			return;
+
+		pBuild->PerformStructureTask(this);
+	}
+	else if (m_eTask == TASK_MINE)
 	{
 		if (IsHoldingABlock())
 		{
@@ -109,6 +124,35 @@ bool CSPCharacter::MoveTo(CBaseEntity* pTarget, float flMoveDistance)
 	m_vecGoalVelocity = Vector(1, 0, 0);
 
 	return false;
+}
+
+CStructure* CSPCharacter::FindNearestBuildStructure() const
+{
+	CStructure* pNearestStructure = nullptr;
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+		if (!pStructure)
+			continue;
+
+		if (!pStructure->IsUnderConstruction())
+			continue;
+
+		if (!pNearestStructure)
+		{
+			pNearestStructure = pStructure;
+			continue;
+		}
+
+		if ((pStructure->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < (pNearestStructure->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr())
+			pNearestStructure = pStructure;
+	}
+
+	return pNearestStructure;
 }
 
 CPallet* CSPCharacter::FindNearestPallet(item_t eBlock) const

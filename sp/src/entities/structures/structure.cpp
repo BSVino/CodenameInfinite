@@ -1,7 +1,8 @@
 #include "structure.h"
 
-#include <game/gameserver.h>
+#include <tinker/cvar.h>
 
+#include <game/gameserver.h>
 #include <tengine/renderer/game_renderer.h>
 
 #include "entities/sp_player.h"
@@ -21,6 +22,8 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CStructure);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPPlayer, m_hOwner);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSpire, m_hSpire);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iTurnsToConstruct);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flConstructionTurnTime);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CStructure);
@@ -29,6 +32,8 @@ INPUTS_TABLE_END();
 void CStructure::Spawn()
 {
 	m_bTakeDamage = true;
+
+	m_flConstructionTurnTime = 0;
 
 	BaseClass::Spawn();
 
@@ -55,6 +60,8 @@ CSpire* CStructure::GetSpire() const
 	return m_hSpire;
 }
 
+CVar build_time_construct("build_time_construct", "6");
+
 void CStructure::Think()
 {
 	BaseClass::Think();
@@ -66,6 +73,9 @@ void CStructure::Think()
 		else
 			GameData().GetCommandMenu()->Think();
 	}
+
+	if (GameServer()->GetGameTime() > m_flConstructionTurnTime + build_time_construct.GetFloat())
+		ConstructionTurn();
 }
 
 void CStructure::PostRender() const
@@ -79,11 +89,44 @@ void CStructure::PostRender() const
 		GameData().GetCommandMenu()->Render();
 }
 
+void CStructure::SetTurnsToConstruct(int iTurns)
+{
+	m_iTurnsToConstruct = iTurns;
+	m_iTotalTurnsToConstruct = iTurns;
+}
+
+void CStructure::ConstructionTurn()
+{
+	if (!m_flConstructionTurnTime)
+		return;
+
+	m_flConstructionTurnTime = 0;
+
+	if (m_iTurnsToConstruct <= 0)
+		return;
+
+	m_iTurnsToConstruct--;
+
+	if (!m_iTurnsToConstruct)
+		FinishConstruction();
+}
+
+void CStructure::FinishConstruction()
+{
+	PostConstructionFinished();
+}
+
 void CStructure::OnUse(CBaseEntity* pUser)
 {
 	CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(pUser);
 	if (pCharacter)
 		PerformStructureTask(pCharacter);
+}
+
+void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
+{
+	if (IsUnderConstruction() && !m_flConstructionTurnTime)
+		m_flConstructionTurnTime = GameServer()->GetGameTime();
 }
 
 CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin)

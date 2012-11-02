@@ -34,6 +34,7 @@ void CPallet::Spawn()
 	BaseClass::Spawn();
 
 	SetTotalHealth(20);
+	SetTurnsToConstruct(1);
 
 	m_iQuantity = 0;
 }
@@ -52,7 +53,10 @@ void CPallet::PostRender() const
 {
 	BaseClass::PostRender();
 
-	if (GameServer()->GetRenderer()->IsRenderingTransparent())
+	if (IsUnderConstruction() && !GameServer()->GetRenderer()->IsRenderingTransparent())
+		return;
+
+	if (!IsUnderConstruction() && GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
 	Vector vecUp, vecRight;
@@ -65,6 +69,9 @@ void CPallet::PostRender() const
 	if (vecPosition.LengthSqr() > 1000*1000)
 		return;
 
+	if (IsWorkingConstructionTurn())
+		vecPosition += Vector(RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f), RandomFloat(-0.01f, 0.01f));
+
 	CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
 	c.ResetTransformations();
@@ -74,6 +81,16 @@ void CPallet::PostRender() const
 
 	if (GameServer()->GetGameTime() < m_flLastTakeDamage + 0.2)
 		c.SetUniform("vecColor", Vector4D(1, 0, 0, 1));
+
+	if (IsUnderConstruction())
+	{
+		c.SetBlend(BLEND_ALPHA);
+
+		if (GetTotalTurnsToConstruct() == 1)
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, 0.5f));
+		else
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, RemapValClamped((float)GetTurnsToConstruct(), 1, (float)GetTotalTurnsToConstruct(), 0.65f, 0.25f)));
+	}
 
 	c.BeginRenderTriFan();
 		c.TexCoord(0.0f, 1.0f);
@@ -153,6 +170,9 @@ void CPallet::PerformStructureTask(class CSPCharacter* pCharacter)
 {
 	BaseClass::PerformStructureTask(pCharacter);
 
+	if (IsUnderConstruction())
+		return;
+
 	size_t iTaken = pCharacter->TakeBlocks(m_eItem, std::min(pCharacter->MaxInventory(), m_iQuantity));
 
 	if (iTaken > m_iQuantity)
@@ -163,6 +183,9 @@ void CPallet::PerformStructureTask(class CSPCharacter* pCharacter)
 
 size_t CPallet::TakeBlocks(item_t eBlock, size_t iNumber)
 {
+	if (IsUnderConstruction())
+		return 0;
+
 	if (m_iQuantity != 0 && eBlock != m_eItem)
 		return 0;
 

@@ -194,6 +194,14 @@ void CSpire::PostConstruction()
 {
 	BaseClass::PostConstruction();
 
+	SetTurnsToConstruct(0);
+	FinishConstruction();
+}
+
+void CSpire::PostConstructionFinished()
+{
+	BaseClass::PostConstructionFinished();
+
 	StartBuildWorker();
 }
 
