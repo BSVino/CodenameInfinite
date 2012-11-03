@@ -48,8 +48,8 @@ void CPlayerCharacter::Spawn()
 	if (m_hHelper)
 		m_hHelper->Delete();
 
-	m_hHelper = GameServer()->Create<CHelperBot>("CHelperBot");
-	m_hHelper->SetPlayerCharacter(this);
+//	m_hHelper = GameServer()->Create<CHelperBot>("CHelperBot");
+//	m_hHelper->SetPlayerCharacter(this);
 }
 
 CVar sv_approximateelevation("sv_approximateelevation", "0.3");
