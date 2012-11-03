@@ -100,14 +100,14 @@ void CCommandMenu::Think()
 
 	m_iMouseInButton = -1;
 
-	Vector vecButtonUp = vecUp * ButtonSize();
-	Vector vecButtonRight = vecRight * ButtonSize();
+	Vector vecButtonUp = vecMenuUp * ButtonSize();
+	Vector vecButtonRight = vecMenuRight * ButtonSize();
 
 	for (size_t i = 0; i < COMMAND_BUTTONS; i++)
 	{
 		Vector2D vecCenter = GetButtonCenter(i);
 
-		Vector vec3DCenter = vecCenter.x * vecRight + vecCenter.y * vecUp;
+		Vector vec3DCenter = vecCenter.x * vecMenuRight + vecCenter.y * vecMenuUp;
 
 		Vector v0 = vecLocalLocalCenter + vec3DCenter + vecButtonUp + vecButtonRight;
 		Vector v1 = vecLocalLocalCenter + vec3DCenter - vecButtonUp + vecButtonRight;
@@ -319,8 +319,13 @@ bool CCommandMenu::WantsToClose() const
 	if (!GetOwner())
 		return true;
 
+	TVector vecLocalCenter;
+	Vector vecProjectionDirection, vecUp, vecRight;
+	float flProjectionDistance, flProjectionRadius;
+	GetVectors(vecLocalCenter, vecProjectionDirection, vecUp, vecRight, flProjectionDistance, flProjectionRadius);
+
 	// Close it if the player looks away.
-	if (AngleVector(GetPlayerCharacter()->GetViewAngles()).Dot((GetOwner()->GetLocalOrigin()-GetPlayerCharacter()->GetLocalOrigin()).Normalized()) < 0.6f)
+	if (AngleVector(GetPlayerCharacter()->GetViewAngles()).Dot(vecProjectionDirection) > -0.6f)
 		return true;
 
 	if ((GetOwner()->GetLocalOrigin()-GetPlayerCharacter()->GetLocalOrigin()).LengthSqr() > TFloat(5).Squared())
@@ -349,7 +354,13 @@ void CCommandMenu::GetVectors(TVector& vecLocalCenter, Vector& vecProjectionDire
 
 	TVector vecPlayerEyes = m_hPlayerCharacter->GetLocalOrigin() + m_hPlayerCharacter->EyeHeight() * DoubleVector(vecPlayerUp);
 	TVector vecOwnerProjectionPoint = m_hOwner->GetLocalOrigin() + m_hOwner->GetLocalTransform().TransformVector(m_hOwner->GameData().GetCommandMenuRenderOffset());
-	vecProjectionDirection = (vecPlayerEyes - vecOwnerProjectionPoint).GetUnits(SCALE_METER).Normalized();
+
+	Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetUnits(SCALE_METER);
+	float flDistanceToPlayerEyes = vecToPlayerEyes.Length();
+	vecProjectionDirection = vecToPlayerEyes/flDistanceToPlayerEyes;
+
+	flProjectionDistance = RemapValClamped(flDistanceToPlayerEyes, 1, 2.5f, flProjectionDistance*2/3, flProjectionDistance);
+	flProjectionRadius = RemapValClamped(flDistanceToPlayerEyes, 1, 2.5f, flProjectionRadius/4, flProjectionRadius);
 
 	vecRight = vecPlayerUp.Cross(vecProjectionDirection).Normalized();
 	vecUp = vecProjectionDirection.Cross(vecRight).Normalized();
