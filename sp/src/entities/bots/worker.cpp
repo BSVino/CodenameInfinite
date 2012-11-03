@@ -28,7 +28,7 @@ void CWorkerBot::Precache()
 
 void CWorkerBot::Spawn()
 {
-	m_aabbPhysBoundingBox = AABB(Vector(-0.2f, -0.3f, -0.2f), Vector(0.2f, 0.3f, 0.2f));
+	m_aabbPhysBoundingBox = AABB(Vector(-0.3f, -0.3f, -0.3f), Vector(0.3f, 0.3f, 0.3f));
 
 	BaseClass::Spawn();
 
