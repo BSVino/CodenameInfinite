@@ -712,6 +712,14 @@ inline bool RayIntersectsPlane(const Ray& vecRay, const Vector& p, const Vector&
 	return true;
 }
 
+inline bool RayIntersectsQuad(const Ray& vecRay, const Vector& v0, const Vector& v1, const Vector& v2, const Vector& v3, Vector* pvecHit = NULL)
+{
+	if (RayIntersectsTriangle(vecRay, v0, v1, v2, pvecHit))
+		return true;
+
+	else return RayIntersectsTriangle(vecRay, v0, v2, v3, pvecHit);
+}
+
 inline bool ClipRay(float flMin, float flMax, float a, float d, float& tmin, float& tmax)
 {
 	const float flEpsilon = 1e-5f;

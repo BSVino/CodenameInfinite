@@ -5,15 +5,26 @@
 class CCommandButton
 {
 public:
+	CCommandButton();
+
+public:
 	void                     SetLabel(const tstring& sLabel) { m_sLabel = sLabel; }
 	const tstring &          GetLabel() { return m_sLabel; }
 
 	void                     SetCommand(const tstring& sCommand) { m_sCommand = sCommand; }
 	const tstring &          GetCommand() { return m_sCommand; }
 
+	void                     SetToolTip(const tstring& sToolTip) { m_sToolTip = sToolTip; }
+	const tstring &          GetToolTip() { return m_sToolTip; }
+
+	void                     SetEnabled(bool bEnabled) { m_bEnabled = bEnabled; }
+	bool                     IsEnabled() { return m_bEnabled; }
+
 private:
 	tstring                  m_sLabel;
 	tstring                  m_sCommand;
+	tstring                  m_sToolTip;
+	bool                     m_bEnabled;
 };
 
 #define COMMAND_BUTTONS 6
@@ -26,6 +37,8 @@ public:
 
 public:
 	void                     SetButton(size_t i, const tstring& sLabel, const tstring& sCommand);
+	void                     SetButtonEnabled(size_t i, bool bEnabled);
+	void                     SetButtonToolTip(size_t i, const tstring& sToolTip);
 
 	void                     Think();
 

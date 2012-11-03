@@ -427,7 +427,7 @@ void CRenderingContext::SetupMaterial()
 		SetBlend(BLEND_ADDITIVE);
 	else
 	{
-		TAssert(!sMaterialBlend.length());
+		TAssert(sMaterialBlend == "none" || !sMaterialBlend.length());
 		SetBlend(BLEND_NONE);
 	}
 
@@ -1083,6 +1083,9 @@ void CRenderingContext::RenderText(const tstring& sText, unsigned iLength, FTFon
 	if (!m_pShader)
 		return;
 
+	if (iLength == -1)
+		iLength = sText.length();
+
 	TAssert(m_pShader->m_iPositionAttribute >= 0);
 	TAssert(m_pShader->m_aiTexCoordAttributes[0] >= 0);
 
@@ -1096,6 +1099,7 @@ void CRenderingContext::RenderText(const tstring& sText, unsigned iLength, FTFon
 	SetUniform("mGlobal", mTransformations);
 
 	ftglSetAttributeLocations(m_pShader->m_iPositionAttribute, m_pShader->m_aiTexCoordAttributes[0]);
+
 	pFont->Render(sText.c_str(), iLength, FTPoint(vecPosition.x, vecPosition.y, vecPosition.z));
 }
 

@@ -53,6 +53,9 @@ CSPPlayer* CStructure::GetOwner() const
 void CStructure::SetSpire(CSpire* pSpire)
 {
 	m_hSpire = pSpire;
+
+	if (pSpire)
+		pSpire->AddUnit(this);
 }
 
 CSpire* CStructure::GetSpire() const

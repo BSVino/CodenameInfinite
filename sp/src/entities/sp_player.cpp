@@ -41,6 +41,7 @@ CSPPlayer::CSPPlayer()
 void CSPPlayer::Precache()
 {
 	PrecacheMaterial("textures/commandmenubutton.mat");
+	PrecacheMaterial("textures/commandmenunotice.mat");
 }
 
 void CSPPlayer::MouseMotion(int x, int y)

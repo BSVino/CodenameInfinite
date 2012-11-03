@@ -3,6 +3,7 @@
 #include <tengine/renderer/game_renderer.h>
 
 #include "entities/sp_playercharacter.h"
+#include "entities/structures/spire.h"
 #include "ui/command_menu.h"
 
 REGISTER_ENTITY(CBot);
@@ -12,6 +13,7 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CBot);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPPlayer, m_hOwner);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSpire, m_hSpire);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CBot);
@@ -57,4 +59,17 @@ void CBot::PostRender() const
 
 	if (GameData().GetCommandMenu())
 		GameData().GetCommandMenu()->Render();
+}
+
+void CBot::SetSpire(CSpire* pSpire)
+{
+	m_hSpire = pSpire;
+
+	if (pSpire)
+		pSpire->AddUnit(this);
+}
+
+CSpire* CBot::GetSpire() const
+{
+	return m_hSpire;
 }

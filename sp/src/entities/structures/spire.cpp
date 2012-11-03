@@ -13,6 +13,7 @@
 #include "entities/enemies/eater.h"
 #include "entities/star.h"
 #include "ui/command_menu.h"
+#include "entities/structures/mine.h"
 
 REGISTER_ENTITY(CSpire);
 
@@ -23,6 +24,9 @@ SAVEDATA_TABLE_BEGIN(CSpire);
 	SAVEDATA_DEFINE(CSaveData::DATA_STRING, tstring, m_sBaseName);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flBuildStart);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextMonster);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CStructure, m_hStructures);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CMine, m_hMines);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CBot, m_hBots);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSpire);
@@ -232,6 +236,7 @@ void CSpire::EndBuild()
 	pWorker->GameData().SetPlayerOwner(GameData().GetPlayerOwner());
 	pWorker->GameData().SetPlanet(GameData().GetPlanet());
 	pWorker->SetOwner(GetOwner());
+	pWorker->SetSpire(this);
 	pWorker->SetGlobalOrigin(GameData().GetPlanet()->GetGlobalOrigin()); // Avoid floating point precision problems
 	pWorker->SetMoveParent(GameData().GetPlanet());
 	pWorker->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector()*2);
@@ -246,4 +251,40 @@ void CSpire::EndBuild()
 	
 		pWorker->SetPhysicsTransform(mTransform);
 	}
+}
+
+void CSpire::AddUnit(CBaseEntity* pEntity)
+{
+	CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+	if (pStructure)
+	{
+		m_hStructures.push_back(pStructure);
+
+		CMine* pMine = dynamic_cast<CMine*>(pEntity);
+		if (pMine)
+			m_hMines.push_back(pMine);
+	}
+
+	CBot* pBot = dynamic_cast<CBot*>(pEntity);
+	if (pBot)
+		m_hBots.push_back(pBot);
+}
+
+void CSpire::OnDeleted(CBaseEntity* pEntity)
+{
+	BaseClass::OnDeleted(pEntity);
+
+	CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+	if (pStructure)
+	{
+		m_hStructures.erase_value(pStructure);
+
+		CMine* pMine = dynamic_cast<CMine*>(pEntity);
+		if (pMine)
+			m_hMines.erase_value(pMine);
+	}
+
+	CBot* pBot = dynamic_cast<CBot*>(pEntity);
+	if (pBot)
+		m_hBots.erase_value(pBot);
 }

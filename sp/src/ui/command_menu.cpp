@@ -50,12 +50,28 @@ void CCommandMenu::SetButton(size_t i, const tstring& sLabel, const tstring& sCo
 	m_apButtons[i]->SetCommand(sCommand);
 }
 
-bool RayIntersectsQuad(const Ray& vecRay, const Vector& v0, const Vector& v1, const Vector& v2, const Vector& v3, Vector* pvecHit = NULL)
+void CCommandMenu::SetButtonEnabled(size_t i, bool bEnabled)
 {
-	if (RayIntersectsTriangle(vecRay, v0, v1, v2, pvecHit))
-		return true;
+	TAssert(i < COMMAND_BUTTONS);
+	if (i >= COMMAND_BUTTONS)
+		return;
 
-	else return RayIntersectsTriangle(vecRay, v0, v2, v3, pvecHit);
+	if (!m_apButtons[i])
+		m_apButtons[i] = new CCommandButton();
+
+	m_apButtons[i]->SetEnabled(bEnabled);
+}
+
+void CCommandMenu::SetButtonToolTip(size_t i, const tstring& sToolTip)
+{
+	TAssert(i < COMMAND_BUTTONS);
+	if (i >= COMMAND_BUTTONS)
+		return;
+
+	if (!m_apButtons[i])
+		m_apButtons[i] = new CCommandButton();
+
+	m_apButtons[i]->SetToolTip(sToolTip);
 }
 
 void CCommandMenu::Think()
@@ -113,6 +129,7 @@ void CCommandMenu::Render() const
 
 	tstring sFont = "sans-serif";
 	int iFontSize = 42;
+	float flFontHeight = glgui::CLabel::GetFontHeight(sFont, iFontSize);
 
 	Vector vecToPlayer, vecPlayerUp, vecRight, vecUp;
 	float flProjectionDistance, flProjectionRadius;
@@ -141,16 +158,26 @@ void CCommandMenu::Render() const
 			c.Translate(Vector(vecCenter.x, vecCenter.y, 0));
 
 			c.UseMaterial("textures/commandmenubutton.mat");
+
+			float flAlpha = 1.0f;
+
 			if (m_bMouseInMenu && m_iMouseInButton == i)
-				c.SetUniform("flAlpha", 1.0f);
+				flAlpha = 1.0f;
 			else
-				c.SetUniform("flAlpha", 0.4f);
-			c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 1.0));
+				flAlpha = 0.4f;
+
+			c.SetUniform("flAlpha", flAlpha);
+
+			Vector4D vecColor(1, 1, 1, 1);
+
+			if (!m_apButtons[i]->IsEnabled())
+				vecColor = Vector4D(1, 0, 0, 1);
+
+			c.SetUniform("vecColor", vecColor);
 
 			c.RenderBillboard(CMaterialHandle("textures/commandmenubutton.mat"), ButtonSize(), Vector(0, 1, 0), Vector(1, 0, 0));
 
 			float flTextWidth = glgui::CLabel::GetTextWidth(m_apButtons[i]->GetLabel(), -1, sFont, iFontSize);
-			float flFontHeight = glgui::CLabel::GetFontHeight(sFont, iFontSize);
 
 			c.ResetTransformations();
 			c.Scale(0.003f, 0.003f, 0.003f);
@@ -159,12 +186,39 @@ void CCommandMenu::Render() const
 			c.UseProgram("text");
 
 			if (m_bMouseInMenu && m_iMouseInButton == i)
-				c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 1.0));
+				vecColor = Vector4D(1, 1, 1, 1);
 			else
-				c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 0.6f));
+				vecColor = Vector4D(1, 1, 1, 0.6f);
+
+			if (!m_apButtons[i]->IsEnabled())
+				vecColor = Vector4D(1, 0, 0, 0.6f);
+
+			c.SetUniform("vecColor", vecColor);
+
 			c.SetUniform("flAlpha", 1.0f);
 
 			c.RenderText(m_apButtons[i]->GetLabel(), -1, sFont, iFontSize);
+		}
+
+		if (m_bMouseInMenu && m_iMouseInButton >= 0 && m_iMouseInButton < COMMAND_BUTTONS)
+		{
+			if (m_apButtons[m_iMouseInButton] && m_apButtons[m_iMouseInButton]->GetToolTip().length())
+			{
+				c.ResetTransformations();
+
+				c.RenderBillboard(CMaterialHandle("textures/commandmenunotice.mat"), 1, Vector(0, 0.2f, 0), Vector(0.9f, 0, 0));
+
+				float flTextWidth = glgui::CLabel::GetTextWidth(m_apButtons[m_iMouseInButton]->GetToolTip(), -1, sFont, iFontSize);
+
+				c.UseProgram("text");
+				c.ResetTransformations();
+				c.Scale(0.003f, 0.003f, 0.003f);
+				c.Translate(Vector(0, -15000, 0) + Vector(flTextWidth/2 * -300, flFontHeight/2 * 300, 0));
+
+				c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 1.0));
+				c.SetUniform("flAlpha", 1.0f);
+				c.RenderText(m_apButtons[m_iMouseInButton]->GetToolTip(), -1, sFont, iFontSize);
+			}
 		}
 	}
 
@@ -283,4 +337,9 @@ Vector2D CCommandMenu::GetButtonCenter(size_t iButton) const
 	vecCenter.y = 0.6f - (float)j*0.6f;
 
 	return vecCenter;
+}
+
+CCommandButton::CCommandButton()
+{
+	m_bEnabled = true;
 }

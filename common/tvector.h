@@ -46,6 +46,11 @@ public:
 	{}
 
 public:
+	void erase_value(const T& value)
+	{
+		remove(begin(), end(), value);
+	}
+
 #ifndef WITH_EASTL
 	using TVECTOR_BASE::push_back;
 

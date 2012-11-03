@@ -7,6 +7,8 @@
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
 #include "ui/command_menu.h"
+#include "entities/structures/spire.h"
+#include "entities/structures/mine.h"
 
 REGISTER_ENTITY(CWorkerBot);
 
@@ -128,6 +130,57 @@ void CWorkerBot::SetupMenuButtons()
 	pMenu->SetButton(1, "Mine", "mine");
 	pMenu->SetButton(4, "On me", "follow");
 	pMenu->SetButton(5, "Sit tight", "nothing");
+
+	CSpire* pSpire = GetSpire();
+	if (pSpire)
+	{
+		bool bStructuresUnbuilt = false;
+		for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
+		{
+			CStructure* pStructure = pSpire->GetStructures()[i];
+			TAssert(pStructure);
+			if (!pStructure)
+				continue;
+
+			if (!pStructure->IsUnderConstruction())
+				continue;
+
+			bStructuresUnbuilt = true;
+			break;
+		}
+
+		bool bMinesAvailable = false;
+		for (size_t i = 0; i < pSpire->GetMines().size(); i++)
+		{
+			CMine* pMine = pSpire->GetMines()[i];
+			TAssert(pMine);
+			if (!pMine)
+				continue;
+
+			if (pMine->IsUnderConstruction())
+				continue;
+
+			bMinesAvailable = true;
+			break;
+		}
+
+		if (!bStructuresUnbuilt)
+		{
+			pMenu->SetButtonEnabled(0, false);
+			pMenu->SetButtonToolTip(0, "No structures to build");
+		}
+
+		if (!bMinesAvailable)
+		{
+			pMenu->SetButtonEnabled(1, false);
+			pMenu->SetButtonToolTip(1, "No mines available");
+		}
+	}
+	else
+	{
+		pMenu->SetButtonEnabled(0, false);
+		pMenu->SetButtonEnabled(1, false);
+	}
 }
 
 void CWorkerBot::MenuCommand(const tstring& sCommand)
