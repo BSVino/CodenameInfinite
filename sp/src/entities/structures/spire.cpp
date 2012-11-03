@@ -191,6 +191,7 @@ void CSpire::SetupMenuButtons()
 {
 	CCommandMenu* pMenu = GameData().GetCommandMenu();
 
+	pMenu->SetTitle(GameData().GetPlanet()->GetPlanetName() + " " + GetBaseName());
 	pMenu->SetButton(0, "Worker", "worker");
 }
 

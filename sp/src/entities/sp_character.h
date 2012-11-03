@@ -28,6 +28,8 @@ typedef enum
 	TASK_TOTAL,
 } task_t;
 
+const tstring& TaskToString(task_t eTask);
+
 #define INVENTORY_SLOTS 12
 
 class CSPCharacter : public CCharacter

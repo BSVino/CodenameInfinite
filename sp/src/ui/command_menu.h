@@ -36,6 +36,8 @@ public:
 	~CCommandMenu();
 
 public:
+	void                     SetTitle(const tstring& sTitle) { m_sTitle = sTitle; }
+	void                     SetSubtitle(const tstring& sSubtitle) { m_sSubtitle = sSubtitle; }
 	void                     SetButton(size_t i, const tstring& sLabel, const tstring& sCommand);
 	void                     SetButtonEnabled(size_t i, bool bEnabled);
 	void                     SetButtonToolTip(size_t i, const tstring& sToolTip);
@@ -59,6 +61,9 @@ public:
 private:
 	CEntityHandle<class CBaseEntity>           m_hOwner;
 	CEntityHandle<class CPlayerCharacter>      m_hPlayerCharacter;
+
+	tstring                  m_sTitle;
+	tstring                  m_sSubtitle;
 
 	CCommandButton*          m_apButtons[COMMAND_BUTTONS];
 

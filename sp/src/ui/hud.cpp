@@ -139,7 +139,7 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 			CScalableVector vecScalableSpire = pSpire->GameData().GetScalableRenderOrigin();
 			CScalableFloat flDistance = vecScalableSpire.Length();
 
-			if (flDistance < CScalableFloat(100.0f, SCALE_METER))
+			if (flDistance < CScalableFloat(50.0f, SCALE_METER))
 				continue;
 
 			CPlanet* pSpirePlanet = pSpire->GameData().GetPlanet();

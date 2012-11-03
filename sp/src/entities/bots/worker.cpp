@@ -126,6 +126,8 @@ void CWorkerBot::SetupMenuButtons()
 {
 	CCommandMenu* pMenu = GameData().GetCommandMenu();
 
+	pMenu->SetTitle("Worker");
+	pMenu->SetSubtitle("Task: " + TaskToString(GetTask()));
 	pMenu->SetButton(0, "Build", "build");
 	pMenu->SetButton(1, "Mine", "mine");
 	pMenu->SetButton(4, "On me", "follow");

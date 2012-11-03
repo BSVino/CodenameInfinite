@@ -131,6 +131,9 @@ void CCommandMenu::Render() const
 	int iFontSize = 42;
 	float flFontHeight = glgui::CLabel::GetFontHeight(sFont, iFontSize);
 
+	int iSmallFontSize = 26;
+	float flSmallFontHeight = glgui::CLabel::GetFontHeight(sFont, iSmallFontSize);
+
 	Vector vecToPlayer, vecPlayerUp, vecRight, vecUp;
 	float flProjectionDistance, flProjectionRadius;
 	TVector vecLocalCenter;
@@ -145,7 +148,33 @@ void CCommandMenu::Render() const
 		else
 			c.ClearColor(Color(155, 155, 155, 5));
 
-		// Todo: draw unit name at the top.
+		if (m_sTitle.length())
+		{
+			c.UseProgram("text");
+			c.SetBlend(BLEND_ALPHA);
+
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, 1));
+			c.SetUniform("flAlpha", 1.0f);
+
+			float flTextWidth = glgui::CLabel::GetTextWidth(m_sTitle, -1, sFont, iFontSize);
+
+			c.ResetTransformations();
+			c.Scale(0.003f, 0.003f, 0.003f);
+			c.Translate(Vector(0, 80000, 0) + Vector(flTextWidth/2 * -300, flFontHeight/2 * 300, 0));
+
+			c.RenderText(m_sTitle, -1, sFont, iFontSize);
+
+			if (m_sSubtitle.length())
+			{
+				float flTextWidth = glgui::CLabel::GetTextWidth(m_sSubtitle, -1, sFont, iSmallFontSize);
+
+				c.ResetTransformations();
+				c.Scale(0.003f, 0.003f, 0.003f);
+				c.Translate(Vector(0, 70000, 0) + Vector(flTextWidth/2 * -300, flSmallFontHeight/2 * 300, 0));
+
+				c.RenderText(m_sSubtitle, -1, sFont, iSmallFontSize);
+			}
+		}
 
 		for (size_t i = 0; i < COMMAND_BUTTONS; i++)
 		{

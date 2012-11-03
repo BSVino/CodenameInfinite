@@ -789,3 +789,21 @@ bool CSPCharacter::IsHoldingABlock() const
 	TAssert(MaxSlots() == 1);
 	return !!m_aiInventorySlots[0];
 }
+
+static tstring g_asTaskNames[] =
+{
+	"None",
+	"Build",
+	"Mine",
+	"Attack",
+	"Follow",
+};
+
+const tstring& TaskToString(task_t eTask)
+{
+	if (eTask >= TASK_NONE && eTask < TASK_TOTAL)
+		return g_asTaskNames[eTask];
+
+	static tstring sInvalid = "Invalid";
+	return sInvalid;
+}
