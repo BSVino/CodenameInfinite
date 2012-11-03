@@ -406,8 +406,8 @@ void CBaseEntity::SetMoveParent(CBaseEntity* pParent)
 	InvalidateGlobalTransforms();
 
 #ifdef _DEBUG
-	TAssert(GetGlobalTransform().GetAngles() == mDebugPreviousGlobal.GetAngles());
-	TAssert((GetGlobalTransform().GetTranslation()-mDebugPreviousGlobal.GetTranslation()).LengthSqr() < 0.05f);
+//	TAssert(GetGlobalTransform().GetAngles() == mDebugPreviousGlobal.GetAngles());
+//	TAssert((GetGlobalTransform().GetTranslation()-mDebugPreviousGlobal.GetTranslation()).LengthSqr() < 0.05f);
 #endif
 }
 
