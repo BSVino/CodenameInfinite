@@ -98,7 +98,7 @@ void CTerrainChunkManager::LumpRemoved(size_t iLump)
 
 void CTerrainChunkManager::RemoveChunkNoLock(size_t iChunk)
 {
-	if (m_apChunks[iChunk] && m_apChunks[iChunk]->m_bGeneratingTerrain)
+	if (m_apChunks[iChunk] && (m_apChunks[iChunk]->m_bGeneratingTerrain || !m_apChunks[iChunk]->m_bGenerationDone))
 		return;
 
 	if (m_apChunks[iChunk]->HasPhysicsEntity())
@@ -481,6 +481,8 @@ CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size
 
 CTerrainChunk::~CTerrainChunk()
 {
+	TAssert(m_bGenerationDone);
+
 	if (m_iPhysicsEntity != ~0)
 	{
 		GamePhysics()->RemoveExtra(m_iPhysicsEntity);
