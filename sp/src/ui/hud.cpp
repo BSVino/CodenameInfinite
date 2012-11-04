@@ -106,6 +106,8 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 	Vector vecForward;
 	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, NULL, &vecUp);
 
+	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
+
 	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
@@ -125,6 +127,15 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 
 			if (vecForward.Dot((vecPlanet).Normalized()) < 0)
 				continue;
+
+			if (pLocalPlayer && pLocalPlayer->GameData().GetPlanet())
+			{
+				Vector vecToPlayersPlanet = (pLocalPlayer->GameData().GetPlanet()->GetGlobalOrigin() - pLocalPlayer->GetGlobalOrigin()).Normalized();
+				Vector vecToThisPlanet = (pPlanet->GetGlobalOrigin() - pLocalPlayer->GetGlobalOrigin()).Normalized();
+
+				if (vecToPlayersPlanet.Dot(vecToThisPlanet) > 0)
+					continue;
+			}
 
 			Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecPlanet);
 
@@ -162,7 +173,6 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 		}
 	}
 
-	CPlayerCharacter* pLocalPlayer = SPGame()->GetLocalPlayerCharacter();
 	CHelperBot* pHelper = pLocalPlayer->GetHelperBot();
 	if (pHelper && !pHelper->GameData().GetCommandMenu())
 	{
