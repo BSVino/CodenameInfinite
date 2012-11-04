@@ -273,6 +273,7 @@ CCommand particles_reload("particles_reload", ReloadParticles);
 
 CParticleSystem::CParticleSystem(tstring sName)
 {
+	m_iReferences = 0;
 	m_bLoaded = false;
 	m_sName = sName;
 
@@ -308,6 +309,7 @@ void CParticleSystem::Load()
 	if (IsLoaded())
 		return;
 
+	m_iReferences = 1;
 	m_bLoaded = true;
 
 	if (GetMaterialName().length() > 0)
@@ -541,7 +543,6 @@ void CSystemInstance::Render(CGameRenderingContext* c)
 		c->UseMaterial(m_pSystem->GetMaterial());
 
 	c->SetBlend(m_pSystem->GetBlend());
-	c->SetDepthMask(m_pSystem->GetBlend() == BLEND_NONE);
 
 	for (size_t i = 0; i < m_aParticles.size(); i++)
 	{

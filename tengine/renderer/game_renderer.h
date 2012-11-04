@@ -59,6 +59,7 @@ public:
 
 	virtual bool    ShouldCullByFrustum() const { return true; }
 	virtual bool	ShouldRenderPhysicsDebug() const { return true; };
+	virtual bool    ShouldRenderParticles() const { return true; }
 
 protected:
 	CTextureHandle	m_hSkyboxFT;

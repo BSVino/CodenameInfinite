@@ -263,3 +263,8 @@ CStar* CSPRenderer::GetClosestStar() const
 {
 	return m_hClosestStar;
 }
+
+bool CSPRenderer::ShouldRenderParticles() const
+{
+	return m_eRenderingScale == SCALE_RENDER;
+}

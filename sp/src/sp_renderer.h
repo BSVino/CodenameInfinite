@@ -46,6 +46,7 @@ public:
 	float			BloomBrightnessCutoff() const { return 1.25f; }
 
 	virtual bool    ShouldCullByFrustum() const { return false; }
+	virtual bool    ShouldRenderParticles() const;
 
 	const CFrameBuffer*  GetCommandMenuBuffer() const { return &m_oCommandMenuBuffer; }
 

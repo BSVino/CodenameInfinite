@@ -4,6 +4,7 @@
 #include <renderer/game_renderer.h>
 #include <renderer/game_renderingcontext.h>
 #include <game/entities/character.h>
+#include <renderer/particles.h>
 
 #include "entities/sp_player.h"
 
@@ -20,6 +21,7 @@ INPUTS_TABLE_END();
 
 void CDisassembler::Precache()
 {
+	PrecacheParticleSystem("disassembler-attack");
 	PrecacheMaterial("textures/disassembler.mat");
 }
 
@@ -68,4 +70,15 @@ void CDisassembler::DrawViewModel(CGameRenderingContext* pContext)
 		pContext->TexCoord(1.0f, 1.0f);
 		pContext->Vertex(vecRight + vecUp);
 	pContext->EndRender();
+}
+
+void CDisassembler::MeleeAttack()
+{
+	BaseClass::MeleeAttack();
+
+	Vector vecForward;
+	GameServer()->GetRenderer()->GetCameraVectors(&vecForward, nullptr, nullptr);
+
+	if (GetOwner())
+		CParticleSystemLibrary::AddInstance("disassembler-attack", GameServer()->GetRenderer()->GetCameraPosition() + vecForward);
 }

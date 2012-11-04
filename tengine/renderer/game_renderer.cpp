@@ -127,7 +127,8 @@ void CGameRenderer::RenderEverything()
 	for (size_t i = 0; i < iEntites; i++)
 		m_apRenderList[i]->Render();
 
-	CParticleSystemLibrary::Render();
+	if (ShouldRenderParticles())
+		CParticleSystemLibrary::Render();
 }
 
 void CGameRenderer::SetupFrame(class CRenderingContext* pContext)
