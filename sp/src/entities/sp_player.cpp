@@ -15,6 +15,7 @@
 #include "structures/structure.h"
 #include "structures/spire.h"
 #include "ui/command_menu.h"
+#include "items/disassembler.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
@@ -143,7 +144,25 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 
 	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 1)
 	{
-		GetPlayerCharacter()->MeleeAttack();
+		CDisassembler* pDisassembler = dynamic_cast<CDisassembler*>(GetPlayerCharacter()->GetEquippedWeapon());
+		if (pDisassembler)
+		{
+			Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
+
+			Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
+			Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+
+			CTraceResult tr;
+			GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*4, GetPlayerCharacter());
+
+			CStructure* pStructureHit = dynamic_cast<CStructure*>(tr.m_pHit);
+			if (tr.m_flFraction < 1 && pStructureHit && pStructureHit->GetOwner() == this)
+				GetPlayerCharacter()->BeginDisassembly(pStructureHit);
+			else
+				GetPlayerCharacter()->MeleeAttack();
+		}
+		else
+			GetPlayerCharacter()->MeleeAttack();
 	}
 
 	if (iButton == TINKER_KEY_MOUSE_RIGHT && iState == 1)

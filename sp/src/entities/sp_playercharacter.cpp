@@ -23,6 +23,11 @@ SAVEDATA_TABLE_BEGIN(CPlayerCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPCamera, m_hCamera);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextApproximateElevation);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flApproximateElevation);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CHelperBot>, m_hHelper);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CDisassembler>, m_hDisassembler);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hDisassemblingStructure);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flDisassemblingStructureStart);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextSurfaceCheck);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlayerCharacter);
@@ -46,6 +51,7 @@ void CPlayerCharacter::Spawn()
 
 	m_flNextApproximateElevation = 0;
 	m_flNextSurfaceCheck = 0;
+	m_flDisassemblingStructureStart = 0;
 
 	if (m_hHelper)
 		m_hHelper->Delete();
@@ -58,6 +64,7 @@ void CPlayerCharacter::Spawn()
 }
 
 CVar sv_approximateelevation("sv_approximateelevation", "0.3");
+CVar sv_disassemble_structure_time("sv_disassemble_structure_time", "4.0");
 
 void CPlayerCharacter::Think()
 {
@@ -101,6 +108,33 @@ void CPlayerCharacter::Think()
 		}
 
 		m_flNextSurfaceCheck = GameServer()->GetGameTime() + 2;
+	}
+
+	if (m_flDisassemblingStructureStart)
+	{
+		if (GameServer()->GetGameTime() > m_flDisassemblingStructureStart + sv_disassemble_structure_time.GetFloat())
+		{
+			m_flDisassemblingStructureStart = 0;
+			m_hDisassemblingStructure->Delete();
+			m_hDisassembler->EndDisassembly();
+		}
+		else
+		{
+			Matrix4x4 mTransform = GetPhysicsTransform();
+
+			Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*EyeHeight();
+			Vector vecDirection = GameData().TransformVectorLocalToPhysics(AngleVector(GetViewAngles()));
+
+			CTraceResult tr;
+			GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*4, this);
+
+			if (tr.m_pHit != m_hDisassemblingStructure)
+			{
+				m_flDisassemblingStructureStart = 0;
+				m_hDisassemblingStructure = nullptr;
+				m_hDisassembler->EndDisassembly();
+			}
+		}
 	}
 }
 
@@ -173,6 +207,13 @@ void CPlayerCharacter::OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped)
 {
 	if (bWasEquipped && m_hDisassembler != pWeapon)
 		Weapon_Equip(m_hDisassembler);
+}
+
+void CPlayerCharacter::BeginDisassembly(CStructure* pStructure)
+{
+	m_hDisassembler->BeginDisassembly();
+	m_flDisassemblingStructureStart = GameServer()->GetGameTime();
+	m_hDisassemblingStructure = pStructure;
 }
 
 void CPlayerCharacter::ToggleFlying()

@@ -26,6 +26,8 @@ public:
 	void                        OnWeaponAdded(CBaseWeapon* pWeapon);
 	void                        OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped);
 
+	void                        BeginDisassembly(CStructure* pStructure);
+
 	void						ToggleFlying();
 	void						StartFlying();
 	void						StopFlying();
@@ -68,6 +70,9 @@ protected:
 
 	CEntityHandle<CHelperBot>   m_hHelper;
 	CEntityHandle<CDisassembler> m_hDisassembler;
+
+	CEntityHandle<CStructure>   m_hDisassemblingStructure;
+	double                      m_flDisassemblingStructureStart;
 
 	double                      m_flNextSurfaceCheck;
 };
