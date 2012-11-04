@@ -509,6 +509,7 @@ void CSPPlayer::EnterConstructionMode(structure_type eStructure)
 	if (eStructure == STRUCTURE_SPIRE && !m_aiStructures[eStructure])
 		return;
 
+	m_eBlockPlaceMode = ITEM_NONE;
 	m_eConstructionMode = eStructure;
 }
 
@@ -600,6 +601,7 @@ void CSPPlayer::EnterBlockPlaceMode(item_t eBlock)
 	if (!GetPlayerCharacter()->GetInventory(eBlock))
 		return;
 
+	m_eConstructionMode = STRUCTURE_NONE;
 	m_eBlockPlaceMode = eBlock;
 }
 
