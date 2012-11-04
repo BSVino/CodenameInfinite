@@ -213,7 +213,11 @@ void CSPPlayer::KeyPress(int c)
 		return;
 
 	if (c == TINKER_KEY_LSHIFT)
+	{
 		GetPlayerCharacter()->EngageHyperdrive();
+		if (!GetPlayerCharacter()->GameData().GetPlanet())
+			Instructor_LessonLearned("shift-hyperspace");
+	}
 
 	if (c == TINKER_KEY_LCTRL)
 		GetPlayerCharacter()->SetWalkSpeedOverride(true);

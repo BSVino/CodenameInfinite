@@ -357,6 +357,28 @@ bool ValidTimeOfDayAfterNoonConditions( CPlayer *pPlayer, class CLesson *pLesson
 	return false;
 }
 
+bool ValidPlayerInSpaceConditions( CPlayer *pPlayer, class CLesson *pLesson )
+{
+	if (!ValidPlayerAliveConditions(pPlayer, pLesson))
+		return false;
+
+	if (!ValidPlayerFlyingConditions(pPlayer, pLesson))
+		return false;
+
+	CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+	CPlayerCharacter* pCharacter = pSPPlayer->GetPlayerCharacter();
+
+	TAssert(pCharacter);
+	if (!pCharacter)
+		return false;
+
+	CPlanet* pPlanet = pCharacter->GameData().GetPlanet();
+	if (!pPlanet)
+		return true;
+
+	return false;
+}
+
 pfnConditionsMet Game_GetInstructorConditions(const tstring& sConditions)
 {
 	if (sConditions == "ValidPlayerNotFlying")
@@ -371,6 +393,8 @@ pfnConditionsMet Game_GetInstructorConditions(const tstring& sConditions)
 		return ValidBotsWithoutOrdersConditions;
 	if (sConditions == "ValidTimeOfDayAfterNoon")
 		return ValidTimeOfDayAfterNoonConditions;
+	if (sConditions == "ValidPlayerInSpace")
+		return ValidPlayerInSpaceConditions;
 
 	return CInstructor::GetBaseConditions(sConditions);
 }
