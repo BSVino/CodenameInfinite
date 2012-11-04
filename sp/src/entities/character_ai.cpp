@@ -34,13 +34,46 @@ void CSPCharacter::TaskThink()
 		if (!pBuild || !pBuild->IsUnderConstruction() || pBuild->IsOccupied())
 			m_hBuild = pBuild = FindNearestBuildStructure();
 
-		if (!pBuild)
-			return;
+		CSpire* pSpire = GetNearestSpire();
 
-		if (!MoveTo(pBuild))
-			return;
+		if (pBuild)
+		{
+			if (!MoveTo(pBuild))
+				return;
 
-		pBuild->PerformStructureTask(this);
+			pBuild->PerformStructureTask(this);
+		}
+		else if (pSpire)
+		{
+			if (m_vecBuildDesignation == IVector(0, 0, 0) || !pSpire->GetVoxelTree()->GetDesignation(m_vecBuildDesignation))
+				m_vecBuildDesignation = FindNearbyDesignation(pSpire);
+
+			if (m_vecBuildDesignation == IVector(0, 0, 0))
+				return;
+
+			item_t eDesignation = pSpire->GetVoxelTree()->GetDesignation(m_vecBuildDesignation);
+			if (IsHoldingABlock())
+			{
+				TVector vecBlockLocal = pSpire->GetVoxelTree()->ToLocalCoordinates(m_vecBuildDesignation) + pSpire->GetLocalTransform().TransformVector(Vector(0.5f, 0.5f, 0.5f));
+				TVector vecBlockGlobal = GameData().GetPlanet()->GetGlobalTransform() * vecBlockLocal;
+
+				if (!MoveTo(vecBlockGlobal))
+					return;
+
+				PlaceBlock((item_t)m_aiInventorySlots[0], vecBlockLocal);
+			}
+			else
+			{
+				CPallet* pPallet = FindNearestPallet(eDesignation);
+				if (!pPallet)
+					return;
+
+				if (!MoveTo(pPallet))
+					return;
+
+				pPallet->GiveBlocks(1, this);
+			}
+		}
 	}
 	else if (m_eTask == TASK_MINE)
 	{
@@ -116,7 +149,12 @@ bool CSPCharacter::MoveTo(CBaseEntity* pTarget, float flMoveDistance)
 	if (!pTarget)
 		return false;
 
-	Vector vecToTarget = (pTarget->GetGlobalOrigin() - GetGlobalOrigin()).GetUnits(SCALE_METER);
+	return MoveTo(pTarget->GetGlobalOrigin(), flMoveDistance);
+}
+
+bool CSPCharacter::MoveTo(const TVector& vecTarget, float flMoveDistance)
+{
+	Vector vecToTarget = (vecTarget - GetGlobalOrigin()).GetUnits(SCALE_METER);
 	float flDistance = vecToTarget.Length();
 	if (flDistance < flMoveDistance)
 		return true;
@@ -135,14 +173,14 @@ bool CSPCharacter::MoveTo(CBaseEntity* pTarget, float flMoveDistance)
 
 CStructure* CSPCharacter::FindNearestBuildStructure() const
 {
-	CStructure* pNearestStructure = nullptr;
-	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		if (!pEntity)
-			continue;
+	CSpire* pSpire = GetNearestSpire();
+	if (!pSpire)
+		return nullptr;
 
-		CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+	CStructure* pNearestStructure = nullptr;
+	for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
+	{
+		CStructure* pStructure = pSpire->GetStructures()[i];
 		if (!pStructure)
 			continue;
 
@@ -165,16 +203,24 @@ CStructure* CSPCharacter::FindNearestBuildStructure() const
 	return pNearestStructure;
 }
 
+const IVector CSPCharacter::FindNearbyDesignation(CSpire* pSpire) const
+{
+	if (!pSpire)
+		return IVector(0, 0, 0);
+
+	return pSpire->GetVoxelTree()->FindNearbyDesignation(GetLocalOrigin());
+}
+
 CPallet* CSPCharacter::FindNearestPallet(item_t eBlock) const
 {
-	CPallet* pStructure = nullptr;
-	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		if (!pEntity)
-			continue;
+	CSpire* pSpire = GetNearestSpire();
+	if (!pSpire)
+		return nullptr;
 
-		CPallet* pPallet = dynamic_cast<CPallet*>(pEntity);
+	CPallet* pStructure = nullptr;
+	for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
+	{
+		CPallet* pPallet = dynamic_cast<CPallet*>(pSpire->GetStructures()[i].GetPointer());
 		if (!pPallet)
 			continue;
 
@@ -182,6 +228,9 @@ CPallet* CSPCharacter::FindNearestPallet(item_t eBlock) const
 			continue;
 
 		if (pPallet->IsUnderConstruction())
+			continue;
+
+		if (pPallet->GetBlockQuantity() == pPallet->GetBlockCapacity())
 			continue;
 
 		if (!pStructure)
@@ -199,14 +248,14 @@ CPallet* CSPCharacter::FindNearestPallet(item_t eBlock) const
 
 CMine* CSPCharacter::FindNearestMine() const
 {
-	CMine* pStructure = nullptr;
-	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
-	{
-		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
-		if (!pEntity)
-			continue;
+	CSpire* pSpire = GetNearestSpire();
+	if (!pSpire)
+		return nullptr;
 
-		CMine* pMine = dynamic_cast<CMine*>(pEntity);
+	CMine* pStructure = nullptr;
+	for (size_t i = 0; i < pSpire->GetMines().size(); i++)
+	{
+		CMine* pMine = pSpire->GetMines()[i];
 		if (!pMine)
 			continue;
 
@@ -235,6 +284,9 @@ CPickup* CSPCharacter::FindNearbyPickup() const
 	{
 		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
 		if (!pEntity)
+			continue;
+
+		if (pEntity->GameData().GetPlanet() != GameData().GetPlanet())
 			continue;
 
 		CPickup* pPickup = dynamic_cast<CPickup*>(pEntity);

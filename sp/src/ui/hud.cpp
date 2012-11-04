@@ -11,6 +11,7 @@
 #include "entities/sp_game.h"
 #include "entities/bots/helper.h"
 #include "entities/structures/spire.h"
+#include "entities/structures/pallet.h"
 
 // For debug shit
 #include "planet/planet_terrain.h"
@@ -51,12 +52,44 @@ void CSPHUD::BuildMenus()
 
 	if (pCharacter->HasBlocks())
 	{
-		m_ahMenus[MENU_BLOCKS] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_BLOCKS, sprintf("%d. Blocks", MENU_BLOCKS+1)));
+		m_ahMenus[MENU_EQUIP] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_EQUIP, sprintf("%d. Equip", MENU_EQUIP+1)));
 
 		for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 		{
 			if (pCharacter->GetInventory((item_t)i))
-				m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(i-1, sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, pCharacter->GetInventory((item_t)i)), true), this, PlaceBlock);
+				m_ahMenus[MENU_EQUIP]->AddSubmenu(new CHUDMenu(i-1, sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, pCharacter->GetInventory((item_t)i)), true), this, PlaceBlock);
+		}
+	}
+
+	CSpire* pSpire = pCharacter->GetNearestSpire();
+	if (pSpire)
+	{
+		int aiBlocks[ITEM_BLOCKS_TOTAL];
+		bool bHasBlocks = false;
+		memset(aiBlocks, 0, sizeof(aiBlocks));
+
+		for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
+		{
+			CPallet* pPallet = dynamic_cast<CPallet*>(pSpire->GetStructures()[i].GetPointer());
+			if (!pPallet)
+				continue;
+
+			if (pPallet->GetBlockQuantity())
+			{
+				aiBlocks[pPallet->GetBlockType()] += pPallet->GetBlockQuantity();
+				bHasBlocks = true;
+			}
+		}
+
+		if (bHasBlocks)
+		{
+			m_ahMenus[MENU_BLOCKS] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_BLOCKS, sprintf("%d. Blocks", MENU_BLOCKS+1)));
+
+			for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+			{
+				if (aiBlocks[i])
+					m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(i-1, sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, aiBlocks[i]), true), this, DesignateBlock);
+			}
 		}
 	}
 
@@ -224,13 +257,24 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 
 void CSPHUD::PlaceBlockCallback(const tstring& sArgs)
 {
-	m_ahMenus[MENU_BLOCKS]->CloseMenu();
+	m_ahMenus[MENU_EQUIP]->CloseMenu();
 
 	item_t eBlock = (item_t)(stoi(sArgs)+1);
 
 	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
 
 	pPlayer->EnterBlockPlaceMode(eBlock);
+}
+
+void CSPHUD::DesignateBlockCallback(const tstring& sArgs)
+{
+	m_ahMenus[MENU_BLOCKS]->CloseMenu();
+
+	item_t eBlock = (item_t)(stoi(sArgs)+1);
+
+	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
+
+	pPlayer->EnterBlockDesignateMode(eBlock);
 }
 
 void CSPHUD::ConstructSpireCallback(const tstring& sArgs)

@@ -1566,6 +1566,11 @@ CScalableVector::operator Vector() const
 	return GetUnits(SCALE_METER);
 }
 
+CScalableVector::operator DoubleVector() const
+{
+	return GetUnits(SCALE_METER);
+}
+
 CScalableMatrix::CScalableMatrix(const DoubleVector& vecForward, const DoubleVector& vecUp, const DoubleVector& vecRight, const CScalableVector& vecPosition)
 {
 	SetForwardVector(vecForward);

@@ -5,6 +5,7 @@
 
 #include "structures/structure.h"
 #include "items/items.h"
+#include "structures/spire.h"
 
 class CCommandMenu;
 
@@ -34,9 +35,13 @@ public:
 	bool                    IsInConstructionMode() const { return !!m_eConstructionMode; }
 
 	void                    EnterBlockPlaceMode(item_t eBlock);
-	bool                    FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGiveTo) const;
+	bool                    FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGiveTo = nullptr) const;
 	void                    FinishBlockPlace();
 	bool                    IsInBlockPlaceMode() const { return !!m_eBlockPlaceMode; }
+
+	void                    EnterBlockDesignateMode(item_t eBlock);
+	void                    FinishBlockDesignate();
+	bool                    IsInBlockDesignateMode() const { return !!m_eBlockDesignateMode; }
 
 	void                    CommandMenuOpened(CCommandMenu* pMenu);
 	void                    CommandMenuClosed(CCommandMenu* pMenu);
@@ -47,6 +52,10 @@ public:
 private:
 	structure_type      m_eConstructionMode;
 	item_t              m_eBlockPlaceMode;
+	item_t              m_eBlockDesignateMode;
+	int                 m_iBlockDesignateDimension;
+	IVector             m_vecBlockDesignateMin;
+	IVector             m_vecBlockDesignateMax;
 
 	size_t              m_aiStructures[STRUCTURE_TOTAL];
 

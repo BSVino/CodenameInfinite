@@ -28,6 +28,7 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, item_t, m_aiInventoryTypes);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, task_t, m_eTask);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hBuild);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecBuildDesignation);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hMine);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hWaitingForMine);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CBaseEntity>, m_hEnemy);
@@ -240,6 +241,28 @@ bool CSPCharacter::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
 	CVoxelTree* pVoxel = pSpire->GetVoxelTree();
 
 	if (!pVoxel->PlaceBlock(eItem, vecLocal))
+		return false;
+
+	RemoveBlocks(eItem, 1);
+
+	return true;
+}
+
+bool CSPCharacter::PlaceBlock(item_t eItem, const IVector& vecBlock)
+{
+	if (!GetInventory(eItem))
+		return false;
+
+	if (eItem >= ITEM_BLOCKS_TOTAL)
+		return false;
+
+	CSpire* pSpire = GetNearestSpire();
+	if (!pSpire)
+		return false;
+
+	CVoxelTree* pVoxel = pSpire->GetVoxelTree();
+
+	if (!pVoxel->PlaceBlock(eItem, vecBlock))
 		return false;
 
 	RemoveBlocks(eItem, 1);

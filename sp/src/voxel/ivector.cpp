@@ -24,6 +24,11 @@ IVector IVector::operator+(const IVector& r) const
 	return IVector(x+r.x, y+r.y, z+r.z);
 }
 
+IVector IVector::operator-(const IVector& r) const
+{
+	return IVector(x-r.x, y-r.y, z-r.z);
+}
+
 bool IVector::operator<(const IVector& r) const
 {
 	if (x < r.x)
@@ -39,6 +44,34 @@ bool IVector::operator<(const IVector& r) const
 		return false;
 
 	if (z < r.z)
+		return true;
+
+	return false;
+}
+
+bool IVector::operator==(const IVector& r) const
+{
+	if (x != r.x)
+		return false;
+
+	if (y != r.y)
+		return false;
+
+	if (z != r.z)
+		return false;
+
+	return true;
+}
+
+bool IVector::operator!=(const IVector& r) const
+{
+	if (x != r.x)
+		return true;
+
+	if (y != r.y)
+		return true;
+
+	if (z != r.z)
 		return true;
 
 	return false;

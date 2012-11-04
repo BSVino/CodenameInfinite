@@ -49,6 +49,9 @@ void CDisassembler::DrawViewModel(CGameRenderingContext* pContext)
 
 		if (pPlayerOwner->IsInConstructionMode())
 			return;
+
+		if (pPlayerOwner->IsInBlockDesignateMode())
+			return;
 	}
 
 	Vector vecForward, vecUp, vecRight;

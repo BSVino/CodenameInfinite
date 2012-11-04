@@ -57,7 +57,7 @@ public:
 	virtual size_t              MaxInventory() const { return 10; }
 	virtual size_t              MaxSlots() const { return INVENTORY_SLOTS; }
 
-	virtual bool                TakesBlocks() { return true; }
+	virtual bool                TakesBlocks() const { return true; }
 
 	virtual float               MeleeAttackSphereRadius() const { return 1.2f; }
 	virtual float               MeleeAttackDamage() const { return 6; }

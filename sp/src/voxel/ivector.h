@@ -11,9 +11,12 @@ public:
 public:
 	IVector    operator*(int i) const;
 	IVector    operator+(const IVector& r) const;
+	IVector    operator-(const IVector& r) const;
 
 	// For using as the key of a tmap
 	bool       operator<(const IVector& r) const;
+	bool       operator==(const IVector& r) const;
+	bool       operator!=(const IVector& r) const;
 
 	IVector    FindChunk() const;
 	IVector    FindChunkCoordinates() const;

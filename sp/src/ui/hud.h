@@ -7,7 +7,7 @@ class CHUDMenu;
 
 typedef enum
 {
-	MENU_WEAPONS = 0,
+	MENU_EQUIP = 0,
 	MENU_BLOCKS,
 	MENU_CONSTRUCTION,
 	MENU_HELPER,
@@ -27,6 +27,7 @@ public:
 	virtual void    Paint(float x, float y, float w, float h);
 
 	EVENT_CALLBACK(CSPHUD, PlaceBlock);
+	EVENT_CALLBACK(CSPHUD, DesignateBlock);
 	EVENT_CALLBACK(CSPHUD, ConstructSpire);
 	EVENT_CALLBACK(CSPHUD, ConstructMine);
 	EVENT_CALLBACK(CSPHUD, ConstructPallet);

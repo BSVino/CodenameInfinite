@@ -58,6 +58,7 @@ public:
 	size_t                      GetInventory(item_t eItem) const;
 
 	bool                        PlaceBlock(item_t eItem, const CScalableVector& vecLocal);
+	bool                        PlaceBlock(item_t eItem, const IVector& vecBlock);
 
 	virtual const TMatrix       GetMovementVelocityTransform() const;
 	virtual void                CharacterMovement(class btCollisionWorld*, float flDelta);
@@ -70,7 +71,9 @@ public:
 	// AI stuffs
 	virtual void                TaskThink();
 	virtual bool                MoveTo(CBaseEntity* pTarget, float flDistance=3); // return true if I'm there
+	virtual bool                MoveTo(const TVector& vecTarget, float flDistance=3); // return true if I'm there
 	class CStructure*           FindNearestBuildStructure() const;
+	const IVector               FindNearbyDesignation(CSpire* pSpire) const;
 	class CPallet*              FindNearestPallet(item_t eBlock) const;
 	class CMine*                FindNearestMine() const;
 	CPickup*                    FindNearbyPickup() const;
@@ -132,6 +135,7 @@ protected:
 	// AI stuffs
 	task_t                      m_eTask;
 	CEntityHandle<CStructure>   m_hBuild;
+	IVector                     m_vecBuildDesignation;
 	CEntityHandle<CStructure>   m_hMine;
 	CEntityHandle<CStructure>   m_hWaitingForMine;
 	CEntityHandle<CBaseEntity>  m_hEnemy;

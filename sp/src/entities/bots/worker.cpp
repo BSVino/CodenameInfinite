@@ -9,6 +9,7 @@
 #include "ui/command_menu.h"
 #include "entities/structures/spire.h"
 #include "entities/structures/mine.h"
+#include "entities/structures/pallet.h"
 
 REGISTER_ENTITY(CWorkerBot);
 
@@ -136,7 +137,8 @@ void CWorkerBot::SetupMenuButtons()
 	CSpire* pSpire = GetSpire();
 	if (pSpire)
 	{
-		bool bStructuresUnbuilt = false;
+		bool bThingsToBuild = false;
+		bool bPalletWithStuff = false;
 		for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
 		{
 			CStructure* pStructure = pSpire->GetStructures()[i];
@@ -144,11 +146,29 @@ void CWorkerBot::SetupMenuButtons()
 			if (!pStructure)
 				continue;
 
+			if (!bPalletWithStuff)
+			{
+				CPallet* pPallet = dynamic_cast<CPallet*>(pStructure);
+				if (pPallet && pPallet->GetBlockQuantity())
+				{
+					bPalletWithStuff = true;
+					continue;
+				}
+			}
+
 			if (!pStructure->IsUnderConstruction())
 				continue;
 
-			bStructuresUnbuilt = true;
+			bThingsToBuild = true;
 			break;
+		}
+
+		bool bDesignations = false;
+		if (!bThingsToBuild)
+		{
+			IVector vecDesignation = pSpire->GetVoxelTree()->FindNearbyDesignation(GetLocalOrigin());
+			if (vecDesignation != IVector(0, 0, 0))
+				bDesignations = true;
 		}
 
 		bool bMinesAvailable = false;
@@ -166,10 +186,13 @@ void CWorkerBot::SetupMenuButtons()
 			break;
 		}
 
-		if (!bStructuresUnbuilt)
+		if (!bThingsToBuild && (!bDesignations || !bPalletWithStuff))
 		{
 			pMenu->SetButtonEnabled(0, false);
-			pMenu->SetButtonToolTip(0, "No structures to build");
+			if (bDesignations && !bPalletWithStuff)
+				pMenu->SetButtonToolTip(0, "No building materials");
+			else
+				pMenu->SetButtonToolTip(0, "No structures to build");
 		}
 
 		if (!bMinesAvailable)

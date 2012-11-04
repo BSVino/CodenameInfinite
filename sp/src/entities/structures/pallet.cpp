@@ -173,12 +173,27 @@ void CPallet::PerformStructureTask(class CSPCharacter* pCharacter)
 	if (IsUnderConstruction())
 		return;
 
-	size_t iTaken = pCharacter->TakeBlocks(m_eItem, std::min(pCharacter->MaxInventory(), m_iQuantity));
+	GiveBlocks(std::min(pCharacter->MaxInventory(), m_iQuantity), pCharacter);
+}
 
-	if (iTaken > m_iQuantity)
-		iTaken = m_iQuantity;
+size_t CPallet::GiveBlocks(size_t iNumber, CSPCharacter* pGiveTo)
+{
+	iNumber = std::min(GetBlockQuantity(), iNumber);
+
+	if (!iNumber)
+		return 0;
+
+	size_t iTaken = 0;
+
+	TAssert(pGiveTo->TakesBlocks());
+	if (pGiveTo->TakesBlocks())
+		iTaken = pGiveTo->TakeBlocks(GetBlockType(), iNumber);
+	else
+		return 0;
 
 	m_iQuantity -= iTaken;
+
+	return iTaken;
 }
 
 size_t CPallet::TakeBlocks(item_t eBlock, size_t iNumber)

@@ -23,13 +23,37 @@ bool CVoxelTree::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
 	return GetChunk(vecChunk)->PlaceBlock(eItem, vecChunkCoordinates);
 }
 
-item_t CVoxelTree::GetBlock(const CScalableVector& vecLocal)
+bool CVoxelTree::PlaceBlock(item_t eItem, const IVector& vecBlock)
+{
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	return GetChunk(vecChunk)->PlaceBlock(eItem, vecChunkCoordinates);
+}
+
+item_t CVoxelTree::GetBlock(const CScalableVector& vecLocal) const
 {
 	IVector vecBlock = ToVoxelCoordinates(vecLocal);
 	IVector vecChunk = vecBlock.FindChunk();
 	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
 
-	return GetChunk(vecChunk)->GetBlock(vecChunkCoordinates);
+	const CVoxelChunk* pChunk = GetChunkIfExists(vecChunk);
+	if (pChunk)
+		return pChunk->GetBlock(vecChunkCoordinates);
+
+	return ITEM_NONE;
+}
+
+item_t CVoxelTree::GetBlock(const IVector& vecBlock) const
+{
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	const CVoxelChunk* pChunk = GetChunkIfExists(vecChunk);
+	if (pChunk)
+		return pChunk->GetBlock(vecChunkCoordinates);
+
+	return ITEM_NONE;
 }
 
 item_t CVoxelTree::RemoveBlock(const IVector& vecBlock)
@@ -50,6 +74,90 @@ item_t CVoxelTree::RemoveBlock(const IVector& vecBlock)
 	return eItem;
 }
 
+bool CVoxelTree::PlaceDesignation(item_t eItem, const IVector& vecBlock)
+{
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	return GetChunk(vecChunk)->PlaceDesignation(eItem, vecChunkCoordinates);
+}
+
+item_t CVoxelTree::GetDesignation(const IVector& vecBlock) const
+{
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	const CVoxelChunk* pChunk = GetChunkIfExists(vecChunk);
+	if (pChunk)
+		return pChunk->GetDesignation(vecChunkCoordinates);
+
+	return ITEM_NONE;
+}
+
+item_t CVoxelTree::RemoveDesignation(const IVector& vecBlock)
+{
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	item_t eItem = GetChunk(vecChunk)->RemoveDesignation(vecChunkCoordinates);
+
+	return eItem;
+}
+
+class CVoxelChunkArea
+{
+public:
+	IVector    m_vecChunk;
+	float      m_flDistance;
+};
+
+inline bool ChunkDistanceCompare(const CVoxelChunkArea& l, const CVoxelChunkArea& r)
+{
+	return l.m_flDistance < r.m_flDistance;
+}
+
+const IVector CVoxelTree::FindNearbyDesignation(const CScalableVector& vecLocal) const
+{
+	tvector<CVoxelChunkArea> aChunks;
+	aChunks.reserve(m_aChunks.size());
+
+	for (auto it = m_aChunks.begin(); it != m_aChunks.end(); it++)
+	{
+		CVoxelChunkArea& oArea = aChunks.push_back();
+		oArea.m_vecChunk = it->second.GetChunkCoordinates();
+
+		TVector vecChunkCenter = ToLocalCoordinates(oArea.m_vecChunk*CHUNK_SIZE + IVector(CHUNK_SIZE/2, CHUNK_SIZE/2, CHUNK_SIZE/2));
+		oArea.m_flDistance = (float)(vecLocal-vecChunkCenter).GetUnits(SCALE_METER).LengthSqr();
+
+		push_heap(aChunks.begin(), aChunks.end(), ChunkDistanceCompare);
+	}
+
+	sort_heap(aChunks.begin(), aChunks.end(), ChunkDistanceCompare);
+
+	for (size_t i = 0; i < aChunks.size(); i++)
+	{
+		const CVoxelChunk* pChunk = GetChunkIfExists(aChunks[i].m_vecChunk);
+		TAssert(pChunk);
+		if (!pChunk)
+			continue;
+
+		for (int x = 0; x < CHUNK_SIZE; x++)
+		{
+			for (int y = 0; y < CHUNK_SIZE; y++)
+			{
+				for (int z = 0; z < CHUNK_SIZE; z++)
+				{
+					item_t eDesignation = pChunk->GetDesignation(IVector(x, y, z));
+					if (eDesignation)
+						return pChunk->GetChunkCoordinates()*CHUNK_SIZE + IVector(x, y, z);
+				}
+			}
+		}
+	}
+
+	return IVector(0, 0, 0);
+}
+
 CVoxelChunk* CVoxelTree::GetChunk(const IVector& vecChunk)
 {
 	auto it = m_aChunks.find(vecChunk);
@@ -58,6 +166,15 @@ CVoxelChunk* CVoxelTree::GetChunk(const IVector& vecChunk)
 		m_aChunks.insert(tpair<IVector, CVoxelChunk>(vecChunk, CVoxelChunk(this, vecChunk)));
 		return &m_aChunks.find(vecChunk)->second;
 	}
+	else
+		return &it->second;
+}
+
+const CVoxelChunk* CVoxelTree::GetChunkIfExists(const IVector& vecChunk) const
+{
+	auto it = m_aChunks.find(vecChunk);
+	if (it == m_aChunks.end())
+		return nullptr;
 	else
 		return &it->second;
 }

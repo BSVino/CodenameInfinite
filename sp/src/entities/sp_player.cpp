@@ -25,7 +25,12 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CSPPlayer);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, structure_type, m_eConstructionMode);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, item_t, m_eBlockPlaceMode);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, item_t, m_eBlockDesignateMode);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iBlockDesignateDimension);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecBlockDesignateMin);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecBlockDesignateMax);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiStructures);
+	SAVEDATA_OMIT(m_pActiveCommandMenu);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSPPlayer);
@@ -35,6 +40,7 @@ CSPPlayer::CSPPlayer()
 {
 	m_eConstructionMode = STRUCTURE_NONE;
 	m_eBlockPlaceMode = ITEM_NONE;
+	m_eBlockDesignateMode = ITEM_NONE;
 	memset(m_aiStructures, 0, sizeof(m_aiStructures));
 	m_pActiveCommandMenu = nullptr;
 }
@@ -142,6 +148,12 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		return;
 	}
 
+	if (m_eBlockDesignateMode && iState == 1)
+	{
+		FinishBlockDesignate();
+		return;
+	}
+
 	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 0)
 	{
 		if (GetPlayerCharacter()->IsDisassembling())
@@ -238,6 +250,9 @@ void CSPPlayer::KeyPress(int c)
 	if (c == TINKER_KEY_ESCAPE)
 		m_eBlockPlaceMode = ITEM_NONE;
 
+	if (c == TINKER_KEY_ESCAPE)
+		m_eBlockDesignateMode = ITEM_NONE;
+
 	if (c == 'W' || c == 'A' || c == 'S' || c == 'D')
 		Instructor_LessonLearned("wasd");
 }
@@ -263,7 +278,7 @@ CPlayerCharacter* CSPPlayer::GetPlayerCharacter() const
 
 bool CSPPlayer::ShouldRender() const
 {
-	return (m_eConstructionMode || m_eBlockPlaceMode) && SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
+	return (m_eConstructionMode || m_eBlockPlaceMode || m_eBlockDesignateMode) && SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
 }
 
 void CSPPlayer::PostRender() const
@@ -506,6 +521,172 @@ void CSPPlayer::PostRender() const
 			}
 		}
 	}
+
+	if (m_eBlockDesignateMode && GameServer()->GetRenderer()->IsRenderingTransparent())
+	{
+		CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
+		if (pSpire)
+		{
+			CScalableVector vecLocal;
+			bool bFoundPlacePoint = FindBlockPlacePoint(vecLocal);
+
+			if (m_iBlockDesignateDimension < 0 || !bFoundPlacePoint)
+			{
+				CScalableVector vecSpire = pSpire->GetLocalOrigin();
+
+				CVoxelTree* pTree = pSpire->GetVoxelTree();
+
+				IVector vecBlock = pTree->ToVoxelCoordinates(vecLocal);
+				if (m_iBlockDesignateDimension >= 0)
+					vecBlock = m_vecBlockDesignateMin;
+
+				CScalableVector vecSBlock = pTree->ToLocalCoordinates(vecBlock);
+
+				Vector vecPosition = vecSBlock - GetPlayerCharacter()->GetLocalOrigin();
+
+				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector();
+				Vector vecUp = pSpire->GetLocalTransform().GetUpVector();
+				Vector vecRight = pSpire->GetLocalTransform().GetRightVector();
+
+				CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+				c.ResetTransformations();
+				c.Translate(vecPosition);
+
+				c.UseMaterial("textures/items1.mat");
+
+				c.SetUniform("flAlpha", 0.5f);
+
+				c.SetBlend(BLEND_ADDITIVE);
+
+				c.BeginRenderTriFan();
+				c.TexCoord(0.0f, 0.75f);
+				c.Vertex(Vector(0, 0, 0));
+				c.TexCoord(0.25f, 0.75f);
+				c.Vertex(vecRight);
+				c.TexCoord(0.25f, 1.0f);
+				c.Vertex(vecRight + vecUp);
+				c.TexCoord(0.0f, 1.0f);
+				c.Vertex(vecUp);
+				c.TexCoord(0.25f, 1.0f);
+				c.Vertex(vecUp + vecForward);
+				c.TexCoord(0.25f, 0.75f);
+				c.Vertex(vecForward);
+				c.TexCoord(0.25f, 1.0f);
+				c.Vertex(vecForward + vecRight);
+				c.TexCoord(0.0f, 1.0f);
+				c.Vertex(vecRight);
+				c.EndRender();
+
+				c.BeginRenderTriFan();
+				c.TexCoord(0.0f, 1.0f);
+				c.Vertex(vecRight + vecUp + vecForward);
+				c.TexCoord(0.0f, 0.75f);
+				c.Vertex(vecUp + vecForward);
+				c.TexCoord(0.25f, 0.75f);
+				c.Vertex(vecUp);
+				c.TexCoord(0.25f, 1.0f);
+				c.Vertex(vecRight + vecUp);
+				c.TexCoord(0.25f, 0.75f);
+				c.Vertex(vecRight);
+				c.TexCoord(0.0f, 0.75f);
+				c.Vertex(vecForward + vecRight);
+				c.TexCoord(0.25f, 0.75f);
+				c.Vertex(vecForward);
+				c.TexCoord(0.25f, 1.0f);
+				c.Vertex(vecForward + vecUp);
+				c.EndRender();
+			}
+			else
+			{
+				IVector vecNew = pSpire->GetVoxelTree()->ToVoxelCoordinates(vecLocal);
+
+				IVector vecMin = m_vecBlockDesignateMin;
+				IVector vecMax = m_vecBlockDesignateMax;
+
+				if (vecNew.x < vecMin.x)
+					vecMin.x = vecNew.x;
+				if (vecNew.y < vecMin.y)
+					vecMin.y = vecNew.y;
+				if (vecNew.z < vecMin.z)
+					vecMin.z = vecNew.z;
+				if (vecNew.x > vecMax.x)
+					vecMax.x = vecNew.x;
+				if (vecNew.y > vecMax.y)
+					vecMax.y = vecNew.y;
+				if (vecNew.z > vecMax.z)
+					vecMax.z = vecNew.z;
+
+				CScalableVector vecSpire = pSpire->GetLocalOrigin();
+
+				CVoxelTree* pTree = pSpire->GetVoxelTree();
+
+				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector();
+				Vector vecUp = pSpire->GetLocalTransform().GetUpVector();
+				Vector vecRight = pSpire->GetLocalTransform().GetRightVector();
+
+				CGameRenderingContext c(GameServer()->GetRenderer(), true);
+
+				c.UseMaterial("textures/items1.mat");
+
+				c.SetUniform("flAlpha", 0.5f);
+
+				c.SetBlend(BLEND_ADDITIVE);
+
+				for (int x = 0; x <= vecMax.x - vecMin.x; x++)
+				{
+					for (int y = 0; y <= vecMax.y - vecMin.y; y++)
+					{
+						for (int z = 0; z <= vecMax.z - vecMin.z; z++)
+						{
+							c.ResetTransformations();
+
+							IVector vecBlock = vecMin + IVector(x, y, z);
+							c.Translate(pTree->ToLocalCoordinates(vecBlock) - GetPlayerCharacter()->GetLocalOrigin());
+
+							c.BeginRenderTriFan();
+							c.TexCoord(0.0f, 0.75f);
+							c.Vertex(Vector(0, 0, 0));
+							c.TexCoord(0.25f, 0.75f);
+							c.Vertex(vecRight);
+							c.TexCoord(0.25f, 1.0f);
+							c.Vertex(vecRight + vecUp);
+							c.TexCoord(0.0f, 1.0f);
+							c.Vertex(vecUp);
+							c.TexCoord(0.25f, 1.0f);
+							c.Vertex(vecUp + vecForward);
+							c.TexCoord(0.25f, 0.75f);
+							c.Vertex(vecForward);
+							c.TexCoord(0.25f, 1.0f);
+							c.Vertex(vecForward + vecRight);
+							c.TexCoord(0.0f, 1.0f);
+							c.Vertex(vecRight);
+							c.EndRender();
+
+							c.BeginRenderTriFan();
+							c.TexCoord(0.0f, 1.0f);
+							c.Vertex(vecRight + vecUp + vecForward);
+							c.TexCoord(0.0f, 0.75f);
+							c.Vertex(vecUp + vecForward);
+							c.TexCoord(0.25f, 0.75f);
+							c.Vertex(vecUp);
+							c.TexCoord(0.25f, 1.0f);
+							c.Vertex(vecRight + vecUp);
+							c.TexCoord(0.25f, 0.75f);
+							c.Vertex(vecRight);
+							c.TexCoord(0.0f, 0.75f);
+							c.Vertex(vecForward + vecRight);
+							c.TexCoord(0.25f, 0.75f);
+							c.Vertex(vecForward);
+							c.TexCoord(0.25f, 1.0f);
+							c.Vertex(vecForward + vecUp);
+							c.EndRender();
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void CSPPlayer::EnterConstructionMode(structure_type eStructure)
@@ -514,6 +695,7 @@ void CSPPlayer::EnterConstructionMode(structure_type eStructure)
 		return;
 
 	m_eBlockPlaceMode = ITEM_NONE;
+	m_eBlockDesignateMode = ITEM_NONE;
 	m_eConstructionMode = eStructure;
 }
 
@@ -606,6 +788,7 @@ void CSPPlayer::EnterBlockPlaceMode(item_t eBlock)
 		return;
 
 	m_eConstructionMode = STRUCTURE_NONE;
+	m_eBlockDesignateMode = ITEM_NONE;
 	m_eBlockPlaceMode = eBlock;
 }
 
@@ -623,7 +806,8 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGi
 	if (tr.m_flFraction == 1)
 		return false;
 
-	*pGiveTo = nullptr;
+	if (pGiveTo)
+		*pGiveTo = nullptr;
 
 	CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
 	if (pStructure && pStructure->TakesBlocks())
@@ -631,12 +815,13 @@ bool CSPPlayer::FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGi
 		if (pStructure->IsUnderConstruction())
 			return false;
 
-		*pGiveTo = pStructure;
+		if (pGiveTo)
+			*pGiveTo = pStructure;
 	}
 	else
 	{
 		CSPCharacter* pCharacter = dynamic_cast<CSPCharacter*>(tr.m_pHit);
-		if (pCharacter && pCharacter->TakesBlocks())
+		if (pGiveTo && pCharacter && pCharacter->TakesBlocks())
 			*pGiveTo = pCharacter;
 	}
 
@@ -671,6 +856,60 @@ void CSPPlayer::FinishBlockPlace()
 		m_eBlockPlaceMode = ITEM_NONE;
 
 	SPWindow()->GetHUD()->BuildMenus();
+}
+
+void CSPPlayer::EnterBlockDesignateMode(item_t eBlock)
+{
+	m_eConstructionMode = STRUCTURE_NONE;
+	m_eBlockPlaceMode = ITEM_NONE;
+	m_eBlockDesignateMode = eBlock;
+	m_iBlockDesignateDimension = -1;
+	m_vecBlockDesignateMin = IVector(0, 0, 0);
+	m_vecBlockDesignateMax = IVector(0, 0, 0);
+}
+
+void CSPPlayer::FinishBlockDesignate()
+{
+	if (!m_eBlockDesignateMode)
+		return;
+
+	if (m_iBlockDesignateDimension == -1)
+	{
+		CScalableVector vecPoint;
+		if (!FindBlockPlacePoint(vecPoint))
+			return;
+
+		CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
+		m_vecBlockDesignateMin = m_vecBlockDesignateMax = pSpire->GetVoxelTree()->ToVoxelCoordinates(vecPoint);
+
+		m_iBlockDesignateDimension = 0;
+	}
+	else
+	{
+		CScalableVector vecPoint;
+		if (!FindBlockPlacePoint(vecPoint))
+			return;
+
+		CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
+		IVector vecNew = pSpire->GetVoxelTree()->ToVoxelCoordinates(vecPoint);
+
+		if (vecNew.x < m_vecBlockDesignateMin.x)
+			m_vecBlockDesignateMin.x = vecNew.x;
+		if (vecNew.y < m_vecBlockDesignateMin.y)
+			m_vecBlockDesignateMin.y = vecNew.y;
+		if (vecNew.z < m_vecBlockDesignateMin.z)
+			m_vecBlockDesignateMin.z = vecNew.z;
+		if (vecNew.x > m_vecBlockDesignateMax.x)
+			m_vecBlockDesignateMax.x = vecNew.x;
+		if (vecNew.y > m_vecBlockDesignateMax.y)
+			m_vecBlockDesignateMax.y = vecNew.y;
+		if (vecNew.z > m_vecBlockDesignateMax.z)
+			m_vecBlockDesignateMax.z = vecNew.z;
+
+		pSpire->AddBlockDesignation(m_eBlockDesignateMode, m_vecBlockDesignateMin, m_vecBlockDesignateMax);
+
+		m_eBlockDesignateMode = ITEM_NONE;
+	}
 }
 
 void CSPPlayer::CommandMenuOpened(CCommandMenu* pMenu)

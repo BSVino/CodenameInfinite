@@ -27,6 +27,7 @@ SAVEDATA_TABLE_BEGIN(CSpire);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CStructure, m_hStructures);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CMine, m_hMines);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CBot, m_hBots);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CBot, m_hBots);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CSpire);
@@ -124,10 +125,10 @@ void CSpire::PostRender() const
 {
 	BaseClass::PostRender();
 
+	GetVoxelTree()->Render();
+
 	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
-
-	GetVoxelTree()->Render();
 
 	Vector vecUp, vecRight;
 	GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
@@ -288,4 +289,42 @@ void CSpire::OnDeleted(const CBaseEntity* pEntity)
 	const CBot* pBot = dynamic_cast<const CBot*>(pEntity);
 	if (pBot)
 		m_hBots.erase_value(pBot);
+}
+
+void CSpire::AddBlockDesignation(item_t eType, const IVector& vecMin, const IVector& vecMax)
+{
+	TAssert(vecMin.x <= vecMax.x);
+	TAssert(vecMin.y <= vecMax.y);
+	TAssert(vecMin.z <= vecMax.z);
+
+	CVoxelTree* pTree = GetVoxelTree();
+
+	for (int x = 0; x <= vecMax.x-vecMin.x; x++)
+	{
+		for (int z = 0; z <= vecMax.z-vecMin.z; z++)
+		{
+			// Do a traceline from down to up. The first spot that it hits is the lowest we can designate any blocks.
+			// Below that is just empty space!
+
+			TVector vecColumn = pTree->ToLocalCoordinates(vecMin + IVector(x, 0, z)) + Vector(0.5f, 0.5f, 0.5f);
+			Vector vecColumnPhysics = GameData().TransformPointLocalToPhysics(vecColumn);
+
+			CTraceResult tr;
+			GamePhysics()->TraceLine(tr, vecColumnPhysics - Vector(0, 1000, 0), vecColumnPhysics + Vector(0, 1000, 0));
+
+			TAssert(tr.m_flFraction < 1);
+			if (tr.m_flFraction == 1)
+				continue;
+
+			TVector vecHit = TVector(GameData().TransformPointPhysicsToLocal(tr.m_vecHit));
+			int iLowest = pTree->ToVoxelCoordinates(vecHit).y;
+
+			iLowest -= vecMin.y;
+			if (iLowest < 0)
+				iLowest = 0;
+
+			for (int y = iLowest; y <= vecMax.y-vecMin.y; y++)
+				pTree->PlaceDesignation(eType, vecMin + IVector(x, y, z));
+		}
+	}
 }
