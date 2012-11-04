@@ -6,6 +6,7 @@
 #include "entities/sp_game.h"
 #include "entities/sp_player.h"
 #include "entities/sp_playercharacter.h"
+#include "entities/items/pickup.h"
 
 void CVoxelTree::Render() const
 {
@@ -20,6 +21,33 @@ bool CVoxelTree::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
 	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
 
 	return GetChunk(vecChunk)->PlaceBlock(eItem, vecChunkCoordinates);
+}
+
+item_t CVoxelTree::GetBlock(const CScalableVector& vecLocal)
+{
+	IVector vecBlock = ToVoxelCoordinates(vecLocal);
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	return GetChunk(vecChunk)->GetBlock(vecChunkCoordinates);
+}
+
+item_t CVoxelTree::RemoveBlock(const IVector& vecBlock)
+{
+	IVector vecChunk = vecBlock.FindChunk();
+	IVector vecChunkCoordinates = vecBlock.FindChunkCoordinates();
+
+	item_t eItem = GetChunk(vecChunk)->RemoveBlock(vecChunkCoordinates);
+
+	CPickup* pPickup = GameServer()->Create<CPickup>("CPickup");
+	pPickup->GameData().SetPlanet(m_hSpire->GameData().GetPlanet());
+	pPickup->SetGlobalTransform(m_hSpire->GameData().GetPlanet()->GetGlobalTransform()); // Avoid floating point precision problems
+	pPickup->SetMoveParent(m_hSpire->GameData().GetPlanet());
+	pPickup->SetLocalTransform(m_hSpire->GetLocalTransform());
+	pPickup->SetLocalOrigin(ToLocalCoordinates(vecBlock) + (Vector(0.5f, 0.5f, 0.5f) + m_hSpire->GetLocalTransform().GetUpVector()));
+	pPickup->SetItem(eItem);
+
+	return eItem;
 }
 
 CVoxelChunk* CVoxelTree::GetChunk(const IVector& vecChunk)

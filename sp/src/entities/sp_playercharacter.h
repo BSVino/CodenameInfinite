@@ -4,6 +4,7 @@
 #include "sp_character.h"
 
 #include "sp_camera.h"
+#include "structures/spire.h"
 
 class CHelperBot;
 class CDisassembler;
@@ -27,6 +28,9 @@ public:
 	void                        OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped);
 
 	void                        BeginDisassembly(CStructure* pStructure);
+	void                        BeginDisassembly(const IVector& vecBlock);
+	void                        EndDisassembly();
+	bool                        IsDisassembling() const { return m_flDisassemblingStart != 0; }
 
 	void						ToggleFlying();
 	void						StartFlying();
@@ -72,7 +76,8 @@ protected:
 	CEntityHandle<CDisassembler> m_hDisassembler;
 
 	CEntityHandle<CStructure>   m_hDisassemblingStructure;
-	double                      m_flDisassemblingStructureStart;
+	IVector                     m_vecDisassemblingBlock;
+	double                      m_flDisassemblingStart;
 
 	double                      m_flNextSurfaceCheck;
 };

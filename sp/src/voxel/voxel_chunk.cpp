@@ -55,6 +55,33 @@ bool CVoxelChunk::PlaceBlock(item_t eItem, const IVector& vecBlock)
 	return true;
 }
 
+item_t CVoxelChunk::GetBlock(const IVector& vecBlock)
+{
+	TAssertNoMsg(vecBlock.x >= 0 && vecBlock.x < CHUNK_SIZE);
+	TAssertNoMsg(vecBlock.y >= 0 && vecBlock.y < CHUNK_SIZE);
+	TAssertNoMsg(vecBlock.z >= 0 && vecBlock.z < CHUNK_SIZE);
+
+	return (item_t)m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z];
+}
+
+item_t CVoxelChunk::RemoveBlock(const IVector& vecBlock)
+{
+	TAssertNoMsg(vecBlock.x >= 0 && vecBlock.x < CHUNK_SIZE);
+	TAssertNoMsg(vecBlock.y >= 0 && vecBlock.y < CHUNK_SIZE);
+	TAssertNoMsg(vecBlock.z >= 0 && vecBlock.z < CHUNK_SIZE);
+
+	TAssert(m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z]);
+	if (!m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z])
+		return ITEM_NONE;
+
+	item_t eReturn = (item_t)m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z];
+	m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z] = ITEM_NONE;
+
+	BuildVBO();
+
+	return eReturn;
+}
+
 void PushVert(tvector<float>& aflVerts, const Vector& v, const Vector2D& vt)
 {
 	aflVerts.push_back(v.x);
@@ -191,6 +218,14 @@ void CVoxelChunk::BuildVBO()
 		}
 	}
 
-	m_iVBO = GameServer()->GetRenderer()->LoadVertexDataIntoGL(aflVerts.size()*sizeof(float), aflVerts.data());
-	m_iVBOSize = iVBOVerts;
+	if (iVBOVerts)
+	{
+		m_iVBO = GameServer()->GetRenderer()->LoadVertexDataIntoGL(aflVerts.size()*sizeof(float), aflVerts.data());
+		m_iVBOSize = iVBOVerts;
+	}
+	else
+	{
+		m_iVBO = 0;
+		m_iVBOSize = 0;
+	}
 }

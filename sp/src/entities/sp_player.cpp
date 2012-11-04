@@ -142,6 +142,12 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 		return;
 	}
 
+	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 0)
+	{
+		if (GetPlayerCharacter()->IsDisassembling())
+			GetPlayerCharacter()->EndDisassembly();
+	}
+
 	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 1)
 	{
 		CDisassembler* pDisassembler = dynamic_cast<CDisassembler*>(GetPlayerCharacter()->GetEquippedWeapon());
@@ -158,6 +164,20 @@ void CSPPlayer::MouseInput(int iButton, int iState)
 			CStructure* pStructureHit = dynamic_cast<CStructure*>(tr.m_pHit);
 			if (tr.m_flFraction < 1 && pStructureHit && pStructureHit->GetOwner() == this)
 				GetPlayerCharacter()->BeginDisassembly(pStructureHit);
+			else if (GetPlayerCharacter()->GetNearestSpire())
+			{
+				CScalableVector vecSpire = GetPlayerCharacter()->GetNearestSpire()->GetLocalOrigin();
+
+				CVoxelTree* pTree = GetPlayerCharacter()->GetNearestSpire()->GetVoxelTree();
+
+				TVector vecLocal = CScalableVector(GetPlayerCharacter()->GameData().TransformPointPhysicsToLocal(tr.m_vecHit + vecDirection * 0.01f), SCALE_METER);
+				item_t eBlock = pTree->GetBlock(vecLocal);
+
+				if (eBlock)
+					GetPlayerCharacter()->BeginDisassembly(pTree->ToVoxelCoordinates(vecLocal));
+				else
+					GetPlayerCharacter()->MeleeAttack();
+			}
 			else
 				GetPlayerCharacter()->MeleeAttack();
 		}

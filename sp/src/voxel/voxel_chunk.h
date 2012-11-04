@@ -17,6 +17,8 @@ public:
 	void       Render() const;
 
 	bool       PlaceBlock(item_t eItem, const IVector& vecBlock);
+	item_t     GetBlock(const IVector& vecBlock);
+	item_t     RemoveBlock(const IVector& vecLocal);
 
 	void       BuildVBO();
 

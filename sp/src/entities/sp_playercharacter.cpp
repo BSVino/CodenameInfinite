@@ -26,7 +26,8 @@ SAVEDATA_TABLE_BEGIN(CPlayerCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CHelperBot>, m_hHelper);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CDisassembler>, m_hDisassembler);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hDisassemblingStructure);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flDisassemblingStructureStart);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecDisassemblingBlock);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flDisassemblingStart);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextSurfaceCheck);
 SAVEDATA_TABLE_END();
 
@@ -51,7 +52,7 @@ void CPlayerCharacter::Spawn()
 
 	m_flNextApproximateElevation = 0;
 	m_flNextSurfaceCheck = 0;
-	m_flDisassemblingStructureStart = 0;
+	m_flDisassemblingStart = 0;
 
 	if (m_hHelper)
 		m_hHelper->Delete();
@@ -65,6 +66,7 @@ void CPlayerCharacter::Spawn()
 
 CVar sv_approximateelevation("sv_approximateelevation", "0.3");
 CVar sv_disassemble_structure_time("sv_disassemble_structure_time", "4.0");
+CVar sv_disassemble_block_time("sv_disassemble_block_time", "1.0");
 
 void CPlayerCharacter::Think()
 {
@@ -110,12 +112,21 @@ void CPlayerCharacter::Think()
 		m_flNextSurfaceCheck = GameServer()->GetGameTime() + 2;
 	}
 
-	if (m_flDisassemblingStructureStart)
+	if (m_flDisassemblingStart)
 	{
-		if (GameServer()->GetGameTime() > m_flDisassemblingStructureStart + sv_disassemble_structure_time.GetFloat())
+		float flDisassembleTime = sv_disassemble_block_time.GetFloat();
+		if (m_hDisassemblingStructure)
+			flDisassembleTime = sv_disassemble_structure_time.GetFloat();
+
+		if (GameServer()->GetGameTime() > m_flDisassemblingStart + flDisassembleTime)
 		{
-			m_flDisassemblingStructureStart = 0;
-			m_hDisassemblingStructure->Delete();
+			m_flDisassemblingStart = 0;
+
+			if (m_hDisassemblingStructure)
+				m_hDisassemblingStructure->Delete();
+			else if (GetNearestSpire())
+				GetNearestSpire()->GetVoxelTree()->RemoveBlock(m_vecDisassemblingBlock);
+
 			m_hDisassembler->EndDisassembly();
 		}
 		else
@@ -130,7 +141,7 @@ void CPlayerCharacter::Think()
 
 			if (tr.m_pHit != m_hDisassemblingStructure)
 			{
-				m_flDisassemblingStructureStart = 0;
+				m_flDisassemblingStart = 0;
 				m_hDisassemblingStructure = nullptr;
 				m_hDisassembler->EndDisassembly();
 			}
@@ -211,9 +222,36 @@ void CPlayerCharacter::OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped)
 
 void CPlayerCharacter::BeginDisassembly(CStructure* pStructure)
 {
+	TAssert(!m_flDisassemblingStart);
+	if (m_flDisassemblingStart)
+		return;
+
 	m_hDisassembler->BeginDisassembly();
-	m_flDisassemblingStructureStart = GameServer()->GetGameTime();
+	m_flDisassemblingStart = GameServer()->GetGameTime();
 	m_hDisassemblingStructure = pStructure;
+}
+
+void CPlayerCharacter::BeginDisassembly(const IVector& vecBlock)
+{
+	TAssert(!m_flDisassemblingStart);
+	if (m_flDisassemblingStart)
+		return;
+
+	m_hDisassembler->BeginDisassembly();
+	m_flDisassemblingStart = GameServer()->GetGameTime();
+	m_vecDisassemblingBlock = vecBlock;
+}
+
+void CPlayerCharacter::EndDisassembly()
+{
+	TAssert(m_flDisassemblingStart);
+	if (m_flDisassemblingStart == 0)
+		return;
+
+	m_hDisassembler->EndDisassembly();
+	m_flDisassemblingStart = 0;
+	m_hDisassemblingStructure = nullptr;
+	m_vecDisassemblingBlock = IVector();
 }
 
 void CPlayerCharacter::ToggleFlying()

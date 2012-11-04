@@ -15,6 +15,8 @@ public:
 	void       Render() const;
 
 	bool       PlaceBlock(item_t eItem, const CScalableVector& vecLocal);
+	item_t     GetBlock(const CScalableVector& vecLocal);
+	item_t     RemoveBlock(const IVector& vecBlock);
 
 	CVoxelChunk*    GetChunk(const IVector& vecChunk);
 	CVoxelChunk*    GetChunkIfExists(const IVector& vecChunk);
