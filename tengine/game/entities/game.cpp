@@ -87,7 +87,7 @@ void CGame::AddPlayer(CPlayer* pPlayer)
 	m_ahLocalPlayers.clear();
 }
 
-void CGame::RemovePlayer(CPlayer* pPlayer)
+void CGame::RemovePlayer(const CPlayer* pPlayer)
 {
 	if (!pPlayer)
 		return;
@@ -109,9 +109,9 @@ void CGame::OnDeleted()
 	m_ahLocalPlayers.clear();
 }
 
-void CGame::OnDeleted(CBaseEntity* pEntity)
+void CGame::OnDeleted(const CBaseEntity* pEntity)
 {
-	RemovePlayer(dynamic_cast<CPlayer*>(pEntity));
+	RemovePlayer(dynamic_cast<const CPlayer*>(pEntity));
 }
 
 bool CGame::TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker)

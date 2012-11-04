@@ -24,11 +24,11 @@ public:
 	virtual void				OnAddEntity(CBaseEntity* pEntity) {};
 
 	void						RemoveEntity(CBaseEntity* pEntity);
-	virtual void				OnRemoveEntity(CBaseEntity* pEntity) {};
+	virtual void				OnRemoveEntity(const CBaseEntity* pEntity) {};
 
 	void						StartTurn();
 
-	virtual void				OnDeleted(class CBaseEntity* pEntity);
+	virtual void				OnDeleted(const CBaseEntity* pEntity);
 
 	bool						IsPlayerControlled() const { return m_bClientControlled; };
 

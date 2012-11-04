@@ -32,7 +32,7 @@ public:
 	void        EndBuild();
 
 	void        AddUnit(CBaseEntity* pEntity);
-	void        OnDeleted(CBaseEntity* pEntity);
+	void        OnDeleted(const CBaseEntity* pEntity);
 
 	const tvector<CEntityHandle<CStructure>>&    GetStructures() const { return m_hStructures; }
 	const tvector<CEntityHandle<CMine>>&         GetMines() const { return m_hMines; }

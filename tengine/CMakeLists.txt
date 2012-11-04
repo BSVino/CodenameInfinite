@@ -49,6 +49,7 @@ set (TENGINE_GAME_ENTITY_SOURCES
 	game/entities/target.cpp
 	game/entities/team.cpp
 	game/entities/trigger.cpp
+	game/entities/weapon.cpp
 )
 
 set (TENGINE_MODELS_SOURCES

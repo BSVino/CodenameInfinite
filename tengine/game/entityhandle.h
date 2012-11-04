@@ -37,6 +37,11 @@ public:
 		return IsEqual(pEntity);
 	}
 
+	inline bool operator==(C* pEntity) const
+	{
+		return IsEqual(pEntity);
+	}
+
 	inline bool operator==(const CEntityHandle<C>& hEntity) const
 	{
 		return IsEqual(hEntity);
@@ -54,7 +59,7 @@ public:
 
 	inline bool operator!() const
 	{
-		return IsEqual(NULL);
+		return IsEqual((const C*)nullptr);
 	}
 
 	inline operator C*() const
@@ -68,6 +73,7 @@ public:
 	}
 
 	inline bool IsEqual(const C* pOther) const;
+	inline bool IsEqual(C* pOther) const;
 
 	inline C* GetPointer() const;
 

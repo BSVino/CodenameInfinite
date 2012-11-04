@@ -641,7 +641,7 @@ public:
 
 	void									Delete();
 	virtual void							OnDeleted() {};
-	virtual void							OnDeleted(class CBaseEntity* pEntity);
+	virtual void							OnDeleted(const CBaseEntity* pEntity);
 	bool									IsDeleted() { return m_bDeleted; }
 	void									SetDeleted() { m_bDeleted = true; }
 	DECLARE_ENTITY_INPUT(Delete);

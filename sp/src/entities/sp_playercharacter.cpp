@@ -8,6 +8,8 @@
 #include "planet/planet_terrain.h"
 #include "planet/terrain_chunks.h"
 #include "bots/helper.h"
+#include "items/disassembler.h"
+#include "sp_player.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
 
@@ -50,6 +52,9 @@ void CPlayerCharacter::Spawn()
 
 //	m_hHelper = GameServer()->Create<CHelperBot>("CHelperBot");
 //	m_hHelper->SetPlayerCharacter(this);
+
+	m_hDisassembler = GameServer()->Create<CDisassembler>("CDisassembler");
+	Weapon_Add(m_hDisassembler);
 }
 
 CVar sv_approximateelevation("sv_approximateelevation", "0.3");
@@ -140,6 +145,34 @@ void CPlayerCharacter::MoveThink()
 	}
 	else
 		SetLocalVelocity(vecLocalVelocity);
+}
+
+bool CPlayerCharacter::CanAttack() const
+{
+	CSPPlayer* pPlayer = static_cast<CSPPlayer*>(GetControllingPlayer());
+	TAssert(pPlayer);
+	if (!pPlayer)
+		return BaseClass::CanAttack();
+
+	if (pPlayer->IsInBlockPlaceMode())
+		return false;
+
+	if (pPlayer->IsInConstructionMode())
+		return false;
+
+	return BaseClass::CanAttack();
+}
+
+void CPlayerCharacter::OnWeaponAdded(CBaseWeapon* pWeapon)
+{
+	if (!GetEquippedWeapon())
+		Weapon_Equip(pWeapon);
+}
+
+void CPlayerCharacter::OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped)
+{
+	if (bWasEquipped && m_hDisassembler != pWeapon)
+		Weapon_Equip(m_hDisassembler);
 }
 
 void CPlayerCharacter::ToggleFlying()

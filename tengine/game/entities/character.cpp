@@ -8,6 +8,7 @@
 #include <renderer/renderingcontext.h>
 #include <physics/physics.h>
 #include <renderer/game_renderer.h>
+#include <game/entities/weapon.h>
 
 #include "player.h"
 
@@ -28,6 +29,8 @@ SAVEDATA_TABLE_BEGIN(CCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flMoveSimulationTime);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flLastAttack);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, TFloat, m_flMaxStepSize);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iEquippedWeapon);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, CBaseWeapon, m_ahWeapons);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CCharacter);
@@ -39,6 +42,8 @@ CCharacter::CCharacter()
 	m_bNoClip = false;
 
 	m_flLastSpawn = -1;
+
+	m_iEquippedWeapon = ~0;
 
 	SetMass(60);
 }
@@ -244,7 +249,9 @@ void CCharacter::SetNoClip(bool bOn)
 
 bool CCharacter::CanAttack() const
 {
-	if (m_flLastAttack >= 0 && GameServer()->GetGameTime() - m_flLastAttack < MeleeAttackTime())
+	float flMeleeAttackTime = GetEquippedWeapon()?GetEquippedWeapon()->MeleeAttackTime():MeleeAttackTime();
+
+	if (m_flLastAttack >= 0 && GameServer()->GetGameTime() - m_flLastAttack < flMeleeAttackTime)
 		return false;
 
 	return true;
@@ -258,8 +265,14 @@ void CCharacter::MeleeAttack()
 	m_flLastAttack = GameServer()->GetGameTime();
 	m_vecMoveVelocity = TVector();
 
-	float flAttackSphereRadius = MeleeAttackSphereRadius();
-	Vector vecDamageSphereCenter = MeleeAttackSphereCenter();
+	CBaseWeapon* pWeapon = GetEquippedWeapon();
+
+	float flAttackSphereRadius = pWeapon?pWeapon->MeleeAttackSphereRadius():MeleeAttackSphereRadius();
+	float flAttackDamage = pWeapon?pWeapon->MeleeAttackDamage():MeleeAttackDamage();
+	Vector vecDamageSphereCenter = pWeapon?pWeapon->MeleeAttackSphereCenter():MeleeAttackSphereCenter();
+
+	if (pWeapon)
+		pWeapon->MeleeAttack();
 
 	CTraceResult tr;
 	GamePhysics()->CheckSphere(tr, flAttackSphereRadius, vecDamageSphereCenter, this);
@@ -284,7 +297,7 @@ void CCharacter::MeleeAttack()
 			continue;
 
 		//TMsg(tstring(GetClassName()) + " hit " + tstring(pEntity->GetClassName()) + "\n");
-		pEntity->TakeDamage(this, this, DAMAGE_GENERIC, MeleeAttackDamage());
+		pEntity->TakeDamage(this, this, DAMAGE_GENERIC, flAttackDamage);
 	}
 }
 
@@ -293,7 +306,9 @@ bool CCharacter::IsAttacking() const
 	if (m_flLastAttack < 0)
 		return false;
 
-	return (GameServer()->GetGameTime() - m_flLastAttack < MeleeAttackTime());
+	float flMeleeAttackTime = GetEquippedWeapon()?GetEquippedWeapon()->MeleeAttackTime():MeleeAttackTime();
+
+	return (GameServer()->GetGameTime() - m_flLastAttack < flMeleeAttackTime);
 }
 
 void CCharacter::MoveToPlayerStart()
@@ -372,6 +387,95 @@ void CCharacter::ShowPlayerVectors() const
 	c.Vertex(vecEyeHeight);
 	c.Vertex(vecEyeHeight + vecUp);
 	c.EndRender();
+}
+
+void CCharacter::Weapon_Add(CBaseWeapon* pWeapon)
+{
+	TAssert(pWeapon);
+	if (!pWeapon)
+		return;
+
+	for (size_t i = 0; i < m_ahWeapons.size(); i++)
+	{
+		if (m_ahWeapons[i] == pWeapon)
+			return;
+	}
+
+	TAssert(!pWeapon->GetOwner());
+
+	m_ahWeapons.push_back(pWeapon);
+
+	pWeapon->SetOwner(this);
+
+	OnWeaponAdded(pWeapon);
+}
+
+void CCharacter::Weapon_Remove(CBaseWeapon* pWeapon)
+{
+	TAssert(pWeapon);
+	if (!pWeapon)
+		return;
+
+	size_t iIndex = ~0;
+	for (size_t i = 0; i < m_ahWeapons.size(); i++)
+	{
+		if (m_ahWeapons[i] == pWeapon)
+		{
+			iIndex = i;
+			break;
+		}
+	}
+
+	if (iIndex == ~0)
+		return;
+
+	TAssert(pWeapon->GetOwner() == this);
+
+	bool bWasEquipped = (GetEquippedWeaponIndex() == iIndex);
+	m_ahWeapons.erase_value(pWeapon);
+
+	pWeapon->SetOwner(nullptr);
+
+	OnWeaponRemoved(pWeapon, bWasEquipped);
+}
+
+void CCharacter::Weapon_Equip(CBaseWeapon* pWeapon)
+{
+	size_t iIndex = ~0;
+	for (size_t i = 0; i < m_ahWeapons.size(); i++)
+	{
+		if (m_ahWeapons[i] == pWeapon)
+		{
+			iIndex = i;
+			break;
+		}
+	}
+
+	TAssert(iIndex != ~0);
+	if (iIndex == ~0)
+		return;
+
+	m_iEquippedWeapon = iIndex;
+}
+
+CBaseWeapon* CCharacter::GetEquippedWeapon() const
+{
+	if (m_iEquippedWeapon == ~0)
+		return nullptr;
+
+	TAssert(m_iEquippedWeapon < m_ahWeapons.size());
+	TAssert(m_ahWeapons[m_iEquippedWeapon]);
+
+	return m_ahWeapons[m_iEquippedWeapon];
+}
+
+void CCharacter::OnDeleted(const CBaseEntity* pEntity)
+{
+	BaseClass::OnDeleted(pEntity);
+
+	const CBaseWeapon* pWeapon = dynamic_cast<const CBaseWeapon*>(pEntity);
+	if (pWeapon)
+		m_ahWeapons.erase_value(pWeapon);
 }
 
 void CCharacter::SetControllingPlayer(CPlayer* pCharacter)

@@ -4,6 +4,7 @@
 #include <tengine/game/entities/baseentity.h>
 
 class CPlayer;
+class CBaseWeapon;
 
 typedef enum
 {
@@ -46,6 +47,17 @@ public:
 
 	virtual void					PostRender() const;
 	virtual void					ShowPlayerVectors() const;
+
+	void                            Weapon_Add(CBaseWeapon* pWeapon);
+	void                            Weapon_Remove(CBaseWeapon* pWeapon);
+	virtual void                    OnWeaponAdded(CBaseWeapon* pWeapon) {}
+	virtual void                    OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped) {}
+	void                            Weapon_Equip(CBaseWeapon* pWeapon);
+	const tvector<CEntityHandle<CBaseWeapon>>& GetWeapons() const { return m_ahWeapons; }
+	size_t                          GetEquippedWeaponIndex() const { return m_iEquippedWeapon; }
+	CBaseWeapon*                    GetEquippedWeapon() const;
+
+	void                            OnDeleted(const CBaseEntity* pEntity);
 
 	void							SetControllingPlayer(CPlayer* pCharacter);
 	CPlayer*						GetControllingPlayer() const;
@@ -91,6 +103,9 @@ protected:
 	double                          m_flLastSpawn;
 
 	TFloat							m_flMaxStepSize;
+
+	size_t                              m_iEquippedWeapon;
+	tvector<CEntityHandle<CBaseWeapon>> m_ahWeapons;
 };
 
 #endif

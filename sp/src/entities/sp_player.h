@@ -31,10 +31,12 @@ public:
 	void                    EnterConstructionMode(structure_type eStructure);
 	bool                    FindConstructionPoint(CScalableVector& vecLocal) const;
 	void                    FinishConstruction();
+	bool                    IsInConstructionMode() const { return !!m_eConstructionMode; }
 
 	void                    EnterBlockPlaceMode(item_t eBlock);
 	bool                    FindBlockPlacePoint(CScalableVector& vecLocal, CBaseEntity** pGiveTo) const;
 	void                    FinishBlockPlace();
+	bool                    IsInBlockPlaceMode() const { return !!m_eBlockPlaceMode; }
 
 	void                    CommandMenuOpened(CCommandMenu* pMenu);
 	void                    CommandMenuClosed(CCommandMenu* pMenu);

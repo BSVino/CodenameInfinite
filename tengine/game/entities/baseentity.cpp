@@ -1016,7 +1016,7 @@ void CBaseEntity::Delete(const tvector<tstring>& sArgs)
 	Delete();
 }
 
-void CBaseEntity::OnDeleted(CBaseEntity* pEntity)
+void CBaseEntity::OnDeleted(const CBaseEntity* pEntity)
 {
 	for (size_t i = 0; i < m_ahMoveChildren.size(); i++)
 	{
@@ -1256,7 +1256,7 @@ SERVER_GAME_COMMAND(ClientSpawn)
 
 	CEntityHandle<CBaseEntity> hEntity(pCmd->ArgAsUInt(0));
 
-	if (hEntity == NULL)
+	if (!hEntity)
 	{
 		TMsg("ClientSpawn with invalid entity.\n");
 		return;

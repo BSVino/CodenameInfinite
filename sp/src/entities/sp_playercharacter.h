@@ -6,6 +6,7 @@
 #include "sp_camera.h"
 
 class CHelperBot;
+class CDisassembler;
 
 class CPlayerCharacter : public CSPCharacter
 {
@@ -19,6 +20,11 @@ public:
 
 	virtual void				Think();
 	virtual void				MoveThink();
+
+	virtual bool                CanAttack() const;
+
+	void                        OnWeaponAdded(CBaseWeapon* pWeapon);
+	void                        OnWeaponRemoved(CBaseWeapon* pWeapon, bool bWasEquipped);
 
 	void						ToggleFlying();
 	void						StartFlying();
@@ -61,6 +67,7 @@ protected:
 	double                      m_flApproximateElevation;     // From the center of the planet
 
 	CEntityHandle<CHelperBot>   m_hHelper;
+	CEntityHandle<CDisassembler> m_hDisassembler;
 
 	double                      m_flNextSurfaceCheck;
 };

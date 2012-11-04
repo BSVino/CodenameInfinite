@@ -36,12 +36,12 @@ public:
 	virtual void								EnterGame();
 
 	void										AddPlayer(CPlayer* pPlayer);
-	void										RemovePlayer(CPlayer* pPlayer);
+	void										RemovePlayer(const CPlayer* pPlayer);
 
 	virtual void                                OnEntityKilled(CBaseEntity* pKilledBy) {};
 
 	virtual void								OnDeleted();
-	virtual void								OnDeleted(class CBaseEntity* pEntity);
+	virtual void								OnDeleted(const CBaseEntity* pEntity);
 
 	virtual bool                                TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker);
 	virtual void								OnTakeDamage(class CBaseEntity* pVictim, class CBaseEntity* pAttacker, class CBaseEntity* pInflictor, float flDamage, bool bDirectHit, bool bKilled) {};

@@ -112,7 +112,7 @@ void CSPRenderer::StartRendering(class CRenderingContext* pContext)
 		if (!pStar)
 			continue;
 
-		if (m_hClosestStar == NULL)
+		if (!m_hClosestStar)
 		{
 			m_hClosestStar = pStar;
 			continue;

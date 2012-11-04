@@ -57,6 +57,7 @@ set (CI_STRUCTURE_SOURCES
 set (CI_ITEM_SOURCES
 	entities/items/items.cpp
 	entities/items/pickup.cpp
+	entities/items/disassembler.cpp
 )
 
 set (CI_UI_SOURCES

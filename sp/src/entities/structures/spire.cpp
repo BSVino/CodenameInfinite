@@ -271,21 +271,21 @@ void CSpire::AddUnit(CBaseEntity* pEntity)
 		m_hBots.push_back(pBot);
 }
 
-void CSpire::OnDeleted(CBaseEntity* pEntity)
+void CSpire::OnDeleted(const CBaseEntity* pEntity)
 {
 	BaseClass::OnDeleted(pEntity);
 
-	CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+	const CStructure* pStructure = dynamic_cast<const CStructure*>(pEntity);
 	if (pStructure)
 	{
 		m_hStructures.erase_value(pStructure);
 
-		CMine* pMine = dynamic_cast<CMine*>(pEntity);
+		const CMine* pMine = dynamic_cast<const CMine*>(pEntity);
 		if (pMine)
 			m_hMines.erase_value(pMine);
 	}
 
-	CBot* pBot = dynamic_cast<CBot*>(pEntity);
+	const CBot* pBot = dynamic_cast<const CBot*>(pEntity);
 	if (pBot)
 		m_hBots.erase_value(pBot);
 }

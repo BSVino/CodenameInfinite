@@ -17,6 +17,9 @@
 #include <textures/materiallibrary.h>
 #include <renderer/particles.h>
 #include <tools/workbench.h>
+#include <game/entities/game.h>
+#include <game/entities/weapon.h>
+#include <game/entities/character.h>
 
 #include "game_renderingcontext.h"
 
@@ -217,6 +220,44 @@ void CGameRenderer::FinishRendering(class CRenderingContext* pContext)
 
 	if (show_physics.GetBool() && ShouldRenderPhysicsDebug() && !CWorkbench::IsActive())
 		GamePhysics()->DebugDraw(show_physics.GetInt());
+}
+
+void CGameRenderer::FinishFrame(CRenderingContext* pContext)
+{
+	DrawWeaponViewModel();
+
+	BaseClass::FinishFrame(pContext);
+}
+
+void CGameRenderer::DrawWeaponViewModel()
+{
+	CPlayer* pLocalPlayer = GameServer()->GetGame()->GetLocalPlayer();
+	if (!pLocalPlayer)
+		return;
+
+	CCharacter* pLocalCharacter = pLocalPlayer->GetCharacter();
+	if (!pLocalCharacter)
+		return;
+
+	CBaseWeapon* pEquippedWeapon = pLocalCharacter->GetEquippedWeapon();
+	if (!pEquippedWeapon)
+		return;
+
+	CGameRenderingContext c(this, true);
+
+	c.SetProjection(Matrix4x4::ProjectPerspective(
+			m_flCameraFOV,
+			(float)m_iWidth/(float)m_iHeight,
+			0.001f,
+			1
+		));
+
+	c.SetView(Matrix4x4::ConstructCameraView(Vector(0, 0, 0), m_vecCameraDirection, m_vecCameraUp));
+	c.ResetTransformations();
+
+	c.ClearDepth();
+
+	pEquippedWeapon->DrawViewModel(&c);
 }
 
 void CGameRenderer::SetSkybox(const CTextureHandle& ft, const CTextureHandle& bk, const CTextureHandle& lf, const CTextureHandle& rt, const CTextureHandle& up, const CTextureHandle& dn)
