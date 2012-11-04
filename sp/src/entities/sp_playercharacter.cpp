@@ -386,13 +386,18 @@ void CPlayerCharacter::ApproximateElevation()
 	// Remove any lateral movement from the terrain generation offset.
 	Vector vecHit;
 	bool bHit = RayIntersectsPlane(Ray(Vector(0, 0, 0), vecOriginNormalized), vec3DOrigin, vecOriginNormalized, &vecHit);
-	TAssert(bHit);
+	if (bHit)
+	{
+		m_flApproximateElevation = vecHit.Distance(pPlanet->GetCharacterLocalOrigin());
 
-	m_flApproximateElevation = vecHit.Distance(pPlanet->GetCharacterLocalOrigin());
-
-	// If the character is nearer to the planet's origin than the hit point then we approximated that we're under the ground so zero it out.
-	if (pPlanet->GetCharacterLocalOrigin().LengthSqr() < vecHit.LengthSqr())
-		m_flApproximateElevation = 0;
+		// If the character is nearer to the planet's origin than the hit point then we approximated that we're under the ground.
+		if (pPlanet->GetCharacterLocalOrigin().LengthSqr() < vecHit.LengthSqr())
+			m_flApproximateElevation = -m_flApproximateElevation;
+	}
+	else
+	{
+		m_flApproximateElevation = (TFloat(pPlanet->GetCharacterLocalOrigin().Length(), pPlanet->GetScale()) - pPlanet->GetRadius()).GetUnits(pPlanet->GetScale());
+	}
 }
 
 const CScalableVector CPlayerCharacter::GetGlobalGravity() const
