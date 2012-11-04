@@ -165,6 +165,16 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 			if (vecForward.Dot((vecSpire).Normalized()) < 0)
 				continue;
 
+			if (pLocalPlayer && pSpire->GameData().GetPlanet())
+			{
+				Vector vecToPlayer = (pLocalPlayer->GetGlobalOrigin() - pSpirePlanet->GetGlobalOrigin()).Normalized();
+				Vector vecToSpire = (pSpire->GetGlobalOrigin() - pSpirePlanet->GetGlobalOrigin()).Normalized();
+				TFloat flDistanceToSurface = (pLocalPlayer->GetGlobalOrigin() - pSpirePlanet->GetGlobalOrigin()).Length() - pSpirePlanet->GetRadius();
+
+				if (vecToPlayer.Dot(vecToSpire) < (float)RemapValClamped(flDistanceToSurface, pSpirePlanet->GetAtmosphereThickness(), TFloat(1.0, SCALE_MEGAMETER), 0.99, 0.0))
+					continue;
+			}
+
 			Vector vecScreen = GameServer()->GetRenderer()->ScreenPosition(vecSpire);
 
 			tstring sLabel = pSpirePlanet->GetPlanetName() + " " + pSpire->GetBaseName() + " - " + GetStringDistance(flDistance);
