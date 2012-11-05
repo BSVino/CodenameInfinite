@@ -179,6 +179,8 @@ public:
 	virtual CPhysicsEntity*	GetPhysicsEntity(class CBaseEntity* pEnt);
 	virtual CBaseEntity*    GetBaseEntity(class btCollisionObject* pObject);
 
+	short                   GetMaskForGroup(collision_group_t eGroup);
+
 protected:
 	tvector<CPhysicsEntity>					m_aEntityList;
 	tvector<CPhysicsEntity*>                m_apExtraEntityList;

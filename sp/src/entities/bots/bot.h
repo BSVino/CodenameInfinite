@@ -26,6 +26,8 @@ public:
 	void                        SetSpire(CSpire* pOwner);
 	CSpire*                     GetSpire() const;
 
+	collision_group_t           GetCollisionGroup() const { return CG_CHARACTER_PASS; }
+
 private:
 	CEntityHandle<CSPPlayer>    m_hOwner;
 	CEntityHandle<CSpire>       m_hSpire;

@@ -36,6 +36,8 @@ public:
 
 	virtual bool		ShouldRender() const { return false; };
 
+	collision_group_t   GetCollisionGroup() const { return CG_TRIGGER; }
+
 protected:
 	tvector<CEntityHandle<CBaseEntity> >	m_ahTouching;
 	tvector<CEntityHandle<CBaseEntity> >	m_ahLastTouching;

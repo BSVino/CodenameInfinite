@@ -18,4 +18,6 @@ public:
 	virtual float                   MeleeAttackDamage() const { return 1; }
 
 	CScalableFloat  CharacterSpeed();
+
+	collision_group_t           GetCollisionGroup() const { return CG_CHARACTER_CLIP; }
 };

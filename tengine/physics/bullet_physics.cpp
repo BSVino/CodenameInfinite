@@ -130,7 +130,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 
 		pPhysicsEntity->m_pCharacterController = new CCharacterController(pCharacter, pPhysicsEntity->m_pGhostObject, pConvexShape, flStepHeight);
 
-		m_pDynamicsWorld->addCollisionObject(pPhysicsEntity->m_pGhostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter|btBroadphaseProxy::CharacterFilter|btBroadphaseProxy::SensorTrigger);
+		m_pDynamicsWorld->addCollisionObject(pPhysicsEntity->m_pGhostObject, pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 		m_pDynamicsWorld->addAction(pPhysicsEntity->m_pCharacterController);
 	}
 	else if (eCollisionType == CT_TRIGGER)
@@ -175,7 +175,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 
 		pPhysicsEntity->m_pTriggerController = new CTriggerController(pEntity, pPhysicsEntity->m_pGhostObject);
 
-		m_pDynamicsWorld->addCollisionObject(pPhysicsEntity->m_pGhostObject, btBroadphaseProxy::SensorTrigger, btBroadphaseProxy::DefaultFilter|btBroadphaseProxy::KinematicFilter|btBroadphaseProxy::CharacterFilter);
+		m_pDynamicsWorld->addCollisionObject(pPhysicsEntity->m_pGhostObject, pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 		m_pDynamicsWorld->addAction(pPhysicsEntity->m_pTriggerController);
 	}
 	else
@@ -227,7 +227,7 @@ void CBulletPhysics::AddShape(class CBaseEntity* pEntity, collision_type_t eColl
 		pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_DEACTIVATION);
 	}
 
-	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back());
+	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back(), pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 }
 
 void CBulletPhysics::AddModel(class CBaseEntity* pEntity, collision_type_t eCollisionType, size_t iModel)
@@ -273,7 +273,7 @@ void CBulletPhysics::AddModel(class CBaseEntity* pEntity, collision_type_t eColl
 			pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_DEACTIVATION);
 		}
 
-		m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back());
+		m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back(), pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 	}
 }
 
@@ -335,7 +335,7 @@ void CBulletPhysics::AddModelTris(class CBaseEntity* pEntity, collision_type_t e
 			pPhysicsEntity->m_pRigidBody->setActivationState(DISABLE_DEACTIVATION);
 		}
 
-		m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody);
+		m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody, pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 	}
 	else
 	{
@@ -353,7 +353,7 @@ void CBulletPhysics::AddModelTris(class CBaseEntity* pEntity, collision_type_t e
 			pBody->setActivationState(DISABLE_DEACTIVATION);
 		}
 
-		m_pDynamicsWorld->addRigidBody(pBody);
+		m_pDynamicsWorld->addRigidBody(pBody, pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 	}
 }
 
@@ -453,7 +453,7 @@ size_t CBulletPhysics::AddExtra(size_t iExtraMesh, const Vector& vecOrigin)
 	pPhysicsEntity->m_pRigidBody->setUserPointer((void*)(GameServer()->GetMaxEntities()+iIndex));
 	pPhysicsEntity->m_pRigidBody->setWorldTransform(mTransform);
 
-	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody);
+	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody, CG_STATIC, GetMaskForGroup(CG_STATIC));
 
 	return iIndex;
 }
@@ -499,7 +499,7 @@ size_t CBulletPhysics::AddExtraCube(const Vector& vecCenter, float flSize)
 	pPhysicsEntity->m_pRigidBody->setUserPointer((void*)(GameServer()->GetMaxEntities()+iIndex));
 	pPhysicsEntity->m_pRigidBody->setWorldTransform(mTransform);
 
-	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody);
+	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody, CG_STATIC, GetMaskForGroup(CG_STATIC));
 
 	return iIndex;
 }
@@ -953,6 +953,29 @@ CBaseEntity* CBulletPhysics::GetBaseEntity(btCollisionObject* pObject)
 {
 	CEntityHandle<CBaseEntity> hEntity((size_t)pObject->getUserPointer());
 	return hEntity;
+}
+
+short CBulletPhysics::GetMaskForGroup(collision_group_t eGroup)
+{
+	switch (eGroup)
+	{
+	case CG_NONE:
+	case CG_DEFAULT:
+	default:
+		return btBroadphaseProxy::AllFilter;
+
+	case CG_STATIC:
+		return CG_DEFAULT|CG_CHARACTER_CLIP|CG_CHARACTER_PASS;
+
+	case CG_TRIGGER:
+		return CG_DEFAULT|CG_CHARACTER_CLIP|CG_CHARACTER_PASS;
+
+	case CG_CHARACTER_PASS:
+		return CG_DEFAULT|CG_STATIC|CG_TRIGGER|CG_CHARACTER_CLIP;
+
+	case CG_CHARACTER_CLIP:
+		return CG_DEFAULT|CG_STATIC|CG_TRIGGER|CG_CHARACTER_CLIP|CG_CHARACTER_PASS;
+	}
 }
 
 CPhysicsManager::CPhysicsManager()

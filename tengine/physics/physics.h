@@ -14,6 +14,16 @@ typedef enum collision_type_e
 	CT_TRIGGER,		// Does not collide, but reports intersections.
 } collision_type_t;
 
+typedef enum
+{
+	CG_NONE = 0,
+	CG_DEFAULT = (1<<0),
+	CG_STATIC = (1<<1),
+	CG_CHARACTER_PASS = (1<<2),
+	CG_CHARACTER_CLIP = (1<<3),
+	CG_TRIGGER = (1<<4),
+} collision_group_t;
+
 class CTraceResult
 {
 public:

@@ -61,6 +61,8 @@ public:
 	virtual float               MeleeAttackSphereRadius() const { return 1.2f; }
 	virtual float               MeleeAttackDamage() const { return 6; }
 
+	collision_group_t           GetCollisionGroup() const { return CG_CHARACTER_PASS; }
+
 protected:
 	bool						m_bFlying;
 	bool						m_bWalkSpeedOverride;

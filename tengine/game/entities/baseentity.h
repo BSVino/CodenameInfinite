@@ -590,6 +590,7 @@ public:
 	bool									IsInPhysics() const { return m_bInPhysics; };
 	void									AddToPhysics(enum collision_type_e eCollisionType);
 	void									RemoveFromPhysics();
+	virtual collision_group_t               GetCollisionGroup() const { return CG_DEFAULT; }
 
 	size_t									GetHandle() const { return m_iHandle; }
 
