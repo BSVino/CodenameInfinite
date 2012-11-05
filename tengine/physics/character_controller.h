@@ -47,12 +47,13 @@ public:
 
 	virtual void	CharacterMovement(btCollisionWorld* collisionWorld, float flDelta);
 	virtual bool    PreStep(btCollisionWorld* collisionWorld);
-	virtual bool    PlayerStep(btCollisionWorld* collisionWorld, btScalar dt);
+	virtual bool    PlayerWalk(btCollisionWorld* collisionWorld, btScalar dt);
+	virtual bool    PlayerFall(btCollisionWorld* collisionWorld, btScalar dt);
+	virtual bool    PlayerFly(btCollisionWorld* collisionWorld, btScalar dt);
 
-	virtual void	SetLateralVelocity(const btVector3& velocity);
-	void			SetVerticalVelocity(btScalar flVerticalVelocity);
+	virtual void    SetMoveVelocity(const btVector3& velocity);
 
-	void			SetFallSpeed(btScalar fallSpeed);
+	void			SetMaxSpeed(btScalar flMaxSpeed);
 	void			SetJumpSpeed(btScalar jumpSpeed);
 	void			SetMaxJumpHeight(btScalar maxJumpHeight);
 
@@ -100,9 +101,7 @@ protected:
 	btPairCachingGhostObject* m_pGhostObject;
 	btConvexShape*	m_pConvexShape;		//is also in m_ghostObject, but it needs to be convex, so we store it here to avoid upcast
 
-	btScalar		m_flVerticalVelocity;
-	btScalar		m_flVerticalOffset;
-	btScalar		m_flMaxFallSpeed;
+	btScalar		m_flMaxSpeed;
 	btScalar		m_flJumpSpeed;
 	btScalar		m_flMaxSlopeRadians; // Slope angle that is set (used for returning the exact value)
 	btScalar		m_flMaxSlopeCosine;  // Cosine equivalent of m_maxSlopeRadians (calculated once when set, for optimization)
@@ -117,8 +116,10 @@ protected:
 	btScalar		m_flAddedMargin;	//@todo: remove this and fix the code
 
 	///this is the desired walk direction, set by the user
-	btVector3		m_vecWalkDirection;
-	btVector3		m_vecNormalizedDirection;
+	btVector3       m_vecMoveVelocity;
+	btVector3       m_vecMoveVelocityNormalized;
+
+	btVector3       m_vecCurrentVelocity;
 
 	//some internal variables
 	btVector3		m_vecCurrentPosition;
@@ -131,8 +132,6 @@ protected:
 	bool			m_bTouchingContact;
 	btVector3		m_vecTouchingNormal;
 
-	bool			m_bWasOnGround;
-	bool			m_bWasJumping;
 	bool			m_bColliding;
 };
 

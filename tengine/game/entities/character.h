@@ -67,6 +67,7 @@ public:
 	virtual TFloat					CharacterAcceleration() { return 4.0f; }
 	virtual TFloat					JumpStrength() { return 150.0f; }
 	virtual TFloat					CharacterSpeed();
+	virtual bool                    IsFlying() const { return false; }   // Is the character under controlled flight without the influence of gravity?
 
 	virtual float                   MeleeAttackTime() const { return 0.3f; }
 	virtual float                   MeleeAttackDamage() const { return 50; }

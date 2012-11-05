@@ -52,7 +52,6 @@ public:
 	virtual inline const CScalableVector	GetGlobalGravity() const;
 
 	CHelperBot*                 GetHelperBot();
-	virtual bool                ApplyGravity() const { return !m_bFlying; }
 
 	virtual size_t              MaxInventory() const { return 10; }
 	virtual size_t              MaxSlots() const { return INVENTORY_SLOTS; }

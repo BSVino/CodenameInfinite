@@ -106,7 +106,6 @@ public:
 	virtual double              GetLastEnteredAtmosphere() const { return m_flLastEnteredAtmosphere; }
 	virtual float               GetAtmosphereLerpTime() const { return 1; }
 	virtual float               GetAtmosphereLerp() const { return 0.3f; }
-	virtual bool                ApplyGravity() const { return true; }
 
 	virtual const TVector       MeleeAttackSphereCenter() const;
 	virtual float               MeleeAttackSphereRadius() const { return 0.8f; }

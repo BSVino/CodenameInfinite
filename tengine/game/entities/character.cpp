@@ -183,7 +183,7 @@ void CCharacter::MoveThink()
 		vecLocalVelocity = TVector();
 
 	if (IsInPhysics() && GamePhysics()->IsEntityAdded(this))
-		GamePhysics()->SetControllerWalkVelocity(this, vecLocalVelocity);
+		GamePhysics()->SetControllerMoveVelocity(this, vecLocalVelocity);
 	else
 		SetLocalVelocity(vecLocalVelocity);
 }
@@ -243,7 +243,7 @@ void CCharacter::SetNoClip(bool bOn)
 {
 	m_bNoClip = bOn;
 
-	GamePhysics()->SetControllerWalkVelocity(this, Vector(0, 0, 0));
+	GamePhysics()->SetControllerMoveVelocity(this, Vector(0, 0, 0));
 	GamePhysics()->SetControllerColliding(this, !m_bNoClip);
 }
 

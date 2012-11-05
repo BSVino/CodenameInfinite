@@ -771,10 +771,7 @@ void CBulletPhysics::SetEntityVelocity(class CBaseEntity* pEnt, const Vector& ve
 	if (pPhysicsEntity->m_pRigidBody)
 		pPhysicsEntity->m_pRigidBody->setLinearVelocity(v);
 	else if (pPhysicsEntity->m_pCharacterController)
-	{
-		pPhysicsEntity->m_pCharacterController->SetLateralVelocity(v);
-		pPhysicsEntity->m_pCharacterController->SetVerticalVelocity(v.y());
-	}
+		TAssert(false);
 }
 
 Vector CBulletPhysics::GetEntityVelocity(class CBaseEntity* pEnt)
@@ -791,17 +788,15 @@ Vector CBulletPhysics::GetEntityVelocity(class CBaseEntity* pEnt)
 	return Vector();
 }
 
-void CBulletPhysics::SetControllerWalkVelocity(class CBaseEntity* pEnt, const Vector& vecVelocity)
+void CBulletPhysics::SetControllerMoveVelocity(class CBaseEntity* pEnt, const Vector& vecVelocity)
 {
 	CPhysicsEntity* pPhysicsEntity = GetPhysicsEntity(pEnt);
 	if (!pPhysicsEntity)
 		return;
 
-	btVector3 v(vecVelocity.x, vecVelocity.y, vecVelocity.z);
-
 	TAssert(pPhysicsEntity->m_pCharacterController);
 	if (pPhysicsEntity->m_pCharacterController)
-		pPhysicsEntity->m_pCharacterController->SetLateralVelocity(v);
+		pPhysicsEntity->m_pCharacterController->SetMoveVelocity(ToBTVector(vecVelocity));
 }
 
 void CBulletPhysics::SetControllerColliding(class CBaseEntity* pEnt, bool bColliding)

@@ -18,7 +18,7 @@ public:
 	virtual void                SetupMenuButtons() {};
 	virtual void                MenuCommand(const tstring& sCommand) {};
 
-	virtual bool                ApplyGravity() const { return false; }
+	virtual bool                IsFlying() const { return true; }
 
 	void                        SetOwner(CSPPlayer* pOwner) { m_hOwner = pOwner; }
 	CSPPlayer*                  GetOwner() const { return m_hOwner; }

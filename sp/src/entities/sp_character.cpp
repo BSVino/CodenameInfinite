@@ -87,7 +87,7 @@ void CSPCharacter::Think()
 	if (pPlanet && IsInPhysics() && GamePhysics()->IsEntityAdded(this))
 		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
 
-	if (pPlanet && ApplyGravity())
+	if (pPlanet && !IsFlying())
 	{
 		// Estimate this planet's mass given things we know about earth. Assume equal densities.
 		double flEarthVolume = 1097509500000000000000.0;	// cubic meters
@@ -294,10 +294,10 @@ void CSPCharacter::CharacterMovement(class btCollisionWorld* pWorld, float flDel
 
 	if (pPlanet->GetChunkManager()->HasGroupCenter())
 	{
-		if (ApplyGravity())
-			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
-		else
+		if (IsFlying())
 			GamePhysics()->SetEntityGravity(this, Vector(0, 0, 0));
+		else
+			GamePhysics()->SetEntityGravity(this, Vector(0, -10, 0));
 
 		GamePhysics()->SetEntityUpVector(this, Vector(0, 1, 0));
 		GamePhysics()->CharacterMovement(this, pWorld, flDelta);
