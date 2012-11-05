@@ -61,6 +61,7 @@ extern void DebugPrint(const char* pszText);
 
 #else
 
+#if defined(_T_RELEASE_ASSERTS)
 #define TAssert(x) \
 { \
 	if (!(x)) \
@@ -72,6 +73,13 @@ extern void DebugPrint(const char* pszText);
 	if (!(x)) \
 		DebugPrint("Assert failed: " #x "\n"); \
 } \
+
+#else
+
+#define TAssert(x)
+#define TAssertNoMsg(x)
+
+#endif
 
 #endif
 
