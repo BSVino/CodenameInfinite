@@ -21,6 +21,26 @@ CVoxelChunk::CVoxelChunk(CVoxelTree* pTree, const IVector& vecChunk)
 	m_iVBODesignations = 0;
 }
 
+CVoxelChunk::~CVoxelChunk()
+{
+	if (m_iVBO)
+		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBO);
+	if (m_iVBODesignations)
+		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBODesignations);
+
+	for (size_t x = 0; x < CHUNK_SIZE; x++)
+	{
+		for (size_t y = 0; y < CHUNK_SIZE; y++)
+		{
+			for (size_t z = 0; z < CHUNK_SIZE; z++)
+			{
+				if (m_aPhysicsBlocks[x][y][z])
+					GamePhysics()->RemoveExtra(m_aPhysicsBlocks[x][y][z]);
+			}
+		}
+	}
+}
+
 void CVoxelChunk::Render() const
 {
 	if (m_iVBO && !GameServer()->GetRenderer()->IsRenderingTransparent())
@@ -178,6 +198,8 @@ void CVoxelChunk::BuildVBO()
 {
 	if (m_iVBO)
 		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBO);
+	if (m_iVBODesignations)
+		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBODesignations);
 
 	tvector<float> aflVerts;
 	size_t iVBOVerts = 0;

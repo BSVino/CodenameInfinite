@@ -227,7 +227,12 @@ void CVoxelTree::RebuildChunkVBOs()
 		it->second.BuildVBO();
 }
 
-void Rebuild(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
+void CVoxelTree::ClearChunks()
+{
+	m_aChunks.clear();
+}
+
+void VoxelRebuild(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
 {
 	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
 	if (!pPlayer)
@@ -240,5 +245,20 @@ void Rebuild(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring
 	pSpire->GetVoxelTree()->RebuildChunkVBOs();
 }
 
-CCommand voxel_rebuild("voxel_rebuild", Rebuild);
+CCommand voxel_rebuild("voxel_rebuild", VoxelRebuild);
+
+void VoxelClear(class CCommand* pCommand, tvector<tstring>& asTokens, const tstring& sCommand)
+{
+	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
+	if (!pPlayer)
+		return;
+
+	CPlayerCharacter* pCharacter = pPlayer->GetPlayerCharacter();
+
+	CSpire* pSpire = pCharacter->GetNearestSpire();
+
+	pSpire->GetVoxelTree()->ClearChunks();
+}
+
+CCommand voxel_clear("voxel_clear", VoxelClear);
 

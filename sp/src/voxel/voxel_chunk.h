@@ -12,6 +12,7 @@ class CVoxelChunk
 {
 public:
 	CVoxelChunk(CVoxelTree* pTree, const IVector& vecChunk);
+	~CVoxelChunk();
 
 public:
 	void       Render() const;

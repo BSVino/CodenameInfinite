@@ -164,6 +164,8 @@ void CCharacterController::preStep(btCollisionWorld* pCollisionWorld)
 	PreStep(pCollisionWorld);
 }
 
+CVar phys_maxpenetrationrecover("phys_maxpenetrationrecover", "4");
+
 bool CCharacterController::PreStep(btCollisionWorld* pCollisionWorld)
 {
 	m_bTouchingContact = false;
@@ -173,7 +175,7 @@ bool CCharacterController::PreStep(btCollisionWorld* pCollisionWorld)
 		i++;
 		m_bTouchingContact = true;
 
-		if (i > 4)
+		if (i > phys_maxpenetrationrecover.GetInt())
 		{
 			TMsg("Character controller couldn't recover from penetration.\n");
 			break;

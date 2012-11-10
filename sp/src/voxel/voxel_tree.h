@@ -35,7 +35,9 @@ public:
 	void            SetSpire(class CSpire* pSpire) { m_hSpire = pSpire; }
 	class CSpire*   GetSpire() const { return m_hSpire; }
 
+	// Debug stuffs
 	void       RebuildChunkVBOs();
+	void       ClearChunks();
 
 private:
 	CEntityHandle<CSpire>      m_hSpire;
