@@ -93,7 +93,7 @@ CTerrainLump* CTerrainLumpManager::GetLump(size_t iLump) const
 	return m_apLumps[iLump];
 }
 
-CVar terrain_lumpcheck("terrain_lumpcheck", "1");
+CVar lump_check("lump_check", "1");
 
 void CTerrainLumpManager::Think()
 {
@@ -146,7 +146,7 @@ void CTerrainLumpManager::Think()
 	{
 		AddNearbyLumps();
 
-		m_flNextLumpCheck = GameServer()->GetGameTime() + terrain_lumpcheck.GetFloat();
+		m_flNextLumpCheck = GameServer()->GetGameTime() + lump_check.GetFloat();
 	}
 
 	tvector<size_t> aiRebuildTerrains;

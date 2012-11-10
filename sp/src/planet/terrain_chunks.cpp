@@ -125,7 +125,7 @@ CTerrainChunk* CTerrainChunkManager::GetChunk(size_t iChunk) const
 	return m_apChunks[iChunk];
 }
 
-CVar terrain_chunkcheck("terrain_chunkcheck", "0.3");
+CVar chunk_check("chunk_check", "0.3");
 CVar chunk_distance("chunk_distance", "0.0007");
 
 void CTerrainChunkManager::Think()
@@ -335,7 +335,7 @@ void CTerrainChunkManager::AddNearbyChunks()
 			AddChunk(i, avecAreas[j].vecMin, avecAreas[j].vecMax);
 	}
 
-	m_flNextChunkCheck = GameServer()->GetGameTime() + terrain_chunkcheck.GetFloat();
+	m_flNextChunkCheck = GameServer()->GetGameTime() + chunk_check.GetFloat();
 }
 
 void CTerrainChunkManager::GenerateChunk(size_t iChunk)
