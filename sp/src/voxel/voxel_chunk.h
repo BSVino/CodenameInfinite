@@ -38,6 +38,7 @@ private:
 	size_t       m_iVBOSize;
 	size_t       m_iVBODesignations;
 	size_t       m_iVBODesignationsSize;
+	tvector<int> m_aiPhysicsEnts;
 
 	unsigned char     m_aBlocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	size_t            m_aPhysicsBlocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];

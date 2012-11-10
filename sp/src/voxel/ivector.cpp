@@ -19,6 +19,11 @@ IVector IVector::operator*(int i) const
 	return IVector(x*i, y*i, z*i);
 }
 
+IVector IVector::operator/(int i) const
+{
+	return IVector(x/i, y/i, z/i);
+}
+
 IVector IVector::operator+(const IVector& r) const
 {
 	return IVector(x+r.x, y+r.y, z+r.z);

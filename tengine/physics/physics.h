@@ -67,7 +67,7 @@ public:
 	virtual void			AddEntity(class CBaseEntity* pEnt, collision_type_t eCollisionType) {};
 	virtual void			RemoveEntity(class CBaseEntity* pEnt) {};
 	virtual size_t          AddExtra(size_t iExtraMesh, const Vector& vecOrigin) { return ~0; };  // Input is result from LoadExtraCollisionMesh
-	virtual size_t          AddExtraCube(const Vector& vecCenter, float flSize) { return ~0; };
+	virtual size_t          AddExtraBox(const Vector& vecCenter, const Vector& vecSize) { return ~0; };
 	virtual void            RemoveExtra(size_t iExtra) {};               // Input is result from AddExtra*
 	virtual void			RemoveAllEntities() {};
 	virtual bool            IsEntityAdded(class CBaseEntity* pEnt) { return false; };

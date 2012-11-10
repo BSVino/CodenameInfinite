@@ -28,17 +28,8 @@ CVoxelChunk::~CVoxelChunk()
 	if (m_iVBODesignations)
 		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBODesignations);
 
-	for (size_t x = 0; x < CHUNK_SIZE; x++)
-	{
-		for (size_t y = 0; y < CHUNK_SIZE; y++)
-		{
-			for (size_t z = 0; z < CHUNK_SIZE; z++)
-			{
-				if (m_aPhysicsBlocks[x][y][z])
-					GamePhysics()->RemoveExtra(m_aPhysicsBlocks[x][y][z]);
-			}
-		}
-	}
+	for (size_t i = 0; i < m_aiPhysicsEnts.size(); i++)
+		GamePhysics()->RemoveExtra(m_aiPhysicsEnts[i]);
 }
 
 void CVoxelChunk::Render() const
@@ -207,6 +198,8 @@ void CVoxelChunk::BuildVBO()
 	tvector<float> aflDesignationVerts;
 	size_t iVBODesignationVerts = 0;
 
+	bool bPhysicsDirty = false;
+
 	for (size_t x = 0; x < CHUNK_SIZE; x++)
 	{
 		for (size_t y = 0; y < CHUNK_SIZE; y++)
@@ -214,16 +207,9 @@ void CVoxelChunk::BuildVBO()
 			for (size_t z = 0; z < CHUNK_SIZE; z++)
 			{
 				if (m_aBlocks[x][y][z] && !m_aPhysicsBlocks[x][y][z])
-				{
-					Vector vecCubeCenter = Vector(0.5f, 0.5f, 0.5f) + (m_vecChunk*CHUNK_SIZE + IVector(x, y, z)).GetVoxelSpaceCoordinates();
-					TVector vecCubeCenterPlanet = m_pTree->GetSpire()->GetLocalTransform() * vecCubeCenter;
-					m_aPhysicsBlocks[x][y][z] = GamePhysics()->AddExtraCube(m_pTree->GetSpire()->GameData().TransformPointLocalToPhysics(vecCubeCenterPlanet.GetUnits(SCALE_METER)), 1);
-				}
+					bPhysicsDirty = true;
 				else if (!m_aBlocks[x][y][z] && m_aPhysicsBlocks[x][y][z])
-				{
-					GamePhysics()->RemoveExtra(m_aPhysicsBlocks[x][y][z]);
-					m_aPhysicsBlocks[x][y][z] = 0;
-				}
+					bPhysicsDirty = true;
 
 				if (!m_aBlocks[x][y][z] && !m_aDesignations[x][y][z])
 					continue;
@@ -387,5 +373,114 @@ void CVoxelChunk::BuildVBO()
 	{
 		m_iVBODesignations = 0;
 		m_iVBODesignationsSize = 0;
+	}
+
+	if (bPhysicsDirty)
+	{
+		// Clear out all physics blocks.
+		for (size_t i = 0; i < m_aiPhysicsEnts.size(); i++)
+			GamePhysics()->RemoveExtra(m_aiPhysicsEnts[i]);
+
+		m_aiPhysicsEnts.clear();
+
+		memset(m_aPhysicsBlocks, 0, sizeof(m_aPhysicsBlocks));
+
+		for (size_t x = 0; x < CHUNK_SIZE; x++)
+		{
+			for (size_t y = 0; y < CHUNK_SIZE; y++)
+			{
+				for (size_t z = 0; z < CHUNK_SIZE; z++)
+				{
+					if (!m_aBlocks[x][y][z])
+						continue;
+
+					if (m_aPhysicsBlocks[x][y][z])
+						continue;
+
+					// Find the largest continuous block area available to fill with a physics box
+					IVector vecBottom(x, y, z);
+					IVector vecSize(1, 1, 1);
+
+					size_t iCurrent = x;
+					while (m_aBlocks[++iCurrent][y][z])
+					{
+						if (iCurrent >= CHUNK_SIZE)
+							break;
+					}
+
+					vecSize.x = iCurrent-x;
+
+					iCurrent = y;
+					do
+					{
+						iCurrent++;
+
+						if (iCurrent >= CHUNK_SIZE)
+							break;
+
+						bool bCanExpand = true;
+						for (size_t x1 = x; x1 < x+(size_t)vecSize.x; x1++)
+						{
+							if (!m_aBlocks[x1][iCurrent][z])
+							{
+								bCanExpand = false;
+								break;
+							}
+						}
+
+						if (!bCanExpand)
+							break;
+					}
+					while (true);
+
+					vecSize.y = iCurrent-y;
+
+					iCurrent = z;
+					do
+					{
+						iCurrent++;
+
+						if (iCurrent >= CHUNK_SIZE)
+							break;
+
+						bool bCanExpand = true;
+						for (size_t x1 = x; x1 < x+(size_t)vecSize.x; x1++)
+						{
+							for (size_t y1 = y; y1 < y+(size_t)vecSize.y; y1++)
+							{
+								if (!m_aBlocks[x1][y1][iCurrent])
+								{
+									bCanExpand = false;
+									break;
+								}
+							}
+
+							if (!bCanExpand)
+								break;
+						}
+
+						if (!bCanExpand)
+							break;
+					}
+					while (true);
+
+					vecSize.z = iCurrent-z;
+
+					Vector vecCubeCenter = (m_vecChunk*CHUNK_SIZE + vecBottom ).GetVoxelSpaceCoordinates() + vecSize.GetVoxelSpaceCoordinates()/2;
+					TVector vecCubeCenterPlanet = m_pTree->GetSpire()->GetLocalTransform() * vecCubeCenter;
+					size_t iPhysicsBox = GamePhysics()->AddExtraBox(m_pTree->GetSpire()->GameData().TransformPointLocalToPhysics(vecCubeCenterPlanet.GetUnits(SCALE_METER)), vecSize.GetVoxelSpaceCoordinates());
+					m_aiPhysicsEnts.push_back(iPhysicsBox);
+
+					for (int x1 = vecBottom.x; x1 < vecBottom.x+vecSize.x; x1++)
+					{
+						for (int y1 = vecBottom.y; y1 < vecBottom.y+vecSize.y; y1++)
+						{
+							for (int z1 = vecBottom.z; z1 < vecBottom.z+vecSize.z; z1++)
+								m_aPhysicsBlocks[x1][y1][z1] = iPhysicsBox;
+						}
+					}
+				}
+			}
+		}
 	}
 }

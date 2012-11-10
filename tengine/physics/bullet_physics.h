@@ -143,7 +143,7 @@ public:
 	virtual void			RemoveEntity(class CBaseEntity* pEnt);
 	virtual void			RemoveEntity(CPhysicsEntity* pEntity);
 	virtual size_t          AddExtra(size_t iExtraMesh, const Vector& vecOrigin);  // Input is result from LoadExtraCollisionMesh
-	virtual size_t          AddExtraCube(const Vector& vecCenter, float flSize);
+	virtual size_t          AddExtraBox(const Vector& vecCenter, const Vector& vecSize);
 	virtual void            RemoveExtra(size_t iExtra);   // Input is result from AddExtra*
 	virtual void			RemoveAllEntities();
 	virtual bool            IsEntityAdded(class CBaseEntity* pEnt);

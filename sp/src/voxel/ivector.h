@@ -10,6 +10,7 @@ public:
 
 public:
 	IVector    operator*(int i) const;
+	IVector    operator/(int i) const;
 	IVector    operator+(const IVector& r) const;
 	IVector    operator-(const IVector& r) const;
 

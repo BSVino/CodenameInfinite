@@ -459,7 +459,7 @@ size_t CBulletPhysics::AddExtra(size_t iExtraMesh, const Vector& vecOrigin)
 	return iIndex;
 }
 
-size_t CBulletPhysics::AddExtraCube(const Vector& vecCenter, float flSize)
+size_t CBulletPhysics::AddExtraBox(const Vector& vecCenter, const Vector& vecSize)
 {
 	size_t iIndex = ~0;
 	for (size_t i = 0; i < m_apExtraEntityList.size(); i++)
@@ -482,7 +482,7 @@ size_t CBulletPhysics::AddExtraCube(const Vector& vecCenter, float flSize)
 	pPhysicsEntity->m_bCenterMassOffset = false;
 
 	float flMass = 0;
-	pPhysicsEntity->m_pExtraShape = new btBoxShape(btVector3(flSize, flSize, flSize)/2);
+	pPhysicsEntity->m_pExtraShape = new btBoxShape(ToBTVector(vecSize)/2);
 
 	btTransform mTransform;
 	mTransform.setIdentity();
