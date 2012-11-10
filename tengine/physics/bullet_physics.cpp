@@ -8,6 +8,7 @@
 #include <toys/toy.h>
 #include <tinker/profiler.h>
 #include <tinker/application.h>
+#include <tinker/cvar.h>
 
 #include "physics_debugdraw.h"
 
@@ -673,11 +674,19 @@ void CBulletPhysics::UnloadExtraCollisionMesh(size_t iIndex)
 	m_apExtraCollisionMeshes[iIndex] = nullptr;
 }
 
+#ifdef _DEBUG
+#define PHYS_TIMESTEP "0.03333333333"
+#else
+#define PHYS_TIMESTEP "0.01666666666"
+#endif
+
+CVar phys_timestep("phys_timestep", PHYS_TIMESTEP);
+
 void CBulletPhysics::Simulate()
 {
 	TPROF("CBulletPhysics::Simulate");
 
-	m_pDynamicsWorld->stepSimulation((float)GameServer()->GetFrameTime(), 10);
+	m_pDynamicsWorld->stepSimulation((float)GameServer()->GetFrameTime(), 10, phys_timestep.GetFloat());
 }
 
 void CBulletPhysics::DebugDraw(int iLevel)
