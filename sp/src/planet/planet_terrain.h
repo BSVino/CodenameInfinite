@@ -72,6 +72,8 @@ public:
 	float               flSplitPos;
 };
 
+extern tvector<CTerrainArea> SearchKDTree(const tvector<CKDPointTreeNode>& aNodes, const tvector<CKDPointTreePoint>& aPoints, const DoubleVector& vecNearestToPoint, double flDistanceSqr, float flScaleResult);
+
 typedef enum
 {
 	LOD_HIGH,
@@ -122,7 +124,7 @@ public:
 	static size_t               BuildIndexedPhysVerts(tvector<float>& aflVerts, tvector<int>& aiIndices, const tvector<CTerrainPoint>& avecTerrain, size_t iLevels, size_t iRows);
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iRows, bool bSkirt = false);
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iX, size_t iY, size_t iStep, size_t iRowsToIndex, size_t iRowsTotal, bool bSkirt = false);
-	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows);
+	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows, bool bPhysicsCenter, float flScale3DPosition = 1);
 	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bSkirt = false);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();
@@ -155,6 +157,10 @@ protected:
 	bool						m_bGeneratingShell2;
 	tvector<float>				m_aflShell2Drop;
 	tvector<unsigned int>       m_aiShell2Drop;
+
+	bool                        m_bKDTreeAvailable;
+	tvector<CKDPointTreeNode>   m_aKDNodes;
+	tvector<CKDPointTreePoint>  m_aKDPoints;
 };
 
 #endif

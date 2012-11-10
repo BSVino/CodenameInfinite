@@ -26,6 +26,8 @@ CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 	m_iShell2IBO = 0;
 
 	m_bGeneratingShell2 = false;
+
+	m_bKDTreeAvailable = false;
 }
 
 void CPlanetTerrain::Think()
@@ -489,15 +491,23 @@ public:
 	int    iPointListLast;
 };
 
-void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows)
+void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows, bool bPhysicsCenter, float flScale3DPosition)
 {
 	aPoints.reserve(avecTerrain.size());
 	aNodes.reserve(avecTerrain.size());
 
 	CKDPointTreeNode& oTop = aNodes.push_back();
 
-	oTop.oBounds.m_vecMins = avecTerrain[0].vecPhys;
-	oTop.oBounds.m_vecMaxs = avecTerrain[0].vecPhys;
+	if (bPhysicsCenter)
+	{
+		oTop.oBounds.m_vecMins = avecTerrain[0].vecPhys;
+		oTop.oBounds.m_vecMaxs = avecTerrain[0].vecPhys;
+	}
+	else
+	{
+		oTop.oBounds.m_vecMins = avecTerrain[0].vec3DPosition * flScale3DPosition;
+		oTop.oBounds.m_vecMaxs = avecTerrain[0].vec3DPosition * flScale3DPosition;
+	}
 
 	for (size_t x = 0; x < iRows-1; x++)
 	{
@@ -506,7 +516,10 @@ void CPlanetTerrain::BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDP
 			CKDPointTreePoint& oPoint = aPoints.push_back();
 
 			// Find the center of these four points. This center point will represent the entire area.
-			oPoint.vec3DPosition = (avecTerrain[x*iRows+y].vecPhys + avecTerrain[(x+1)*iRows+y].vecPhys + avecTerrain[x*iRows+y+1].vecPhys + avecTerrain[(x+1)*iRows+y+1].vecPhys)/4;
+			if (bPhysicsCenter)
+				oPoint.vec3DPosition = (avecTerrain[x*iRows+y].vecPhys + avecTerrain[(x+1)*iRows+y].vecPhys + avecTerrain[x*iRows+y+1].vecPhys + avecTerrain[(x+1)*iRows+y+1].vecPhys)/4;
+			else
+				oPoint.vec3DPosition = (avecTerrain[x*iRows+y].vec3DPosition + avecTerrain[(x+1)*iRows+y].vec3DPosition + avecTerrain[x*iRows+y+1].vec3DPosition + avecTerrain[(x+1)*iRows+y+1].vec3DPosition)*flScale3DPosition/4;
 			oPoint.vec2DMin = avecTerrain[x*iRows+y].vec2DPosition;
 			oPoint.vec2DMax = avecTerrain[(x+1)*iRows+y+1].vec2DPosition;
 
@@ -653,6 +666,12 @@ void CPlanetTerrain::CreateShell2VBO()
 	// If there's already a shell 2 IBO then we don't need this one.
 	if (!m_iShell2IBO)
 		swap(m_aiShell2Drop, aiVerts);
+
+	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), SCALE_METER);
+
+	m_bKDTreeAvailable = false;
+	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows, false, flScale);
+	m_bKDTreeAvailable = true;
 }
 
 // This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
@@ -813,16 +832,88 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	return vecOffset;
 }
 
+CVar terrain_treefind("terrain_treefind", "on");
+
 tvector<CTerrainArea> CPlanetTerrain::FindNearbyAreas(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance)
 {
+	if (!m_bKDTreeAvailable || !terrain_treefind.GetBool())
+	{
+		tvector<CTerrainArea> avecAreas;
+		avecAreas.reserve(50);
+
+		// Make sure we don't throw out a quad that would have been valid if it the offsets were generated properly.
+		// This is compensated for by dividing by two in each recursion of SearchAreas().
+		flMaxDistance *= pow(2.0, (double)iMaxDepth - iStartDepth);
+
+		SearchAreas(avecAreas, iMaxDepth, iStartDepth, vecSearchMin, vecSearchMax, m_pPlanet->m_vecCharacterLocalOrigin, flMaxDistance);
+
+		sort_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
+
+		return avecAreas;
+	}
+
+	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), SCALE_METER);
+
+	size_t iChunkDepth = m_pPlanet->ChunkDepth()-m_pPlanet->LumpDepth();
+	float flChunkWidth = 1/pow(2.0f, (float)iChunkDepth);
+	float flChunkSize = sqrt(flChunkWidth*flChunkWidth+flChunkWidth*flChunkWidth);
+
+	float flChunkDistanceMeters = (float)flMaxDistance*flScale;
+	float flChunkDistanceMetersSqr = flChunkDistanceMeters*flChunkDistanceMeters;
+
+	return SearchKDTree(m_aKDNodes, m_aKDPoints, vecSearch*flScale, flChunkDistanceMetersSqr, flScale);
+}
+
+tvector<CTerrainArea> SearchKDTree(const tvector<CKDPointTreeNode>& aNodes, const tvector<CKDPointTreePoint>& aPoints, const DoubleVector& vecNearestToPoint, double flDistanceSqr, float flScaleResult)
+{
 	tvector<CTerrainArea> avecAreas;
-	avecAreas.reserve(50);
 
-	// Make sure we don't throw out a quad that would have been valid if it the offsets were generated properly.
-	// This is compensated for by dividing by two in each recursion of SearchAreas().
-	flMaxDistance *= pow(2.0, (double)iMaxDepth - iStartDepth);
+	// Could use a vector but I want to try out alloca
+	size_t* aiSearchStack = (size_t*)alloca(40*sizeof(size_t));
+	size_t* piSearchStackTop = aiSearchStack;
 
-	SearchAreas(avecAreas, iMaxDepth, iStartDepth, vecSearchMin, vecSearchMax, m_pPlanet->m_vecCharacterLocalOrigin, flMaxDistance);
+	(*piSearchStackTop++) = 0;
+
+	while (piSearchStackTop - aiSearchStack > 0)
+	{
+		auto& oNode = aNodes[*(piSearchStackTop-1)];
+
+		// If the distance to the bounding box is greater than our search distance
+		// then all points within will be as well.
+		if (DistanceToAABBSqr(vecNearestToPoint, oNode.oBounds) > flDistanceSqr)
+		{
+			piSearchStackTop--;
+			continue;
+		}
+
+		if (oNode.iLeft == ~0)
+		{
+			// No children, search points contained.
+			size_t iEndPoint = oNode.iFirstPoint + oNode.iNumPoints;
+			for (size_t i = oNode.iFirstPoint+1; i < iEndPoint; i++)
+			{
+				const CKDPointTreePoint& oPoint = aPoints[i];
+				double flPointDistanceSqr = (oPoint.vec3DPosition-vecNearestToPoint).LengthSqr();
+
+				if (flPointDistanceSqr < flDistanceSqr)
+				{
+					// Add the point.
+					CTerrainArea& vecArea = avecAreas.push_back();
+					vecArea.flDistanceToPlayer = sqrt(flPointDistanceSqr)/flScaleResult;
+					vecArea.vecMin = oPoint.vec2DMin;
+					vecArea.vecMax = oPoint.vec2DMax;
+					push_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
+				}
+			}
+
+			piSearchStackTop--;
+			continue;
+		}
+
+		piSearchStackTop--;
+		(*piSearchStackTop++) = oNode.iLeft;
+		(*piSearchStackTop++) = oNode.iRight;
+	}
 
 	sort_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
 

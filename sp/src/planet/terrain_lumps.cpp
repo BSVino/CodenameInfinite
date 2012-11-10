@@ -419,7 +419,7 @@ void CTerrainLump::GenerateTerrain()
 	m_iLowResTerrainIBOSize = iTriangles*3;
 
 	m_bKDTreeAvailable = false;
-	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows);
+	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows, true);
 	m_bKDTreeAvailable = true;
 
 	// Can't use the current GL context to create a VBO in this thread, so send the info to a drop where the main thread can pick it up.
@@ -660,56 +660,7 @@ tvector<CTerrainArea> CTerrainLump::FindNearbyAreas(const DoubleVector& vec3DLoc
 	float flChunkDistanceMeters = flChunkDistance*flScale;
 	float flChunkDistanceMetersSqr = flChunkDistanceMeters*flChunkDistanceMeters;
 
-	// Could use a vector but I want to try out alloca
-	size_t* aiSearchStack = (size_t*)alloca(40*sizeof(size_t));
-	size_t* piSearchStackTop = aiSearchStack;
-
-	(*piSearchStackTop++) = 0;
-
-	while (piSearchStackTop - aiSearchStack > 0)
-	{
-		auto& oNode = m_aKDNodes[*(piSearchStackTop-1)];
-
-		// If the distance to the bounding box is greater than our search distance
-		// then all points within will be as well.
-		if (DistanceToAABBSqr(vec3DLumpLocal, oNode.oBounds) > flChunkDistanceMetersSqr)
-		{
-			piSearchStackTop--;
-			continue;
-		}
-
-		if (oNode.iLeft == ~0)
-		{
-			// No children, search points contained.
-			size_t iEndPoint = oNode.iFirstPoint + oNode.iNumPoints;
-			for (size_t i = oNode.iFirstPoint+1; i < iEndPoint; i++)
-			{
-				const CKDPointTreePoint& oPoint = m_aKDPoints[i];
-				double flDistanceSqr = (oPoint.vec3DPosition-vec3DLumpLocal).LengthSqr();
-
-				if (flDistanceSqr < flChunkDistanceMetersSqr)
-				{
-					// Add the point.
-					CTerrainArea& vecArea = avecAreas.push_back();
-					vecArea.flDistanceToPlayer = sqrt(flDistanceSqr)/flScale;
-					vecArea.vecMin = oPoint.vec2DMin;
-					vecArea.vecMax = oPoint.vec2DMax;
-					push_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
-				}
-			}
-
-			piSearchStackTop--;
-			continue;
-		}
-
-		piSearchStackTop--;
-		(*piSearchStackTop++) = oNode.iLeft;
-		(*piSearchStackTop++) = oNode.iRight;
-	}
-
-	sort_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
-
-	return avecAreas;
+	return SearchKDTree(m_aKDNodes, m_aKDPoints, vec3DLumpLocal, flChunkDistanceMetersSqr, flScale);
 }
 
 void CTerrainLump::GetCoordinates(unsigned short& x, unsigned short& y) const
