@@ -76,8 +76,8 @@ extern void DebugPrint(const char* pszText);
 
 #else
 
-#define TAssert(x)
-#define TAssertNoMsg(x)
+#define TAssert(x) {}
+#define TAssertNoMsg(x) {}
 
 #endif
 
