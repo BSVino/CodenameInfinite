@@ -63,6 +63,8 @@ CBaseControl::CBaseControl(float x, float y, float w, float h)
 	m_flW = w;
 	m_flH = h;
 	m_bVisible = true;
+	m_bVisibleCalculated = true;
+	m_bVisibleDirty = false;
 	SetAlpha(255);
 
 	m_pfnCursorInCallback = NULL;
@@ -286,21 +288,54 @@ void CBaseControl::SetVisible(bool bVis)
 	bool bWasVisible = m_bVisible;
 	m_bVisible = bVis;
 
-	if (bVis && !bWasVisible)
+	DirtyVisible();
+
+	if (!bWasVisible && bVis && IsVisible())
 		Layout();
 }
 
 bool CBaseControl::IsVisible()
 {
-	if (GetParent())
+	if (m_bVisibleDirty)
+		CalculateVisible();
+
+	return m_bVisibleCalculated;
+}
+
+void CBaseControl::CalculateVisible()
+{
+	if (!m_bVisible)
 	{
-		if (!GetParent()->IsVisible())
-			return false;
-		if (!GetParent()->IsChildVisible(this))
-			return false;
+		m_bVisibleCalculated = false;
+		m_bVisibleDirty = false;
+		return;
 	}
-	
-	return m_bVisible;
+
+	CBaseControl* pParent = m_hParent;
+	if (pParent)
+	{
+		if (!pParent->IsVisible())
+		{
+			m_bVisibleCalculated = false;
+			m_bVisibleDirty = false;
+			return;
+		}
+
+		if (!pParent->IsChildVisible(this))
+		{
+			m_bVisibleCalculated = false;
+			m_bVisibleDirty = false;
+			return;
+		}
+	}
+
+	m_bVisibleCalculated = true;
+	m_bVisibleDirty = false;
+}
+
+void CBaseControl::DirtyVisible()
+{
+	m_bVisibleDirty = true;
 }
 
 bool CBaseControl::MousePressed(int iButton, int mx, int my)

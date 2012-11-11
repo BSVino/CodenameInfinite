@@ -51,6 +51,8 @@ CConsole::CConsole()
 
 	m_hInput = AddControl(new glgui::CTextField());
 	m_hInput->SetContentsChangedListener(this, CommandChanged);
+
+	SetVisible(false);
 }
 
 CConsole::~CConsole()
@@ -285,7 +287,6 @@ CConsole* CApplication::GetConsole()
 	if (m_pConsole == NULL)
 	{
 		m_pConsole = new CConsole();
-		m_pConsole->SetVisible(false);
 
 		if (developer.GetBool())
 			TMsg("Developer mode ON.\n");

@@ -75,6 +75,8 @@ namespace glgui
 		virtual tvector<CControlResource>&	GetControls() { return m_apControls; };
 		virtual void			MoveToTop(CBaseControl* pControl);
 
+		virtual void            DirtyVisible();
+
 		virtual void			SetHighlighted(bool bHighlight) { m_bHighlight = bHighlight; };
 		virtual bool			IsHighlighted() { return m_bHighlight; };
 

@@ -365,6 +365,13 @@ size_t CMenu::GetSelectedMenu()
 	return ~0;
 }
 
+void CMenu::DirtyVisible()
+{
+	BaseClass::DirtyVisible();
+
+	m_hMenu->DirtyVisible();
+}
+
 CMenu::CSubmenuPanel::CSubmenuPanel(CControl<CMenu> hMenu)
 	: CPanel(0, 0, 100, 100)
 {
@@ -424,10 +431,14 @@ void CMenu::CSubmenuPanel::PostPaint()
 	BaseClass::Paint(x, y, w, h);
 }
 
-bool CMenu::CSubmenuPanel::IsVisible()
+void CMenu::CSubmenuPanel::CalculateVisible()
 {
-	if (!m_hMenu)
-		return BaseClass::IsVisible();
+	BaseClass::CalculateVisible();
 
-	return m_hMenu->IsVisible() && BaseClass::IsVisible();
+	CBaseControl* pMenu = m_hMenu;
+	if (!pMenu)
+		return;
+
+	if (!pMenu->IsVisible())
+		m_bVisible = false;
 }

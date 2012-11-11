@@ -384,6 +384,14 @@ void CPanel::MoveToTop(CBaseControl* pControl)
 	}
 }
 
+void CPanel::DirtyVisible()
+{
+	BaseClass::DirtyVisible();
+
+	for (size_t i = 0; i < m_apControls.size(); i++)
+		m_apControls[i]->DirtyVisible();
+}
+
 void CPanel::Layout( void )
 {
 	FRect rPanelBounds = GetAbsDimensions();

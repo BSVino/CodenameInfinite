@@ -69,6 +69,8 @@ namespace glgui
 
 		virtual size_t				GetSelectedMenu();
 
+		virtual void                DirtyVisible();
+
 	protected:
 		class CSubmenuPanel : public CPanel
 		{
@@ -84,7 +86,7 @@ namespace glgui
 			void					Paint(float x, float y, float w, float h);
 			void					PostPaint();
 
-			virtual bool			IsVisible();
+			virtual void            CalculateVisible();
 
 			void					SetFakeHeight(float flFakeHeight) { m_flFakeHeight = flFakeHeight; };
 

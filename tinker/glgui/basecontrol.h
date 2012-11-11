@@ -93,6 +93,8 @@ namespace glgui
 
 		virtual void	SetVisible(bool bVis);
 		virtual bool	IsVisible();
+		virtual void    CalculateVisible();
+		virtual void    DirtyVisible();
 		virtual bool	IsChildVisible(CBaseControl* pChild) { return true; }
 
 		virtual void	LevelShutdown( void ) { return; };
@@ -150,6 +152,8 @@ namespace glgui
 		int				m_iAlpha;
 
 		bool			m_bVisible;
+		bool			m_bVisibleCalculated;
+		bool			m_bVisibleDirty;
 
 		double			m_flMouseInTime;
 
