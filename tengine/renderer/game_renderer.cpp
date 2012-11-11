@@ -99,6 +99,9 @@ void CGameRenderer::RenderEverything()
 		if (!pEntity)
 			continue;
 
+		if (pEntity->IsDeleted())
+			continue;
+
 		if (!pEntity->ShouldRender())
 			continue;
 
