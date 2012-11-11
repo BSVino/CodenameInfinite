@@ -647,11 +647,13 @@ void CCharacterController::StepForwardAndStrafe(btCollisionWorld* pCollisionWorl
 
 		if (callback.hasHit())
 		{	
-			// we moved only a fraction
-			btScalar hitDistance;
-			hitDistance = (callback.m_hitPointWorld - m_vecCurrentPosition).length();
+			m_vecCurrentPosition.setInterpolate3 (m_vecCurrentPosition, m_vecTargetPosition, callback.m_closestHitFraction);
 
 			UpdateTargetPositionBasedOnCollision (callback.m_hitNormalWorld);
+
+			m_vecTargetPosition += callback.m_hitNormalWorld * margin;
+			m_vecCurrentPosition += callback.m_hitNormalWorld * margin;
+
 			btVector3 currentDir = m_vecTargetPosition - m_vecCurrentPosition;
 			flDistance2 = currentDir.length2();
 			if (flDistance2 > SIMD_EPSILON)
