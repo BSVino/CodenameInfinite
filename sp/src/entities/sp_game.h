@@ -3,6 +3,8 @@
 
 #include <tengine/game/entities/game.h>
 
+#include <entities/structures/structure.h>
+
 class CSPGame : public CGame
 {
 	REGISTER_ENTITY_CLASS(CSPGame, CGame);
@@ -18,6 +20,8 @@ public:
 	virtual void			Think();
 
 	virtual bool            TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker);
+
+	size_t                  StructureCost(structure_type eStructure, item_t eItem) const;
 
 	class CSPPlayer*        GetLocalSPPlayer();
 	class CPlayerCharacter*	GetLocalPlayerCharacter();

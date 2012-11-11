@@ -813,6 +813,17 @@ bool CSPCharacter::IsHoldingABlock() const
 	return !!m_aiInventorySlots[0];
 }
 
+bool CSPCharacter::CanBuildStructure(structure_type eStructure) const
+{
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+	{
+		if (GetInventory((item_t)i) < SPGame()->StructureCost(eStructure, (item_t)i))
+			return false;
+	}
+
+	return true;
+}
+
 static tstring g_asTaskNames[] =
 {
 	"None",

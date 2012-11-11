@@ -46,9 +46,6 @@ public:
 	void                    CommandMenuOpened(CCommandMenu* pMenu);
 	void                    CommandMenuClosed(CCommandMenu* pMenu);
 
-	void                AddSpires(size_t iSpires);
-	size_t              GetNumSpires() { return m_aiStructures[STRUCTURE_SPIRE]; }
-
 private:
 	structure_type      m_eConstructionMode;
 	item_t              m_eBlockPlaceMode;
@@ -56,8 +53,6 @@ private:
 	int                 m_iBlockDesignateDimension;
 	IVector             m_vecBlockDesignateMin;
 	IVector             m_vecBlockDesignateMax;
-
-	size_t              m_aiStructures[STRUCTURE_TOTAL];
 
 	CCommandMenu*       m_pActiveCommandMenu;
 };

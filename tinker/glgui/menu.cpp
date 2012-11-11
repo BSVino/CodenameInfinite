@@ -440,5 +440,5 @@ void CMenu::CSubmenuPanel::CalculateVisible()
 		return;
 
 	if (!pMenu->IsVisible())
-		m_bVisible = false;
+		m_bVisibleCalculated = false;
 }

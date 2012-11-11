@@ -74,8 +74,6 @@ void CSPGame::SetupGame(tstring sType)
 		pCharacter->GameData().SetPlayerOwner(pPlayer);
 		pPlayer->SetCharacter(pCharacter);
 
-		pPlayer->AddSpires(1);
-
 		CStar* pStar = GameServer()->Create<CStar>("CStar");
 		pStar->SetGlobalOrigin(CScalableVector(Vector(150, 0, 0), SCALE_GIGAMETER));	// 150Gm, or one AU, the distance to the Sun.
 		pStar->SetRadius(CScalableFloat(10.0f, SCALE_GIGAMETER));
@@ -172,6 +170,34 @@ bool CSPGame::TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker)
 		return false;
 
 	return true;
+}
+
+size_t CSPGame::StructureCost(structure_type eStructure, item_t eItem) const
+{
+	switch (eStructure)
+	{
+	case STRUCTURE_MINE:
+		if (eItem == ITEM_DIRT)
+			return 3;
+		else
+			return 0;
+
+	case STRUCTURE_PALLET:
+		if (eItem == ITEM_DIRT)
+			return 1;
+		else
+			return 0;
+
+	case STRUCTURE_SPIRE:
+		if (eItem == ITEM_DIRT)
+			return 5;
+		else
+			return 0;
+
+	default:
+		TAssert(false);
+		return 0;
+	}
 }
 
 extern bool ValidPlayerAliveConditions(CPlayer *pPlayer, class CLesson *pLesson);

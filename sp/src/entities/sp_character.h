@@ -119,6 +119,8 @@ public:
 	virtual size_t              RemoveBlocks(item_t eBlock, size_t iNumber);
 	virtual bool                IsHoldingABlock() const;
 
+	bool                        CanBuildStructure(structure_type eStructure) const;
+
 protected:
 	double                      m_flNextPlanetCheck;
 

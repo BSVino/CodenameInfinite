@@ -29,7 +29,6 @@ SAVEDATA_TABLE_BEGIN(CSPPlayer);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iBlockDesignateDimension);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecBlockDesignateMin);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecBlockDesignateMax);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiStructures);
 	SAVEDATA_OMIT(m_pActiveCommandMenu);
 SAVEDATA_TABLE_END();
 
@@ -41,7 +40,6 @@ CSPPlayer::CSPPlayer()
 	m_eConstructionMode = STRUCTURE_NONE;
 	m_eBlockPlaceMode = ITEM_NONE;
 	m_eBlockDesignateMode = ITEM_NONE;
-	memset(m_aiStructures, 0, sizeof(m_aiStructures));
 	m_pActiveCommandMenu = nullptr;
 }
 
@@ -657,7 +655,7 @@ void CSPPlayer::PostRender() const
 
 void CSPPlayer::EnterConstructionMode(structure_type eStructure)
 {
-	if (eStructure == STRUCTURE_SPIRE && !m_aiStructures[eStructure])
+	if (!GetPlayerCharacter()->CanBuildStructure(eStructure))
 		return;
 
 	m_eBlockPlaceMode = ITEM_NONE;
@@ -692,13 +690,19 @@ void CSPPlayer::FinishConstruction()
 	if (!FindConstructionPoint(vecPoint))
 		return;
 
+	if (!GetPlayerCharacter()->CanBuildStructure(m_eConstructionMode))
+		return;
+
 	CStructure* pStructure = CStructure::CreateStructure(m_eConstructionMode, this, GetPlayerCharacter()->GetNearestSpire(), vecPoint);
+
+	if (!pStructure)
+		return;
+
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+		GetPlayerCharacter()->RemoveBlocks((item_t)i, SPGame()->StructureCost(m_eConstructionMode, (item_t)i));
 
 	if (m_eConstructionMode == STRUCTURE_SPIRE)
 	{
-		TAssert(m_aiStructures[m_eConstructionMode]);
-		m_aiStructures[m_eConstructionMode]--;
-
 		GetPlayerCharacter()->ClearNearestSpire();
 
 		CSpire* pNewSpire = static_cast<CSpire*>(pStructure);
@@ -896,11 +900,4 @@ void CSPPlayer::CommandMenuClosed(CCommandMenu* pMenu)
 		return;
 
 	m_pActiveCommandMenu = nullptr;
-}
-
-void CSPPlayer::AddSpires(size_t iSpires)
-{
-	m_aiStructures[STRUCTURE_SPIRE] += iSpires;
-
-	SPWindow()->GetHUD()->BuildMenus();
 }

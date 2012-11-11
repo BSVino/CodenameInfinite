@@ -59,8 +59,7 @@ void CSPHUD::BuildMenus()
 	if (!pCharacter)
 		return;
 
-	CSpire* pSpire = pCharacter->GetNearestSpire();
-	if (pSpire && pCharacter->HasBlocks())
+	if (pCharacter->HasBlocks())
 	{
 		if (!m_ahMenus[MENU_EQUIP])
 			m_ahMenus[MENU_EQUIP] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_EQUIP, sprintf("%d. Equip", MENU_EQUIP+1)));
@@ -86,6 +85,7 @@ void CSPHUD::BuildMenus()
 		}
 	}
 
+	CSpire* pSpire = pCharacter->GetNearestSpire();
 	if (pSpire)
 	{
 		int aiBlocks[ITEM_BLOCKS_TOTAL];
@@ -116,7 +116,7 @@ void CSPHUD::BuildMenus()
 			for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 			{
 				if (!m_ahMenus[MENU_BLOCKS]->GetSubmenu(iMenu))
-					m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+					m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(true), this, DesignateBlock);
 
 				CHUDMenu* pMenu = m_ahMenus[MENU_BLOCKS]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
 				pMenu->SetMenuListener(this, DesignateBlock);
@@ -129,7 +129,6 @@ void CSPHUD::BuildMenus()
 		}
 	}
 
-	if (pCharacter->GetNearestSpire() || pPlayer->GetNumSpires())
 	{
 		if (!m_ahMenus[MENU_CONSTRUCTION])
 			m_ahMenus[MENU_CONSTRUCTION] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_CONSTRUCTION, sprintf("%d. Construction", MENU_CONSTRUCTION+1)));
@@ -137,10 +136,10 @@ void CSPHUD::BuildMenus()
 		m_ahMenus[MENU_CONSTRUCTION]->SetVisible(true);
 
 		size_t iMenu = 0;
-		if (pPlayer->GetNumSpires())
+		if (pCharacter->CanBuildStructure(STRUCTURE_SPIRE))
 		{
 			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
-				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, ConstructSpire);
 
 			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
 			pMenu->SetMenuListener(this, ConstructSpire);
@@ -151,10 +150,10 @@ void CSPHUD::BuildMenus()
 			iMenu++;
 		}
 
-		if (pCharacter->GetNearestSpire())
+		if (pCharacter->CanBuildStructure(STRUCTURE_MINE))
 		{
 			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
-				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, ConstructMine);
 
 			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
 			pMenu->SetMenuListener(this, ConstructMine);
@@ -163,11 +162,14 @@ void CSPHUD::BuildMenus()
 			pMenu->SetVisible(true);
 
 			iMenu++;
+		}
 
+		if (pCharacter->CanBuildStructure(STRUCTURE_PALLET))
+		{
 			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
-				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, ConstructPallet);
 
-			pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
 			pMenu->SetMenuListener(this, ConstructPallet);
 			pMenu->SetIndex(2);
 			pMenu->SetText("3. Pallet");
@@ -175,6 +177,9 @@ void CSPHUD::BuildMenus()
 
 			iMenu++;
 		}
+
+		if (!iMenu)
+			m_ahMenus[MENU_CONSTRUCTION]->SetVisible(false);
 	}
 
 	glgui::RootPanel()->Layout();
