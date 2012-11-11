@@ -6,6 +6,7 @@
 #include "entities/enemies/eater.h"
 #include "entities/sp_playercharacter.h"
 #include "ui/command_menu.h"
+#include "entities/structures/spire.h"
 
 void CSPCharacter::TaskThink()
 {

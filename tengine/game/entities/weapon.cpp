@@ -1,5 +1,7 @@
 #include "weapon.h"
 
+#include <tinker/keys.h>
+
 #include "character.h"
 
 REGISTER_ENTITY(CBaseWeapon);
@@ -31,4 +33,10 @@ void CBaseWeapon::SetOwner(class CCharacter* pOwner)
 CCharacter* CBaseWeapon::GetOwner() const
 {
 	return m_hOwner;
+}
+
+void CBaseWeapon::OwnerMouseInput(int iButton, int iState)
+{
+	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 1)
+		MeleeAttack();
 }

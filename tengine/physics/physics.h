@@ -31,6 +31,7 @@ public:
 	{
 		m_flFraction = 1.0f;
 		m_pHit = nullptr;
+		m_iHitExtra = ~0;
 	}
 
 public:
@@ -41,12 +42,14 @@ public:
 		{
 			m_flFraction = 1.0f;
 			m_pHit = nullptr;
+			m_iHitExtra = ~0;
 		}
 
 	public:
 		float              m_flFraction;
 		Vector             m_vecHit;
 		class CBaseEntity* m_pHit;
+		size_t             m_iHitExtra;
 	};
 
 	// All hits.
@@ -56,6 +59,7 @@ public:
 	float                  m_flFraction;
 	Vector                 m_vecHit;
 	class CBaseEntity*     m_pHit;
+	size_t                 m_iHitExtra;
 };
 
 class CPhysicsModel

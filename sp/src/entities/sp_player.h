@@ -3,9 +3,9 @@
 
 #include <tengine/game/entities/player.h>
 
+#include <voxel/ivector.h>
 #include "structures/structure.h"
 #include "items/items.h"
-#include "structures/spire.h"
 
 class CCommandMenu;
 

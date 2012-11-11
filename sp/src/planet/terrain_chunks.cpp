@@ -736,6 +736,14 @@ void CTerrainChunk::Render()
 	}
 }
 
+bool CTerrainChunk::IsExtraPhysicsEntGround(size_t iEnt) const
+{
+	if (iEnt == ~0)
+		return false;
+
+	return iEnt == m_iPhysicsEntity;
+}
+
 void CTerrainChunk::GetCoordinates(unsigned short& x, unsigned short& y) const
 {
 	x = m_iX;

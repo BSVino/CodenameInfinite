@@ -47,6 +47,8 @@ public:
 	void                        GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord);
 	bool                        FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
 
+	bool                        IsExtraPhysicsEntGround(size_t iEnt) const;
+
 	void                        SetStar(class CStar* pStar);
 	class CStar*                GetStar() const;
 

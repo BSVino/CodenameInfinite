@@ -395,6 +395,24 @@ bool CPlanet::FindApproximateElevation(const DoubleVector& vec3DLocal, float& fl
 	return GetLumpManager()->FindApproximateElevation(vec3DLocal, flElevation);
 }
 
+bool CPlanet::IsExtraPhysicsEntGround(size_t iEnt) const
+{
+	if (iEnt == ~0)
+		return false;
+
+	for (size_t i = 0; i < m_pChunkManager->GetNumChunks(); i++)
+	{
+		CTerrainChunk* pChunk = m_pChunkManager->GetChunk(i);
+		if (!pChunk)
+			continue;
+
+		if (pChunk->IsExtraPhysicsEntGround(iEnt))
+			return true;
+	}
+
+	return false;
+}
+
 void CPlanet::SetStar(CStar* pStar)
 {
 	m_hStar = pStar;

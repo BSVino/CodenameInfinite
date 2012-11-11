@@ -1561,6 +1561,11 @@ bool CScalableVector::operator==(const CScalableVector& u) const
 	return (x == u.x && y == u.y && z == u.z);
 }
 
+bool CScalableVector::operator!=(const CScalableVector& u) const
+{
+	return (x != u.x || y != u.y || z != u.z);
+}
+
 CScalableVector::operator Vector() const
 {
 	return GetUnits(SCALE_METER);

@@ -293,9 +293,6 @@ void CCharacter::MeleeAttack()
 		if (pEntity == this)
 			continue;
 
-		if (!Game()->TakesDamageFrom(pEntity, this))
-			continue;
-
 		//TMsg(tstring(GetClassName()) + " hit " + tstring(pEntity->GetClassName()) + "\n");
 		pEntity->TakeDamage(this, this, DAMAGE_GENERIC, flAttackDamage);
 	}

@@ -817,6 +817,9 @@ void CBaseEntity::TakeDamage(CBaseEntity* pAttacker, CBaseEntity* pInflictor, da
 	if (!m_bTakeDamage)
 		return;
 
+	if (!Game()->TakesDamageFrom(this, pAttacker))
+		return;
+
 	bool bWasAlive = IsAlive();
 
 	m_flLastTakeDamage = GameServer()->GetGameTime();

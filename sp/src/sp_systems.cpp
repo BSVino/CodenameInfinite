@@ -10,7 +10,7 @@ void CParticleSystemLibrary::InitSystems()
 		pSystem->SetLifeTime(0.2f);
 		pSystem->SetEmissionRate(0.001f);
 		pSystem->SetEmissionMax(150);
-		pSystem->SetEmissionMaxDistance(0.1f);
+		pSystem->SetEmissionMaxDistance(1.0f);
 		pSystem->SetAlpha(0.9f);
 		pSystem->SetStartRadius(0.01f);
 		pSystem->SetEndRadius(0.02f);
@@ -27,7 +27,7 @@ void CParticleSystemLibrary::InitSystems()
 		pSystem->SetMaterialName("textures/disassembler-juice.mat");
 		pSystem->SetLifeTime(0.2f);
 		pSystem->SetEmissionRate(0.001f);
-		pSystem->SetEmissionMaxDistance(0.1f);
+		pSystem->SetEmissionMaxDistance(1.0f);
 		pSystem->SetAlpha(0.9f);
 		pSystem->SetStartRadius(0.01f);
 		pSystem->SetEndRadius(0.02f);

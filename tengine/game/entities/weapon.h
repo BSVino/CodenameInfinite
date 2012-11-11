@@ -13,6 +13,8 @@ public:
 
 	virtual void                    DrawViewModel(class CGameRenderingContext* pContext) {};
 
+	virtual void                    OwnerMouseInput(int iButton, int iState);
+
 	virtual float                   MeleeAttackTime() const { return 0.3f; }
 	virtual float                   MeleeAttackDamage() const { return 50; }
 	virtual float                   MeleeAttackSphereRadius() const { return 40.0f; }

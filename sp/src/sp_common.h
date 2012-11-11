@@ -197,6 +197,7 @@ public:
 	CScalableFloat&			operator[](int i);
 
 	bool					operator==(const CScalableVector& u) const;
+	bool					operator!=(const CScalableVector& u) const;
 
 	operator Vector() const;
 	operator DoubleVector() const;

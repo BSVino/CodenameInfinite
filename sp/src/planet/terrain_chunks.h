@@ -33,6 +33,8 @@ public:
 
 	void								Render();
 
+	bool                                IsExtraPhysicsEntGround(size_t iEnt) const;
+
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
 	size_t                              GetLump() const;
