@@ -29,10 +29,19 @@ void CSPHUD::BuildMenus()
 {
 	for (int i = 0; i < MENU_TOTAL; i++)
 	{
-		glgui::RootPanel()->RemoveControl(m_ahMenus[i]);
+		if (!m_ahMenus[i])
+			continue;
 
-		if (m_ahMenus[i])
-			m_ahMenus[i]->ClearSubmenus();
+		m_ahMenus[i]->SetVisible(false);
+
+		for (size_t k = 0; k < m_ahMenus[i]->GetNumSubmenus(); k++)
+		{
+			glgui::CControl<glgui::CMenu> pMenu = m_ahMenus[i]->GetSubmenu(k);
+			if (!pMenu)
+				continue;
+
+			pMenu->SetVisible(false);
+		}
 	}
 
 	if (!SPGame())
@@ -50,18 +59,33 @@ void CSPHUD::BuildMenus()
 	if (!pCharacter)
 		return;
 
-	if (pCharacter->HasBlocks())
+	CSpire* pSpire = pCharacter->GetNearestSpire();
+	if (pSpire && pCharacter->HasBlocks())
 	{
-		m_ahMenus[MENU_EQUIP] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_EQUIP, sprintf("%d. Equip", MENU_EQUIP+1)));
+		if (!m_ahMenus[MENU_EQUIP])
+			m_ahMenus[MENU_EQUIP] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_EQUIP, sprintf("%d. Equip", MENU_EQUIP+1)));
 
+		m_ahMenus[MENU_EQUIP]->SetVisible(true);
+
+		size_t iMenu = 0;
 		for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 		{
 			if (pCharacter->GetInventory((item_t)i))
-				m_ahMenus[MENU_EQUIP]->AddSubmenu(new CHUDMenu(i-1, sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, pCharacter->GetInventory((item_t)i)), true), this, PlaceBlock);
+			{
+				if (!m_ahMenus[MENU_EQUIP]->GetSubmenu(iMenu))
+					m_ahMenus[MENU_EQUIP]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+
+				CHUDMenu* pMenu = m_ahMenus[MENU_EQUIP]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+				pMenu->SetMenuListener(this, PlaceBlock);
+				pMenu->SetIndex(i-1);
+				pMenu->SetText(sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, pCharacter->GetInventory((item_t)i)));
+				pMenu->SetVisible(true);
+
+				iMenu++;
+			}
 		}
 	}
 
-	CSpire* pSpire = pCharacter->GetNearestSpire();
 	if (pSpire)
 	{
 		int aiBlocks[ITEM_BLOCKS_TOTAL];
@@ -83,27 +107,73 @@ void CSPHUD::BuildMenus()
 
 		if (bHasBlocks)
 		{
-			m_ahMenus[MENU_BLOCKS] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_BLOCKS, sprintf("%d. Blocks", MENU_BLOCKS+1)));
+			if (!m_ahMenus[MENU_BLOCKS])
+				m_ahMenus[MENU_BLOCKS] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_BLOCKS, sprintf("%d. Blocks", MENU_BLOCKS+1)));
 
+			m_ahMenus[MENU_BLOCKS]->SetVisible(true);
+
+			size_t iMenu = 0;
 			for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 			{
-				if (aiBlocks[i])
-					m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(i-1, sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, aiBlocks[i]), true), this, DesignateBlock);
+				if (!m_ahMenus[MENU_BLOCKS]->GetSubmenu(iMenu))
+					m_ahMenus[MENU_BLOCKS]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+
+				CHUDMenu* pMenu = m_ahMenus[MENU_BLOCKS]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+				pMenu->SetMenuListener(this, DesignateBlock);
+				pMenu->SetIndex(i-1);
+				pMenu->SetText(sprintf("%d. " + tstring(GetItemName((item_t)i)) + " (x%d)", i, aiBlocks[i]));
+				pMenu->SetVisible(true);
+
+				iMenu++;
 			}
 		}
 	}
 
 	if (pCharacter->GetNearestSpire() || pPlayer->GetNumSpires())
 	{
-		m_ahMenus[MENU_CONSTRUCTION] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_CONSTRUCTION, sprintf("%d. Construction", MENU_CONSTRUCTION+1)));
+		if (!m_ahMenus[MENU_CONSTRUCTION])
+			m_ahMenus[MENU_CONSTRUCTION] = glgui::RootPanel()->AddControl(new CHUDMenu(MENU_CONSTRUCTION, sprintf("%d. Construction", MENU_CONSTRUCTION+1)));
 
+		m_ahMenus[MENU_CONSTRUCTION]->SetVisible(true);
+
+		size_t iMenu = 0;
 		if (pPlayer->GetNumSpires())
-			m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(0, "1. Spire", true), this, ConstructSpire);
+		{
+			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
+				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+
+			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+			pMenu->SetMenuListener(this, ConstructSpire);
+			pMenu->SetIndex(0);
+			pMenu->SetText("1. Spire");
+			pMenu->SetVisible(true);
+
+			iMenu++;
+		}
 
 		if (pCharacter->GetNearestSpire())
 		{
-			m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(1, "2. Mine", true), this, ConstructMine);
-			m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(2, "3. Pallet", true), this, ConstructPallet);
+			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
+				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+
+			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+			pMenu->SetMenuListener(this, ConstructMine);
+			pMenu->SetIndex(1);
+			pMenu->SetText("2. Mine");
+			pMenu->SetVisible(true);
+
+			iMenu++;
+
+			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
+				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, PlaceBlock);
+
+			pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+			pMenu->SetMenuListener(this, ConstructPallet);
+			pMenu->SetIndex(2);
+			pMenu->SetText("3. Pallet");
+			pMenu->SetVisible(true);
+
+			iMenu++;
 		}
 	}
 

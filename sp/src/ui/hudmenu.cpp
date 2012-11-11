@@ -7,6 +7,12 @@
 
 using namespace glgui;
 
+CHUDMenu::CHUDMenu(bool bSubmenu)
+	: glgui::CMenu("", bSubmenu)
+{
+	m_iIndex = 0;
+}
+
 CHUDMenu::CHUDMenu(size_t iIndex, const tstring& sTitle, bool bSubmenu)
 	: glgui::CMenu(sTitle, bSubmenu)
 {
