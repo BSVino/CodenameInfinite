@@ -61,6 +61,9 @@ void CTerrainChunkManager::AddChunk(size_t iLump, const DoubleVector2D& vecChunk
 			iIndex = i;
 	}
 
+	CMutexLocker oLock = s_pChunkGenerator->GetLock();
+	oLock.Lock();
+
 	if (iIndex == ~0)
 	{
 		iIndex = m_apChunks.size();
