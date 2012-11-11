@@ -51,6 +51,9 @@ void CTerrainLumpManager::AddLump(size_t iTerrain, const DoubleVector2D& vecLump
 			iIndex = i;
 	}
 
+	CMutexLocker oLock = s_pLumpGenerator->GetLock();
+	oLock.Lock();
+
 	if (iIndex == ~0)
 	{
 		iIndex = m_apLumps.size();
