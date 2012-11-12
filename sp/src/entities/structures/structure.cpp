@@ -98,13 +98,26 @@ void CStructure::Think()
 
 		if (pOwner)
 		{
-			if (!GameData().GetCommandMenu() && (pOwner->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < TFloat(4).Squared())
+			TVector vecPlayerEyes = pOwner->GetLocalOrigin() + pOwner->EyeHeight() * DoubleVector(pOwner->GetLocalUpVector());
+			TVector vecOwnerProjectionPoint = GetLocalOrigin() + GetLocalTransform().TransformVector(GameData().GetCommandMenuRenderOffset());
+
+			Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetMeters();
+			float flDistanceToPlayerEyes = vecToPlayerEyes.Length();
+			Vector vecProjectionDirection = vecToPlayerEyes/flDistanceToPlayerEyes;
+
+			float flViewAngleDot = AngleVector(pOwner->GetViewAngles()).Dot(vecProjectionDirection);
+
+			CSPPlayer* pPlayerOwner = static_cast<CSPPlayer*>(pOwner->GetControllingPlayer());
+
+			if (!GameData().GetCommandMenu() && flDistanceToPlayerEyes < 4 && flViewAngleDot < -0.8 && !pPlayerOwner->GetActiveCommandMenu())
 			{
+				// If the player is nearby, looking at me, and not already looking at another command menu, open a temp command menu showing construction info.
 				CCommandMenu* pMenu = GameData().CreateCommandMenu(pOwner);
 				SetupMenuButtons();
 			}
-			else if (GameData().GetCommandMenu() && (GameData().GetCommandMenu()->WantsToClose() || (pOwner->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() > TFloat(5).Squared()))
+			else if (GameData().GetCommandMenu() && (GameData().GetCommandMenu()->WantsToClose() || flDistanceToPlayerEyes > 5 || flViewAngleDot > -0.7))
 			{
+				// If the player goes away or stops looking, close it.
 				GameData().CloseCommandMenu();
 			}
 		}
@@ -191,6 +204,19 @@ void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
 			pCharacter->GetControllingPlayer()->Instructor_LessonLearned("develop-structures");
 
 		m_flConstructionTurnTime = GameServer()->GetGameTime();
+
+		CPlayer* pPlayer = pCharacter->GetControllingPlayer();
+		if (pPlayer)
+		{
+			CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
+
+			// If it's a player who's building this structure then close any other command menus and activate this one.
+			if (pSPPlayer->GetActiveCommandMenu()->GetOwner() != this)
+			{
+				pSPPlayer->GetActiveCommandMenu()->GetOwner()->GameData().CloseCommandMenu();
+				GameData().CreateCommandMenu(pSPPlayer->GetPlayerCharacter());
+			}
+		}
 
 		if (GameData().GetCommandMenu())
 			SetupMenuButtons();
@@ -328,7 +354,7 @@ void CStructure::PostSetLocalTransform(const TMatrix& m)
 	else
 		mLocalTransform = pPlanet->GetGlobalToLocalTransform() * m;
 
-	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER));
+	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetMeters());
 }
 
 static const char* g_szStructureNames[] = {

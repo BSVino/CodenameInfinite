@@ -173,6 +173,21 @@ double CScalableFloat::GetUnits(scale_t eScale) const
 	return flResult;
 }
 
+double CScalableFloat::GetMeters() const
+{
+	if (m_bZero)
+		return 0;
+
+	double flResult = 0;
+	for (size_t i = 0; i < SCALESTACK_SIZE; i++)
+		flResult += ConvertUnits(m_aiScaleStack[i], (scale_t)(i+1), SCALE_METER);
+
+	flResult += ConvertUnits(m_flRemainder, (scale_t)(SCALE_NONE+1), SCALE_METER);
+	flResult += ConvertUnits(m_flOverflow*1000, SCALE_HIGHEST, SCALE_METER);
+
+	return flResult;
+}
+
 bool CScalableFloat::IsZero() const
 {
 	if (m_bZero)
@@ -587,7 +602,7 @@ CScalableFloat CScalableFloat::operator/( const CScalableFloat& f ) const
 	}
 
 	// I don't like doing this but there's really no way to do a proper division.
-	double flDivide = f.GetUnits(SCALE_METER);
+	double flDivide = f.GetMeters();
 
 	return (*this)/flDivide;
 }
@@ -1253,12 +1268,12 @@ bool CScalableFloat::operator>(const CScalableFloat& u) const
 
 bool CScalableFloat::operator<(float flMeters) const
 {
-	return GetUnits(SCALE_METER) < flMeters;
+	return GetMeters() < flMeters;
 }
 
 bool CScalableFloat::operator>(float flMeters) const
 {
-	return GetUnits(SCALE_METER) > flMeters;
+	return GetMeters() > flMeters;
 }
 
 bool CScalableFloat::operator<=(const CScalableFloat& u) const
@@ -1295,7 +1310,7 @@ bool CScalableFloat::operator>=(const CScalableFloat& u) const
 
 CScalableFloat::operator double() const
 {
-	return GetUnits(SCALE_METER);
+	return GetMeters();
 }
 
 static float g_aflConversions[11] = 
@@ -1381,6 +1396,17 @@ DoubleVector CScalableVector::GetUnits(scale_t eScale) const
 	return vecResult;
 }
 
+DoubleVector CScalableVector::GetMeters() const
+{
+	DoubleVector vecResult = Vector(0,0,0);
+
+	vecResult.x = x.GetMeters();
+	vecResult.y = y.GetMeters();
+	vecResult.z = z.GetMeters();
+
+	return vecResult;
+}
+
 bool CScalableVector::IsZero() const
 {
 	return x.IsZero() && y.IsZero() && z.IsZero();
@@ -1399,7 +1425,7 @@ void CScalableVector::Normalize()
 CScalableFloat CScalableVector::Length() const
 {
 	CScalableFloat f = x*x + y*y + z*z;
-	CScalableFloat r(sqrt(f.GetUnits(SCALE_METER)), SCALE_METER);
+	CScalableFloat r(sqrt(f.GetMeters()), SCALE_METER);
 
 	return r;
 }
@@ -1568,12 +1594,12 @@ bool CScalableVector::operator!=(const CScalableVector& u) const
 
 CScalableVector::operator Vector() const
 {
-	return GetUnits(SCALE_METER);
+	return GetMeters();
 }
 
 CScalableVector::operator DoubleVector() const
 {
-	return GetUnits(SCALE_METER);
+	return GetMeters();
 }
 
 CScalableMatrix::CScalableMatrix(const DoubleVector& vecForward, const DoubleVector& vecUp, const DoubleVector& vecRight, const CScalableVector& vecPosition)
@@ -1911,6 +1937,16 @@ DoubleMatrix4x4 CScalableMatrix::GetUnits(scale_t eScale) const
 	return r;
 }
 
+DoubleMatrix4x4 CScalableMatrix::GetMeters() const
+{
+	DoubleMatrix4x4 r;
+	r.SetForwardVector(DoubleVector(m[0][0], m[0][1], m[0][2]));
+	r.SetUpVector(DoubleVector(m[1][0], m[1][1], m[1][2]));
+	r.SetRightVector(DoubleVector(m[2][0], m[2][1], m[2][2]));
+	r.SetTranslation(mt.GetMeters());
+	return r;
+}
+
 CScalableMatrix::operator Quaternion() const
 {
 	Matrix4x4 r;
@@ -1921,7 +1957,7 @@ CScalableMatrix::operator Quaternion() const
 
 CScalableMatrix::operator Matrix4x4() const
 {
-	return GetUnits(SCALE_METER);
+	return GetMeters();
 }
 
 bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVector& v2, const CScalableVector& s, const CScalableFloat& flRadius, CScalableCollisionResult& tr)
@@ -1954,7 +1990,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 	if (flBB4AC < CScalableFloat())
 		return false;
 
-	CScalableFloat flSqrt(sqrt(flBB4AC.GetUnits(SCALE_METER)), SCALE_METER);
+	CScalableFloat flSqrt(sqrt(flBB4AC.GetMeters()), SCALE_METER);
 	CScalableFloat flPlus = (-flB + flSqrt)/(flA*2.0f);
 	CScalableFloat flMinus = (-flB - flSqrt)/(flA*2.0f);
 
@@ -1998,7 +2034,7 @@ bool LineSegmentIntersectsSphere(const CScalableVector& v1, const CScalableVecto
 
 	// So at this point, flMinus is between 0 and 1, and flPlus is above 1.
 
-	float flFraction = (float)flMinus.GetUnits(SCALE_METER);
+	float flFraction = (float)flMinus.GetMeters();
 	if (tr.flFraction < flFraction)
 		return false;
 
@@ -2058,7 +2094,7 @@ bool LineSegmentIntersectsTriangle(const CScalableVector& s0, const CScalableVec
 	if (r > flOne)
 		return false;		// Segment goes away from the triangle
 
-	float flFraction = (float)r.GetUnits(SCALE_METER);
+	float flFraction = (float)r.GetMeters();
 	if (tr.flFraction < flFraction)
 		return false;
 

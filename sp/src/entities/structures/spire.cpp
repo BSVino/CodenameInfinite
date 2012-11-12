@@ -84,7 +84,7 @@ void CSpire::Think()
 
 				vecSpawnSpot = vecSpire + vecOffset * flDistance;
 
-				DoubleVector vecSpawnSpotMeters = vecSpawnSpot.GetUnits(SCALE_METER);
+				DoubleVector vecSpawnSpotMeters = vecSpawnSpot.GetMeters();
 
 				CTraceResult tr;
 				GamePhysics()->TraceLine(tr, GameData().TransformPointLocalToPhysics(vecSpawnSpotMeters) + Vector(0, 100, 0), GameData().TransformPointLocalToPhysics(vecSpawnSpotMeters) - Vector(0, 100, 0));
@@ -94,7 +94,7 @@ void CSpire::Think()
 				else
 					continue;
 
-//				if (SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(SCALE_METER, vecSpawnSpot.GetUnits(SCALE_METER), 1))
+//				if (SPGame()->GetSPRenderer()->IsInFrustumAtScaleSidesOnly(SCALE_METER, vecSpawnSpot.GetMeters(), 1))
 //					continue;
 
 				bFoundSpot = true;

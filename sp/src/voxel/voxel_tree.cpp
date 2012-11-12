@@ -127,7 +127,7 @@ const IVector CVoxelTree::FindNearbyDesignation(const CScalableVector& vecLocal)
 		oArea.m_vecChunk = it->second.GetChunkCoordinates();
 
 		TVector vecChunkCenter = ToLocalCoordinates(oArea.m_vecChunk*CHUNK_SIZE + IVector(CHUNK_SIZE/2, CHUNK_SIZE/2, CHUNK_SIZE/2));
-		oArea.m_flDistance = (float)(vecLocal-vecChunkCenter).GetUnits(SCALE_METER).LengthSqr();
+		oArea.m_flDistance = (float)(vecLocal-vecChunkCenter).GetMeters().LengthSqr();
 
 		push_heap(aChunks.begin(), aChunks.end(), ChunkDistanceCompare);
 	}

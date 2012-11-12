@@ -165,7 +165,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 		CPlanet* pPlanet = pCharacter->GetNearestPlanet();
 		if (pPlanet)
 		{
-			Matrix4x4 mToPlanetLocal = pPlanet->GetGlobalToLocalTransform().GetUnits(SCALE_METER) * Matrix4x4();
+			Matrix4x4 mToPlanetLocal = pPlanet->GetGlobalToLocalTransform().GetMeters() * Matrix4x4();
 			mToPlanetLocal.SetTranslation(Vector());
 
 			// The skybox is drawn globally even if we're in planet-local rendering mode.
@@ -179,7 +179,7 @@ void CSPRenderer::ModifySkyboxContext(CRenderingContext* c)
 			c->SetUniform("clrSky", Vector(pPlanet->GetAtmosphereColor()));
 			if (GetClosestStar())
 			{
-				c->SetUniform("vecStar", (GetClosestStar()->GetGlobalOrigin()-pPlanet->GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized());
+				c->SetUniform("vecStar", (GetClosestStar()->GetGlobalOrigin()-pPlanet->GetGlobalOrigin()).GetMeters().Normalized());
 				c->SetUniform("clrStar", Vector(GetClosestStar()->GetLightColor()));
 			}
 		}

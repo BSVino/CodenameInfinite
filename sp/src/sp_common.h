@@ -41,6 +41,7 @@ public:
 	void					Construct(double flUnits, scale_t eScale);
 
 	double					GetUnits(scale_t eScale) const;
+	double					GetMeters() const;
 	bool					IsPositive() const { return m_bPositive; };
 	bool					IsNegative() const { return !m_bPositive; };
 	bool					IsZero() const;
@@ -109,7 +110,7 @@ inline CScalableFloat RemapVal(const CScalableFloat& flInput, const CScalableFlo
 inline double RemapVal(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, double flOutLo, double flOutHi)
 {
 	CScalableFloat f = ((flInput-flInLo) / (flInHi-flInLo));
-	return (f.GetUnits(SCALE_METER) * (flOutHi-flOutLo)) + flOutLo;
+	return (f.GetMeters() * (flOutHi-flOutLo)) + flOutLo;
 }
 
 inline CScalableFloat RemapValClamped(const CScalableFloat& flInput, const CScalableFloat& flInLo, const CScalableFloat& flInHi, const CScalableFloat& flOutLo, const CScalableFloat& flOutHi)
@@ -148,13 +149,14 @@ public:
 
 public:
 	DoubleVector			GetUnits(scale_t eScale) const;
+	DoubleVector			GetMeters() const;
 
 	bool					IsZero() const;
 	bool					IsZero();
 
 	void                    Normalize();
-	CScalableVector			Normalized() const { return CScalableVector(GetUnits(SCALE_METER).Normalized(), SCALE_METER); }
-	Vector					NormalizedVector() const { return GetUnits(SCALE_METER).Normalized(); }
+	CScalableVector			Normalized() const { return CScalableVector(GetMeters().Normalized(), SCALE_METER); }
+	Vector					NormalizedVector() const { return GetMeters().Normalized(); }
 	CScalableFloat			Length() const;
 	CScalableFloat			LengthSqr() const;
 	CScalableFloat			Dot(const CScalableVector& v) const;
@@ -268,6 +270,7 @@ public:
 	DoubleVector            GetRightVector() const { return GetRow(2); }
 
 	class DoubleMatrix4x4   GetUnits(scale_t eScale) const;
+	class DoubleMatrix4x4   GetMeters() const;
 
 	operator Quaternion() const;
 	operator Matrix4x4() const;

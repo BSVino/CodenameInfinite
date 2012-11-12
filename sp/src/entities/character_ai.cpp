@@ -14,10 +14,10 @@ void CSPCharacter::TaskThink()
 	{
 		// Face the player and await instructions.
 
-		Vector vecDirection = (GameData().GetCommandMenu()->GetPlayerCharacter()->GetGlobalOrigin() - GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+		Vector vecDirection = (GameData().GetCommandMenu()->GetPlayerCharacter()->GetGlobalOrigin() - GetGlobalOrigin()).GetMeters().Normalized();
 
 		if (HasMoveParent())
-			SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetUnits(SCALE_METER).TransformVector(vecDirection)));
+			SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetMeters().TransformVector(vecDirection)));
 		else
 			SetViewAngles(VectorAngles(vecDirection));
 
@@ -155,7 +155,7 @@ bool CSPCharacter::MoveTo(CBaseEntity* pTarget, float flMoveDistance)
 
 bool CSPCharacter::MoveTo(const TVector& vecTarget, float flMoveDistance)
 {
-	Vector vecToTarget = (vecTarget - GetGlobalOrigin()).GetUnits(SCALE_METER);
+	Vector vecToTarget = (vecTarget - GetGlobalOrigin()).GetMeters();
 	float flDistance = vecToTarget.Length();
 	if (flDistance < flMoveDistance)
 		return true;
@@ -163,7 +163,7 @@ bool CSPCharacter::MoveTo(const TVector& vecTarget, float flMoveDistance)
 	Vector vecDirection = vecToTarget/flDistance;
 
 	if (HasMoveParent())
-		SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetUnits(SCALE_METER).TransformVector(vecDirection)));
+		SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetMeters().TransformVector(vecDirection)));
 	else
 		SetViewAngles(VectorAngles(vecDirection));
 

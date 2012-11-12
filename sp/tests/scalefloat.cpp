@@ -20,20 +20,20 @@ void test_scalefloat()
 
 	f = CScalableFloat(7);
 
-	TAssert(f.GetUnits(SCALE_METER) == 7);
+	TAssert(f.GetMeters() == 7);
 
 	f = CScalableFloat((double)14, SCALE_KILOMETER);
 
-	TAssert(f.GetUnits(SCALE_METER) == 14000);
+	TAssert(f.GetMeters() == 14000);
 
 	f = CScalableFloat((float)14, SCALE_KILOMETER);
 
-	TAssert(f.GetUnits(SCALE_METER) == 14000);
+	TAssert(f.GetMeters() == 14000);
 	TAssert(f.IsPositive());
 
 	f = -f;
 
-	TAssert(f.GetUnits(SCALE_METER) == -14000);
+	TAssert(f.GetMeters() == -14000);
 	TAssert(f.IsNegative());
 
 	CScalableFloat t(1);

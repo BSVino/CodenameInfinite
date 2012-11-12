@@ -235,9 +235,9 @@ void CTerrainChunkManager::FindCenterChunk()
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	DoubleMatrix4x4 mLocalMeters;
 	if (pCharacter->GetMoveParent() == pCharacter->GameData().GetPlanet())
-		mLocalMeters = pCharacter->GetLocalTransform().GetUnits(SCALE_METER);
+		mLocalMeters = pCharacter->GetLocalTransform().GetMeters();
 	else
-		mLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalTransform()).GetUnits(SCALE_METER);
+		mLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalTransform()).GetMeters();
 	DoubleVector vecLocalMeters = mLocalMeters.GetTranslation();
 
 	double flNearest;
@@ -293,9 +293,9 @@ void CTerrainChunkManager::FindCenterChunk()
 
 		DoubleMatrix4x4 mEntityLocalMeters;
 		if (pEntity->GetMoveParent() == pEntity->GameData().GetPlanet())
-			mEntityLocalMeters = pEntity->GetLocalTransform().GetUnits(SCALE_METER);
+			mEntityLocalMeters = pEntity->GetLocalTransform().GetMeters();
 		else
-			mEntityLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pEntity->GetGlobalTransform()).GetUnits(SCALE_METER);
+			mEntityLocalMeters = (m_pPlanet->GetGlobalToLocalTransform() * pEntity->GetGlobalTransform()).GetMeters();
 
 		Matrix4x4 mChunkEntity = m_mPlanetToGroup * mEntityLocalMeters;
 
@@ -401,7 +401,7 @@ void CTerrainChunkManager::Render()
 
 		mGroupTransform.SetTranslation(vecGroupCenter);
 
-		Matrix4x4 mGroupTransformMeters = mGroupTransform.GetUnits(SCALE_METER);
+		Matrix4x4 mGroupTransformMeters = mGroupTransform.GetMeters();
 
 		c.UseProgram("model");
 		c.ResetTransformations();

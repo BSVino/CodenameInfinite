@@ -100,7 +100,7 @@ void CCommandMenu::Think()
 	TVector vecPlayerEye = m_hPlayerCharacter->GetLocalOrigin() + m_hPlayerCharacter->EyeHeight() * DoubleVector(m_hPlayerCharacter->GetLocalUpVector());
 	Vector vecDirection = AngleVector(m_hPlayerCharacter->GetViewAngles());
 
-	Vector vecLocalLocalCenter = (vecLocalCenter-vecPlayerEye).GetUnits(SCALE_METER);
+	Vector vecLocalLocalCenter = (vecLocalCenter-vecPlayerEye).GetMeters();
 	Vector v0 = vecLocalLocalCenter + vecMenuUp + vecMenuRight;
 	Vector v1 = vecLocalLocalCenter - vecMenuUp + vecMenuRight;
 	Vector v2 = vecLocalLocalCenter - vecMenuUp - vecMenuRight;
@@ -392,7 +392,7 @@ void CCommandMenu::GetVectors(TVector& vecLocalCenter, Vector& vecProjectionDire
 	TVector vecPlayerEyes = m_hPlayerCharacter->GetLocalOrigin() + m_hPlayerCharacter->EyeHeight() * DoubleVector(vecPlayerUp);
 	TVector vecOwnerProjectionPoint = m_hOwner->GetLocalOrigin() + m_hOwner->GetLocalTransform().TransformVector(m_hOwner->GameData().GetCommandMenuRenderOffset());
 
-	Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetUnits(SCALE_METER);
+	Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetMeters();
 	float flDistanceToPlayerEyes = vecToPlayerEyes.Length();
 	vecProjectionDirection = vecToPlayerEyes/flDistanceToPlayerEyes;
 

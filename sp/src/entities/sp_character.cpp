@@ -379,7 +379,7 @@ void CSPCharacter::PostSetLocalTransform(const TMatrix& m)
 	else
 		mLocalTransform = pPlanet->GetGlobalToLocalTransform() * m;
 
-	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER));
+	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetMeters());
 }
 
 void CSPCharacter::SetGroundEntity(CBaseEntity* pEntity)

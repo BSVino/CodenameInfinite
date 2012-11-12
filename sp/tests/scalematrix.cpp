@@ -1058,16 +1058,16 @@ void test_scalematrix()
 	n.SetTranslation(CScalableVector(2, 3, 4));
 	n.SetAngles(EAngle(40, -180, 0));
 //	n.AddReflection(Vector(0, 1, 1).Normalized());
-	TAssert(fabs(n.TransformVector(CScalableVector(10, 0, 0)).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(n.TransformVector(CScalableVector(1, 1, 0).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(n.TransformVector(CScalableVector(1, 1, 1).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(m.TransformVector(CScalableVector(10, 0, 0)).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(m.TransformVector(CScalableVector(1, 1, 0).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(m.TransformVector(CScalableVector(1, 1, 1).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs((m*n).TransformVector(CScalableVector(10, 0, 0)).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs((m*n).TransformVector(CScalableVector(1, 1, 0).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs((m*n).TransformVector(CScalableVector(1, 1, 1).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(m.TransformVector(n.TransformVector(CScalableVector(10, 0, 0))).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(m.TransformVector(n.TransformVector(CScalableVector(1, 1, 0)).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
-	TAssert(fabs(m.TransformVector(n.TransformVector(CScalableVector(1, 1, 1)).Normalized()*10.0f).Length().GetUnits(SCALE_METER) - 10) < 0.00001f);
+	TAssert(fabs(n.TransformVector(CScalableVector(10, 0, 0)).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(n.TransformVector(CScalableVector(1, 1, 0).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(n.TransformVector(CScalableVector(1, 1, 1).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(m.TransformVector(CScalableVector(10, 0, 0)).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(m.TransformVector(CScalableVector(1, 1, 0).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(m.TransformVector(CScalableVector(1, 1, 1).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs((m*n).TransformVector(CScalableVector(10, 0, 0)).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs((m*n).TransformVector(CScalableVector(1, 1, 0).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs((m*n).TransformVector(CScalableVector(1, 1, 1).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(m.TransformVector(n.TransformVector(CScalableVector(10, 0, 0))).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(m.TransformVector(n.TransformVector(CScalableVector(1, 1, 0)).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
+	TAssert(fabs(m.TransformVector(n.TransformVector(CScalableVector(1, 1, 1)).Normalized()*10.0f).Length().GetMeters() - 10) < 0.00001f);
 }

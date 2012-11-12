@@ -811,7 +811,7 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	};
 
 	// This algorithm was designed on an Earth-radius planet so it should be scaled for whatever radius the target planet is.
-	double flRadiusScalar = (m_pPlanet->GetRadius()/CScalableFloat(6.3781f, SCALE_MEGAMETER)).GetUnits(SCALE_METER);
+	double flRadiusScalar = (m_pPlanet->GetRadius()/CScalableFloat(6.3781f, SCALE_MEGAMETER)).GetMeters();
 
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{

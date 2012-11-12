@@ -45,6 +45,7 @@ public:
 
 	void                    CommandMenuOpened(CCommandMenu* pMenu);
 	void                    CommandMenuClosed(CCommandMenu* pMenu);
+	CCommandMenu*           GetActiveCommandMenu() { return m_pActiveCommandMenu; }
 
 private:
 	structure_type      m_eConstructionMode;

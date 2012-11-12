@@ -98,12 +98,12 @@ const Vector CSPCamera::GetUpVector() const
 		if (flLerp == 1)
 		{
 			if (pCharacter->GetMoveParent() != pPlanet)
-				return (pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+				return (pPlanet->GetGlobalToLocalTransform() * pCharacter->GetGlobalOrigin()).GetMeters().Normalized();
 			else
-				return pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized();
+				return pCharacter->GetLocalOrigin().GetMeters().Normalized();
 		}
 		else
-			return LerpValue<Vector>(Matrix4x4(pCharacter->GetViewAngles()).GetUpVector(), pCharacter->GetLocalOrigin().GetUnits(SCALE_METER).Normalized(), flLerp);
+			return LerpValue<Vector>(Matrix4x4(pCharacter->GetViewAngles()).GetUpVector(), pCharacter->GetLocalOrigin().GetMeters().Normalized(), flLerp);
 	}
 	else
 		return Matrix4x4(pCharacter->GetViewAngles()).GetUpVector();
@@ -152,7 +152,7 @@ Vector CSPCamera::GetThirdPersonCameraDirection()
 	CScalableVector vecEyeHeight = pCharacter->GetUpVector() * pCharacter->EyeHeight();
 	vecEyeHeight += TVector(pCharacter->GetGlobalTransform().GetRightVector() * cam_third_right.GetFloat());
 
-	return (vecEyeHeight - GetThirdPersonCameraPosition()).GetUnits(SCALE_METER);
+	return (vecEyeHeight - GetThirdPersonCameraPosition()).GetMeters();
 }
 
 void CSPCamera::KeyDown(int c)

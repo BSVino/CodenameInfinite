@@ -488,7 +488,7 @@ void CVoxelChunk::BuildVBO()
 
 					Vector vecCubeCenter = (m_vecChunk*CHUNK_SIZE + vecBottom ).GetVoxelSpaceCoordinates() + vecSize.GetVoxelSpaceCoordinates()/2;
 					TVector vecCubeCenterPlanet = m_pTree->GetSpire()->GetLocalTransform() * vecCubeCenter;
-					size_t iPhysicsBox = GamePhysics()->AddExtraBox(m_pTree->GetSpire()->GameData().TransformPointLocalToPhysics(vecCubeCenterPlanet.GetUnits(SCALE_METER)), vecSize.GetVoxelSpaceCoordinates());
+					size_t iPhysicsBox = GamePhysics()->AddExtraBox(m_pTree->GetSpire()->GameData().TransformPointLocalToPhysics(vecCubeCenterPlanet.GetMeters()), vecSize.GetVoxelSpaceCoordinates());
 					m_aiPhysicsEnts.push_back(iPhysicsBox);
 
 					for (int x1 = vecBottom.x; x1 < vecBottom.x+vecSize.x; x1++)

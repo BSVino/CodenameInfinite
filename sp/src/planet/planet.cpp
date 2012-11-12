@@ -278,8 +278,8 @@ float CPlanet::GetSunHeight(const TVector& vecGlobal) const
 	if (!pStar)
 		return 0;
 
-	Vector vecToStar = (pStar->GetGlobalOrigin() - vecGlobal).GetUnits(SCALE_METER).Normalized();
-	float flSunHeight = vecToStar.Dot((vecGlobal-GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized());
+	Vector vecToStar = (pStar->GetGlobalOrigin() - vecGlobal).GetMeters().Normalized();
+	float flSunHeight = vecToStar.Dot((vecGlobal-GetGlobalOrigin()).GetMeters().Normalized());
 
 	return flSunHeight;
 }
@@ -291,8 +291,8 @@ float CPlanet::GetTimeOfDay(const TVector& vecGlobal) const
 	if (!pStar)
 		return 0;
 
-	Vector vecToStar = (pStar->GetGlobalOrigin() - vecGlobal).GetUnits(SCALE_METER).Normalized();
-	Vector vecToPoint = (vecGlobal-GetGlobalOrigin()).GetUnits(SCALE_METER).Normalized();
+	Vector vecToStar = (pStar->GetGlobalOrigin() - vecGlobal).GetMeters().Normalized();
+	Vector vecToPoint = (vecGlobal-GetGlobalOrigin()).GetMeters().Normalized();
 	float flSunY = vecToStar.Dot(vecToPoint);
 	Vector vecX = vecToPoint.Cross(GetGlobalTransform().GetUpVector()).Normalized();
 	float flSunX = vecX.Dot(vecToStar);
@@ -448,7 +448,7 @@ void CPlanet::SetRadius(const CScalableFloat& flRadius)
 	if (flRadius4 > flRadius)
 		flTerrainRadius = flRadius4;
 
-	float flRadiusMeters = (float)flTerrainRadius.GetUnits(SCALE_METER);
+	float flRadiusMeters = (float)flTerrainRadius.GetMeters();
 
 	m_iMeterDepth = (int)(log(flRadiusMeters)/log(2.0f));
 	m_iLumpDepth = 7;

@@ -231,7 +231,7 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 			if (flDistance < pPlanet->GetRadius()*2.0f)
 				continue;
 
-			Vector vecPlanet = vecScalablePlanet.GetUnits(SCALE_METER);
+			Vector vecPlanet = vecScalablePlanet.GetMeters();
 
 			if (vecForward.Dot((vecPlanet).Normalized()) < 0)
 				continue;
@@ -268,7 +268,7 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 			if (vecScalablePlanet.LengthSqr() > CScalableFloat(60.0f, SCALE_MEGAMETER)*CScalableFloat(60.0f, SCALE_MEGAMETER))
 				continue;
 
-			Vector vecSpire = vecScalableSpire.GetUnits(SCALE_METER);
+			Vector vecSpire = vecScalableSpire.GetMeters();
 
 			if (vecForward.Dot((vecSpire).Normalized()) < 0)
 				continue;
@@ -296,7 +296,7 @@ void CSPHUD::Paint(float x, float y, float w, float h)
 	{
 		CScalableVector vecScalablePlanet = pHelper->GameData().GetScalableRenderOrigin();
 
-		Vector vecPlanet = vecScalablePlanet.GetUnits(SCALE_METER);
+		Vector vecPlanet = vecScalablePlanet.GetMeters();
 
 		if (vecForward.Dot((vecPlanet).Normalized()) > 0)
 		{
