@@ -20,6 +20,8 @@ public:
 
 	virtual size_t  MaxDepth() const { return 40; }
 
+	structure_type    StructureType() const { return STRUCTURE_MINE; }
+
 private:
 	double          m_flDiggingStarted;
 

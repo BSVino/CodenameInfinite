@@ -25,6 +25,8 @@ public:
 	size_t      GetBlockQuantity() const { return m_iQuantity; }
 	int         GetBlockCapacity() const { return PALLET_CAPACITY; }
 
+	structure_type    StructureType() const { return STRUCTURE_PALLET; }
+
 private:
 	item_t      m_eItem;
 	size_t      m_iQuantity;

@@ -41,6 +41,8 @@ public:
 	void                     SetButton(size_t i, const tstring& sLabel, const tstring& sCommand);
 	void                     SetButtonEnabled(size_t i, bool bEnabled);
 	void                     SetButtonToolTip(size_t i, const tstring& sToolTip);
+	void                     SetProgressBar(double flCurrent, double flMax);
+	void                     DisableProgressBar();
 
 	void                     Think();
 
@@ -69,5 +71,8 @@ private:
 
 	bool                     m_bMouseInMenu;
 	size_t                   m_iMouseInButton;
+
+	double                   m_flCurrentProgress;
+	double                   m_flMaxProgress;
 };
 

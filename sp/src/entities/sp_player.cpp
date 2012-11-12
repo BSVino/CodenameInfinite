@@ -128,7 +128,7 @@ void CSPPlayer::MouseMotion(int x, int y)
 
 void CSPPlayer::MouseInput(int iButton, int iState)
 {
-	if (m_pActiveCommandMenu)
+	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 1 && m_pActiveCommandMenu)
 	{
 		if (m_pActiveCommandMenu->MouseInput(iButton, iState))
 			return;

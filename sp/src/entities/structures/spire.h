@@ -47,6 +47,8 @@ public:
 	CVoxelTree*       GetVoxelTree() { return &m_oVoxelTree; }
 	const CVoxelTree* GetVoxelTree() const { return &m_oVoxelTree; }
 
+	structure_type    StructureType() const { return STRUCTURE_SPIRE; }
+
 private:
 	tstring     m_sBaseName;
 

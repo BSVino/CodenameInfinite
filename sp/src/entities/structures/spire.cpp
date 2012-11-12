@@ -50,8 +50,6 @@ void CSpire::Spawn()
 
 	m_flBuildStart = 0;
 	m_flNextMonster = 0;
-
-	GameData().SetCommandMenuParameters(Vector(0, 1, 0), 0.5f, 1.0f);
 }
 
 CVar build_time_worker("build_time_worker", "4");

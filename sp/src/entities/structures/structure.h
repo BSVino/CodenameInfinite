@@ -44,7 +44,7 @@ public:
 	virtual void            PostConstructionFinished() {};
 
 	virtual void            OnUse(CBaseEntity* pUser);
-	virtual void            SetupMenuButtons() {};
+	virtual void            SetupMenuButtons();
 	virtual void            PerformStructureTask(class CSPCharacter* pCharacter);
 	virtual bool            IsOccupied() const;
 
@@ -58,14 +58,19 @@ public:
 
 	virtual void            MenuCommand(const tstring& sCommand) {};
 
+	virtual structure_type  StructureType() const { return STRUCTURE_NONE; }
+
 public:
 	static CStructure*      CreateStructure(structure_type eType, class CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin);
 
 private:
 	CEntityHandle<CSPPlayer>  m_hOwner;
 	CEntityHandle<CSpire>     m_hSpire;
+	structure_type            m_eStructureType;
 
 	int             m_iTurnsToConstruct;
 	int             m_iTotalTurnsToConstruct;
 	double          m_flConstructionTurnTime;
 };
+
+const char* GetStructureName(structure_type eStructure);

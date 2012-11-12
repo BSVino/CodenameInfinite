@@ -26,6 +26,8 @@ CCommandMenu::CCommandMenu(CBaseEntity* pOwner, CPlayerCharacter* pCharacter)
 		pPlayer->CommandMenuOpened(this);
 
 	m_bMouseInMenu = false;
+
+	m_flCurrentProgress = m_flMaxProgress = 0;
 }
 
 CCommandMenu::~CCommandMenu()
@@ -72,6 +74,17 @@ void CCommandMenu::SetButtonToolTip(size_t i, const tstring& sToolTip)
 		m_apButtons[i] = new CCommandButton();
 
 	m_apButtons[i]->SetToolTip(sToolTip);
+}
+
+void CCommandMenu::SetProgressBar(double flCurrent, double flMax)
+{
+	m_flCurrentProgress = flCurrent;
+	m_flMaxProgress = flMax;
+}
+
+void CCommandMenu::DisableProgressBar()
+{
+	m_flCurrentProgress = m_flMaxProgress = 0;
 }
 
 void CCommandMenu::Think()
@@ -227,6 +240,30 @@ void CCommandMenu::Render() const
 			c.SetUniform("flAlpha", 1.0f);
 
 			c.RenderText(m_apButtons[i]->GetLabel(), -1, sFont, iFontSize);
+		}
+
+		if (m_flMaxProgress)
+		{
+			c.ResetTransformations();
+
+			c.RenderBillboard(CMaterialHandle("textures/commandmenunotice.mat"), 1, Vector(0, 0.1f, 0), Vector(0.9f, 0, 0));
+
+			c.SetBlend(BLEND_NONE);
+			c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 1.0));
+			c.RenderBillboard(CMaterialHandle("textures/commandmenunotice.mat"), 1, Vector(0, 0.06f, 0), Vector((float)(0.85 * m_flCurrentProgress/m_flMaxProgress), 0, 0));
+
+			tstring sProgress = sprintf("%d%% complete", (int)(100*m_flCurrentProgress/m_flMaxProgress));
+
+			float flTextWidth = glgui::CLabel::GetTextWidth(sProgress, -1, sFont, iSmallFontSize);
+
+			c.UseProgram("text");
+			c.ResetTransformations();
+			c.Scale(0.003f, 0.003f, 0.003f);
+			c.Translate(Vector(0, -7000, 0) + Vector(flTextWidth/2 * -300, flSmallFontHeight/2 * 300, 0));
+
+			c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 1.0));
+			c.SetUniform("flAlpha", 1.0f);
+			c.RenderText(sProgress, -1, sFont, iSmallFontSize);
 		}
 
 		if (m_bMouseInMenu && m_iMouseInButton >= 0 && m_iMouseInButton < COMMAND_BUTTONS)

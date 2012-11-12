@@ -22,6 +22,7 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CStructure);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPPlayer, m_hOwner);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSpire, m_hSpire);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, structure_type, m_eStructureType);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iTurnsToConstruct);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flConstructionTurnTime);
 SAVEDATA_TABLE_END();
@@ -34,6 +35,11 @@ void CStructure::Spawn()
 	m_bTakeDamage = true;
 
 	m_flConstructionTurnTime = 0;
+
+	m_eStructureType = StructureType();
+	TAssert(m_eStructureType);
+
+	GameData().SetCommandMenuParameters(Vector(0, 1, 0), 0.5f, 1.0f);
 
 	BaseClass::Spawn();
 
@@ -71,6 +77,12 @@ void CStructure::Think()
 
 	if (GameData().GetCommandMenu())
 	{
+		if (IsUnderConstruction() && IsWorkingConstructionTurn())
+		{
+			CCommandMenu* pMenu = GameData().GetCommandMenu();
+			pMenu->SetProgressBar(GameServer()->GetGameTime() - m_flConstructionTurnTime, build_time_construct.GetFloat());
+		}
+
 		if (GameData().GetCommandMenu()->WantsToClose())
 			GameData().CloseCommandMenu();
 		else
@@ -79,6 +91,27 @@ void CStructure::Think()
 
 	if (GameServer()->GetGameTime() > m_flConstructionTurnTime + build_time_construct.GetFloat())
 		ConstructionTurn();
+
+	if (IsUnderConstruction())
+	{
+		CPlayerCharacter* pOwner = GetOwner()->GetPlayerCharacter();
+
+		if (pOwner)
+		{
+			if (!GameData().GetCommandMenu() && (pOwner->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < TFloat(4).Squared())
+			{
+				CCommandMenu* pMenu = GameData().CreateCommandMenu(pOwner);
+				SetupMenuButtons();
+			}
+			else if (GameData().GetCommandMenu() && (GameData().GetCommandMenu()->WantsToClose() || (pOwner->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() > TFloat(5).Squared()))
+			{
+				GameData().CloseCommandMenu();
+			}
+		}
+
+		if (GameData().GetCommandMenu())
+			GameData().GetCommandMenu()->Think();
+	}
 }
 
 void CStructure::PostRender() const
@@ -110,12 +143,17 @@ void CStructure::ConstructionTurn()
 
 	m_iTurnsToConstruct--;
 
+	if (GameData().GetCommandMenu())
+		SetupMenuButtons();
+
 	if (!m_iTurnsToConstruct)
 		FinishConstruction();
 }
 
 void CStructure::FinishConstruction()
 {
+	GameData().CloseCommandMenu();
+
 	PostConstructionFinished();
 }
 
@@ -126,6 +164,25 @@ void CStructure::OnUse(CBaseEntity* pUser)
 		PerformStructureTask(pCharacter);
 }
 
+void CStructure::SetupMenuButtons()
+{
+	if (!IsUnderConstruction())
+		return;
+
+	CCommandMenu* pMenu = GameData().GetCommandMenu();
+
+	if (pMenu)
+	{
+		pMenu->SetTitle(GetStructureName(m_eStructureType));
+		pMenu->SetSubtitle(sprintf("UNDER CONSTRUCTION - %d/%d", m_iTotalTurnsToConstruct-m_iTurnsToConstruct, m_iTotalTurnsToConstruct));
+
+		if (IsWorkingConstructionTurn())
+			pMenu->SetProgressBar(GameServer()->GetGameTime() - m_flConstructionTurnTime, build_time_construct.GetFloat());
+		else
+			pMenu->DisableProgressBar();
+	}
+}
+
 void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
 {
 	if (IsUnderConstruction() && !m_flConstructionTurnTime)
@@ -134,6 +191,9 @@ void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
 			pCharacter->GetControllingPlayer()->Instructor_LessonLearned("develop-structures");
 
 		m_flConstructionTurnTime = GameServer()->GetGameTime();
+
+		if (GameData().GetCommandMenu())
+			SetupMenuButtons();
 	}
 
 	if (!IsUnderConstruction())
@@ -269,4 +329,22 @@ void CStructure::PostSetLocalTransform(const TMatrix& m)
 		mLocalTransform = pPlanet->GetGlobalToLocalTransform() * m;
 
 	GameData().SetGroupTransform(pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * mLocalTransform.GetUnits(SCALE_METER));
+}
+
+static const char* g_szStructureNames[] = {
+	"",
+	"Spire",
+	"Mine",
+	"Pallet"
+};
+
+const char* GetStructureName(structure_type eStructure)
+{
+	if (eStructure < 0)
+		return "";
+
+	if (eStructure >= ITEM_TOTAL)
+		return "";
+
+	return g_szStructureNames[eStructure];
 }
