@@ -23,7 +23,8 @@ INPUTS_TABLE_END();
 
 void CPickup::Precache()
 {
-	PrecacheMaterial("textures/items1.mat");
+	PrecacheMaterial("textures/items/dirt.mat");
+	PrecacheMaterial("textures/items/stone.mat");
 }
 
 void CPickup::Spawn()
@@ -100,14 +101,14 @@ void CPickup::PostRender() const
 	c.ResetTransformations();
 	c.Translate(vecPosition);
 
-	c.UseMaterial("textures/items1.mat");
+	c.UseMaterial(GetItemMaterial(m_eItem));
 
 	c.BeginRenderTriFan();
 		c.TexCoord(0.0f, 1.0f);
 		c.Vertex(-vecRight + vecUp);
-		c.TexCoord(0.0f, 0.75f);
+		c.TexCoord(0.0f, 0.0f);
 		c.Vertex(-vecRight - vecUp);
-		c.TexCoord(0.25f, 0.75f);
+		c.TexCoord(0.25f, 0.0f);
 		c.Vertex(vecRight - vecUp);
 		c.TexCoord(0.25f, 1.0f);
 		c.Vertex(vecRight + vecUp);

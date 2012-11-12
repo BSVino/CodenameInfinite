@@ -15,6 +15,8 @@ NETVAR_TABLE_BEGIN(CMine);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CMine);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flDiggingStarted);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYVECTOR, item_t, m_aeItemsAtDepth);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CMine);
@@ -34,17 +36,49 @@ void CMine::Spawn()
 	BaseClass::Spawn();
 
 	m_flDiggingStarted = 0;
-}
+	m_iCurrentDepth = 0;
 
-CVar mine_digtime("mine_digtime", "3");
+	// First there's some dirt.
+	size_t iDirt = RandomInt(5, 15);
+
+	for (size_t i = 0; i < iDirt; i++)
+		m_aeItemsAtDepth.push_back(ITEM_DIRT);
+
+	// Fill the rest with stone for now.
+	for (size_t i = m_aeItemsAtDepth.size(); i < MaxDepth(); i++)
+		m_aeItemsAtDepth.push_back(ITEM_STONE);
+
+	// Make some dirt pockets
+	while (RandomInt(0, 2) > 1)
+	{
+		size_t iStart = RandomInt(0, MaxDepth());
+		size_t iDirt = RandomInt(5, 10);
+		size_t iMax = iStart+std::min(iDirt, MaxDepth());
+		for (size_t i = iStart; i < iMax; i++)
+			m_aeItemsAtDepth[i] = ITEM_DIRT;
+	}
+}
 
 void CMine::Think()
 {
 	BaseClass::Think();
 
-	if (m_flDiggingStarted && m_flDiggingStarted + mine_digtime.GetFloat() < GameServer()->GetGameTime())
+	double flDigTime = RemapValClamped((double)m_iCurrentDepth, 0, 20, 0.5, 6);
+
+	if (m_flDiggingStarted && m_flDiggingStarted + flDigTime < GameServer()->GetGameTime())
 	{
 		m_flDiggingStarted = 0;
+
+		item_t eMined = ITEM_STONE;
+
+		if (m_iCurrentDepth < m_aeItemsAtDepth.size())
+			eMined = m_aeItemsAtDepth[m_iCurrentDepth++];
+		else
+		{
+			float flRandom = RemapValClamped<float>((float)m_iCurrentDepth++, (float)MaxDepth(), (float)MaxDepth()*2, 1, 2);
+			if (RandomFloat(0, flRandom) > 0.5)
+				return;
+		}
 
 		CPickup* pMined = GameServer()->Create<CPickup>("CPickup");
 		pMined->GameData().SetPlayerOwner(GameData().GetPlayerOwner());
@@ -53,7 +87,7 @@ void CMine::Think()
 		pMined->SetMoveParent(GameData().GetPlanet());
 		pMined->SetLocalTransform(GetLocalTransform());
 		pMined->SetLocalOrigin(GetLocalOrigin() + GetLocalTransform().GetUpVector() + GetLocalTransform().GetRightVector());
-		pMined->SetItem(ITEM_DIRT);
+		pMined->SetItem(eMined);
 	}
 }
 

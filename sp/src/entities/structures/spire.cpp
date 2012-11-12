@@ -42,7 +42,7 @@ void CSpire::Spawn()
 {
 	m_oVoxelTree.SetSpire(this);
 
-	m_aabbPhysBoundingBox = AABB(Vector(-1.0f, -1.0f, -1.0f), Vector(1.0f, 15.0f, 1.0f));
+	m_aabbPhysBoundingBox = AABB(Vector(-0.25f, -0.25f, -0.25f), Vector(1.0f, 3.75f, 0.25f));
 
 	BaseClass::Spawn();
 
@@ -214,6 +214,26 @@ void CSpire::PostConstruction()
 
 void CSpire::PostConstructionFinished()
 {
+	// Link all unclaimed nearby structures to me.
+	for (size_t i = 0; i < GameServer()->GetMaxEntities(); i++)
+	{
+		CBaseEntity* pEntity = CBaseEntity::GetEntity(i);
+		if (!pEntity)
+			continue;
+
+		if ((pEntity->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() > TFloat(100.0, SCALE_METER).Squared())
+			continue;
+
+		CStructure* pStructure = dynamic_cast<CStructure*>(pEntity);
+		if (!pStructure)
+			continue;
+
+		if (pStructure->GetSpire())
+			continue;
+
+		pStructure->SetSpire(this);
+	}
+
 	BaseClass::PostConstructionFinished();
 
 	StartBuildWorker();

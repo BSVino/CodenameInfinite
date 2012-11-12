@@ -17,16 +17,22 @@ CVoxelChunk::CVoxelChunk(CVoxelTree* pTree, const IVector& vecChunk)
 	memset(m_aDesignations, 0, sizeof(m_aDesignations));
 	memset(m_aPhysicsBlocks, 0, sizeof(m_aPhysicsBlocks));
 
-	m_iVBO = 0;
-	m_iVBODesignations = 0;
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+	{
+		m_aiVBO[i] = 0;
+		m_aiVBODesignations[i] = 0;
+	}
 }
 
 CVoxelChunk::~CVoxelChunk()
 {
-	if (m_iVBO)
-		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBO);
-	if (m_iVBODesignations)
-		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBODesignations);
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+	{
+		if (m_aiVBO[i])
+			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBO[i]);
+		if (m_aiVBODesignations[i])
+			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBODesignations[i]);
+	}
 
 	for (size_t i = 0; i < m_aiPhysicsEnts.size(); i++)
 		GamePhysics()->RemoveExtra(m_aiPhysicsEnts[i]);
@@ -34,36 +40,39 @@ CVoxelChunk::~CVoxelChunk()
 
 void CVoxelChunk::Render() const
 {
-	if (m_iVBO && !GameServer()->GetRenderer()->IsRenderingTransparent())
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 	{
-		CRenderingContext c(GameServer()->GetRenderer(), true);
+		if (m_aiVBO[i] && !GameServer()->GetRenderer()->IsRenderingTransparent())
+		{
+			CRenderingContext c(GameServer()->GetRenderer(), true);
 
-		c.ResetTransformations();
-		c.Transform(m_pTree->GetSpire()->BaseGetRenderTransform());
+			c.ResetTransformations();
+			c.Transform(m_pTree->GetSpire()->BaseGetRenderTransform());
 
-		c.UseMaterial("textures/items1.mat");
+			c.UseMaterial(GetItemMaterial((item_t)i));
 
-		c.BeginRenderVertexArray(m_iVBO);
-		c.SetPositionBuffer(0*sizeof(float), 5*sizeof(float));
-		c.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
-		c.EndRenderVertexArray(m_iVBOSize);
-	}
-	else if (m_iVBODesignations && GameServer()->GetRenderer()->IsRenderingTransparent())
-	{
-		CRenderingContext c(GameServer()->GetRenderer(), true);
+			c.BeginRenderVertexArray(m_aiVBO[i]);
+			c.SetPositionBuffer(0*sizeof(float), 5*sizeof(float));
+			c.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
+			c.EndRenderVertexArray(m_aiVBOSize[i]);
+		}
+		else if (m_aiVBODesignations[i] && GameServer()->GetRenderer()->IsRenderingTransparent())
+		{
+			CRenderingContext c(GameServer()->GetRenderer(), true);
 
-		c.ResetTransformations();
-		c.Transform(m_pTree->GetSpire()->BaseGetRenderTransform());
+			c.ResetTransformations();
+			c.Transform(m_pTree->GetSpire()->BaseGetRenderTransform());
 
-		c.UseMaterial("textures/items1.mat");
-		c.SetBlend(BLEND_ALPHA);
-		c.SetUniform("vecColor", Vector4D(1, 1, 1, 0.4f));
-		c.SetDepthMask(false);
+			c.UseMaterial(GetItemMaterial((item_t)i));
+			c.SetBlend(BLEND_ALPHA);
+			c.SetUniform("vecColor", Vector4D(1, 1, 1, 0.4f));
+			c.SetDepthMask(false);
 
-		c.BeginRenderVertexArray(m_iVBODesignations);
-		c.SetPositionBuffer(0*sizeof(float), 5*sizeof(float));
-		c.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
-		c.EndRenderVertexArray(m_iVBODesignationsSize);
+			c.BeginRenderVertexArray(m_aiVBODesignations[i]);
+			c.SetPositionBuffer(0*sizeof(float), 5*sizeof(float));
+			c.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
+			c.EndRenderVertexArray(m_aiVBODesignationsSize[ITEM_BLOCKS_TOTAL]);
+		}
 	}
 }
 
@@ -187,16 +196,24 @@ void PushVert(tvector<float>& aflVerts, const Vector& v, const Vector2D& vt)
 
 void CVoxelChunk::BuildVBO()
 {
-	if (m_iVBO)
-		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBO);
-	if (m_iVBODesignations)
-		GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_iVBODesignations);
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+	{
+		if (m_aiVBO[i])
+			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBO[i]);
+		if (m_aiVBODesignations[i])
+			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBODesignations[i]);
+	}
 
-	tvector<float> aflVerts;
-	size_t iVBOVerts = 0;
+	tvector<tvector<float>> aaflVerts;
+	tvector<size_t> aiVBOVerts;
 
-	tvector<float> aflDesignationVerts;
-	size_t iVBODesignationVerts = 0;
+	tvector<tvector<float>> aaflDesignationVerts;
+	tvector<size_t> aiVBODesignationVerts;
+
+	aaflVerts.resize(ITEM_BLOCKS_TOTAL);
+	aiVBOVerts.resize(ITEM_BLOCKS_TOTAL);
+	aaflDesignationVerts.resize(ITEM_BLOCKS_TOTAL);
+	aiVBODesignationVerts.resize(ITEM_BLOCKS_TOTAL);
 
 	bool bPhysicsDirty = false;
 
@@ -216,7 +233,7 @@ void CVoxelChunk::BuildVBO()
 
 				TAssert(!(m_aBlocks[x][y][z] && m_aDesignations[x][y][z]));
 
-				tvector<float>& aflBuffer = (!!m_aBlocks[x][y][z]?aflVerts:aflDesignationVerts);
+				tvector<float>& aflBuffer = (!!m_aBlocks[x][y][z]?aaflVerts[m_aBlocks[x][y][z]]:aaflDesignationVerts[m_aBlocks[x][y][z]]);
 
 				IVector vecChunkOrigin = m_vecChunk*CHUNK_SIZE;
 				Vector vxyz = (vecChunkOrigin + IVector(x, y, z)).GetVoxelSpaceCoordinates();
@@ -245,9 +262,9 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						iVBODesignationVerts += 6;
+						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
 					else
-						iVBOVerts += 6;
+						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
 
 				bDrawSide = !GetBlockGlobal(vecChunkOrigin + IVector(x+1, y, z));
@@ -265,9 +282,9 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vXYZ, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						iVBODesignationVerts += 6;
+						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
 					else
-						iVBOVerts += 6;
+						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
 
 				bDrawSide = !GetBlockGlobal(vecChunkOrigin + IVector(x, y-1, z));
@@ -285,9 +302,9 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						iVBODesignationVerts += 6;
+						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
 					else
-						iVBOVerts += 6;
+						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
 
 				bDrawSide = !GetBlockGlobal(vecChunkOrigin + IVector(x, y+1, z));
@@ -305,9 +322,9 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vXYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						iVBODesignationVerts += 6;
+						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
 					else
-						iVBOVerts += 6;
+						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
 
 				bDrawSide = !GetBlockGlobal(vecChunkOrigin + IVector(x, y, z-1));
@@ -325,9 +342,9 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vXYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						iVBODesignationVerts += 6;
+						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
 					else
-						iVBOVerts += 6;
+						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
 
 				bDrawSide = !GetBlockGlobal(vecChunkOrigin + IVector(x, y, z+1));
@@ -345,34 +362,37 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vxYZ, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						iVBODesignationVerts += 6;
+						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
 					else
-						iVBOVerts += 6;
+						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
 			}
 		}
 	}
 
-	if (iVBOVerts)
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 	{
-		m_iVBO = GameServer()->GetRenderer()->LoadVertexDataIntoGL(aflVerts.size()*sizeof(float), aflVerts.data());
-		m_iVBOSize = iVBOVerts;
-	}
-	else
-	{
-		m_iVBO = 0;
-		m_iVBOSize = 0;
-	}
+		if (aiVBOVerts[i])
+		{
+			m_aiVBO[i] = GameServer()->GetRenderer()->LoadVertexDataIntoGL(aaflVerts[i].size()*sizeof(float), aaflVerts[i].data());
+			m_aiVBOSize[i] = aiVBOVerts[i];
+		}
+		else
+		{
+			m_aiVBO[i] = 0;
+			m_aiVBOSize[i] = 0;
+		}
 
-	if (iVBODesignationVerts)
-	{
-		m_iVBODesignations = GameServer()->GetRenderer()->LoadVertexDataIntoGL(aflDesignationVerts.size()*sizeof(float), aflDesignationVerts.data());
-		m_iVBODesignationsSize = iVBODesignationVerts;
-	}
-	else
-	{
-		m_iVBODesignations = 0;
-		m_iVBODesignationsSize = 0;
+		if (aiVBODesignationVerts[i])
+		{
+			m_aiVBODesignations[i] = GameServer()->GetRenderer()->LoadVertexDataIntoGL(aaflDesignationVerts[i].size()*sizeof(float), aaflDesignationVerts[i].data());
+			m_aiVBODesignationsSize[i] = aiVBODesignationVerts[i];
+		}
+		else
+		{
+			m_aiVBODesignations[i] = 0;
+			m_aiVBODesignationsSize[i] = 0;
+		}
 	}
 
 	if (bPhysicsDirty)

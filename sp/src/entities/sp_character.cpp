@@ -813,6 +813,14 @@ bool CSPCharacter::IsHoldingABlock() const
 	return !!m_aiInventorySlots[0];
 }
 
+item_t CSPCharacter::GetBlock() const
+{
+	if (IsHoldingABlock())
+		return m_aiInventoryTypes[0];
+
+	return ITEM_NONE;
+}
+
 bool CSPCharacter::CanBuildStructure(structure_type eStructure) const
 {
 	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)

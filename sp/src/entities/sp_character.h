@@ -118,6 +118,7 @@ public:
 	virtual size_t              TakeBlocks(item_t eBlock, size_t iNumber);
 	virtual size_t              RemoveBlocks(item_t eBlock, size_t iNumber);
 	virtual bool                IsHoldingABlock() const;
+	virtual item_t              GetBlock() const;
 
 	bool                        CanBuildStructure(structure_type eStructure) const;
 

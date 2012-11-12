@@ -6,6 +6,7 @@ typedef enum
 
 	// Block types
 	ITEM_DIRT,
+	ITEM_STONE,
 
 	ITEM_BLOCKS_TOTAL,
 
@@ -13,3 +14,5 @@ typedef enum
 } item_t;
 
 const char* GetItemName(item_t eItem);
+
+const char* GetItemMaterial(item_t eItem);

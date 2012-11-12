@@ -186,11 +186,11 @@ size_t CSPGame::StructureCost(structure_type eStructure, item_t eItem) const
 		if (eItem == ITEM_DIRT)
 			return 1;
 		else
-			return 0;
+			return 1;
 
 	case STRUCTURE_SPIRE:
 		if (eItem == ITEM_DIRT)
-			return 5;
+			return 2;
 		else
 			return 0;
 

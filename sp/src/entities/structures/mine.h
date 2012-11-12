@@ -18,6 +18,11 @@ public:
 	void        PerformStructureTask(class CSPCharacter* pCharacter);
 	bool        IsOccupied() const;
 
+	virtual size_t  MaxDepth() const { return 40; }
+
 private:
-	double      m_flDiggingStarted;
+	double          m_flDiggingStarted;
+
+	tvector<item_t> m_aeItemsAtDepth;
+	size_t          m_iCurrentDepth;
 };

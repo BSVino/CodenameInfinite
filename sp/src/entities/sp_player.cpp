@@ -277,13 +277,13 @@ void CSPPlayer::PostRender() const
 
 				c.BeginRenderTriFan();
 					c.TexCoord(0.0f, 1.0f);
-					c.Vertex(-vecRight + vecUp * 15);
+					c.Vertex(-vecRight + vecUp * 15/4);
 					c.TexCoord(0.0f, 0.0f);
-					c.Vertex(-vecRight - vecUp);
+					c.Vertex(-vecRight - vecUp/4);
 					c.TexCoord(1.0f, 0.0f);
-					c.Vertex(vecRight - vecUp);
+					c.Vertex(vecRight - vecUp/4);
 					c.TexCoord(1.0f, 1.0f);
-					c.Vertex(vecRight + vecUp * 15);
+					c.Vertex(vecRight + vecUp * 15/4);
 				c.EndRender();
 			}
 			else if (m_eConstructionMode == STRUCTURE_MINE)
@@ -335,25 +335,25 @@ void CSPPlayer::PostRender() const
 				Vector vecPosition = pGiveTo->GetLocalOrigin() - GetPlayerCharacter()->GetLocalOrigin();
 				vecPosition -= Vector(0.25f, 0.25f, 0.25f);
 
-				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector()/2;
-				Vector vecUp = pSpire->GetLocalTransform().GetUpVector()/2;
-				Vector vecRight = pSpire->GetLocalTransform().GetRightVector()/2;
+				Vector vecForward = pGiveTo->GetLocalTransform().GetForwardVector()/2;
+				Vector vecUp = pGiveTo->GetLocalTransform().GetUpVector()/2;
+				Vector vecRight = pGiveTo->GetLocalTransform().GetRightVector()/2;
 
 				CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
 				c.ResetTransformations();
 				c.Translate(vecPosition);
 
-				c.UseMaterial("textures/items1.mat");
+				c.UseMaterial(GetItemMaterial(m_eBlockPlaceMode));
 
 				c.SetUniform("flAlpha", 0.7f);
 
 				c.SetBlend(BLEND_ADDITIVE);
 
 				c.BeginRenderTriFan();
-					c.TexCoord(0.0f, 0.75f);
+					c.TexCoord(0.0f, 0.0f);
 					c.Vertex(Vector(0, 0, 0));
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecRight);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecRight + vecUp);
@@ -361,7 +361,7 @@ void CSPPlayer::PostRender() const
 					c.Vertex(vecUp);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecUp + vecForward);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecForward);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecForward + vecRight);
@@ -372,17 +372,17 @@ void CSPPlayer::PostRender() const
 				c.BeginRenderTriFan();
 					c.TexCoord(0.0f, 1.0f);
 					c.Vertex(vecRight + vecUp + vecForward);
-					c.TexCoord(0.0f, 0.75f);
+					c.TexCoord(0.0f, 0.0f);
 					c.Vertex(vecUp + vecForward);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecUp);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecRight + vecUp);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecRight);
-					c.TexCoord(0.0f, 0.75f);
+					c.TexCoord(0.0f, 0.0f);
 					c.Vertex(vecForward + vecRight);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecForward);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecForward + vecUp);
@@ -411,7 +411,7 @@ void CSPPlayer::PostRender() const
 					c.ResetTransformations();
 					c.Translate(vecLocal - GetPlayerCharacter()->GetLocalOrigin());
 
-					c.UseMaterial("textures/items1.mat");
+					c.UseMaterial(GetItemMaterial(m_eBlockPlaceMode));
 
 					c.SetBlend(BLEND_ADDITIVE);
 
@@ -420,9 +420,9 @@ void CSPPlayer::PostRender() const
 					c.BeginRenderTriFan();
 						c.TexCoord(0.0f, 1.0f);
 						c.Vertex(-vecRight + vecUp);
-						c.TexCoord(0.0f, 0.75f);
+						c.TexCoord(0.0f, 0.0f);
 						c.Vertex(-vecRight - vecUp);
-						c.TexCoord(0.25f, 0.75f);
+						c.TexCoord(0.25f, 0.0f);
 						c.Vertex(vecRight - vecUp);
 						c.TexCoord(0.25f, 1.0f);
 						c.Vertex(vecRight + vecUp);
@@ -439,16 +439,16 @@ void CSPPlayer::PostRender() const
 				c.ResetTransformations();
 				c.Translate(vecPosition);
 
-				c.UseMaterial("textures/items1.mat");
+				c.UseMaterial(GetItemMaterial(m_eBlockPlaceMode));
 
 				c.SetUniform("flAlpha", 0.7f);
 
 				c.SetBlend(BLEND_ADDITIVE);
 
 				c.BeginRenderTriFan();
-					c.TexCoord(0.0f, 0.75f);
+					c.TexCoord(0.0f, 0.0f);
 					c.Vertex(Vector(0, 0, 0));
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecRight);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecRight + vecUp);
@@ -456,7 +456,7 @@ void CSPPlayer::PostRender() const
 					c.Vertex(vecUp);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecUp + vecForward);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecForward);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecForward + vecRight);
@@ -467,17 +467,17 @@ void CSPPlayer::PostRender() const
 				c.BeginRenderTriFan();
 					c.TexCoord(0.0f, 1.0f);
 					c.Vertex(vecRight + vecUp + vecForward);
-					c.TexCoord(0.0f, 0.75f);
+					c.TexCoord(0.0f, 0.0f);
 					c.Vertex(vecUp + vecForward);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecUp);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecRight + vecUp);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecRight);
-					c.TexCoord(0.0f, 0.75f);
+					c.TexCoord(0.0f, 0.0f);
 					c.Vertex(vecForward + vecRight);
-					c.TexCoord(0.25f, 0.75f);
+					c.TexCoord(0.25f, 0.0f);
 					c.Vertex(vecForward);
 					c.TexCoord(0.25f, 1.0f);
 					c.Vertex(vecForward + vecUp);
@@ -517,16 +517,16 @@ void CSPPlayer::PostRender() const
 				c.ResetTransformations();
 				c.Translate(vecPosition);
 
-				c.UseMaterial("textures/items1.mat");
+				c.UseMaterial(GetItemMaterial(m_eBlockDesignateMode));
 
 				c.SetUniform("flAlpha", 0.5f);
 
 				c.SetBlend(BLEND_ADDITIVE);
 
 				c.BeginRenderTriFan();
-				c.TexCoord(0.0f, 0.75f);
+				c.TexCoord(0.0f, 0.0f);
 				c.Vertex(Vector(0, 0, 0));
-				c.TexCoord(0.25f, 0.75f);
+				c.TexCoord(0.25f, 0.0f);
 				c.Vertex(vecRight);
 				c.TexCoord(0.25f, 1.0f);
 				c.Vertex(vecRight + vecUp);
@@ -534,7 +534,7 @@ void CSPPlayer::PostRender() const
 				c.Vertex(vecUp);
 				c.TexCoord(0.25f, 1.0f);
 				c.Vertex(vecUp + vecForward);
-				c.TexCoord(0.25f, 0.75f);
+				c.TexCoord(0.25f, 0.0f);
 				c.Vertex(vecForward);
 				c.TexCoord(0.25f, 1.0f);
 				c.Vertex(vecForward + vecRight);
@@ -545,17 +545,17 @@ void CSPPlayer::PostRender() const
 				c.BeginRenderTriFan();
 				c.TexCoord(0.0f, 1.0f);
 				c.Vertex(vecRight + vecUp + vecForward);
-				c.TexCoord(0.0f, 0.75f);
+				c.TexCoord(0.0f, 0.0f);
 				c.Vertex(vecUp + vecForward);
-				c.TexCoord(0.25f, 0.75f);
+				c.TexCoord(0.25f, 0.0f);
 				c.Vertex(vecUp);
 				c.TexCoord(0.25f, 1.0f);
 				c.Vertex(vecRight + vecUp);
-				c.TexCoord(0.25f, 0.75f);
+				c.TexCoord(0.25f, 0.0f);
 				c.Vertex(vecRight);
-				c.TexCoord(0.0f, 0.75f);
+				c.TexCoord(0.0f, 0.0f);
 				c.Vertex(vecForward + vecRight);
-				c.TexCoord(0.25f, 0.75f);
+				c.TexCoord(0.25f, 0.0f);
 				c.Vertex(vecForward);
 				c.TexCoord(0.25f, 1.0f);
 				c.Vertex(vecForward + vecUp);
@@ -591,7 +591,7 @@ void CSPPlayer::PostRender() const
 
 				CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
-				c.UseMaterial("textures/items1.mat");
+				c.UseMaterial(GetItemMaterial(m_eBlockDesignateMode));
 
 				c.SetUniform("flAlpha", 0.5f);
 
@@ -609,9 +609,9 @@ void CSPPlayer::PostRender() const
 							c.Translate(pTree->ToLocalCoordinates(vecBlock) - GetPlayerCharacter()->GetLocalOrigin());
 
 							c.BeginRenderTriFan();
-							c.TexCoord(0.0f, 0.75f);
+							c.TexCoord(0.0f, 0.0f);
 							c.Vertex(Vector(0, 0, 0));
-							c.TexCoord(0.25f, 0.75f);
+							c.TexCoord(0.25f, 0.0f);
 							c.Vertex(vecRight);
 							c.TexCoord(0.25f, 1.0f);
 							c.Vertex(vecRight + vecUp);
@@ -619,7 +619,7 @@ void CSPPlayer::PostRender() const
 							c.Vertex(vecUp);
 							c.TexCoord(0.25f, 1.0f);
 							c.Vertex(vecUp + vecForward);
-							c.TexCoord(0.25f, 0.75f);
+							c.TexCoord(0.25f, 0.0f);
 							c.Vertex(vecForward);
 							c.TexCoord(0.25f, 1.0f);
 							c.Vertex(vecForward + vecRight);
@@ -630,17 +630,17 @@ void CSPPlayer::PostRender() const
 							c.BeginRenderTriFan();
 							c.TexCoord(0.0f, 1.0f);
 							c.Vertex(vecRight + vecUp + vecForward);
-							c.TexCoord(0.0f, 0.75f);
+							c.TexCoord(0.0f, 0.0f);
 							c.Vertex(vecUp + vecForward);
-							c.TexCoord(0.25f, 0.75f);
+							c.TexCoord(0.25f, 0.0f);
 							c.Vertex(vecUp);
 							c.TexCoord(0.25f, 1.0f);
 							c.Vertex(vecRight + vecUp);
-							c.TexCoord(0.25f, 0.75f);
+							c.TexCoord(0.25f, 0.0f);
 							c.Vertex(vecRight);
-							c.TexCoord(0.0f, 0.75f);
+							c.TexCoord(0.0f, 0.0f);
 							c.Vertex(vecForward + vecRight);
-							c.TexCoord(0.25f, 0.75f);
+							c.TexCoord(0.25f, 0.0f);
 							c.Vertex(vecForward);
 							c.TexCoord(0.25f, 1.0f);
 							c.Vertex(vecForward + vecUp);

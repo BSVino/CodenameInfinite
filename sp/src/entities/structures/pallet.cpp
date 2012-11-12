@@ -124,12 +124,12 @@ void CPallet::PostRender() const
 		c.ResetTransformations();
 		c.Translate(vecPosition);
 
-		c.UseMaterial("textures/items1.mat");
+		c.UseMaterial(GetItemMaterial(m_eItem));
 
 		c.BeginRenderTriFan();
-			c.TexCoord(0.0f, 0.75f);
+			c.TexCoord(0.0f, 0.0f);
 			c.Vertex(Vector(0, 0, 0));
-			c.TexCoord(0.25f, 0.75f);
+			c.TexCoord(0.25f, 0.0f);
 			c.Vertex(vecRight);
 			c.TexCoord(0.25f, 1.0f);
 			c.Vertex(vecRight + vecUp);
@@ -137,7 +137,7 @@ void CPallet::PostRender() const
 			c.Vertex(vecUp);
 			c.TexCoord(0.25f, 1.0f);
 			c.Vertex(vecUp + vecForward);
-			c.TexCoord(0.25f, 0.75f);
+			c.TexCoord(0.25f, 0.0f);
 			c.Vertex(vecForward);
 			c.TexCoord(0.25f, 1.0f);
 			c.Vertex(vecForward + vecRight);
@@ -148,17 +148,17 @@ void CPallet::PostRender() const
 		c.BeginRenderTriFan();
 			c.TexCoord(0.0f, 1.0f);
 			c.Vertex(vecRight + vecUp + vecForward);
-			c.TexCoord(0.0f, 0.75f);
+			c.TexCoord(0.0f, 0.0f);
 			c.Vertex(vecUp + vecForward);
-			c.TexCoord(0.25f, 0.75f);
+			c.TexCoord(0.25f, 0.0f);
 			c.Vertex(vecUp);
 			c.TexCoord(0.25f, 1.0f);
 			c.Vertex(vecRight + vecUp);
-			c.TexCoord(0.25f, 0.75f);
+			c.TexCoord(0.25f, 0.0f);
 			c.Vertex(vecRight);
-			c.TexCoord(0.0f, 0.75f);
+			c.TexCoord(0.0f, 0.0f);
 			c.Vertex(vecForward + vecRight);
-			c.TexCoord(0.25f, 0.75f);
+			c.TexCoord(0.25f, 0.0f);
 			c.Vertex(vecForward);
 			c.TexCoord(0.25f, 1.0f);
 			c.Vertex(vecForward + vecUp);

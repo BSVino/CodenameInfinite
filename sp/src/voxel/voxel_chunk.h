@@ -34,10 +34,10 @@ public:
 private:
 	CVoxelTree*  m_pTree;
 	IVector      m_vecChunk;
-	size_t       m_iVBO;
-	size_t       m_iVBOSize;
-	size_t       m_iVBODesignations;
-	size_t       m_iVBODesignationsSize;
+	size_t       m_aiVBO[ITEM_BLOCKS_TOTAL];
+	size_t       m_aiVBOSize[ITEM_BLOCKS_TOTAL];
+	size_t       m_aiVBODesignations[ITEM_BLOCKS_TOTAL];
+	size_t       m_aiVBODesignationsSize[ITEM_BLOCKS_TOTAL];
 	tvector<int> m_aiPhysicsEnts;
 
 	unsigned char     m_aBlocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
