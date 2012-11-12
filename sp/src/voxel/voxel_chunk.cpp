@@ -71,7 +71,7 @@ void CVoxelChunk::Render() const
 			c.BeginRenderVertexArray(m_aiVBODesignations[i]);
 			c.SetPositionBuffer(0*sizeof(float), 5*sizeof(float));
 			c.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
-			c.EndRenderVertexArray(m_aiVBODesignationsSize[ITEM_BLOCKS_TOTAL]);
+			c.EndRenderVertexArray(m_aiVBODesignationsSize[i]);
 		}
 	}
 }
@@ -233,7 +233,7 @@ void CVoxelChunk::BuildVBO()
 
 				TAssert(!(m_aBlocks[x][y][z] && m_aDesignations[x][y][z]));
 
-				tvector<float>& aflBuffer = (!!m_aBlocks[x][y][z]?aaflVerts[m_aBlocks[x][y][z]]:aaflDesignationVerts[m_aBlocks[x][y][z]]);
+				tvector<float>& aflBuffer = (!!m_aBlocks[x][y][z]?aaflVerts[m_aBlocks[x][y][z]]:aaflDesignationVerts[m_aDesignations[x][y][z]]);
 
 				IVector vecChunkOrigin = m_vecChunk*CHUNK_SIZE;
 				Vector vxyz = (vecChunkOrigin + IVector(x, y, z)).GetVoxelSpaceCoordinates();
@@ -262,7 +262,7 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
+						aiVBODesignationVerts[m_aDesignations[x][y][z]] += 6;
 					else
 						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
@@ -282,7 +282,7 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vXYZ, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
+						aiVBODesignationVerts[m_aDesignations[x][y][z]] += 6;
 					else
 						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
@@ -302,7 +302,7 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
+						aiVBODesignationVerts[m_aDesignations[x][y][z]] += 6;
 					else
 						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
@@ -322,7 +322,7 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vXYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
+						aiVBODesignationVerts[m_aDesignations[x][y][z]] += 6;
 					else
 						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
@@ -342,7 +342,7 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vXYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
+						aiVBODesignationVerts[m_aDesignations[x][y][z]] += 6;
 					else
 						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
@@ -362,7 +362,7 @@ void CVoxelChunk::BuildVBO()
 					PushVert(aflBuffer, vxYZ, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
-						aiVBODesignationVerts[m_aBlocks[x][y][z]] += 6;
+						aiVBODesignationVerts[m_aDesignations[x][y][z]] += 6;
 					else
 						aiVBOVerts[m_aBlocks[x][y][z]] += 6;
 				}
