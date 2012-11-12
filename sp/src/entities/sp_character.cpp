@@ -30,7 +30,7 @@ SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hBuild);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, IVector, m_vecBuildDesignation);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hMine);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hWaitingForMine);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CStructure>, m_hWaitingFor);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CBaseEntity>, m_hEnemy);
 SAVEDATA_TABLE_END();
 

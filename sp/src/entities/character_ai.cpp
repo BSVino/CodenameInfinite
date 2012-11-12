@@ -37,14 +37,21 @@ void CSPCharacter::TaskThink()
 
 		CSpire* pSpire = GetNearestSpire();
 
-		if (pBuild)
+		if (m_hWaitingFor)
+		{
+			if (!m_hWaitingFor->IsOccupied())
+				m_hWaitingFor = nullptr;
+		}
+
+		if (pBuild && !m_hWaitingFor)
 		{
 			if (!MoveTo(pBuild))
 				return;
 
 			pBuild->PerformStructureTask(this);
+			m_hWaitingFor = pBuild;
 		}
-		else if (pSpire)
+		else if (pSpire && !m_hWaitingFor)
 		{
 			if (m_vecBuildDesignation == IVector(0, 0, 0) || !pSpire->GetVoxelTree()->GetDesignation(m_vecBuildDesignation))
 				m_vecBuildDesignation = FindNearbyDesignation(pSpire);
@@ -61,7 +68,7 @@ void CSPCharacter::TaskThink()
 				if (!MoveTo(vecBlockGlobal))
 					return;
 
-				PlaceBlock((item_t)m_aiInventorySlots[0], vecBlockLocal);
+				PlaceBlock((item_t)m_aiInventoryTypes[0], vecBlockLocal);
 			}
 			else
 			{
@@ -78,10 +85,10 @@ void CSPCharacter::TaskThink()
 	}
 	else if (m_eTask == TASK_MINE)
 	{
-		if (m_hWaitingForMine)
+		if (m_hWaitingFor)
 		{
-			if (!m_hWaitingForMine->IsOccupied())
-				m_hWaitingForMine = nullptr;
+			if (!m_hWaitingFor->IsOccupied())
+				m_hWaitingFor = nullptr;
 		}
 
 		if (IsHoldingABlock())
@@ -96,7 +103,7 @@ void CSPCharacter::TaskThink()
 
 			GiveBlocks(m_aiInventoryTypes[0], 1, pPallet);
 		}
-		else if (!m_hWaitingForMine)
+		else if (!m_hWaitingFor)
 		{
 			// Let's head to the mine
 			CStructure* pMine = m_hMine;
@@ -119,7 +126,7 @@ void CSPCharacter::TaskThink()
 			}
 
 			pMine->PerformStructureTask(this);
-			m_hWaitingForMine = pMine;
+			m_hWaitingFor = pMine;
 		}
 	}
 	else if (m_eTask == TASK_FOLLOWME)
@@ -339,7 +346,7 @@ void CSPCharacter::SetTask(task_t eTask)
 	m_eTask = eTask;
 
 	m_hBuild = nullptr;
-	m_hWaitingForMine = nullptr;
+	m_hWaitingFor = nullptr;
 	m_hMine = nullptr;
 	m_hEnemy = nullptr;
 }

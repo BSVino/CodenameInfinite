@@ -139,7 +139,7 @@ protected:
 	CEntityHandle<CStructure>   m_hBuild;
 	IVector                     m_vecBuildDesignation;
 	CEntityHandle<CStructure>   m_hMine;
-	CEntityHandle<CStructure>   m_hWaitingForMine;
+	CEntityHandle<CStructure>   m_hWaitingFor;
 	CEntityHandle<CBaseEntity>  m_hEnemy;
 };
 
