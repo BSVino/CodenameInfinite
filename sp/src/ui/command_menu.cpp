@@ -301,6 +301,7 @@ void CCommandMenu::Render() const
 
 		c.UseProgram("model");
 		c.SetBlend(BLEND_ADDITIVE);
+		c.SetDepthMask(false);
 		c.SetUniform("flAlpha", 1.0f);
 		c.SetUniform("vecColor", Vector4D(1.0, 1.0, 1.0, 1.0));
 
