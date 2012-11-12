@@ -75,7 +75,7 @@ void CMine::Think()
 			eMined = m_aeItemsAtDepth[m_iCurrentDepth++];
 		else
 		{
-			float flRandom = RemapValClamped<float>((float)m_iCurrentDepth++, (float)MaxDepth(), (float)MaxDepth()*2, 1, 2);
+			float flRandom = RemapValClamped<float>((float)m_iCurrentDepth++, (float)MaxDepth(), (float)MaxDepth()*2, 0.5f, 1.0);
 			if (RandomFloat(0, flRandom) > 0.5)
 				return;
 		}
