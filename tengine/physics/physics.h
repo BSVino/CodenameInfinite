@@ -58,6 +58,7 @@ public:
 	// Nearest result.
 	float                  m_flFraction;
 	Vector                 m_vecHit;
+	Vector                 m_vecNormal;
 	class CBaseEntity*     m_pHit;
 	size_t                 m_iHitExtra;
 };
@@ -100,6 +101,7 @@ public:
 	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta) {};
 
 	virtual void            TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore=nullptr) {};
+	virtual void            TraceEntity(CTraceResult& tr, class CBaseEntity* pEntity, const Vector& v1, const Vector& v2) {};
 	virtual void            CheckSphere(CTraceResult& tr, float flRadius, const Vector& vecCenter, class CBaseEntity* pIgnore=nullptr) {};
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt) {};

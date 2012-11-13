@@ -23,13 +23,13 @@ inline Vector ToTVector(const btVector3& v)
 class CClosestRayResultCallback : public btCollisionWorld::ClosestRayResultCallback
 {
 public:
-	CClosestRayResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld, btRigidBody* pIgnore=nullptr)
+	CClosestRayResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld, btCollisionObject* pIgnore=nullptr)
 		: btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
 	{
 		m_pIgnore = pIgnore;
 	}
 
-	virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult,bool normalInWorldSpace)
+	virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace)
 	{
 		if (rayResult.m_collisionObject == m_pIgnore)
 			return 1.0;
@@ -38,7 +38,28 @@ public:
 	}
 
 protected:
-	btRigidBody*     m_pIgnore;
+	btCollisionObject*     m_pIgnore;
+};
+
+class CClosestConvexResultCallback : public btCollisionWorld::ClosestConvexResultCallback
+{
+public:
+	CClosestConvexResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld, btCollisionObject* pIgnore=nullptr)
+		: btCollisionWorld::ClosestConvexResultCallback(rayFromWorld, rayToWorld)
+	{
+		m_pIgnore = pIgnore;
+	}
+
+	virtual btScalar addSingleResult(btCollisionWorld::LocalConvexResult& convexResult, bool normalInWorldSpace)
+	{
+		if (convexResult.m_hitCollisionObject == m_pIgnore)
+			return 1.0;
+
+		return btCollisionWorld::ClosestConvexResultCallback::addSingleResult(convexResult, normalInWorldSpace);
+	}
+
+protected:
+	btCollisionObject*     m_pIgnore;
 };
 
 class CAllContactResultsCallback : public btCollisionWorld::ContactResultCallback
@@ -172,6 +193,7 @@ public:
 	virtual void            CharacterMovement(class CBaseEntity* pEnt, class btCollisionWorld* pCollisionWorld, float flDelta);
 
 	virtual void            TraceLine(CTraceResult& tr, const Vector& v1, const Vector& v2, class CBaseEntity* pIgnore=nullptr);
+	virtual void            TraceEntity(CTraceResult& tr, class CBaseEntity* pEntity, const Vector& v1, const Vector& v2);
 	virtual void            CheckSphere(CTraceResult& tr, float flRadius, const Vector& vecCenter, class CBaseEntity* pIgnore=nullptr);
 
 	virtual void			CharacterJump(class CBaseEntity* pEnt);

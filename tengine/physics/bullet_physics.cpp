@@ -899,9 +899,57 @@ void CBulletPhysics::TraceLine(CTraceResult& tr, const Vector& v1, const Vector&
 	{
 		tr.m_flFraction = callback.m_closestHitFraction;
 		tr.m_vecHit = ToTVector(callback.m_hitPointWorld);
+		tr.m_vecNormal = ToTVector(callback.m_hitNormalWorld);
 		tr.m_pHit = CEntityHandle<CBaseEntity>((size_t)callback.m_collisionObject->getUserPointer()).GetPointer();
 		if ((size_t)callback.m_collisionObject->getUserPointer() >= GameServer()->GetMaxEntities())
 			tr.m_iHitExtra = (size_t)callback.m_collisionObject->getUserPointer() - GameServer()->GetMaxEntities();
+	}
+}
+
+void CBulletPhysics::TraceEntity(CTraceResult& tr, class CBaseEntity* pEntity, const Vector& v1, const Vector& v2)
+{
+	btVector3 vecFrom, vecTo;
+	vecFrom = ToBTVector(v1);
+	vecTo = ToBTVector(v2);
+
+	btTransform mFrom, mTo;
+	mFrom.setIdentity();
+	mTo.setIdentity();
+	mFrom.setOrigin(vecFrom);
+	mTo.setOrigin(vecTo);
+
+	CPhysicsEntity* pPhysicsEntity = pEntity?GetPhysicsEntity(pEntity):nullptr;
+	TAssert(pPhysicsEntity);
+	if (!pPhysicsEntity)
+		return;
+
+	TAssert(pPhysicsEntity->m_pRigidBody || pPhysicsEntity->m_pGhostObject);
+	if (!pPhysicsEntity->m_pRigidBody && !pPhysicsEntity->m_pGhostObject)
+		return;
+
+	btConvexShape* pShape = dynamic_cast<btConvexShape*>(pPhysicsEntity->m_pRigidBody?pPhysicsEntity->m_pRigidBody->getCollisionShape():pPhysicsEntity->m_pGhostObject->getCollisionShape());
+	TAssert(pShape);
+	if (!pShape)
+		return;
+
+	btCollisionObject* pObject = pPhysicsEntity->m_pRigidBody;
+	if (!pObject)
+		pObject = pPhysicsEntity->m_pGhostObject;
+
+	TAssert(pObject);
+
+	CClosestConvexResultCallback callback(vecFrom, vecTo, pObject);
+
+	m_pDynamicsWorld->convexSweepTest(pShape, mFrom, mTo, callback);
+
+	if (callback.m_closestHitFraction < tr.m_flFraction)
+	{
+		tr.m_flFraction = callback.m_closestHitFraction;
+		tr.m_vecHit = ToTVector(callback.m_hitPointWorld);
+		tr.m_vecNormal = ToTVector(callback.m_hitNormalWorld);
+		tr.m_pHit = CEntityHandle<CBaseEntity>((size_t)callback.m_hitCollisionObject->getUserPointer()).GetPointer();
+		if ((size_t)callback.m_hitCollisionObject->getUserPointer() >= GameServer()->GetMaxEntities())
+			tr.m_iHitExtra = (size_t)callback.m_hitCollisionObject->getUserPointer() - GameServer()->GetMaxEntities();
 	}
 }
 

@@ -142,6 +142,24 @@ const Vector CSPEntityData::TransformPointLocalToPhysics(const DoubleVector& v) 
 	return pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform() * v;
 }
 
+const DoubleVector CSPEntityData::TransformVectorPhysicsToLocal(const Vector& v) const
+{
+	CPlanet* pPlanet = GetPlanet();
+	if (!pPlanet)
+	{
+		TAssert(pPlanet);
+		return v;
+	}
+
+	if (!pPlanet->GetChunkManager()->HasGroupCenter())
+	{
+		TAssert(pPlanet->GetChunkManager()->HasGroupCenter());
+		return v;
+	}
+
+	return pPlanet->GetChunkManager()->GetGroupCenterToPlanetTransform().TransformVector(v);
+}
+
 const Vector CSPEntityData::TransformVectorLocalToPhysics(const Vector& v) const
 {
 	CPlanet* pPlanet = GetPlanet();

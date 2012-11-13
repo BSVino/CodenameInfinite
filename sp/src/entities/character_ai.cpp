@@ -10,6 +10,9 @@
 
 void CSPCharacter::TaskThink()
 {
+	if (GetControllingPlayer())
+		return;
+
 	if (GameData().GetCommandMenu())
 	{
 		// Face the player and await instructions.
@@ -72,7 +75,7 @@ void CSPCharacter::TaskThink()
 			}
 			else
 			{
-				CPallet* pPallet = FindNearestPallet(eDesignation);
+				CPallet* pPallet = FindNearestPallet(eDesignation, false);
 				if (!pPallet)
 					return;
 
@@ -94,7 +97,7 @@ void CSPCharacter::TaskThink()
 		if (IsHoldingABlock())
 		{
 			// Let's head to the pallete
-			CStructure* pPallet = FindNearestPallet(m_aiInventoryTypes[0]);
+			CStructure* pPallet = FindNearestPallet(m_aiInventoryTypes[0], true);
 			if (!pPallet)
 				return;
 
@@ -174,6 +177,27 @@ bool CSPCharacter::MoveTo(const TVector& vecTarget, float flMoveDistance)
 	else
 		SetViewAngles(VectorAngles(vecDirection));
 
+	// Test to see if the way is blocked.
+	Vector vecVelocity = (GameData().TransformVectorLocalToPhysics(AngleVector(GetViewAngles()))).Normalized();
+	Vector vecOrigin = GetPhysicsTransform().GetTranslation();
+
+	CTraceResult tr;
+	GamePhysics()->TraceEntity(tr, this, vecOrigin, vecOrigin + vecVelocity * 0.4f);
+
+	// If the way is blocked, try to move up and over the object.
+	if (tr.m_flFraction < 1)
+	{
+		if (tr.m_vecNormal.y < 0.01)
+			vecDirection = GetUpVector();
+		else if (tr.m_vecNormal.Dot(vecVelocity) < 0.7f)
+			vecDirection = GetUpVector();
+	}
+
+	if (HasMoveParent())
+		SetViewAngles(VectorAngles(GetMoveParent()->GetGlobalTransform().InvertedRT().GetMeters().TransformVector(vecDirection.Normalized())));
+	else
+		SetViewAngles(VectorAngles(vecDirection));
+
 	m_vecGoalVelocity = Vector(1, 0, 0);
 
 	return false;
@@ -219,13 +243,48 @@ const IVector CSPCharacter::FindNearbyDesignation(CSpire* pSpire) const
 	return pSpire->GetVoxelTree()->FindNearbyDesignation(GetLocalOrigin());
 }
 
-CPallet* CSPCharacter::FindNearestPallet(item_t eBlock) const
+CPallet* CSPCharacter::FindNearestPallet(item_t eBlock, bool bEmptyOK) const
 {
 	CSpire* pSpire = GetNearestSpire();
 	if (!pSpire)
 		return nullptr;
 
 	CPallet* pStructure = nullptr;
+	for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
+	{
+		CPallet* pPallet = dynamic_cast<CPallet*>(pSpire->GetStructures()[i].GetPointer());
+		if (!pPallet)
+			continue;
+
+		if (pPallet->GetBlockQuantity() && pPallet->GetBlockType() != eBlock)
+			continue;
+
+		if (!pPallet->GetBlockQuantity())
+			continue;
+
+		if (pPallet->IsUnderConstruction())
+			continue;
+
+		if (pPallet->GetBlockQuantity() == pPallet->GetBlockCapacity())
+			continue;
+
+		if (!pStructure)
+		{
+			pStructure = pPallet;
+			continue;
+		}
+
+		if ((pPallet->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() < (pStructure->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr())
+			pStructure = pPallet;
+	}
+
+	if (pStructure)
+		return pStructure;
+
+	if (!bEmptyOK)
+		return nullptr;
+
+	pStructure = nullptr;
 	for (size_t i = 0; i < pSpire->GetStructures().size(); i++)
 	{
 		CPallet* pPallet = dynamic_cast<CPallet*>(pSpire->GetStructures()[i].GetPointer());

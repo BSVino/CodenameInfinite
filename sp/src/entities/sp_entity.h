@@ -30,6 +30,7 @@ public:
 
 	const DoubleVector          TransformPointPhysicsToLocal(const Vector& v) const;
 	const Vector                TransformPointLocalToPhysics(const DoubleVector& v) const;
+	const DoubleVector          TransformVectorPhysicsToLocal(const Vector& v) const;
 	const Vector                TransformVectorLocalToPhysics(const Vector& v) const;
 
 	void                        SetPlanet(CPlanet* pPlanet);

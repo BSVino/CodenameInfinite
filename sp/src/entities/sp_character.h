@@ -74,7 +74,7 @@ public:
 	virtual bool                MoveTo(const TVector& vecTarget, float flDistance=3); // return true if I'm there
 	class CStructure*           FindNearestBuildStructure() const;
 	const IVector               FindNearbyDesignation(CSpire* pSpire) const;
-	class CPallet*              FindNearestPallet(item_t eBlock) const;
+	class CPallet*              FindNearestPallet(item_t eBlock, bool bEmptyOK) const;
 	class CMine*                FindNearestMine() const;
 	CPickup*                    FindNearbyPickup() const;
 	CBaseEntity*                FindBestEnemy() const;
