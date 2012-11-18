@@ -172,13 +172,13 @@ public:
 	bool					m_bTexCoord;
 	bool					m_bNormal;
 	bool					m_bColor;
-	tvector<Vector2D>		m_avecTexCoord;
-	tvector<tvector<Vector2D> >	m_aavecTexCoords;	// A vector of a vector of vectors. Inception!
-	Vector					m_vecNormal;
-	tvector<Vector>	m_avecNormals;
-	::Color					m_clrColor;
-	tvector< ::Color>		m_aclrColors;
-	tvector<Vector>			m_avecVertices;
+	::Color                 m_clrColor;
+	Vector                  m_vecNormal;
+	static tvector<Vector2D>    s_avecTexCoord;
+	static tvector<tvector<Vector2D> > s_aavecTexCoords;	// A vector of a vector of vectors. Inception!
+	static tvector<Vector>      s_avecNormals;
+	static tvector< ::Color>    s_aclrColors;
+	static tvector<Vector>      s_avecVertices;
 
 	static tvector<CRenderContext>	s_aContexts;
 };
