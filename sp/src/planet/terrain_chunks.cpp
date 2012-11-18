@@ -14,6 +14,7 @@
 #include "planet/planet.h"
 #include "planet/planet_terrain.h"
 #include "planet/terrain_lumps.h"
+#include "trees.h"
 
 CParallelizer* CTerrainChunkManager::s_pChunkGenerator = nullptr;
 
@@ -647,6 +648,8 @@ void CTerrainChunk::GenerateTerrain()
 			}
 		}
 	}
+
+	m_pManager->m_pPlanet->GetTreeManager()->GenerateTrees(this);
 
 	m_bGenerationDone = true;
 }

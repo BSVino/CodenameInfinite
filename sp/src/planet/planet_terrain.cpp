@@ -832,6 +832,33 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	return vecOffset;
 }
 
+float CPlanetTerrain::GenerateTrees(const DoubleVector2D& vecCoordinate)
+{
+	DoubleVector2D vecAdjustedCoordinate = vecCoordinate;
+	Vector vecDirection = GetDirection();
+	if (vecDirection[0] > 0)
+		vecAdjustedCoordinate += DoubleVector2D(0, 0);
+	else if (vecDirection[0] < 0)
+		vecAdjustedCoordinate += DoubleVector2D(2, 0);
+	else if (vecDirection[1] > 0)
+		vecAdjustedCoordinate += DoubleVector2D(0, 1);
+	else if (vecDirection[1] < 0)
+		vecAdjustedCoordinate += DoubleVector2D(0, -1);
+	else if (vecDirection[2] > 0)
+		vecAdjustedCoordinate += DoubleVector2D(3, 0);
+	else
+		vecAdjustedCoordinate += DoubleVector2D(1, 0);
+
+	double flTreeAlpha = 25000;
+
+	double flTrees = m_pPlanet->m_aTreeDensity.Noise(vecAdjustedCoordinate.x * flTreeAlpha, vecAdjustedCoordinate.y * flTreeAlpha);
+
+	double flScale = RemapValClamped(flTrees, -0.1, 0.2, 0.0, 0.6);
+	double flOverdrive = RemapValClamped(flTrees, 0.8, 1.0, 1.0, 1.5);
+
+	return (float)(flScale*flOverdrive);
+}
+
 CVar terrain_treefind("terrain_treefind", "on");
 
 tvector<CTerrainArea> CPlanetTerrain::FindNearbyAreas(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance)

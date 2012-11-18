@@ -18,6 +18,7 @@ set (CI_PLANET_SOURCES
 	planet/planet_terrain.cpp
 	planet/terrain_lumps.cpp
 	planet/terrain_chunks.cpp
+	planet/trees.cpp
 )
 
 set (CI_VOXEL_SOURCES

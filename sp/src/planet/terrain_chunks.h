@@ -48,6 +48,9 @@ public:
 	DoubleMatrix4x4                     GetChunkToPlanet() const { return m_mChunkToPlanet; }
 	size_t                              GetParity() const { return m_iParity; }
 
+	DoubleVector2D                      GetMin2D() const { return m_vecMin; }
+	DoubleVector2D                      GetMax2D() const { return m_vecMax; }
+
 protected:
 	class CTerrainChunkManager*			m_pManager;
 	size_t                              m_iChunk;

@@ -133,6 +133,7 @@ public:
 	void						Render(class CRenderingContext* c) const;
 
 	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
+	float                       GenerateTrees(const DoubleVector2D& vecCoordinate);
 
 	tvector<CTerrainArea>       FindNearbyAreas(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance);
 	void                        SearchAreas(tvector<CTerrainArea>& avecAreas, size_t iMaxDepth, size_t iCurrentDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance);

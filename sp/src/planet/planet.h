@@ -74,8 +74,10 @@ public:
 
 	virtual scale_t				GetScale() const { return SCALE_MEGAMETER; }
 
-	const class CTerrainLumpManager* GetLumpManager() const { return m_pLumpManager; }
+	const class CTerrainLumpManager*  GetLumpManager() const { return m_pLumpManager; }
 	const class CTerrainChunkManager* GetChunkManager() const { return m_pChunkManager; }
+	class CTreeManager*               GetTreeManager() { return m_pTreeManager; }
+
 	size_t						LumpDepth() { return m_iLumpDepth; };      // The depth at which lumps first appear.
 	size_t						ChunkDepth() { return m_iMeterDepth-7; };  // The depth at which chunks first appear.
 	size_t						MeterDepth() { return m_iMeterDepth; };    // The deepest depth.
@@ -119,9 +121,11 @@ protected:
 
 	class CTerrainLumpManager*  m_pLumpManager;
 	class CTerrainChunkManager* m_pChunkManager;
+	class CTreeManager*         m_pTreeManager;
 
 	// 3 channels (x, y, z), one alpha for each channel for variation
 	CSimplexNoise<double>       m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][4];
+	CSimplexNoise<double>       m_aTreeDensity;
 
 	static class CParallelizer*	s_pShell2Generator;
 };

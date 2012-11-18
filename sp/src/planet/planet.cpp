@@ -18,6 +18,7 @@
 #include "planet/planet_terrain.h"
 #include "planet/terrain_lumps.h"
 #include "planet/terrain_chunks.h"
+#include "trees.h"
 
 REGISTER_ENTITY(CPlanet);
 
@@ -40,6 +41,7 @@ SAVEDATA_TABLE_BEGIN(CPlanet);
 	SAVEDATA_OMIT(m_pTerrainUp);
 	SAVEDATA_OMIT(m_pTerrainDn);
 	SAVEDATA_OMIT(m_aNoiseArray);
+	SAVEDATA_OMIT(m_aTreeDensity);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CPlanet);
@@ -79,6 +81,7 @@ CPlanet::CPlanet()
 
 	m_pLumpManager = new CTerrainLumpManager(this);
 	m_pChunkManager = new CTerrainChunkManager(this);
+	m_pTreeManager = new CTreeManager(this);
 
 	m_iMinQuadRenderDepth = 3;
 }
@@ -87,6 +90,7 @@ CPlanet::~CPlanet()
 {
 	delete m_pLumpManager;
 	delete m_pChunkManager;
+	delete m_pTreeManager;
 
 	for (size_t i = 0; i < 6; i++)
 		delete m_apTerrain[i];
@@ -95,6 +99,7 @@ CPlanet::~CPlanet()
 void CPlanet::Precache()
 {
 	PrecacheMaterial("textures/earth.mat");
+	PrecacheMaterial("textures/tree.mat");
 }
 
 void CPlanet::Spawn()
@@ -181,6 +186,7 @@ CVar r_planets("r_planets", "on");
 CVar r_planet_shells("r_planet_shells", "on");
 CVar r_planet_lumps("r_planet_lumps", "on");
 CVar r_planet_chunks("r_planet_chunks", "on");
+CVar r_trees("r_trees", "on");
 
 void CPlanet::PostRender() const
 {
@@ -194,7 +200,12 @@ void CPlanet::PostRender() const
 
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	if (eScale == SCALE_RENDER)
+	{
+		if (r_trees.GetBool())
+			m_pTreeManager->Render();
+
 		return;
+	}
 
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
@@ -309,8 +320,10 @@ void CPlanet::SetRandomSeed(size_t iSeed)
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{
 		for (size_t j = 0; j < 4; j++)
-			m_aNoiseArray[i][j].Init(iSeed+i*4+j);
+			m_aNoiseArray[i][j].Init(iSeed++);
 	}
+
+	m_aTreeDensity.Init(iSeed++);
 }
 
 void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord)
