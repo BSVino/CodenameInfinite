@@ -228,6 +228,8 @@ void CBulletPhysics::AddShape(class CBaseEntity* pEntity, collision_type_t eColl
 		pPhysicsEntity->m_apPhysicsShapes.back()->setCollisionFlags((pPhysicsEntity->m_pRigidBody?pPhysicsEntity->m_pRigidBody->getCollisionFlags():0) | btCollisionObject::CF_KINEMATIC_OBJECT);
 		pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_DEACTIVATION);
 	}
+	else if (eCollisionType == CT_STATIC_MESH)
+		pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_SIMULATION);
 
 	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back(), pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 }
@@ -274,6 +276,8 @@ void CBulletPhysics::AddModel(class CBaseEntity* pEntity, collision_type_t eColl
 			pPhysicsEntity->m_apPhysicsShapes.back()->setCollisionFlags((pPhysicsEntity->m_pRigidBody?pPhysicsEntity->m_pRigidBody->getCollisionFlags():0) | btCollisionObject::CF_KINEMATIC_OBJECT);
 			pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_DEACTIVATION);
 		}
+		else if (eCollisionType == CT_STATIC_MESH)
+			pPhysicsEntity->m_apPhysicsShapes.back()->setActivationState(DISABLE_SIMULATION);
 
 		m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_apPhysicsShapes.back(), pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 	}
@@ -336,6 +340,8 @@ void CBulletPhysics::AddModelTris(class CBaseEntity* pEntity, collision_type_t e
 			pPhysicsEntity->m_pRigidBody->setCollisionFlags(pPhysicsEntity->m_pRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			pPhysicsEntity->m_pRigidBody->setActivationState(DISABLE_DEACTIVATION);
 		}
+		else if (eCollisionType == CT_STATIC_MESH)
+			pPhysicsEntity->m_pRigidBody->setActivationState(DISABLE_SIMULATION);
 
 		m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody, pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 	}
@@ -354,6 +360,8 @@ void CBulletPhysics::AddModelTris(class CBaseEntity* pEntity, collision_type_t e
 			pBody->setCollisionFlags(pBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			pBody->setActivationState(DISABLE_DEACTIVATION);
 		}
+		else if (eCollisionType == CT_STATIC_MESH)
+			pPhysicsEntity->m_pRigidBody->setActivationState(DISABLE_SIMULATION);
 
 		m_pDynamicsWorld->addRigidBody(pBody, pEntity->GetCollisionGroup(), GetMaskForGroup(pEntity->GetCollisionGroup()));
 	}
@@ -454,6 +462,7 @@ size_t CBulletPhysics::AddExtra(size_t iExtraMesh, const Vector& vecOrigin)
 	pPhysicsEntity->m_pRigidBody = new btRigidBody(rbInfo);
 	pPhysicsEntity->m_pRigidBody->setUserPointer((void*)(GameServer()->GetMaxEntities()+iIndex));
 	pPhysicsEntity->m_pRigidBody->setWorldTransform(mTransform);
+	pPhysicsEntity->m_pRigidBody->setActivationState(DISABLE_SIMULATION);
 
 	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody, CG_STATIC, GetMaskForGroup(CG_STATIC));
 
@@ -500,6 +509,7 @@ size_t CBulletPhysics::AddExtraBox(const Vector& vecCenter, const Vector& vecSiz
 	pPhysicsEntity->m_pRigidBody = new btRigidBody(rbInfo);
 	pPhysicsEntity->m_pRigidBody->setUserPointer((void*)(GameServer()->GetMaxEntities()+iIndex));
 	pPhysicsEntity->m_pRigidBody->setWorldTransform(mTransform);
+	pPhysicsEntity->m_pRigidBody->setActivationState(DISABLE_SIMULATION);
 
 	m_pDynamicsWorld->addRigidBody(pPhysicsEntity->m_pRigidBody, CG_STATIC, GetMaskForGroup(CG_STATIC));
 
