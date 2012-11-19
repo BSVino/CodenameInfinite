@@ -26,6 +26,28 @@ void CTreeManager::GenerateTrees(class CTerrainChunk* pChunk)
 	AddChunkTrees(pChunk->GetTerrain(), pChunk->GetMin2D())->GenerateTrees(pChunk);
 }
 
+void CTreeManager::LoadChunk(class CTerrainChunk* pChunk)
+{
+	CChunkTrees* pChunkTrees = GetChunkTrees(pChunk->GetTerrain(), pChunk->GetMin2D());
+
+	TAssert(pChunkTrees);
+	if (!pChunkTrees)
+		return;
+
+	pChunkTrees->Load();
+}
+
+void CTreeManager::UnloadChunk(class CTerrainChunk* pChunk)
+{
+	CChunkTrees* pChunkTrees = GetChunkTrees(pChunk->GetTerrain(), pChunk->GetMin2D());
+
+	TAssert(pChunkTrees);
+	if (!pChunkTrees)
+		return;
+
+	pChunkTrees->Unload();
+}
+
 void CTreeManager::Render() const
 {
 	if (SPGame()->GetSPRenderer()->GetRenderingScale() != SCALE_RENDER)
@@ -77,7 +99,7 @@ void CChunkTrees::GenerateTrees(class CTerrainChunk* pChunk)
 {
 	m_bTreesGenerated = false;
 
-	m_vecOrigins.clear();
+	m_avecOrigins.clear();
 
 	m_iTerrain = pChunk->GetTerrain();
 	m_vecMin = pChunk->GetMin2D();
@@ -117,11 +139,35 @@ void CChunkTrees::GenerateTrees(class CTerrainChunk* pChunk)
 
 			DoubleVector vecTree = pTerrain->CoordToWorld(vecTree2D) + pTerrain->GenerateOffset(vecTree2D);
 
-			m_vecOrigins.push_back(vecTree);
+			m_avecOrigins.push_back(vecTree);
 		}
 	}
 
 	m_bTreesGenerated = true;
+}
+
+void CChunkTrees::Load()
+{
+	TAssert(m_pManager->m_pPlanet->GetChunkManager()->HasGroupCenter());
+	TAssert(m_avecOrigins.size());
+	TAssert(!m_aiPhysicsBoxes.size());
+
+	DoubleMatrix4x4 mPlanetToGroup = m_pManager->m_pPlanet->GetChunkManager()->GetPlanetToGroupCenterTransform();
+
+	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pManager->m_pPlanet->GetScale(), SCALE_METER);
+
+	for (size_t i = 0; i < m_avecOrigins.size(); i++)
+	{
+		size_t iPhysicsBox = GamePhysics()->AddExtraBox(mPlanetToGroup * (m_avecOrigins[i]*flScale), Vector(1, 5, 1));
+
+		m_aiPhysicsBoxes.push_back(iPhysicsBox);
+	}
+}
+
+void CChunkTrees::Unload()
+{
+	for (size_t i = 0; i < m_aiPhysicsBoxes.size(); i++)
+		GamePhysics()->RemoveExtra(m_aiPhysicsBoxes[i]);
 }
 
 void CChunkTrees::Render() const
@@ -129,13 +175,13 @@ void CChunkTrees::Render() const
 	if (!m_bTreesGenerated)
 		return;
 
-	if (!m_vecOrigins.size())
+	if (!m_avecOrigins.size())
 		return;
 
 	Vector vecUp, vecRight;
 	GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
 	vecRight *= 2.5;
-	vecUp = m_vecOrigins[m_vecOrigins.size()/2].Normalized() * 10;
+	vecUp = m_avecOrigins[m_avecOrigins.size()/2].Normalized() * 10;
 
 	Vector v1 = -vecRight + vecUp;
 	Vector v2 = -vecRight;
@@ -149,10 +195,10 @@ void CChunkTrees::Render() const
 	r.UseMaterial("textures/tree.mat");
 	r.SetUniform("vecColor", Vector4D(1, 1, 1, 1));
 
-	size_t iTrees = m_vecOrigins.size();
+	size_t iTrees = m_avecOrigins.size();
 	for (size_t i = 0; i < iTrees; i++)
 	{
-		DoubleVector vecTree = m_vecOrigins[i];
+		DoubleVector vecTree = m_avecOrigins[i];
 
 		r.ResetTransformations();
 		r.Translate((vecTree - m_pManager->m_pPlanet->GetCharacterLocalOrigin())*flScale - vecUp*0.1f);

@@ -19,6 +19,9 @@ public:
 public:
 	void          GenerateTrees(class CTerrainChunk* pChunk);
 
+	void          Load();
+	void          Unload();
+
 	void          Render() const;
 
 private:
@@ -33,7 +36,8 @@ private:
 	DoubleVector    m_vecLocalCenter;	// Chunk center in planet space
 	double          m_flRadius;
 
-	tvector<DoubleVector> m_vecOrigins;
+	tvector<DoubleVector> m_avecOrigins;
+	tvector<size_t>       m_aiPhysicsBoxes;
 };
 
 class CTreeManager
@@ -45,6 +49,9 @@ public:
 
 public:
 	void          GenerateTrees(class CTerrainChunk* pChunk);
+
+	void          LoadChunk(class CTerrainChunk* pChunk);
+	void          UnloadChunk(class CTerrainChunk* pChunk);
 
 	void          Render() const;
 

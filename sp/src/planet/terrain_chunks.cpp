@@ -485,6 +485,8 @@ CTerrainChunk::CTerrainChunk(CTerrainChunkManager* pManager, size_t iChunk, size
 
 CTerrainChunk::~CTerrainChunk()
 {
+	m_pManager->m_pPlanet->GetTreeManager()->UnloadChunk(this);
+
 	TAssert(m_bGenerationDone);
 
 	if (m_iPhysicsEntity != ~0)
@@ -526,6 +528,8 @@ void CTerrainChunk::Think()
 				m_bLoadIntoPhysics = false;
 				if (!m_pManager->m_bHaveGroupCenter)
 					m_pManager->FindCenterChunk();
+
+				m_pManager->m_pPlanet->GetTreeManager()->LoadChunk(this);
 			}
 
 			if (m_aflVBODrop.size())
@@ -592,6 +596,9 @@ void CTerrainChunk::GenerateTerrain()
 
 	m_flRadius = sqrt(std::max(flDistanceSqr1, std::max(flDistanceSqr2, std::max(flDistanceSqr3, flDistanceSqr4))));
 
+	// Generate trees before physics so that it's available when it wants to load tree physics in.
+	m_pManager->m_pPlanet->GetTreeManager()->GenerateTrees(this);
+
 	TAssert(!m_aflPhysicsVerts.size());
 	m_aflPhysicsVerts.clear();
 	m_aiPhysicsVerts.clear();
@@ -648,8 +655,6 @@ void CTerrainChunk::GenerateTerrain()
 			}
 		}
 	}
-
-	m_pManager->m_pPlanet->GetTreeManager()->GenerateTrees(this);
 
 	m_bGenerationDone = true;
 }

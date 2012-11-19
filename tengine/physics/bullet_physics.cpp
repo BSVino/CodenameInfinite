@@ -24,6 +24,7 @@ CBulletPhysics::CBulletPhysics()
 
 	m_pDynamicsWorld = new btDiscreteDynamicsWorld(m_pDispatcher, m_pBroadphase, NULL, m_pCollisionConfiguration);
 	m_pDynamicsWorld->setGravity(btVector3(0, -9.8f, 0));
+	m_pDynamicsWorld->setForceUpdateAllAabbs(false);
 
 	m_pDebugDrawer = NULL;
 }
