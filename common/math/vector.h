@@ -498,6 +498,14 @@ public:
 		return false;
 	}
 
+	bool	operator!=(const TemplateVector2D<unit_t>& v) const
+	{
+		float flEp = 0.000001f;
+		if (fabs(v.x - x) > flEp || fabs(v.y - y) > flEp)
+			return true;
+		return false;
+	}
+
 	void	operator+=(const TemplateVector2D<unit_t> &v);
 	void	operator-=(const TemplateVector2D<unit_t> &v);
 

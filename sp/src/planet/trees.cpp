@@ -86,6 +86,20 @@ CChunkTrees* CTreeManager::GetChunkTrees(size_t iTerrain, const DoubleVector2D& 
 	return &it->second;
 }
 
+const CChunkTrees* CTreeManager::GetChunkTrees(size_t iTerrain, const DoubleVector2D& vecMin) const
+{
+	CChunkAddress oChunkAddress;
+	oChunkAddress.iTerrain = iTerrain;
+	oChunkAddress.vecMin = vecMin;
+
+	const auto it = m_aChunkTrees.find(oChunkAddress);
+
+	if (it == m_aChunkTrees.end())
+		return nullptr;
+
+	return &it->second;
+}
+
 CChunkTrees* CTreeManager::AddChunkTrees(size_t iTerrain, const DoubleVector2D& vecMin)
 {
 	CChunkAddress oChunkAddress;
@@ -93,6 +107,50 @@ CChunkTrees* CTreeManager::AddChunkTrees(size_t iTerrain, const DoubleVector2D& 
 	oChunkAddress.vecMin = vecMin;
 
 	return &m_aChunkTrees.insert(tpair<CChunkAddress, CChunkTrees>(oChunkAddress, CChunkTrees(this))).first->second;
+}
+
+bool CTreeManager::IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const
+{
+	if (iEnt == ~0)
+		return false;
+
+	for (auto it = m_aChunkTrees.begin(); it != m_aChunkTrees.end(); it++)
+	{
+		if (it->second.IsExtraPhysicsEntTree(iEnt, oAddress))
+			return true;
+	}
+
+	return false;
+}
+
+DoubleVector CTreeManager::GetTreeOrigin(const CTreeAddress& oAddress) const
+{
+	TAssert(oAddress.IsValid());
+	if (!oAddress.IsValid())
+		return DoubleVector();
+
+	const CChunkTrees* pChunkTrees = GetChunkTrees(oAddress.iTerrain, oAddress.vecMin);
+
+	TAssert(pChunkTrees);
+	if (!pChunkTrees)
+		return DoubleVector();
+
+	return pChunkTrees->GetTreeOrigin(oAddress.iTree);
+}
+
+void CTreeManager::RemoveTree(const CTreeAddress& oAddress)
+{
+	TAssert(oAddress.IsValid());
+	if (!oAddress.IsValid())
+		return;
+
+	CChunkTrees* pChunkTrees = GetChunkTrees(oAddress.iTerrain, oAddress.vecMin);
+
+	TAssert(pChunkTrees);
+	if (!pChunkTrees)
+		return;
+
+	pChunkTrees->RemoveTree(oAddress.iTree);
 }
 
 void CChunkTrees::GenerateTrees(class CTerrainChunk* pChunk)
@@ -140,6 +198,7 @@ void CChunkTrees::GenerateTrees(class CTerrainChunk* pChunk)
 			DoubleVector vecTree = pTerrain->CoordToWorld(vecTree2D) + pTerrain->GenerateOffset(vecTree2D);
 
 			m_avecOrigins.push_back(vecTree);
+			m_abActive.push_back(true);
 		}
 	}
 
@@ -168,6 +227,8 @@ void CChunkTrees::Unload()
 {
 	for (size_t i = 0; i < m_aiPhysicsBoxes.size(); i++)
 		GamePhysics()->RemoveExtra(m_aiPhysicsBoxes[i]);
+
+	m_aiPhysicsBoxes.clear();
 }
 
 void CChunkTrees::Render() const
@@ -198,6 +259,9 @@ void CChunkTrees::Render() const
 	size_t iTrees = m_avecOrigins.size();
 	for (size_t i = 0; i < iTrees; i++)
 	{
+		if (!m_abActive[i])
+			continue;
+
 		DoubleVector vecTree = m_avecOrigins[i];
 
 		r.ResetTransformations();
@@ -214,4 +278,41 @@ void CChunkTrees::Render() const
 			r.Vertex(v4);
 		r.EndRender();
 	}
+}
+
+bool CChunkTrees::IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const
+{
+	for (size_t i = 0; i < m_aiPhysicsBoxes.size(); i++)
+	{
+		if (iEnt == m_aiPhysicsBoxes[i])
+		{
+			oAddress.iTerrain = m_iTerrain;
+			oAddress.vecMin = m_vecMin;
+			oAddress.iTree = i;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+DoubleVector CChunkTrees::GetTreeOrigin(size_t iTree) const
+{
+	TAssert(iTree < m_avecOrigins.size());
+	if (iTree >= m_avecOrigins.size())
+		return DoubleVector();
+
+	return m_avecOrigins[iTree];
+}
+
+void CChunkTrees::RemoveTree(size_t iTree)
+{
+	TAssert(iTree < m_abActive.size());
+	if (iTree >= m_abActive.size())
+		return;
+
+	if (iTree < m_aiPhysicsBoxes.size())
+		GamePhysics()->RemoveExtra(m_aiPhysicsBoxes[iTree]);
+
+	m_abActive[iTree] = false;
 }

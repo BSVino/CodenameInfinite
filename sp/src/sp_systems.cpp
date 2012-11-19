@@ -29,13 +29,14 @@ void CParticleSystemLibrary::InitSystems()
 		pSystem->SetEmissionRate(0.001f);
 		pSystem->SetEmissionMaxDistance(1.0f);
 		pSystem->SetAlpha(0.9f);
-		pSystem->SetStartRadius(0.01f);
-		pSystem->SetEndRadius(0.02f);
+		pSystem->SetStartRadius(0.05f);
+		pSystem->SetEndRadius(0.1f);
 		pSystem->SetFadeOut(1.0f);
 		pSystem->SetInheritedVelocity(0.0f);
 		pSystem->SetRandomVelocity(AABB(Vector(-0.05f, -0.05f, -0.05f), Vector(0.05f, 0.05f, 0.05f)));
 		pSystem->SetGravity(Vector(0, 0, 0));
 		pSystem->SetDrag(0.95f);
 		pSystem->SetRandomBillboardYaw(true);
+		pSystem->SetRandomAngleVelocity(true);
 	}
 }

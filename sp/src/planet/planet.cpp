@@ -426,6 +426,14 @@ bool CPlanet::IsExtraPhysicsEntGround(size_t iEnt) const
 	return false;
 }
 
+bool CPlanet::IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const
+{
+	if (iEnt == ~0)
+		return false;
+
+	return m_pTreeManager->IsExtraPhysicsEntTree(iEnt, oAddress);
+}
+
 void CPlanet::SetStar(CStar* pStar)
 {
 	m_hStar = pStar;

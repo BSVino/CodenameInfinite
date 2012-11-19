@@ -4,6 +4,8 @@
 #include <tvector.h>
 #include <tmap.h>
 
+#include "treeaddress.h"
+
 class CChunkTrees
 {
 	friend class CTreeManager;
@@ -24,6 +26,10 @@ public:
 
 	void          Render() const;
 
+	bool          IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const;
+	DoubleVector  GetTreeOrigin(size_t iTree) const;
+	void          RemoveTree(size_t iTree);
+
 private:
 	class CTreeManager*   m_pManager;
 
@@ -38,6 +44,7 @@ private:
 
 	tvector<DoubleVector> m_avecOrigins;
 	tvector<size_t>       m_aiPhysicsBoxes;
+	tvector<bool>         m_abActive;   // Should really use a bit vector of some kind but meh.
 };
 
 class CTreeManager
@@ -55,8 +62,13 @@ public:
 
 	void          Render() const;
 
+	const CChunkTrees* GetChunkTrees(size_t iTerrain, const DoubleVector2D& vecMin) const;
 	CChunkTrees*  GetChunkTrees(size_t iTerrain, const DoubleVector2D& vecMin);
 	CChunkTrees*  AddChunkTrees(size_t iTerrain, const DoubleVector2D& vecMin);
+
+	bool          IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const;
+	DoubleVector  GetTreeOrigin(const CTreeAddress& oAddress) const;
+	void          RemoveTree(const CTreeAddress& oAddress);
 
 private:
 	class CPlanet*  m_pPlanet;

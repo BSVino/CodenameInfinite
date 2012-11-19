@@ -6,6 +6,8 @@
 
 #include <tengine/game/entities/baseentity.h>
 
+#include "treeaddress.h"
+
 #define TERRAIN_NOISE_ARRAY_SIZE 8
 
 class CPlanetTerrain;
@@ -48,6 +50,7 @@ public:
 	bool                        FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
 
 	bool                        IsExtraPhysicsEntGround(size_t iEnt) const;
+	bool                        IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const;
 
 	void                        SetStar(class CStar* pStar);
 	class CStar*                GetStar() const;

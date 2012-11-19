@@ -3,6 +3,7 @@
 #include <game/entities/weapon.h>
 
 #include <voxel/ivector.h>
+#include <planet/treeaddress.h>
 
 class CStructure;
 
@@ -24,6 +25,7 @@ public:
 	void                        BeginDisassembly(CStructure* pStructure);
 	void                        BeginDisassembly(const IVector& vecBlock);
 	void                        BeginDisassembly(const TVector& vecGround);
+	void                        BeginDisassembly(const CTreeAddress& oTree);
 	void                        BeginDisassembly();
 	void                        EndDisassembly();
 	bool                        IsDisassembling() const { return m_bDisassembling; }
@@ -43,5 +45,6 @@ private:
 	CEntityHandle<CStructure>   m_hDisassemblingStructure;
 	IVector                     m_vecDisassemblingBlock;
 	TVector                     m_vecDisassemblingGround;
+	CTreeAddress                m_oDisassemblingTree;
 	double                      m_flDisassemblingStart;
 };
