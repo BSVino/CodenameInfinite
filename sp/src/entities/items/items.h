@@ -7,6 +7,7 @@ typedef enum
 	// Block types
 	ITEM_DIRT,
 	ITEM_STONE,
+	ITEM_WOOD,
 
 	ITEM_BLOCKS_TOTAL,
 

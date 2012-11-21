@@ -25,6 +25,7 @@ void CPickup::Precache()
 {
 	PrecacheMaterial("textures/items/dirt.mat");
 	PrecacheMaterial("textures/items/stone.mat");
+	PrecacheMaterial("textures/items/wood.mat");
 }
 
 void CPickup::Spawn()
@@ -108,9 +109,9 @@ void CPickup::PostRender() const
 		c.Vertex(-vecRight + vecUp);
 		c.TexCoord(0.0f, 0.0f);
 		c.Vertex(-vecRight - vecUp);
-		c.TexCoord(0.25f, 0.0f);
+		c.TexCoord(1.0f, 0.0f);
 		c.Vertex(vecRight - vecUp);
-		c.TexCoord(0.25f, 1.0f);
+		c.TexCoord(1.0f, 1.0f);
 		c.Vertex(vecRight + vecUp);
 	c.EndRender();
 }

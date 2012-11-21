@@ -95,7 +95,7 @@ void CDisassembler::Think()
 				DoubleVector vecTree = pPlayer->GameData().GetPlanet()->GetTreeManager()->GetTreeOrigin(m_oDisassemblingTree) * flScale;
 				DoubleVector vecUp = vecTree.Normalized();
 
-				size_t iWoods = 3;
+				size_t iWoods = RandomInt(3, 5);
 
 				for (size_t i = 0; i < iWoods; i++)
 				{
@@ -106,7 +106,7 @@ void CDisassembler::Think()
 					pDisassembled->SetMoveParent(pPlayer->GameData().GetPlanet());
 					pDisassembled->SetLocalTransform(pPlayer->GetLocalTransform());
 					pDisassembled->SetLocalOrigin(vecTree + vecUp*i);
-					pDisassembled->SetItem(ITEM_DIRT);
+					pDisassembled->SetItem(ITEM_WOOD);
 				}
 
 				pPlayer->GameData().GetPlanet()->GetTreeManager()->RemoveTree(m_oDisassemblingTree);

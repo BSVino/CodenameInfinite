@@ -253,12 +253,12 @@ void CVoxelChunk::BuildVBO()
 
 				if (bDrawSide)
 				{
-					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vxyZ, Vector2D(0.25f, 0.75f));
-					PushVert(aflBuffer, vxYZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vxyZ, Vector2D(1.0f, 0.0f));
+					PushVert(aflBuffer, vxYZ, Vector2D(1.0f, 1.0f));
 
-					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vxYZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vxYZ, Vector2D(1.0f, 1.0f));
 					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
@@ -273,12 +273,12 @@ void CVoxelChunk::BuildVBO()
 
 				if (bDrawSide)
 				{
-					PushVert(aflBuffer, vXyZ, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vXyz, Vector2D(0.25f, 0.75f));
-					PushVert(aflBuffer, vXYz, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vXyZ, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vXyz, Vector2D(1.0f, 0.0f));
+					PushVert(aflBuffer, vXYz, Vector2D(1.0f, 1.0f));
 
-					PushVert(aflBuffer, vXyZ, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vXYz, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vXyZ, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vXYz, Vector2D(1.0f, 1.0f));
 					PushVert(aflBuffer, vXYZ, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
@@ -293,12 +293,12 @@ void CVoxelChunk::BuildVBO()
 
 				if (bDrawSide)
 				{
-					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vXyZ, Vector2D(0.25f, 0.75f));
-					PushVert(aflBuffer, vxyZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vXyZ, Vector2D(1.0f, 0.0f));
+					PushVert(aflBuffer, vxyZ, Vector2D(1.0f, 1.0f));
 
-					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vxyZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vxyZ, Vector2D(1.0f, 1.0f));
 					PushVert(aflBuffer, vxyz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
@@ -313,12 +313,12 @@ void CVoxelChunk::BuildVBO()
 
 				if (bDrawSide)
 				{
-					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vxYZ, Vector2D(0.25f, 0.75f));
-					PushVert(aflBuffer, vXYZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vxYZ, Vector2D(1.0f, 0.0f));
+					PushVert(aflBuffer, vXYZ, Vector2D(1.0f, 1.0f));
 
-					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vXYZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vxYz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vXYZ, Vector2D(1.0f, 1.0f));
 					PushVert(aflBuffer, vXYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
@@ -333,12 +333,12 @@ void CVoxelChunk::BuildVBO()
 
 				if (bDrawSide)
 				{
-					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vxyz, Vector2D(0.25f, 0.75f));
-					PushVert(aflBuffer, vxYz, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vxyz, Vector2D(1.0f, 0.0f));
+					PushVert(aflBuffer, vxYz, Vector2D(1.0f, 1.0f));
 
-					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vxYz, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vXyz, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vxYz, Vector2D(1.0f, 1.0f));
 					PushVert(aflBuffer, vXYz, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])
@@ -353,12 +353,12 @@ void CVoxelChunk::BuildVBO()
 
 				if (bDrawSide)
 				{
-					PushVert(aflBuffer, vxyZ, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vXyZ, Vector2D(0.25f, 0.75f));
-					PushVert(aflBuffer, vXYZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vxyZ, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vXyZ, Vector2D(1.0f, 0.0f));
+					PushVert(aflBuffer, vXYZ, Vector2D(1.0f, 1.0f));
 
-					PushVert(aflBuffer, vxyZ, Vector2D(0.0f, 0.75f));
-					PushVert(aflBuffer, vXYZ, Vector2D(0.25f, 1.0f));
+					PushVert(aflBuffer, vxyZ, Vector2D(0.0f, 0.0f));
+					PushVert(aflBuffer, vXYZ, Vector2D(1.0f, 1.0f));
 					PushVert(aflBuffer, vxYZ, Vector2D(0.0f, 1.0f));
 
 					if (m_aDesignations[x][y][z])

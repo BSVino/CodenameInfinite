@@ -4,6 +4,7 @@ static const char* g_szItemNames[] = {
 	"None",
 	"Dirt",
 	"Stone",
+	"Wood",
 	""
 };
 
@@ -23,6 +24,7 @@ static const char* g_szItemMaterials[] = {
 	"",
 	"textures/items/dirt.mat",
 	"textures/items/stone.mat",
+	"textures/items/wood.mat",
 	""
 };
 
