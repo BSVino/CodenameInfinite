@@ -275,9 +275,14 @@ static CVar workbench("workbench", "off");
 
 CWorkbench* Workbench(bool bCreate)
 {
+	static CVar* pDeveloper = nullptr;
+
+	if (!pDeveloper)
+		pDeveloper = CVar::FindCVar("developer");
+
 	// This function won't work unless we're in dev mode.
 	// I don't want memory wasted on the level editor for most players.
-	if (!CVar::GetCVarBool("developer") && !workbench.GetBool())
+	if (!pDeveloper->GetBool() && !workbench.GetBool())
 		return nullptr;
 
 	static bool bCreated = false;
