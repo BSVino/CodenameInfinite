@@ -16,6 +16,7 @@
 #include "structures/spire.h"
 #include "ui/command_menu.h"
 #include "items/disassembler.h"
+#include "planet/terrain_lumps.h"
 
 REGISTER_ENTITY(CSPPlayer);
 
@@ -329,7 +330,8 @@ void CSPPlayer::PostRender() const
 		CBaseEntity* pGiveTo;
 		if (FindBlockPlacePoint(vecLocal, &pGiveTo))
 		{
-			CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
+			CVoxelTree* pTree = GetPlayerCharacter()->GameData().GetVoxelTree();
+
 			if (pGiveTo)
 			{
 				Vector vecPosition = pGiveTo->GetLocalOrigin() - GetPlayerCharacter()->GetLocalOrigin();
@@ -388,12 +390,8 @@ void CSPPlayer::PostRender() const
 					c.Vertex(vecForward + vecUp);
 				c.EndRender();
 			}
-			else if (pSpire)
+			else if (pTree)
 			{
-				CScalableVector vecSpire = pSpire->GetLocalOrigin();
-
-				CVoxelTree* pTree = pSpire->GetVoxelTree();
-
 				IVector vecBlock = pTree->ToVoxelCoordinates(vecLocal);
 				CScalableVector vecSBlock = pTree->ToLocalCoordinates(vecBlock);
 
@@ -430,9 +428,9 @@ void CSPPlayer::PostRender() const
 				}
 #endif
 
-				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector();
-				Vector vecUp = pSpire->GetLocalTransform().GetUpVector();
-				Vector vecRight = pSpire->GetLocalTransform().GetRightVector();
+				Vector vecForward = pTree->GetTreeToPlanet().GetForwardVector();
+				Vector vecUp = pTree->GetTreeToPlanet().GetUpVector();
+				Vector vecRight = pTree->GetTreeToPlanet().GetRightVector();
 
 				CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
@@ -488,18 +486,15 @@ void CSPPlayer::PostRender() const
 
 	if (m_eBlockDesignateMode && GameServer()->GetRenderer()->IsRenderingTransparent())
 	{
-		CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
-		if (pSpire)
+		CVoxelTree* pTree = GetPlayerCharacter()->GameData().GetVoxelTree();
+
+		if (pTree)
 		{
 			CScalableVector vecLocal;
 			bool bFoundPlacePoint = FindBlockPlacePoint(vecLocal);
 
 			if (m_iBlockDesignateDimension < 0 || !bFoundPlacePoint)
 			{
-				CScalableVector vecSpire = pSpire->GetLocalOrigin();
-
-				CVoxelTree* pTree = pSpire->GetVoxelTree();
-
 				IVector vecBlock = pTree->ToVoxelCoordinates(vecLocal);
 				if (m_iBlockDesignateDimension >= 0)
 					vecBlock = m_vecBlockDesignateMin;
@@ -508,9 +503,9 @@ void CSPPlayer::PostRender() const
 
 				Vector vecPosition = vecSBlock - GetPlayerCharacter()->GetLocalOrigin();
 
-				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector();
-				Vector vecUp = pSpire->GetLocalTransform().GetUpVector();
-				Vector vecRight = pSpire->GetLocalTransform().GetRightVector();
+				Vector vecForward = pTree->GetTreeToPlanet().GetForwardVector();
+				Vector vecUp = pTree->GetTreeToPlanet().GetUpVector();
+				Vector vecRight = pTree->GetTreeToPlanet().GetRightVector();
 
 				CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
@@ -563,7 +558,7 @@ void CSPPlayer::PostRender() const
 			}
 			else
 			{
-				IVector vecNew = pSpire->GetVoxelTree()->ToVoxelCoordinates(vecLocal);
+				IVector vecNew = pTree->ToVoxelCoordinates(vecLocal);
 
 				IVector vecMin = m_vecBlockDesignateMin;
 				IVector vecMax = m_vecBlockDesignateMax;
@@ -581,13 +576,9 @@ void CSPPlayer::PostRender() const
 				if (vecNew.z > vecMax.z)
 					vecMax.z = vecNew.z;
 
-				CScalableVector vecSpire = pSpire->GetLocalOrigin();
-
-				CVoxelTree* pTree = pSpire->GetVoxelTree();
-
-				Vector vecForward = pSpire->GetLocalTransform().GetForwardVector();
-				Vector vecUp = pSpire->GetLocalTransform().GetUpVector();
-				Vector vecRight = pSpire->GetLocalTransform().GetRightVector();
+				Vector vecForward = pTree->GetTreeToPlanet().GetForwardVector();
+				Vector vecUp = pTree->GetTreeToPlanet().GetUpVector();
+				Vector vecRight = pTree->GetTreeToPlanet().GetRightVector();
 
 				CGameRenderingContext c(GameServer()->GetRenderer(), true);
 
@@ -843,14 +834,18 @@ void CSPPlayer::FinishBlockDesignate()
 	if (!m_eBlockDesignateMode)
 		return;
 
+	CVoxelTree* pTree = GetPlayerCharacter()->GameData().GetVoxelTree();
+
+	if (!pTree)
+		return;
+
 	if (m_iBlockDesignateDimension == -1)
 	{
 		CScalableVector vecPoint;
 		if (!FindBlockPlacePoint(vecPoint))
 			return;
 
-		CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
-		m_vecBlockDesignateMin = m_vecBlockDesignateMax = pSpire->GetVoxelTree()->ToVoxelCoordinates(vecPoint);
+		m_vecBlockDesignateMin = m_vecBlockDesignateMax = pTree->ToVoxelCoordinates(vecPoint);
 
 		m_iBlockDesignateDimension = 0;
 	}
@@ -860,8 +855,7 @@ void CSPPlayer::FinishBlockDesignate()
 		if (!FindBlockPlacePoint(vecPoint))
 			return;
 
-		CSpire* pSpire = GetPlayerCharacter()->GetNearestSpire();
-		IVector vecNew = pSpire->GetVoxelTree()->ToVoxelCoordinates(vecPoint);
+		IVector vecNew = pTree->ToVoxelCoordinates(vecPoint);
 
 		if (vecNew.x < m_vecBlockDesignateMin.x)
 			m_vecBlockDesignateMin.x = vecNew.x;
@@ -876,7 +870,7 @@ void CSPPlayer::FinishBlockDesignate()
 		if (vecNew.z > m_vecBlockDesignateMax.z)
 			m_vecBlockDesignateMax.z = vecNew.z;
 
-		pSpire->AddBlockDesignation(m_eBlockDesignateMode, m_vecBlockDesignateMin, m_vecBlockDesignateMax);
+		pTree->AddBlockDesignation(m_eBlockDesignateMode, m_vecBlockDesignateMin, m_vecBlockDesignateMax);
 
 		m_eBlockDesignateMode = ITEM_NONE;
 	}

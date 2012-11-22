@@ -34,9 +34,6 @@ public:
 	void        AddUnit(CBaseEntity* pEntity);
 	void        OnDeleted(const CBaseEntity* pEntity);
 
-	void        AddBlockDesignation(item_t eType, const IVector& vecMin, const IVector& vecMax);
-	void        BuildDesignationVBO(size_t iDesignation);
-
 	const tvector<CEntityHandle<CStructure>>&    GetStructures() const { return m_hStructures; }
 	const tvector<CEntityHandle<CMine>>&         GetMines() const { return m_hMines; }
 	const tvector<CEntityHandle<CBot>>&          GetBots() const { return m_hBots; }
@@ -44,15 +41,15 @@ public:
 	void        SetBaseName(const tstring& sName) { m_sBaseName = sName; }
 	tstring     GetBaseName() { return m_sBaseName; }
 
-	CVoxelTree*       GetVoxelTree() { return &m_oVoxelTree; }
-	const CVoxelTree* GetVoxelTree() const { return &m_oVoxelTree; }
+//	CVoxelTree*       GetVoxelTree() { return &m_oVoxelTree; }
+//	const CVoxelTree* GetVoxelTree() const { return &m_oVoxelTree; }
 
 	structure_type    StructureType() const { return STRUCTURE_SPIRE; }
 
 private:
 	tstring     m_sBaseName;
 
-	CVoxelTree  m_oVoxelTree;
+//	CVoxelTree  m_oVoxelTree;
 
 	double      m_flBuildStart;
 

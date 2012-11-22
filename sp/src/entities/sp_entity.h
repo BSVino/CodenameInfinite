@@ -5,6 +5,7 @@
 #include <game/entityhandle.h>
 
 #include "../sp_common.h"
+#include "../planet/lumpaddress.h"
 
 class CPlanet;
 class CSPPlayer;
@@ -36,6 +37,11 @@ public:
 	void                        SetPlanet(CPlanet* pPlanet);
 	CPlanet*                    GetPlanet() const;
 
+	class CTerrainLump*         GetLump() const;
+	void                        SetLump(const CLumpAddress& oAddress) { m_oLump = oAddress; }
+
+	class CVoxelTree*           GetVoxelTree() const;
+
 	void                        SetPlayerOwner(CSPPlayer* pPlanet);
 	CSPPlayer*                  GetPlayerOwner() const;
 
@@ -53,6 +59,8 @@ public:
 private:
 	CEntityHandle<CSPPlayer>    m_hPlayerOwner;
 	CEntityHandle<CPlanet>      m_hPlanet;
+
+	CLumpAddress                m_oLump;
 
 	// Transform from the center of the nearest chunk group.
 	// Use a persistent transform to avoid floating point problems converting back to double all the time.

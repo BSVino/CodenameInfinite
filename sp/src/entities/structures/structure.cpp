@@ -210,6 +210,9 @@ void CStructure::PerformStructureTask(class CSPCharacter* pCharacter)
 		{
 			CSPPlayer* pSPPlayer = static_cast<CSPPlayer*>(pPlayer);
 
+			if (!pSPPlayer->GetActiveCommandMenu())
+				GameData().CreateCommandMenu(pSPPlayer->GetPlayerCharacter());
+
 			// If it's a player who's building this structure then close any other command menus and activate this one.
 			if (pSPPlayer->GetActiveCommandMenu()->GetOwner() != this)
 			{

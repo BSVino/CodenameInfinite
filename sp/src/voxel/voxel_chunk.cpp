@@ -7,6 +7,10 @@
 
 #include "voxel_tree.h"
 #include "entities/structures/spire.h"
+#include "entities/sp_game.h"
+#include "entities/sp_playercharacter.h"
+#include "planet/terrain_lumps.h"
+#include "planet/terrain_chunks.h"
 
 CVoxelChunk::CVoxelChunk(CVoxelTree* pTree, const IVector& vecChunk)
 {
@@ -40,6 +44,9 @@ CVoxelChunk::~CVoxelChunk()
 
 void CVoxelChunk::Render() const
 {
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+	Matrix4x4 mRender = Matrix4x4(m_pTree->GetTreeToPlanet() - pCharacter->GetLocalOrigin());
+
 	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 	{
 		if (m_aiVBO[i] && !GameServer()->GetRenderer()->IsRenderingTransparent())
@@ -47,7 +54,7 @@ void CVoxelChunk::Render() const
 			CRenderingContext c(GameServer()->GetRenderer(), true);
 
 			c.ResetTransformations();
-			c.Transform(m_pTree->GetSpire()->BaseGetRenderTransform());
+			c.Transform(mRender);
 
 			c.UseMaterial(GetItemMaterial((item_t)i));
 
@@ -61,7 +68,7 @@ void CVoxelChunk::Render() const
 			CRenderingContext c(GameServer()->GetRenderer(), true);
 
 			c.ResetTransformations();
-			c.Transform(m_pTree->GetSpire()->BaseGetRenderTransform());
+			c.Transform(mRender);
 
 			c.UseMaterial(GetItemMaterial((item_t)i));
 			c.SetBlend(BLEND_ALPHA);
@@ -90,7 +97,7 @@ bool CVoxelChunk::PlaceBlock(item_t eItem, const IVector& vecBlock)
 	m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z] = eItem;
 	m_aDesignations[vecBlock.x][vecBlock.y][vecBlock.z] = ITEM_NONE;
 
-	BuildVBO();
+	Load();
 
 	return true;
 }
@@ -117,7 +124,7 @@ item_t CVoxelChunk::RemoveBlock(const IVector& vecBlock)
 	item_t eReturn = (item_t)m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z];
 	m_aBlocks[vecBlock.x][vecBlock.y][vecBlock.z] = ITEM_NONE;
 
-	BuildVBO();
+	Load();
 
 	return eReturn;
 }
@@ -135,7 +142,7 @@ bool CVoxelChunk::PlaceDesignation(item_t eItem, const IVector& vecBlock)
 
 	m_aDesignations[vecBlock.x][vecBlock.y][vecBlock.z] = eItem;
 
-	BuildVBO();
+	Load();
 
 	return true;
 }
@@ -162,7 +169,7 @@ item_t CVoxelChunk::RemoveDesignation(const IVector& vecBlock)
 	item_t eReturn = (item_t)m_aDesignations[vecBlock.x][vecBlock.y][vecBlock.z];
 	m_aDesignations[vecBlock.x][vecBlock.y][vecBlock.z] = ITEM_NONE;
 
-	BuildVBO();
+	Load();
 
 	return eReturn;
 }
@@ -194,15 +201,16 @@ void PushVert(tvector<float>& aflVerts, const Vector& v, const Vector2D& vt)
 	aflVerts.push_back(vt.y);
 }
 
-void CVoxelChunk::BuildVBO()
+void CVoxelChunk::Load()
 {
-	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
-	{
-		if (m_aiVBO[i])
-			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBO[i]);
-		if (m_aiVBODesignations[i])
-			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBODesignations[i]);
-	}
+	if (!m_pTree->GetLump())
+		return;
+
+	TAssert(m_pTree->GetLump()->GetPlanet()->GetChunkManager()->HasGroupCenter());
+	if (!m_pTree->GetLump()->GetPlanet()->GetChunkManager()->HasGroupCenter())
+		return;
+
+	UnloadVBO();
 
 	tvector<tvector<float>> aaflVerts;
 	tvector<size_t> aiVBOVerts;
@@ -397,13 +405,7 @@ void CVoxelChunk::BuildVBO()
 
 	if (bPhysicsDirty)
 	{
-		// Clear out all physics blocks.
-		for (size_t i = 0; i < m_aiPhysicsEnts.size(); i++)
-			GamePhysics()->RemoveExtra(m_aiPhysicsEnts[i]);
-
-		m_aiPhysicsEnts.clear();
-
-		memset(m_aPhysicsBlocks, 0, sizeof(m_aPhysicsBlocks));
+		UnloadPhysics();
 
 		for (size_t x = 0; x < CHUNK_SIZE; x++)
 		{
@@ -487,8 +489,8 @@ void CVoxelChunk::BuildVBO()
 					vecSize.z = iCurrent-z;
 
 					Vector vecCubeCenter = (m_vecChunk*CHUNK_SIZE + vecBottom ).GetVoxelSpaceCoordinates() + vecSize.GetVoxelSpaceCoordinates()/2;
-					TVector vecCubeCenterPlanet = m_pTree->GetSpire()->GetLocalTransform() * vecCubeCenter;
-					size_t iPhysicsBox = GamePhysics()->AddExtraBox(m_pTree->GetSpire()->GameData().TransformPointLocalToPhysics(vecCubeCenterPlanet.GetMeters()), vecSize.GetVoxelSpaceCoordinates());
+					DoubleVector vecCubeCenterPlanet = m_pTree->GetTreeToPlanet() * vecCubeCenter;
+					size_t iPhysicsBox = GamePhysics()->AddExtraBox(m_pTree->GetLump()->GetPlanet()->GetChunkManager()->GetPlanetToGroupCenterTransform() * vecCubeCenterPlanet, vecSize.GetVoxelSpaceCoordinates());
 					m_aiPhysicsEnts.push_back(iPhysicsBox);
 
 					for (int x1 = vecBottom.x; x1 < vecBottom.x+vecSize.x; x1++)
@@ -502,5 +504,32 @@ void CVoxelChunk::BuildVBO()
 				}
 			}
 		}
+	}
+}
+
+void CVoxelChunk::Unload()
+{
+	UnloadVBO();
+	UnloadPhysics();
+}
+
+void CVoxelChunk::UnloadPhysics()
+{
+	for (size_t i = 0; i < m_aiPhysicsEnts.size(); i++)
+		GamePhysics()->RemoveExtra(m_aiPhysicsEnts[i]);
+
+	m_aiPhysicsEnts.clear();
+
+	memset(m_aPhysicsBlocks, 0, sizeof(m_aPhysicsBlocks));
+}
+
+void CVoxelChunk::UnloadVBO()
+{
+	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
+	{
+		if (m_aiVBO[i])
+			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBO[i]);
+		if (m_aiVBODesignations[i])
+			GameServer()->GetRenderer()->UnloadVertexDataFromGL(m_aiVBODesignations[i]);
 	}
 }

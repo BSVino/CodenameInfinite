@@ -19,6 +19,7 @@
 #include "planet/terrain_lumps.h"
 #include "planet/terrain_chunks.h"
 #include "trees.h"
+#include "lump_voxels.h"
 
 REGISTER_ENTITY(CPlanet);
 
@@ -82,6 +83,7 @@ CPlanet::CPlanet()
 	m_pLumpManager = new CTerrainLumpManager(this);
 	m_pChunkManager = new CTerrainChunkManager(this);
 	m_pTreeManager = new CTreeManager(this);
+	m_pLumpVoxelManager = new CLumpVoxelManager(this);
 
 	m_iMinQuadRenderDepth = 3;
 }
@@ -91,6 +93,7 @@ CPlanet::~CPlanet()
 	delete m_pLumpManager;
 	delete m_pChunkManager;
 	delete m_pTreeManager;
+	delete m_pLumpVoxelManager;
 
 	for (size_t i = 0; i < 6; i++)
 		delete m_apTerrain[i];
@@ -187,13 +190,11 @@ CVar r_planet_shells("r_planet_shells", "on");
 CVar r_planet_lumps("r_planet_lumps", "on");
 CVar r_planet_chunks("r_planet_chunks", "on");
 CVar r_trees("r_trees", "on");
+CVar r_voxels("r_voxels", "on");
 
 void CPlanet::PostRender() const
 {
 	BaseClass::PostRender();
-
-	if (GameServer()->GetRenderer()->IsRenderingTransparent())
-		return;
 
 	if (!r_planets.GetBool())
 		return;
@@ -204,8 +205,14 @@ void CPlanet::PostRender() const
 		if (r_trees.GetBool())
 			m_pTreeManager->Render();
 
+		if (r_voxels.GetBool())
+			m_pLumpManager->RenderVoxels();
+
 		return;
 	}
+
+	if (GameServer()->GetRenderer()->IsRenderingTransparent())
+		return;
 
 	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
@@ -406,6 +413,39 @@ void CPlanet::GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerra
 bool CPlanet::FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const
 {
 	return GetLumpManager()->FindApproximateElevation(vec3DLocal, flElevation);
+}
+
+CLumpAddress CPlanet::FindNearestLumpAddress(const DoubleVector& vecLocalPoint) const
+{
+	double flLumpDistance = GetAtmosphereThickness().GetUnits(GetScale()) * 2;
+
+	CLumpAddress oNearestAddress;
+	CTerrainArea vecNearestArea;
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		tvector<CTerrainArea> avecAreas = m_apTerrain[i]->FindNearbyAreas(LumpDepth(), 0, DoubleVector2D(0, 0), DoubleVector2D(1, 1), vecLocalPoint, flLumpDistance);
+
+		if (!avecAreas.size())
+			continue;
+
+		if (oNearestAddress.iTerrain == ~0)
+		{
+			oNearestAddress.iTerrain = i;
+			oNearestAddress.vecMin = avecAreas[0].vecMin;
+			vecNearestArea = avecAreas[0];
+			continue;
+		}
+
+		if (avecAreas[0].flDistanceToSearchPoint < vecNearestArea.flDistanceToSearchPoint)
+		{
+			oNearestAddress.iTerrain = i;
+			oNearestAddress.vecMin = avecAreas[0].vecMin;
+			vecNearestArea = avecAreas[0];
+		}
+	}
+
+	return oNearestAddress;
 }
 
 bool CPlanet::IsExtraPhysicsEntGround(size_t iEnt) const

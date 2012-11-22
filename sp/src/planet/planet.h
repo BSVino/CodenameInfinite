@@ -7,6 +7,7 @@
 #include <tengine/game/entities/baseentity.h>
 
 #include "treeaddress.h"
+#include "lumpaddress.h"
 
 #define TERRAIN_NOISE_ARRAY_SIZE 8
 
@@ -48,6 +49,7 @@ public:
 
 	void                        GetApprox2DPosition(const DoubleVector& vec3DLocal, size_t& iTerrain, DoubleVector2D& vec2DCoord);
 	bool                        FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
+	CLumpAddress                FindNearestLumpAddress(const DoubleVector& vecLocalPoint) const;
 
 	bool                        IsExtraPhysicsEntGround(size_t iEnt) const;
 	bool                        IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const;
@@ -80,10 +82,11 @@ public:
 	const class CTerrainLumpManager*  GetLumpManager() const { return m_pLumpManager; }
 	const class CTerrainChunkManager* GetChunkManager() const { return m_pChunkManager; }
 	class CTreeManager*               GetTreeManager() { return m_pTreeManager; }
+	class CLumpVoxelManager*          GetVoxelManager() { return m_pLumpVoxelManager; }
 
-	size_t						LumpDepth() { return m_iLumpDepth; };      // The depth at which lumps first appear.
-	size_t						ChunkDepth() { return m_iMeterDepth-7; };  // The depth at which chunks first appear.
-	size_t						MeterDepth() { return m_iMeterDepth; };    // The deepest depth.
+	size_t                      LumpDepth() const { return m_iLumpDepth; };      // The depth at which lumps first appear.
+	size_t                      ChunkDepth() const { return m_iMeterDepth-7; };  // The depth at which chunks first appear.
+	size_t                      MeterDepth() const { return m_iMeterDepth; };    // The deepest depth.
 
 	class CPlanetTerrain*       GetTerrain(size_t iTerrain) { return m_apTerrain[iTerrain]; }
 
@@ -125,6 +128,7 @@ protected:
 	class CTerrainLumpManager*  m_pLumpManager;
 	class CTerrainChunkManager* m_pChunkManager;
 	class CTreeManager*         m_pTreeManager;
+	class CLumpVoxelManager*    m_pLumpVoxelManager;
 
 	// 3 channels (x, y, z), one alpha for each channel for variation
 	CSimplexNoise<double>       m_aNoiseArray[TERRAIN_NOISE_ARRAY_SIZE][4];

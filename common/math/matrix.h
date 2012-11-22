@@ -88,6 +88,8 @@ public:
 
 	// Add a translation
 	Matrix4x4	operator+=(const Vector& v);
+	Matrix4x4   operator-(const Vector& v) const;
+
 	// Add a rotation
 	Matrix4x4	operator+=(const EAngle& a);
 
@@ -156,8 +158,12 @@ public:
 public:
 	void            Identity();
 
+	bool            operator==(const DoubleMatrix4x4& t) const;
+
 	// Set a transformation
 	void            SetTranslation(const DoubleVector& vecPos);
+
+	DoubleMatrix4x4 operator-(const DoubleVector& v) const;
 
 	DoubleVector    GetTranslation() const;
 
@@ -174,6 +180,7 @@ public:
 
 	DoubleMatrix4x4 InvertedRT() const;
 
+public:
 	double          m[4][4];
 };
 

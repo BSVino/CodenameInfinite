@@ -31,7 +31,7 @@ void CMine::Spawn()
 {
 	m_aabbPhysBoundingBox = AABB(Vector(-1.0f, -0.2f, -1.0f), Vector(1.0f, 1.8f, 1.0f));
 
-	SetTurnsToConstruct(3);
+	SetTurnsToConstruct(2);
 
 	BaseClass::Spawn();
 

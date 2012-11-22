@@ -926,7 +926,7 @@ tvector<CTerrainArea> SearchKDTree(const tvector<CKDPointTreeNode>& aNodes, cons
 				{
 					// Add the point.
 					CTerrainArea& vecArea = avecAreas.push_back();
-					vecArea.flDistanceToPlayer = sqrt(flPointDistanceSqr)/flScaleResult;
+					vecArea.flDistanceToSearchPoint = sqrt(flPointDistanceSqr)/flScaleResult;
 					vecArea.vecMin = oPoint.vec2DMin;
 					vecArea.vecMax = oPoint.vec2DMax;
 					push_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);
@@ -995,7 +995,7 @@ void CPlanetTerrain::SearchAreas(tvector<CTerrainArea>& avecAreas, size_t iMaxDe
 		if (iMaxDepth == iCurrentDepth)
 		{
 			CTerrainArea& vecArea = avecAreas.push_back();
-			vecArea.flDistanceToPlayer = flDistance;
+			vecArea.flDistanceToSearchPoint = flDistance;
 			vecArea.vecMin = vecSearchMin;
 			vecArea.vecMax = vecSearchMax;
 			push_heap(avecAreas.begin(), avecAreas.end(), TerrainAreaCompare);

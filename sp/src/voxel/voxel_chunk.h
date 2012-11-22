@@ -15,6 +15,11 @@ public:
 	~CVoxelChunk();
 
 public:
+	void       Load();
+	void       Unload();
+	void       UnloadVBO();
+	void       UnloadPhysics();
+
 	void       Render() const;
 
 	bool       PlaceBlock(item_t eItem, const IVector& vecBlock);
@@ -28,8 +33,6 @@ public:
 	item_t     GetDesignationGlobal(const IVector& vecBlock) const;
 
 	const IVector   GetChunkCoordinates() const { return m_vecChunk; }
-
-	void       BuildVBO();
 
 private:
 	CVoxelTree*  m_pTree;

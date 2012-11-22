@@ -13,6 +13,7 @@
 #include "planet/planet.h"
 #include "planet/planet_terrain.h"
 #include "planet/terrain_chunks.h"
+#include "planet/lump_voxels.h"
 
 CParallelizer* CTerrainLumpManager::s_pLumpGenerator = nullptr;
 
@@ -94,6 +95,25 @@ CTerrainLump* CTerrainLumpManager::GetLump(size_t iLump) const
 		return NULL;
 
 	return m_apLumps[iLump];
+}
+
+CTerrainLump* CTerrainLumpManager::GetLump(const CLumpAddress& oLump) const
+{
+	if (oLump.iTerrain == ~0)
+		return nullptr;
+
+	for (size_t i = 0; i < m_apLumps.size(); i++)
+	{
+		if (m_apLumps[i]->GetTerrain() != oLump.iTerrain)
+			continue;
+
+		if (m_apLumps[i]->GetMin2D() != oLump.vecMin)
+			continue;
+
+		return m_apLumps[i];
+	}
+
+	return nullptr;
 }
 
 CVar lump_check("lump_check", "1");
@@ -270,6 +290,33 @@ void CTerrainLumpManager::Render()
 	}
 }
 
+void CTerrainLumpManager::RenderVoxels()
+{
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() != SCALE_RENDER)
+		return;
+
+	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), SCALE_METER);
+	CPlayerCharacter* pLocalCharacter = SPGame()->GetLocalPlayerCharacter();
+	DoubleVector vecCharacterOrigin = pLocalCharacter->GetLocalOrigin().GetMeters();
+	if (pLocalCharacter->GetMoveParent() != m_pPlanet)
+		vecCharacterOrigin = (m_pPlanet->GetGlobalToLocalTransform() * pLocalCharacter->GetGlobalOrigin()).GetMeters();
+
+	for (size_t i = 0; i < m_apLumps.size(); i++)
+	{
+		CTerrainLump* pLump = m_apLumps[i];
+		if (!pLump)
+			continue;
+		
+		if (pLump->IsGeneratingLowRes())
+			continue;
+
+		if (!SPGame()->GetSPRenderer()->IsInFrustumAtScale(SCALE_METER, Vector(pLump->GetLocalCenter()*flScale-vecCharacterOrigin), (float)(pLump->GetRadius()*flScale)))
+			continue;
+
+		pLump->GetVoxelTree()->Render();
+	}
+}
+
 bool CTerrainLumpManager::FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const
 {
 	for (size_t i = 0; i < m_apLumps.size(); i++)
@@ -323,10 +370,18 @@ CTerrainLump::CTerrainLump(CTerrainLumpManager* pManager, size_t iLump, size_t i
 	m_iY = (size_t)RemapVal((vecMin.y+vecMax.y)/2, 0, 1, 0, iResolution);
 
 	m_bKDTreeAvailable = false;
+
+	m_pVoxelTree = pManager->m_pPlanet->GetVoxelManager()->GetLumpVoxel(iTerrain, m_vecMin);
+	if (!m_pVoxelTree)
+		m_pVoxelTree = pManager->m_pPlanet->GetVoxelManager()->AddLumpVoxel(this);
+
+	m_pVoxelTree->Load();
 }
 
 CTerrainLump::~CTerrainLump()
 {
+	m_pVoxelTree->Unload();
+
 	if (m_iLowResTerrainVBO)
 	{
 		CRenderer::UnloadVertexDataFromGL(m_iLowResTerrainVBO);
@@ -664,6 +719,11 @@ tvector<CTerrainArea> CTerrainLump::FindNearbyAreas(const DoubleVector& vec3DLoc
 	float flChunkDistanceMetersSqr = flChunkDistanceMeters*flChunkDistanceMeters;
 
 	return SearchKDTree(m_aKDNodes, m_aKDPoints, vec3DLumpLocal, flChunkDistanceMetersSqr, flScale);
+}
+
+CPlanet* CTerrainLump::GetPlanet() const
+{
+	return m_pManager->m_pPlanet;
 }
 
 void CTerrainLump::GetCoordinates(unsigned short& x, unsigned short& y) const

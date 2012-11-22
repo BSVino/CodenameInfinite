@@ -53,6 +53,9 @@ void CTreeManager::Render() const
 	if (SPGame()->GetSPRenderer()->GetRenderingScale() != SCALE_RENDER)
 		return;
 
+	if (GameServer()->GetRenderer()->IsRenderingTransparent())
+		return;
+
 	double flScale = CScalableFloat::ConvertUnits(1, m_pPlanet->GetScale(), SCALE_METER);
 
 	DoubleVector vecCharacterOrigin;

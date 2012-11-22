@@ -2,11 +2,35 @@
 
 #include <tinker/cvar.h>
 
-#include "entities/structures/spire.h"
 #include "entities/sp_game.h"
 #include "entities/sp_player.h"
 #include "entities/sp_playercharacter.h"
 #include "entities/items/pickup.h"
+#include "planet/terrain_lumps.h"
+#include "planet/lump_voxels.h"
+#include "planet/planet.h"
+#include "planet/terrain_chunks.h"
+
+CVoxelTree::CVoxelTree(CLumpVoxelManager* pManager, CTerrainLump* pLump)
+{
+	m_pManager = pManager;
+	m_iLumpTerrain = pLump->GetTerrain();
+	m_vecLumpMin = pLump->GetMin2D();
+
+	m_bTransformsInitialized = false;
+}
+
+void CVoxelTree::Load()
+{
+	for (auto it = m_aChunks.begin(); it != m_aChunks.end(); it++)
+		it->second.Load();
+}
+
+void CVoxelTree::Unload()
+{
+	for (auto it = m_aChunks.begin(); it != m_aChunks.end(); it++)
+		it->second.Unload();
+}
 
 void CVoxelTree::Render() const
 {
@@ -63,12 +87,15 @@ item_t CVoxelTree::RemoveBlock(const IVector& vecBlock)
 
 	item_t eItem = GetChunk(vecChunk)->RemoveBlock(vecChunkCoordinates);
 
+	TAssert(GetLump());
+	if (!GetLump())
+		return eItem;
+
 	CPickup* pPickup = GameServer()->Create<CPickup>("CPickup");
-	pPickup->GameData().SetPlanet(m_hSpire->GameData().GetPlanet());
-	pPickup->SetGlobalTransform(m_hSpire->GameData().GetPlanet()->GetGlobalTransform()); // Avoid floating point precision problems
-	pPickup->SetMoveParent(m_hSpire->GameData().GetPlanet());
-	pPickup->SetLocalTransform(m_hSpire->GetLocalTransform());
-	pPickup->SetLocalOrigin(ToLocalCoordinates(vecBlock) + (Vector(0.5f, 0.5f, 0.5f) + m_hSpire->GetLocalTransform().GetUpVector()));
+	pPickup->GameData().SetPlanet(GetLump()->GetPlanet());
+	pPickup->SetGlobalTransform(GetLump()->GetPlanet()->GetGlobalTransform()); // Avoid floating point precision problems
+	pPickup->SetMoveParent(GetLump()->GetPlanet());
+	pPickup->SetLocalOrigin(ToLocalCoordinates(vecBlock) + (Vector(0.5f, 0.5f, 0.5f) + GetLump()->GetLocalCenter().Normalized()));
 	pPickup->SetItem(eItem);
 
 	return eItem;
@@ -158,6 +185,49 @@ const IVector CVoxelTree::FindNearbyDesignation(const CScalableVector& vecLocal)
 	return IVector(0, 0, 0);
 }
 
+void CVoxelTree::AddBlockDesignation(item_t eType, const IVector& vecMin, const IVector& vecMax)
+{
+	TAssert(m_pManager->GetPlanet()->GetChunkManager()->HasGroupCenter());
+	if (!m_pManager->GetPlanet()->GetChunkManager()->HasGroupCenter())
+		return;
+
+	DoubleMatrix4x4 mLocalToPhysics = m_pManager->GetPlanet()->GetChunkManager()->GetPlanetToGroupCenterTransform();
+	DoubleMatrix4x4 mPhysicsToLocal = m_pManager->GetPlanet()->GetChunkManager()->GetGroupCenterToPlanetTransform();
+
+	TAssert(vecMin.x <= vecMax.x);
+	TAssert(vecMin.y <= vecMax.y);
+	TAssert(vecMin.z <= vecMax.z);
+
+	for (int x = 0; x <= vecMax.x-vecMin.x; x++)
+	{
+		for (int z = 0; z <= vecMax.z-vecMin.z; z++)
+		{
+			// Do a traceline from down to up. The first spot that it hits is the lowest we can designate any blocks.
+			// Below that is just empty space!
+
+			TVector vecColumn = ToLocalCoordinates(vecMin + IVector(x, 0, z)) + Vector(0.5f, 0.5f, 0.5f);
+			Vector vecColumnPhysics = mLocalToPhysics * vecColumn;
+
+			CTraceResult tr;
+			GamePhysics()->TraceLine(tr, vecColumnPhysics - Vector(0, 1000, 0), vecColumnPhysics + Vector(0, 1000, 0));
+
+			TAssert(tr.m_flFraction < 1);
+			if (tr.m_flFraction == 1)
+				continue;
+
+			TVector vecHit = TVector(mPhysicsToLocal * tr.m_vecHit);
+			int iLowest = ToVoxelCoordinates(vecHit).y;
+
+			iLowest -= vecMin.y;
+			if (iLowest < 0)
+				iLowest = 0;
+
+			for (int y = iLowest; y <= vecMax.y-vecMin.y; y++)
+				PlaceDesignation(eType, vecMin + IVector(x, y, z));
+		}
+	}
+}
+
 CVoxelChunk* CVoxelTree::GetChunk(const IVector& vecChunk)
 {
 	auto it = m_aChunks.find(vecChunk);
@@ -190,7 +260,7 @@ CVoxelChunk* CVoxelTree::GetChunkIfExists(const IVector& vecChunk)
 
 IVector CVoxelTree::ToVoxelCoordinates(const CScalableVector& vecPlanetLocal) const
 {
-	Vector vecBlockPoint = m_hSpire->GetLocalTransform().InvertedRT() * vecPlanetLocal;
+	Vector vecBlockPoint = GetPlanetToTree() * vecPlanetLocal;
 
 	IVector vecVoxel;
 
@@ -218,13 +288,60 @@ CScalableVector CVoxelTree::ToLocalCoordinates(const IVector& vecBlock) const
 	CScalableFloat y((float)vecBlock.y);
 	CScalableFloat z((float)vecBlock.z);
 
-	return m_hSpire->GetLocalTransform() * CScalableVector(x, y, z);
+	return GetTreeToPlanet() * CScalableVector(x, y, z);
+}
+
+void CVoxelTree::CheckForLumpTransforms() const
+{
+	if (m_bTransformsInitialized)
+		return;
+
+	if (!GetLump())
+		return;
+
+	if (GetLump()->GetLumpToPlanet() == DoubleMatrix4x4())
+		return;
+
+	if (GetLump()->GetPlanetToLump() == DoubleMatrix4x4())
+		return;
+
+	m_bTransformsInitialized = true;
+
+	m_mTreeToPlanet = GetLump()->GetLumpToPlanet();
+	m_mPlanetToTree = GetLump()->GetPlanetToLump();
+}
+
+const DoubleMatrix4x4& CVoxelTree::GetPlanetToTree() const
+{
+	CheckForLumpTransforms();
+
+	TAssert(m_bTransformsInitialized);
+
+	return m_mPlanetToTree;
+}
+
+const DoubleMatrix4x4& CVoxelTree::GetTreeToPlanet() const
+{
+	CheckForLumpTransforms();
+
+	TAssert(m_bTransformsInitialized);
+
+	return m_mTreeToPlanet;
+}
+
+CTerrainLump* CVoxelTree::GetLump() const
+{
+	CLumpAddress oLump;
+	oLump.iTerrain = m_iLumpTerrain;
+	oLump.vecMin = m_vecLumpMin;
+
+	return m_pManager->GetPlanet()->GetLumpManager()->GetLump(oLump);
 }
 
 void CVoxelTree::RebuildChunkVBOs()
 {
 	for (auto it = m_aChunks.begin(); it != m_aChunks.end(); it++)
-		it->second.BuildVBO();
+		it->second.Load();
 }
 
 void CVoxelTree::ClearChunks()
@@ -240,9 +357,10 @@ void VoxelRebuild(class CCommand* pCommand, tvector<tstring>& asTokens, const ts
 
 	CPlayerCharacter* pCharacter = pPlayer->GetPlayerCharacter();
 
-	CSpire* pSpire = pCharacter->GetNearestSpire();
+	TUnimplemented();
+	/*CSpire* pSpire = pCharacter->GetNearestSpire();
 
-	pSpire->GetVoxelTree()->RebuildChunkVBOs();
+	pSpire->GetVoxelTree()->RebuildChunkVBOs();*/
 }
 
 CCommand voxel_rebuild("voxel_rebuild", VoxelRebuild);
@@ -255,9 +373,11 @@ void VoxelClear(class CCommand* pCommand, tvector<tstring>& asTokens, const tstr
 
 	CPlayerCharacter* pCharacter = pPlayer->GetPlayerCharacter();
 
-	CSpire* pSpire = pCharacter->GetNearestSpire();
+	TUnimplemented();
 
-	pSpire->GetVoxelTree()->ClearChunks();
+	/*CSpire* pSpire = pCharacter->GetNearestSpire();
+
+	pSpire->GetVoxelTree()->ClearChunks();*/
 }
 
 CCommand voxel_clear("voxel_clear", VoxelClear);

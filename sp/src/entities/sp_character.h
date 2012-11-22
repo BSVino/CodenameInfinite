@@ -73,7 +73,7 @@ public:
 	virtual bool                MoveTo(CBaseEntity* pTarget, float flDistance=3); // return true if I'm there
 	virtual bool                MoveTo(const TVector& vecTarget, float flDistance=3); // return true if I'm there
 	class CStructure*           FindNearestBuildStructure() const;
-	const IVector               FindNearbyDesignation(CSpire* pSpire) const;
+	const IVector               FindNearbyDesignation(class CVoxelTree* pTree) const;
 	class CPallet*              FindNearestPallet(item_t eBlock, bool bEmptyOK) const;
 	class CMine*                FindNearestMine() const;
 	CPickup*                    FindNearbyPickup() const;
@@ -127,6 +127,8 @@ protected:
 
 	mutable CNetworkedHandle<CSpire>    m_hNearestSpire;
 	mutable double                      m_flNextSpireCheck;
+
+	double                      m_flNextLumpCheck;
 
 	double                      m_flLastEnteredAtmosphere;
 	float						m_flRollFromSpace;

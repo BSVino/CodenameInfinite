@@ -20,12 +20,12 @@ class CTerrainArea
 public:
 	DoubleVector2D    vecMin;
 	DoubleVector2D    vecMax;
-	double            flDistanceToPlayer;
+	double            flDistanceToSearchPoint;
 };
 
 inline bool TerrainAreaCompare(const CTerrainArea& l, const CTerrainArea& r)
 {
-	return l.flDistanceToPlayer < r.flDistanceToPlayer;
+	return l.flDistanceToSearchPoint < r.flDistanceToSearchPoint;
 }
 
 class CShell2GenerationJob

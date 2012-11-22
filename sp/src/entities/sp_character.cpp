@@ -2,10 +2,12 @@
 
 #include <tinker/application.h>
 #include <tinker/renderer/renderingcontext.h>
+#include <tinker/cvar.h>
 
 #include "planet/planet.h"
 #include "planet/planet_terrain.h"
 #include "planet/terrain_chunks.h"
+#include "planet/terrain_lumps.h"
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
 #include "entities/sp_playercharacter.h"
@@ -22,7 +24,8 @@ NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CSPCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flNextPlanetCheck);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flLastEnteredAtmosphere);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextLumpCheck);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flLastEnteredAtmosphere);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flRollFromSpace);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, size_t, m_aiInventorySlots);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYARRAY, item_t, m_aiInventoryTypes);
@@ -41,6 +44,7 @@ CSPCharacter::CSPCharacter()
 {
 	m_flNextPlanetCheck = 0;
 	m_flNextSpireCheck = 0;
+	m_flNextLumpCheck = 0;
 	m_flLastEnteredAtmosphere = -1000;
 
 	memset(&m_aiInventorySlots[0], 0, sizeof(m_aiInventorySlots));
@@ -57,6 +61,8 @@ void CSPCharacter::Spawn()
 
 	m_flMaxStepSize = TFloat(0.1f, SCALE_METER);
 }
+
+CVar sv_findnearestlump("sv_findnearestlump", "10");
 
 void CSPCharacter::Think()
 {
@@ -109,6 +115,12 @@ void CSPCharacter::Think()
 	}
 	else
 		SetGlobalGravity(Vector(0, 0, 0));
+
+	if (pPlanet && GameServer()->GetGameTime() > m_flNextLumpCheck)
+	{
+		GameData().SetLump(pPlanet->FindNearestLumpAddress(GetLocalOrigin().GetUnits(pPlanet->GetScale())));
+		m_flNextLumpCheck = GameServer()->GetGameTime() + sv_findnearestlump.GetFloat();
+	}
 }
 
 bool CSPCharacter::ShouldRender() const
@@ -234,11 +246,10 @@ bool CSPCharacter::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)
 	if (eItem >= ITEM_BLOCKS_TOTAL)
 		return false;
 
-	CSpire* pSpire = GetNearestSpire();
-	if (!pSpire)
+	if (!GameData().GetLump())
 		return false;
 
-	CVoxelTree* pVoxel = pSpire->GetVoxelTree();
+	CVoxelTree* pVoxel = GameData().GetLump()->GetVoxelTree();
 
 	if (!pVoxel->PlaceBlock(eItem, vecLocal))
 		return false;
@@ -260,7 +271,10 @@ bool CSPCharacter::PlaceBlock(item_t eItem, const IVector& vecBlock)
 	if (!pSpire)
 		return false;
 
-	CVoxelTree* pVoxel = pSpire->GetVoxelTree();
+	if (!GameData().GetLump())
+		return false;
+
+	CVoxelTree* pVoxel = GameData().GetLump()->GetVoxelTree();
 
 	if (!pVoxel->PlaceBlock(eItem, vecBlock))
 		return false;

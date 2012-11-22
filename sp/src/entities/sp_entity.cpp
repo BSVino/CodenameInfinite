@@ -9,6 +9,7 @@
 #include "planet/planet.h"
 #include "entities/star.h"
 #include "planet/terrain_chunks.h"
+#include "planet/terrain_lumps.h"
 #include "ui/command_menu.h"
 
 CSPEntityData::CSPEntityData()
@@ -186,6 +187,27 @@ void CSPEntityData::SetPlanet(CPlanet* pPlanet)
 CPlanet* CSPEntityData::GetPlanet() const
 {
 	return m_hPlanet;
+}
+
+CTerrainLump* CSPEntityData::GetLump() const
+{
+	if (m_oLump.iTerrain == ~0)
+		return nullptr;
+
+	if (!GetPlanet())
+		return nullptr;
+
+	return GetPlanet()->GetLumpManager()->GetLump(m_oLump);
+}
+
+CVoxelTree* CSPEntityData::GetVoxelTree() const
+{
+	CTerrainLump* pLump = GetLump();
+
+	if (!pLump)
+		return nullptr;
+
+	return pLump->GetVoxelTree();
 }
 
 void CSPEntityData::SetPlayerOwner(CSPPlayer* pPlayer)

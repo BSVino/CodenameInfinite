@@ -7,6 +7,7 @@
 #include "entities/sp_playercharacter.h"
 #include "ui/command_menu.h"
 #include "entities/structures/spire.h"
+#include "planet/terrain_lumps.h"
 
 void CSPCharacter::TaskThink()
 {
@@ -38,7 +39,9 @@ void CSPCharacter::TaskThink()
 		if (!pBuild || !pBuild->IsUnderConstruction() || pBuild->IsOccupied())
 			m_hBuild = pBuild = FindNearestBuildStructure();
 
-		CSpire* pSpire = GetNearestSpire();
+		CVoxelTree* pVoxelTree = nullptr;
+		if (!GameData().GetLump())
+			pVoxelTree = GameData().GetLump()->GetVoxelTree();
 
 		if (m_hWaitingFor)
 		{
@@ -54,18 +57,18 @@ void CSPCharacter::TaskThink()
 			pBuild->PerformStructureTask(this);
 			m_hWaitingFor = pBuild;
 		}
-		else if (pSpire && !m_hWaitingFor)
+		else if (pVoxelTree && !m_hWaitingFor)
 		{
-			if (m_vecBuildDesignation == IVector(0, 0, 0) || !pSpire->GetVoxelTree()->GetDesignation(m_vecBuildDesignation))
-				m_vecBuildDesignation = FindNearbyDesignation(pSpire);
+			if (m_vecBuildDesignation == IVector(0, 0, 0) || !pVoxelTree->GetDesignation(m_vecBuildDesignation))
+				m_vecBuildDesignation = FindNearbyDesignation(pVoxelTree);
 
 			if (m_vecBuildDesignation == IVector(0, 0, 0))
 				return;
 
-			item_t eDesignation = pSpire->GetVoxelTree()->GetDesignation(m_vecBuildDesignation);
+			item_t eDesignation = pVoxelTree->GetDesignation(m_vecBuildDesignation);
 			if (IsHoldingABlock())
 			{
-				TVector vecBlockLocal = pSpire->GetVoxelTree()->ToLocalCoordinates(m_vecBuildDesignation) + pSpire->GetLocalTransform().TransformVector(Vector(0.5f, 0.5f, 0.5f));
+				TVector vecBlockLocal = pVoxelTree->ToLocalCoordinates(m_vecBuildDesignation) + pVoxelTree->GetTreeToPlanet().TransformVector(Vector(0.5f, 0.5f, 0.5f));
 				TVector vecBlockGlobal = GameData().GetPlanet()->GetGlobalTransform() * vecBlockLocal;
 
 				if (!MoveTo(vecBlockGlobal))
@@ -235,12 +238,12 @@ CStructure* CSPCharacter::FindNearestBuildStructure() const
 	return pNearestStructure;
 }
 
-const IVector CSPCharacter::FindNearbyDesignation(CSpire* pSpire) const
+const IVector CSPCharacter::FindNearbyDesignation(CVoxelTree* pTree) const
 {
-	if (!pSpire)
+	if (!pTree)
 		return IVector(0, 0, 0);
 
-	return pSpire->GetVoxelTree()->FindNearbyDesignation(GetLocalOrigin());
+	return pTree->FindNearbyDesignation(GetLocalOrigin());
 }
 
 CPallet* CSPCharacter::FindNearestPallet(item_t eBlock, bool bEmptyOK) const

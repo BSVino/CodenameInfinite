@@ -421,6 +421,17 @@ Matrix4x4 Matrix4x4::operator+=(const Vector& v)
 	return *this;
 }
 
+Matrix4x4 Matrix4x4::operator-(const Vector& v) const
+{
+	Matrix4x4 r = *this;
+
+	r.m[3][0] -= v.x;
+	r.m[3][1] -= v.y;
+	r.m[3][2] -= v.z;
+
+	return r;
+}
+
 Matrix4x4 Matrix4x4::operator+=(const EAngle& a)
 {
 	Matrix4x4 r;
@@ -718,11 +729,37 @@ void DoubleMatrix4x4::Identity()
 	m[0][0] = m[1][1] = m[2][2] = m[3][3] = 1.0;
 }
 
+bool DoubleMatrix4x4::operator==(const DoubleMatrix4x4& t) const
+{
+	double flEp = 0.000001f;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			if (fabs(m[i][j] - t.m[i][j]) > flEp)
+				return false;
+		}
+	}
+
+	return true;
+}
+
 void DoubleMatrix4x4::SetTranslation(const DoubleVector& vecPos)
 {
 	m[3][0] = vecPos.x;
 	m[3][1] = vecPos.y;
 	m[3][2] = vecPos.z;
+}
+
+DoubleMatrix4x4 DoubleMatrix4x4::operator-(const DoubleVector& v) const
+{
+	DoubleMatrix4x4 r = *this;
+
+	r.m[3][0] -= v.x;
+	r.m[3][1] -= v.y;
+	r.m[3][2] -= v.z;
+
+	return r;
 }
 
 DoubleVector DoubleMatrix4x4::GetTranslation() const

@@ -134,6 +134,7 @@ void CWorkerBot::SetupMenuButtons()
 	pMenu->SetButton(4, "On me", "follow");
 	pMenu->SetButton(5, "Sit tight", "nothing");
 
+	CVoxelTree* pTree = GameData().GetVoxelTree();
 	CSpire* pSpire = GetSpire();
 	if (pSpire)
 	{
@@ -166,7 +167,7 @@ void CWorkerBot::SetupMenuButtons()
 		bool bDesignations = false;
 		if (!bThingsToBuild)
 		{
-			IVector vecDesignation = pSpire->GetVoxelTree()->FindNearbyDesignation(GetLocalOrigin());
+			IVector vecDesignation = pTree->FindNearbyDesignation(GetLocalOrigin());
 			if (vecDesignation != IVector(0, 0, 0))
 				bDesignations = true;
 		}

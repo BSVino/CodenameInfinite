@@ -75,8 +75,8 @@ void CDisassembler::Think()
 
 			if (m_hDisassemblingStructure)
 				m_hDisassemblingStructure->Delete();
-			else if (m_vecDisassemblingBlock != IVector() && pPlayer->GetNearestSpire())
-				pPlayer->GetNearestSpire()->GetVoxelTree()->RemoveBlock(m_vecDisassemblingBlock);
+			else if (m_vecDisassemblingBlock != IVector() && pPlayer->GameData().GetVoxelTree())
+				pPlayer->GameData().GetVoxelTree()->RemoveBlock(m_vecDisassemblingBlock);
 			else if (m_vecDisassemblingGround != TVector() && pPlayer->GameData().GetPlanet())
 			{
 				CPickup* pDisassembled = GameServer()->Create<CPickup>("CPickup");
@@ -155,7 +155,7 @@ void CDisassembler::Think()
 		{
 			CScalableVector vecSpire = pPlayer->GetNearestSpire()->GetLocalOrigin();
 
-			CVoxelTree* pTree = pPlayer->GetNearestSpire()->GetVoxelTree();
+			CVoxelTree* pTree = pPlayer->GameData().GetVoxelTree();
 
 			TVector vecLocal = CScalableVector(pPlayer->GameData().TransformPointPhysicsToLocal(tr.m_vecHit + vecDirection * 0.01f), SCALE_METER);
 			item_t eBlock = pTree->GetBlock(vecLocal);
@@ -306,21 +306,19 @@ void CDisassembler::OwnerMouseInput(int iButton, int iState)
 
 			CStructure* pStructureHit = dynamic_cast<CStructure*>(tr.m_pHit);
 
+			CVoxelTree* pTree = pOwner->GameData().GetVoxelTree();
+
+			TVector vecLocal = CScalableVector(pOwner->GameData().TransformPointPhysicsToLocal(tr.m_vecHit + vecDirection * 0.01f), SCALE_METER);
+
+			item_t eBlock;
+			if (pTree)
+				eBlock = pTree->GetBlock(vecLocal);
+
 			CTreeAddress oTreeAddress;
 			if (tr.m_flFraction < 1 && pStructureHit && pStructureHit->GetOwner() == GetOwner()->GetControllingPlayer())
 				BeginDisassembly(pStructureHit);
-			else if (pOwner->GetNearestSpire())
-			{
-				CScalableVector vecSpire = pOwner->GetNearestSpire()->GetLocalOrigin();
-
-				CVoxelTree* pTree = pOwner->GetNearestSpire()->GetVoxelTree();
-
-				TVector vecLocal = CScalableVector(pOwner->GameData().TransformPointPhysicsToLocal(tr.m_vecHit + vecDirection * 0.01f), SCALE_METER);
-				item_t eBlock = pTree->GetBlock(vecLocal);
-
-				if (eBlock)
-					BeginDisassembly(pTree->ToVoxelCoordinates(vecLocal));
-			}
+			else if (eBlock)
+				BeginDisassembly(pTree->ToVoxelCoordinates(vecLocal));
 			else if (pPlanet && pPlanet->IsExtraPhysicsEntGround(tr.m_iHitExtra) && tr.m_flFraction < 1)
 				BeginDisassembly(TVector(pOwner->GameData().TransformPointPhysicsToLocal(tr.m_vecHit)));
 			else if (pPlanet && tr.m_flFraction < 1 && pPlanet->IsExtraPhysicsEntTree(tr.m_iHitExtra, oTreeAddress))
@@ -448,8 +446,8 @@ void CDisassembler::RestartParticles()
 
 		if (m_hDisassemblingStructure)
 			CParticleSystemLibrary::AddInstance("disassembler-disassemble", m_hDisassemblingStructure->GetLocalOrigin() - pPlayer->GetLocalOrigin());
-		else if (m_vecDisassemblingBlock != IVector() && pPlayer->GetNearestSpire())
-			CParticleSystemLibrary::AddInstance("disassembler-disassemble", pPlayer->GetNearestSpire()->GetVoxelTree()->ToLocalCoordinates(m_vecDisassemblingBlock) + pPlayer->GetNearestSpire()->GetLocalTransform().TransformVector(Vector(0.5f, 0.5f, 0.5f)) - pPlayer->GetLocalOrigin());
+		else if (m_vecDisassemblingBlock != IVector() && pPlayer->GameData().GetVoxelTree())
+			CParticleSystemLibrary::AddInstance("disassembler-disassemble", pPlayer->GameData().GetVoxelTree()->ToLocalCoordinates(m_vecDisassemblingBlock) + pPlayer->GameData().GetVoxelTree()->GetTreeToPlanet().TransformVector(Vector(0.5f, 0.5f, 0.5f)) - pPlayer->GetLocalOrigin());
 		else if (m_vecDisassemblingGround != TVector() && pPlayer->GameData().GetPlanet())
 			CParticleSystemLibrary::AddInstance("disassembler-disassemble", m_vecDisassemblingGround - pPlayer->GetLocalOrigin());
 		else if (m_oDisassemblingTree.IsValid() && pPlayer->GameData().GetPlanet())

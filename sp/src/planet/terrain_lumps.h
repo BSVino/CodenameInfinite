@@ -37,11 +37,20 @@ public:
 	bool                                FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
 	tvector<CTerrainArea>               FindNearbyAreas(const DoubleVector& vec3DLocal, float flChunkDistance) const;
 
+	CPlanet*                            GetPlanet() const;
 	void                                GetCoordinates(unsigned short& x, unsigned short& y) const;
 	size_t                              GetTerrain() const;
 	bool                                IsGeneratingLowRes() const { return m_bGeneratingLowRes; }
 	DoubleVector                        GetLocalCenter() const { return m_vecLocalCenter; }
 	double                              GetRadius() const { return m_flRadius; }
+
+	DoubleVector2D                      GetMin2D() const { return m_vecMin; }
+	DoubleVector2D                      GetMax2D() const { return m_vecMax; }
+
+	DoubleMatrix4x4                     GetPlanetToLump() const { return m_mPlanetToLump; }
+	DoubleMatrix4x4                     GetLumpToPlanet() const { return m_mLumpToPlanet; }
+
+	class CVoxelTree*                   GetVoxelTree() const { return m_pVoxelTree; }
 
 protected:
 	class CTerrainLumpManager*			m_pManager;
@@ -72,6 +81,8 @@ protected:
 	bool                                m_bGeneratingLowRes;
 	tvector<float>                      m_aflLowResDrop;
 	tvector<unsigned int>               m_aiLowResDrop;
+
+	class CVoxelTree*                   m_pVoxelTree;
 };
 
 class CTerrainLumpManager
@@ -86,12 +97,14 @@ public:
 	void								RemoveLump(size_t iLump);
 
 	CTerrainLump*						GetLump(size_t iLump) const;
+	CTerrainLump*                       GetLump(const CLumpAddress& oLump) const;
 	size_t								GetNumLumps() const { return m_apLumps.size(); }
 
 	void								Think();
 	void                                AddNearbyLumps();
 	void								GenerateLump(size_t iLump);
 	void								Render();
+	void                                RenderVoxels();
 
 	bool                                FindApproximateElevation(const DoubleVector& vec3DLocal, float& flElevation) const;
 
