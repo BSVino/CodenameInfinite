@@ -726,14 +726,14 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 	bool bLowRes = flDistance > 300;
 
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
-	if (pCharacter->GetNearestPlanet())
+	if (pCharacter->GetNearestPlanet() && pCharacter->GetNearestPlanet() == m_pPlanet)
 	{
 		if (flPlayerDot < 0.45f)
 			return;
-	}
 
-	if (pCharacter->GetApproximateElevation() < 0.0001f)
-		return;
+		if (pCharacter->GetApproximateElevation() < 0.0001f)
+			return;
+	}
 
 	if (!m_bGeneratingShell2 && m_iShell2VBO && !bLowRes)
 	{

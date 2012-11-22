@@ -91,6 +91,16 @@ void CSPGame::SetupGame(tstring sType)
 
 		pPlanet = GameServer()->Create<CPlanet>("CPlanet");
 		pPlanet->SetStar(pStar);
+		pPlanet->SetPlanetName("Moon");
+		pPlanet->SetGlobalOrigin(CScalableVector(Vector(-7, 0, 7), SCALE_MEGAMETER) - CScalableVector(Vector(0, 0, 100), SCALE_MEGAMETER));
+		pPlanet->SetRadius(CScalableFloat(1.73f, SCALE_MEGAMETER));
+		pPlanet->SetAtmosphereThickness(CScalableFloat(5.0f, SCALE_KILOMETER));
+		pPlanet->SetMinutesPerRevolution(0);
+		pPlanet->SetAtmosphereColor(Color(0.25f, 0.25f, 0.3f));
+		pPlanet->SetRandomSeed(3);
+
+		pPlanet = GameServer()->Create<CPlanet>("CPlanet");
+		pPlanet->SetStar(pStar);
 		pPlanet->SetPlanetName("Mars");
 		pPlanet->SetGlobalOrigin(CScalableVector(Vector(100, 0, 100), SCALE_GIGAMETER));	// 200Gm, the average distance to Mars
 		pPlanet->SetRadius(CScalableFloat(3.397f, SCALE_MEGAMETER));			// Radius of Mars, 3397 km

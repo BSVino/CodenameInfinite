@@ -121,7 +121,8 @@ void CPlanet::Think()
 {
 	BaseClass::Think();
 
-	SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*((float)GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
+	if (m_flMinutesPerRevolution)
+		SetLocalAngles(GetLocalAngles() + EAngle(0, 360, 0)*((float)GameServer()->GetFrameTime()/60/m_flMinutesPerRevolution*planet_rotscale.GetFloat()));
 
 	m_bOneSurface = r_planet_onesurface.GetBool();
 }
@@ -199,6 +200,12 @@ void CPlanet::PostRender() const
 	if (!r_planets.GetBool())
 		return;
 
+	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
+	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+
+	if ((pCharacter->GetGlobalOrigin() - GetGlobalOrigin()).LengthSqr() > TFloat(30.0, SCALE_GIGAMETER).Squared())
+		return;
+
 	scale_t eScale = SPGame()->GetSPRenderer()->GetRenderingScale();
 	if (eScale == SCALE_RENDER)
 	{
@@ -214,8 +221,6 @@ void CPlanet::PostRender() const
 	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
-	CStar* pStar = SPGame()->GetSPRenderer()->GetClosestStar();
-	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	CScalableMatrix mPlanetToLocal = GetGlobalTransform();
 	mPlanetToLocal.InvertRT();
 
