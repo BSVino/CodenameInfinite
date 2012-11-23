@@ -10,6 +10,7 @@
 #include "entities/structures/spire.h"
 #include "entities/structures/mine.h"
 #include "entities/structures/pallet.h"
+#include "voxel/voxel_tree.h"
 
 REGISTER_ENTITY(CWorkerBot);
 

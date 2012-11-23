@@ -8,6 +8,7 @@
 #include "ui/command_menu.h"
 #include "entities/structures/spire.h"
 #include "planet/terrain_lumps.h"
+#include "voxel/voxel_tree.h"
 
 void CSPCharacter::TaskThink()
 {

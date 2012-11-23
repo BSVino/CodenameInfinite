@@ -13,6 +13,7 @@
 #include "entities/structures/spire.h"
 #include "entities/items/pickup.h"
 #include "planet/trees.h"
+#include "voxel/voxel_tree.h"
 
 REGISTER_ENTITY(CDisassembler);
 

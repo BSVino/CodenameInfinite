@@ -17,6 +17,7 @@
 #include "ui/command_menu.h"
 #include "items/disassembler.h"
 #include "planet/terrain_lumps.h"
+#include "voxel/voxel_tree.h"
 
 REGISTER_ENTITY(CSPPlayer);
 

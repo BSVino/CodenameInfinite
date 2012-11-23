@@ -40,8 +40,6 @@ void CSpire::Precache()
 
 void CSpire::Spawn()
 {
-//	m_oVoxelTree.SetSpire(this);
-
 	m_aabbPhysBoundingBox = AABB(Vector(-0.25f, -0.25f, -0.25f), Vector(1.0f, 3.75f, 0.25f));
 
 	BaseClass::Spawn();
@@ -122,8 +120,6 @@ bool CSpire::ShouldRender() const
 void CSpire::PostRender() const
 {
 	BaseClass::PostRender();
-
-//	GetVoxelTree()->Render();
 
 	if (GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;

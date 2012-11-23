@@ -16,6 +16,7 @@
 #include "entities/items/pickup.h"
 #include "sp_window.h"
 #include "ui/hud.h"
+#include "voxel/voxel_tree.h"
 
 REGISTER_ENTITY(CSPCharacter);
 
