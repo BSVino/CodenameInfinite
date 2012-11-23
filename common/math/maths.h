@@ -53,6 +53,12 @@ inline const T LerpValue(const T& from, const T& to, float flLerp)
 	return to * flLerp + from * (1-flLerp);
 }
 
+template <class T>
+inline const T LerpValue(const T& from, const T& to, float flLerp, float flInLo, float flInHi)
+{
+	return (((flLerp-flInLo) / (flInHi-flInLo)) * (to-from)) + from;
+}
+
 inline float RemapVal(float flInput, float flInLo, float flInHi, float flOutLo, float flOutHi)
 {
 	return (((flInput-flInLo) / (flInHi-flInLo)) * (flOutHi-flOutLo)) + flOutLo;

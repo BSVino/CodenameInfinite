@@ -15,6 +15,7 @@ typedef enum
 } structure_type;
 
 class CSpire;
+class CPowerCord;
 
 class CStructure : public CBaseEntity
 {
@@ -52,6 +53,16 @@ public:
 	virtual void            PerformStructureTask(class CSPCharacter* pCharacter);
 	virtual bool            IsOccupied() const;
 
+	virtual bool            TakesPower() const { return false; }
+	void                    SetPowerCord(CPowerCord* pCord);
+	CStructure*             GetPowerSource() const;
+	bool                    DrawPower(size_t iPower);
+	virtual void            OnPowerDrawn() {};
+	void                    AddPower(size_t iPower);
+	virtual size_t          MaxBatteryLevel() { return 0; }
+	size_t                  GetBatteryLevel() { return m_iBatteryLevel; }
+	size_t                  GetMaxBatteryLevel() { return m_iMaxBatteryLevel; }
+
 	virtual const Matrix4x4 GetPhysicsTransform() const;
 	virtual void            SetPhysicsTransform(const Matrix4x4& m);
 	virtual void            PostSetLocalTransform(const TMatrix& m);
@@ -70,11 +81,15 @@ public:
 private:
 	CEntityHandle<CSPPlayer>  m_hOwner;
 	CEntityHandle<CSpire>     m_hSpire;
+	CEntityHandle<CPowerCord> m_hPowerCord;
 	structure_type            m_eStructureType;
 
 	int             m_iTurnsToConstruct;
 	int             m_iTotalTurnsToConstruct;
 	double          m_flConstructionTurnTime;
+
+	size_t      m_iBatteryLevel;
+	size_t      m_iMaxBatteryLevel;
 };
 
 const char* GetStructureName(structure_type eStructure);

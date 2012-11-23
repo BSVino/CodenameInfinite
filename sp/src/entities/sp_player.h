@@ -8,6 +8,7 @@
 #include "items/items.h"
 
 class CCommandMenu;
+class CPowerCord;
 
 class CSPPlayer : public CPlayer
 {

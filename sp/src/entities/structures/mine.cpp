@@ -59,9 +59,20 @@ void CMine::Spawn()
 	}
 }
 
+CVar mine_power("mine_power", "5");
+
 void CMine::Think()
 {
 	BaseClass::Think();
+
+	if (IsUnderConstruction())
+		return;
+
+	if (!m_flDiggingStarted && GetPowerSource())
+	{
+		if (GetPowerSource()->DrawPower(mine_power.GetInt()))
+			m_flDiggingStarted = GameServer()->GetGameTime();
+	}
 
 	double flDigTime = RemapValClamped((double)m_iCurrentDepth, 0, 20, 0.5, 6);
 

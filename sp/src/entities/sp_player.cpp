@@ -130,6 +130,29 @@ void CSPPlayer::MouseMotion(int x, int y)
 
 void CSPPlayer::MouseInput(int iButton, int iState)
 {
+	if (GetPlayerCharacter()->IsHoldingPowerCord() && iState == 1)
+	{
+		Matrix4x4 mTransform = GetPlayerCharacter()->GetPhysicsTransform();
+
+		Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*GetPlayerCharacter()->EyeHeight();
+		Vector vecDirection = GetPlayerCharacter()->GameData().TransformVectorLocalToPhysics(AngleVector(GetPlayerCharacter()->GetViewAngles()));
+
+		CTraceResult tr;
+		GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*4, GetPlayerCharacter());
+
+		if (tr.m_flFraction < 1)
+		{
+			if (tr.m_pHit)
+			{
+				CStructure* pStructure = dynamic_cast<CStructure*>(tr.m_pHit);
+				if (pStructure && pStructure->TakesPower())
+					GetPlayerCharacter()->PlugInPowerCord(pStructure);
+			}
+		}
+
+		return;
+	}
+
 	if (iButton == TINKER_KEY_MOUSE_LEFT && iState == 1 && m_pActiveCommandMenu)
 	{
 		if (m_pActiveCommandMenu->MouseInput(iButton, iState))
@@ -218,6 +241,9 @@ void CSPPlayer::KeyPress(int c)
 
 	if (c == TINKER_KEY_ESCAPE)
 		m_eBlockDesignateMode = ITEM_NONE;
+
+	if (c == TINKER_KEY_ESCAPE)
+		GetPlayerCharacter()->CancelCord();
 
 	if (c == 'W' || c == 'A' || c == 'S' || c == 'D')
 		Instructor_LessonLearned("wasd");
@@ -669,6 +695,7 @@ void CSPPlayer::EnterConstructionMode(structure_type eStructure)
 	if (!GetPlayerCharacter()->CanBuildStructure(eStructure))
 		return;
 
+	GetPlayerCharacter()->CancelCord();
 	m_eBlockPlaceMode = ITEM_NONE;
 	m_eBlockDesignateMode = ITEM_NONE;
 	m_eConstructionMode = eStructure;
@@ -768,6 +795,7 @@ void CSPPlayer::EnterBlockPlaceMode(item_t eBlock)
 	if (!GetPlayerCharacter()->GetInventory(eBlock))
 		return;
 
+	GetPlayerCharacter()->CancelCord();
 	m_eConstructionMode = STRUCTURE_NONE;
 	m_eBlockDesignateMode = ITEM_NONE;
 	m_eBlockPlaceMode = eBlock;
@@ -841,6 +869,7 @@ void CSPPlayer::FinishBlockPlace()
 
 void CSPPlayer::EnterBlockDesignateMode(item_t eBlock)
 {
+	GetPlayerCharacter()->CancelCord();
 	m_eConstructionMode = STRUCTURE_NONE;
 	m_eBlockPlaceMode = ITEM_NONE;
 	m_eBlockDesignateMode = eBlock;

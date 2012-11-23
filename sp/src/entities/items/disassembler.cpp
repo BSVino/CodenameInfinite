@@ -247,6 +247,10 @@ void CDisassembler::DrawViewModel(CGameRenderingContext* pContext)
 
 		if (pPlayerOwner->IsInBlockDesignateMode())
 			return;
+
+		CPlayerCharacter* pPlayerCharacterOwner = dynamic_cast<CPlayerCharacter*>(pOwner);
+		if (pPlayerCharacterOwner && pPlayerCharacterOwner->IsHoldingPowerCord())
+			return;
 	}
 
 	Vector vecForward, vecUp, vecRight;
@@ -311,14 +315,14 @@ void CDisassembler::OwnerMouseInput(int iButton, int iState)
 
 			TVector vecLocal = CScalableVector(pOwner->GameData().TransformPointPhysicsToLocal(tr.m_vecHit + vecDirection * 0.01f), SCALE_METER);
 
-			item_t eBlock;
+			item_t eBlock = ITEM_NONE;
 			if (pTree)
 				eBlock = pTree->GetBlock(vecLocal);
 
 			CTreeAddress oTreeAddress;
 			if (tr.m_flFraction < 1 && pStructureHit && pStructureHit->GetOwner() == GetOwner()->GetControllingPlayer())
 				BeginDisassembly(pStructureHit);
-			else if (eBlock)
+			else if (eBlock && pTree)
 				BeginDisassembly(pTree->ToVoxelCoordinates(vecLocal));
 			else if (pPlanet && pPlanet->IsExtraPhysicsEntGround(tr.m_iHitExtra) && tr.m_flFraction < 1)
 				BeginDisassembly(TVector(pOwner->GameData().TransformPointPhysicsToLocal(tr.m_vecHit)));

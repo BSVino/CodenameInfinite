@@ -9,11 +9,13 @@
 #include "entities/sp_playercharacter.h"
 #include "planet/planet.h"
 #include "planet/terrain_chunks.h"
+#include "ui/command_menu.h"
+
 #include "spire.h"
 #include "mine.h"
 #include "pallet.h"
 #include "stove.h"
-#include "ui/command_menu.h"
+#include "powercord.h"
 
 REGISTER_ENTITY(CStructure);
 
@@ -23,9 +25,12 @@ NETVAR_TABLE_END();
 SAVEDATA_TABLE_BEGIN(CStructure);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSPPlayer, m_hOwner);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CSpire, m_hSpire);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CPowerCord, m_hPowerCord);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, structure_type, m_eStructureType);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, int, m_iTurnsToConstruct);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, float, m_flConstructionTurnTime);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iBatteryLevel);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iMaxBatteryLevel);
 SAVEDATA_TABLE_END();
 
 INPUTS_TABLE_BEGIN(CStructure);
@@ -45,6 +50,9 @@ void CStructure::Spawn()
 	BaseClass::Spawn();
 
 	SetTotalHealth(50);
+
+	m_iBatteryLevel = 0;
+	m_iMaxBatteryLevel = MaxBatteryLevel();
 }
 
 void CStructure::SetOwner(class CSPPlayer* pOwner)
@@ -110,6 +118,23 @@ void CStructure::Think()
 		if (GameData().GetCommandMenu())
 			GameData().GetCommandMenu()->Think();
 	}
+	else if (TakesPower() && GetOwner() && GetOwner()->GetPlayerCharacter() && GetOwner()->GetPlayerCharacter()->IsHoldingPowerCord())
+	{
+		if (CanAutoOpenMenu())
+		{
+			// If the player is nearby, looking at me, and not already looking at another command menu, open a temp command menu showing construction info.
+			CCommandMenu* pMenu = GameData().CreateCommandMenu(GetOwner()->GetPlayerCharacter());
+			SetupMenuButtons();
+		}
+		else if (CanAutoCloseMenu())
+		{
+			// If the player goes away or stops looking, close it.
+			GameData().CloseCommandMenu();
+		}
+
+		if (GameData().GetCommandMenu())
+			GameData().GetCommandMenu()->Think();
+	}
 }
 
 void CStructure::PostRender() const
@@ -128,6 +153,15 @@ bool CStructure::CanAutoOpenMenu() const
 	CPlayerCharacter* pOwner = GetOwner()->GetPlayerCharacter();
 
 	if (!pOwner)
+		return false;
+
+	if (GetOwner()->IsInBlockPlaceMode())
+		return false;
+
+	if (GetOwner()->IsInBlockDesignateMode())
+		return false;
+
+	if (GetOwner()->IsInConstructionMode())
 		return false;
 
 	TVector vecPlayerEyes = pOwner->GetLocalOrigin() + pOwner->EyeHeight() * DoubleVector(pOwner->GetLocalUpVector());
@@ -153,6 +187,15 @@ bool CStructure::CanAutoCloseMenu() const
 
 	if (!pOwner)
 		return false;
+
+	if (GetOwner()->IsInBlockPlaceMode())
+		return true;
+
+	if (GetOwner()->IsInBlockDesignateMode())
+		return true;
+
+	if (GetOwner()->IsInConstructionMode())
+		return true;
 
 	TVector vecPlayerEyes = pOwner->GetLocalOrigin() + pOwner->EyeHeight() * DoubleVector(pOwner->GetLocalUpVector());
 	TVector vecOwnerProjectionPoint = GetLocalOrigin() + GetLocalTransform().TransformVector(GameData().GetCommandMenuRenderOffset());
@@ -210,12 +253,12 @@ void CStructure::OnUse(CBaseEntity* pUser)
 
 void CStructure::SetupMenuButtons()
 {
-	if (!IsUnderConstruction())
-		return;
-
 	CCommandMenu* pMenu = GameData().GetCommandMenu();
 
-	if (pMenu)
+	if (!pMenu)
+		return;
+
+	if (IsUnderConstruction())
 	{
 		pMenu->SetTitle(GetStructureName(m_eStructureType));
 		pMenu->SetSubtitle(sprintf("UNDER CONSTRUCTION - %d/%d", m_iTotalTurnsToConstruct-m_iTurnsToConstruct, m_iTotalTurnsToConstruct));
@@ -224,6 +267,11 @@ void CStructure::SetupMenuButtons()
 			pMenu->SetProgressBar(GameServer()->GetGameTime() - m_flConstructionTurnTime, build_time_construct.GetFloat());
 		else
 			pMenu->DisableProgressBar();
+	}
+	else if (GetOwner() && GetOwner()->GetPlayerCharacter() && GetOwner()->GetPlayerCharacter()->IsHoldingPowerCord())
+	{
+		pMenu->SetTitle(GetStructureName(m_eStructureType));
+		pMenu->SetSubtitle("Connect power?");
 	}
 }
 
@@ -269,6 +317,45 @@ bool CStructure::IsOccupied() const
 		return true;
 
 	return false;
+}
+
+void CStructure::SetPowerCord(CPowerCord* pCord)
+{
+	if (m_hPowerCord)
+		m_hPowerCord->Delete();
+
+	m_hPowerCord = pCord;
+
+	if (GameData().GetCommandMenu())
+		GameData().CloseCommandMenu();
+}
+
+CStructure* CStructure::GetPowerSource() const
+{
+	if (!m_hPowerCord)
+		return nullptr;
+
+	return m_hPowerCord->GetSource();
+}
+
+bool CStructure::DrawPower(size_t iPower)
+{
+	if (!iPower)
+		return false;
+
+	if (iPower > m_iBatteryLevel)
+		return false;
+
+	m_iBatteryLevel -= iPower;
+
+	OnPowerDrawn();
+
+	return true;
+}
+
+void CStructure::AddPower(size_t iPower)
+{
+	m_iBatteryLevel = std::min(m_iBatteryLevel + iPower, m_iMaxBatteryLevel);
 }
 
 CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner, CSpire* pSpire, const CScalableVector& vecOrigin)

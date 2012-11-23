@@ -18,6 +18,8 @@ public:
 	void        PerformStructureTask(class CSPCharacter* pCharacter);
 	bool        IsOccupied() const;
 
+	bool        TakesPower() const { return true; }
+
 	virtual size_t  MaxDepth() const { return 40; }
 
 	structure_type    StructureType() const { return STRUCTURE_MINE; }

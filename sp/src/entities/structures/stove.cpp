@@ -10,14 +10,15 @@
 #include "entities/items/pickup.h"
 #include "ui/command_menu.h"
 
+#include "powercord.h"
+
 REGISTER_ENTITY(CStove);
 
 NETVAR_TABLE_BEGIN(CStove);
 NETVAR_TABLE_END();
 
 SAVEDATA_TABLE_BEGIN(CStove);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iBatteryLevel);
-	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iMaxBatteryLevel);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, size_t, m_iWoodToBurn);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flBurnWoodStart);
 SAVEDATA_TABLE_END();
 
@@ -38,9 +39,7 @@ void CStove::Spawn()
 	SetTotalHealth(20);
 	SetTurnsToConstruct(1);
 
-	m_iBatteryLevel = 0;
-	m_iMaxBatteryLevel = 100;
-
+	m_iWoodToBurn = 0;
 	m_flBurnWoodStart = 0;
 }
 
@@ -53,6 +52,12 @@ void CStove::Think()
 
 	if (IsUnderConstruction())
 		return;
+
+	if (!m_flBurnWoodStart && m_iWoodToBurn)
+	{
+		m_flBurnWoodStart = GameServer()->GetGameTime();
+		m_iWoodToBurn--;
+	}
 
 	if (CanAutoOpenMenu())
 	{
@@ -68,7 +73,7 @@ void CStove::Think()
 
 	if (m_flBurnWoodStart && GameServer()->GetGameTime() > m_flBurnWoodStart + stove_burn_time.GetFloat())
 	{
-		m_iBatteryLevel = std::min(m_iBatteryLevel + stove_power_per_burn.GetInt(), m_iMaxBatteryLevel);
+		AddPower(stove_power_per_burn.GetInt());
 		m_flBurnWoodStart = 0;
 		SetupMenuButtons();
 	}
@@ -150,12 +155,24 @@ void CStove::SetupMenuButtons()
 	if (pMenu)
 	{
 		pMenu->SetTitle(GetStructureName(StructureType()));
-		pMenu->SetSubtitle(sprintf("Batteries: %d/%d", m_iBatteryLevel, m_iMaxBatteryLevel));
+		pMenu->SetSubtitle(sprintf("Batteries: %d/%d", GetBatteryLevel(), GetMaxBatteryLevel()));
 
 		if (IsBurning())
 			pMenu->SetProgressBar(GameServer()->GetGameTime() - m_flBurnWoodStart, stove_burn_time.GetFloat());
 		else
 			pMenu->DisableProgressBar();
+
+		pMenu->SetButton(0, "Power", "powercord");
+	}
+}
+
+void CStove::MenuCommand(const tstring& sCommand)
+{
+	if (sCommand == "powercord")
+	{
+		CPowerCord* pCord = GameServer()->Create<CPowerCord>("CPowerCord");
+		pCord->SetSource(this);
+		GameData().GetCommandMenu()->GetPlayerCharacter()->HoldPowerCord(pCord);
 	}
 }
 
@@ -175,6 +192,12 @@ bool CStove::IsOccupied() const
 	return BaseClass::IsOccupied();
 }
 
+void CStove::OnPowerDrawn()
+{
+	if (GameData().GetCommandMenu())
+		SetupMenuButtons();
+}
+
 size_t CStove::TakeBlocks(item_t eBlock, size_t iNumber)
 {
 	if (IsUnderConstruction())
@@ -183,10 +206,7 @@ size_t CStove::TakeBlocks(item_t eBlock, size_t iNumber)
 	if (eBlock != ITEM_WOOD)
 		return 0;
 
-	iNumber = std::min(iNumber, (size_t)1);
-
-	if (iNumber)
-		m_flBurnWoodStart = GameServer()->GetGameTime();
+	m_iWoodToBurn += iNumber;
 
 	return iNumber;
 }

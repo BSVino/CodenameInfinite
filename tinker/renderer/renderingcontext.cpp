@@ -682,7 +682,7 @@ void CRenderingContext::BeginRenderTriFan()
 	m_iDrawMode = GL_TRIANGLE_FAN;
 }
 
-void CRenderingContext::BeginRenderQuads()
+void CRenderingContext::BeginRenderTriStrip()
 {
 	s_avecTexCoord.clear();
 	for (size_t i = 0; i < s_aavecTexCoords.size(); i++)
@@ -695,8 +695,7 @@ void CRenderingContext::BeginRenderQuads()
 	m_bNormal = false;
 	m_bColor = false;
 
-	TUnimplemented();
-	//m_iDrawMode = GL_QUADS;
+	m_iDrawMode = GL_TRIANGLE_STRIP;
 }
 
 void CRenderingContext::BeginRenderLines(float flWidth)

@@ -35,6 +35,11 @@ public:
 
 	virtual void                EnteredAtmosphere();
 
+	void                        HoldPowerCord(CPowerCord* pCord);
+	void                        PlugInPowerCord(CStructure* pStructure);
+	void                        CancelCord();
+	bool                        IsHoldingPowerCord() const;
+
 	void						SetWalkSpeedOverride(bool bOverride) { m_bWalkSpeedOverride = bOverride; };
 
 	void						EngageHyperdrive() { m_bHyperdrive = true; };
@@ -71,6 +76,8 @@ protected:
 
 	CEntityHandle<CHelperBot>   m_hHelper;
 	CEntityHandle<CDisassembler> m_hDisassembler;
+
+	CEntityHandle<CPowerCord>   m_hHoldingPowerCord;
 
 	double                      m_flNextSurfaceCheck;
 };

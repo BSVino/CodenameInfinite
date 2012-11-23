@@ -119,7 +119,7 @@ public:
 	// Immediate mode emulation
 	void					BeginRenderTris();
 	void					BeginRenderTriFan();
-	void					BeginRenderQuads();
+	void					BeginRenderTriStrip();
 	void					BeginRenderLines(float flWidth=1);
 	void					BeginRenderPoints(float flSize=1);
 	void					BeginRenderDebugLines();

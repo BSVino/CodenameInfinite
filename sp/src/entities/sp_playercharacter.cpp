@@ -9,6 +9,7 @@
 #include "planet/terrain_chunks.h"
 #include "bots/helper.h"
 #include "items/disassembler.h"
+#include "structures/powercord.h"
 #include "sp_player.h"
 
 REGISTER_ENTITY(CPlayerCharacter);
@@ -25,6 +26,7 @@ SAVEDATA_TABLE_BEGIN(CPlayerCharacter);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flApproximateElevation);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CHelperBot>, m_hHelper);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CEntityHandle<CDisassembler>, m_hDisassembler);
+	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, CPowerCord, m_hHoldingPowerCord);
 	SAVEDATA_DEFINE(CSaveData::DATA_COPYTYPE, double, m_flNextSurfaceCheck);
 SAVEDATA_TABLE_END();
 
@@ -206,6 +208,31 @@ void CPlayerCharacter::EnteredAtmosphere()
 
 	m_flApproximateElevation = GetNearestPlanet()->GetAtmosphereThickness().GetUnits(GetNearestPlanet()->GetScale());
 	ApproximateElevation();
+}
+
+void CPlayerCharacter::HoldPowerCord(CPowerCord* pCord)
+{
+	m_hHoldingPowerCord = pCord;
+}
+
+void CPlayerCharacter::PlugInPowerCord(CStructure* pStructure)
+{
+	m_hHoldingPowerCord->SetDestination(pStructure);
+	m_hHoldingPowerCord = nullptr;
+}
+
+void CPlayerCharacter::CancelCord()
+{
+	if (m_hHoldingPowerCord)
+	{
+		m_hHoldingPowerCord->Delete();
+		m_hHoldingPowerCord = nullptr;
+	}
+}
+
+bool CPlayerCharacter::IsHoldingPowerCord() const
+{
+	return !!m_hHoldingPowerCord;
 }
 
 CScalableFloat CPlayerCharacter::CharacterSpeed()
