@@ -587,6 +587,7 @@ public:
 
 	DECLARE_ENTITY_INPUT(SetVisible);
 
+	void                                    SetInPhysics(bool b) { m_bInPhysics = b; }
 	bool									IsInPhysics() const { return m_bInPhysics; };
 	void									AddToPhysics(enum collision_type_e eCollisionType);
 	void									RemoveFromPhysics();

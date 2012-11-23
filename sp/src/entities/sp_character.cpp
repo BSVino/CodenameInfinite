@@ -68,14 +68,14 @@ void CSPCharacter::Think()
 {
 	TaskThink();
 
-	BaseClass::Think();
-
 	CPlanet* pPlanet = GetNearestPlanet();
 
 	if (pPlanet && !IsInPhysics())
-		AddToPhysics(CT_CHARACTER);
+		SetInPhysics(true);
 	else if (!pPlanet && IsInPhysics())
 		RemoveFromPhysics();
+
+	BaseClass::Think();
 
 	bool bHadParent = HasMoveParent();
 	if (pPlanet && !HasMoveParent())
