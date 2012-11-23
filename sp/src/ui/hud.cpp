@@ -136,46 +136,22 @@ void CSPHUD::BuildMenus()
 		m_ahMenus[MENU_CONSTRUCTION]->SetVisible(true);
 
 		size_t iMenu = 0;
-		if (pCharacter->CanBuildStructure(STRUCTURE_SPIRE))
+
+		for (size_t i = 1; i < STRUCTURE_TOTAL; i++)
 		{
-			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
-				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, ConstructSpire);
+			if (pCharacter->CanBuildStructure((structure_type)i))
+			{
+				if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
+					m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, Construct);
 
-			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
-			pMenu->SetMenuListener(this, ConstructSpire);
-			pMenu->SetIndex(0);
-			pMenu->SetText("1. Spire");
-			pMenu->SetVisible(true);
+				CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
+				pMenu->SetMenuListener(this, Construct);
+				pMenu->SetIndex(i-1);
+				pMenu->SetText(sprintf(tstring("%d. ") + GetStructureName((structure_type)i), i));
+				pMenu->SetVisible(true);
 
-			iMenu++;
-		}
-
-		if (pCharacter->CanBuildStructure(STRUCTURE_MINE))
-		{
-			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
-				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, ConstructMine);
-
-			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
-			pMenu->SetMenuListener(this, ConstructMine);
-			pMenu->SetIndex(1);
-			pMenu->SetText("2. Mine");
-			pMenu->SetVisible(true);
-
-			iMenu++;
-		}
-
-		if (pCharacter->CanBuildStructure(STRUCTURE_PALLET))
-		{
-			if (!m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu))
-				m_ahMenus[MENU_CONSTRUCTION]->AddSubmenu(new CHUDMenu(true), this, ConstructPallet);
-
-			CHUDMenu* pMenu = m_ahMenus[MENU_CONSTRUCTION]->GetSubmenu(iMenu).DowncastStatic<CHUDMenu>();
-			pMenu->SetMenuListener(this, ConstructPallet);
-			pMenu->SetIndex(2);
-			pMenu->SetText("3. Pallet");
-			pMenu->SetVisible(true);
-
-			iMenu++;
+				iMenu++;
+			}
 		}
 
 		if (!iMenu)
@@ -352,31 +328,13 @@ void CSPHUD::DesignateBlockCallback(const tstring& sArgs)
 	pPlayer->EnterBlockDesignateMode(eBlock);
 }
 
-void CSPHUD::ConstructSpireCallback(const tstring& sArgs)
+void CSPHUD::ConstructCallback(const tstring& sArgs)
 {
 	m_ahMenus[MENU_CONSTRUCTION]->CloseMenu();
 
 	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
 
-	pPlayer->EnterConstructionMode(STRUCTURE_SPIRE);
-}
-
-void CSPHUD::ConstructMineCallback(const tstring& sArgs)
-{
-	m_ahMenus[MENU_CONSTRUCTION]->CloseMenu();
-
-	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
-
-	pPlayer->EnterConstructionMode(STRUCTURE_MINE);
-}
-
-void CSPHUD::ConstructPalletCallback(const tstring& sArgs)
-{
-	m_ahMenus[MENU_CONSTRUCTION]->CloseMenu();
-
-	CSPPlayer* pPlayer = SPGame()->GetLocalSPPlayer();
-
-	pPlayer->EnterConstructionMode(STRUCTURE_PALLET);
+	pPlayer->EnterConstructionMode((structure_type)(stoi(sArgs) + 1));
 }
 
 CVar terrain_debug("terrain_debug", "off");

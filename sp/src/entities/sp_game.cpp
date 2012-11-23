@@ -182,8 +182,15 @@ bool CSPGame::TakesDamageFrom(CBaseEntity* pVictim, CBaseEntity* pAttacker)
 	return true;
 }
 
+CVar sv_freestructures("sv_freestructures", "off");
+
 size_t CSPGame::StructureCost(structure_type eStructure, item_t eItem) const
 {
+#ifdef _DEBUG
+	if (sv_freestructures.GetBool())
+		return 0;
+#endif
+
 	switch (eStructure)
 	{
 	case STRUCTURE_MINE:
@@ -203,6 +210,14 @@ size_t CSPGame::StructureCost(structure_type eStructure, item_t eItem) const
 			return 5;
 		else if (eItem == ITEM_STONE)
 			return 3;
+		else
+			return 0;
+
+	case STRUCTURE_STOVE:
+		if (eItem == ITEM_WOOD)
+			return 3;
+		else if (eItem == ITEM_DIRT)
+			return 5;
 		else
 			return 0;
 

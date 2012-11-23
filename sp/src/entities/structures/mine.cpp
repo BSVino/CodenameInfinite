@@ -39,7 +39,7 @@ void CMine::Spawn()
 	m_iCurrentDepth = 0;
 
 	// First there's some dirt.
-	size_t iDirt = RandomInt(5, 15);
+	size_t iDirt = RandomInt(5, 8);
 
 	for (size_t i = 0; i < iDirt; i++)
 		m_aeItemsAtDepth.push_back(ITEM_DIRT);
@@ -52,7 +52,7 @@ void CMine::Spawn()
 	while (RandomInt(0, 2) > 1)
 	{
 		size_t iStart = RandomInt(0, MaxDepth());
-		size_t iDirt = RandomInt(5, 10);
+		size_t iDirt = RandomInt(3, 5);
 		size_t iMax = iStart+std::min(iDirt, MaxDepth());
 		for (size_t i = iStart; i < iMax; i++)
 			m_aeItemsAtDepth[i] = ITEM_DIRT;

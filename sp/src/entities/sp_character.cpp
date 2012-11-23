@@ -838,6 +838,9 @@ item_t CSPCharacter::GetBlock() const
 
 bool CSPCharacter::CanBuildStructure(structure_type eStructure) const
 {
+	if (eStructure == STRUCTURE_NONE)
+		return false;
+
 	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 	{
 		if (GetInventory((item_t)i) < SPGame()->StructureCost(eStructure, (item_t)i))

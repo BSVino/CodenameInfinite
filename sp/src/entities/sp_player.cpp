@@ -322,6 +322,25 @@ void CSPPlayer::PostRender() const
 					c.Vertex(vecRight + vecUp * 1.8f);
 				c.EndRender();
 			}
+			else if (m_eConstructionMode == STRUCTURE_STOVE)
+			{
+				c.UseMaterial("textures/stove.mat");
+
+				c.SetUniform("flAlpha", 0.5f);
+
+				c.BeginRenderTriFan();
+					c.TexCoord(0.0f, 1.0f);
+					c.Vertex(-vecRight + vecUp * 1.8f);
+					c.TexCoord(0.0f, 0.0f);
+					c.Vertex(-vecRight - vecUp * 0.2f);
+					c.TexCoord(1.0f, 0.0f);
+					c.Vertex(vecRight - vecUp * 0.2f);
+					c.TexCoord(1.0f, 1.0f);
+					c.Vertex(vecRight + vecUp * 1.8f);
+				c.EndRender();
+			}
+			else
+				TAssert(false);
 		}
 	}
 

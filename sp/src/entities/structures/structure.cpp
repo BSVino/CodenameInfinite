@@ -12,6 +12,7 @@
 #include "spire.h"
 #include "mine.h"
 #include "pallet.h"
+#include "stove.h"
 #include "ui/command_menu.h"
 
 REGISTER_ENTITY(CStructure);
@@ -94,32 +95,16 @@ void CStructure::Think()
 
 	if (IsUnderConstruction())
 	{
-		CPlayerCharacter* pOwner = GetOwner()->GetPlayerCharacter();
-
-		if (pOwner)
+		if (CanAutoOpenMenu())
 		{
-			TVector vecPlayerEyes = pOwner->GetLocalOrigin() + pOwner->EyeHeight() * DoubleVector(pOwner->GetLocalUpVector());
-			TVector vecOwnerProjectionPoint = GetLocalOrigin() + GetLocalTransform().TransformVector(GameData().GetCommandMenuRenderOffset());
-
-			Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetMeters();
-			float flDistanceToPlayerEyes = vecToPlayerEyes.Length();
-			Vector vecProjectionDirection = vecToPlayerEyes/flDistanceToPlayerEyes;
-
-			float flViewAngleDot = AngleVector(pOwner->GetViewAngles()).Dot(vecProjectionDirection);
-
-			CSPPlayer* pPlayerOwner = static_cast<CSPPlayer*>(pOwner->GetControllingPlayer());
-
-			if (!GameData().GetCommandMenu() && flDistanceToPlayerEyes < 4 && flViewAngleDot < -0.8 && !pPlayerOwner->GetActiveCommandMenu())
-			{
-				// If the player is nearby, looking at me, and not already looking at another command menu, open a temp command menu showing construction info.
-				CCommandMenu* pMenu = GameData().CreateCommandMenu(pOwner);
-				SetupMenuButtons();
-			}
-			else if (GameData().GetCommandMenu() && (GameData().GetCommandMenu()->WantsToClose() || flDistanceToPlayerEyes > 5 || flViewAngleDot > -0.7))
-			{
-				// If the player goes away or stops looking, close it.
-				GameData().CloseCommandMenu();
-			}
+			// If the player is nearby, looking at me, and not already looking at another command menu, open a temp command menu showing construction info.
+			CCommandMenu* pMenu = GameData().CreateCommandMenu(GetOwner()->GetPlayerCharacter());
+			SetupMenuButtons();
+		}
+		else if (CanAutoCloseMenu())
+		{
+			// If the player goes away or stops looking, close it.
+			GameData().CloseCommandMenu();
 		}
 
 		if (GameData().GetCommandMenu())
@@ -136,6 +121,52 @@ void CStructure::PostRender() const
 
 	if (GameData().GetCommandMenu())
 		GameData().GetCommandMenu()->Render();
+}
+
+bool CStructure::CanAutoOpenMenu() const
+{
+	CPlayerCharacter* pOwner = GetOwner()->GetPlayerCharacter();
+
+	if (!pOwner)
+		return false;
+
+	TVector vecPlayerEyes = pOwner->GetLocalOrigin() + pOwner->EyeHeight() * DoubleVector(pOwner->GetLocalUpVector());
+	TVector vecOwnerProjectionPoint = GetLocalOrigin() + GetLocalTransform().TransformVector(GameData().GetCommandMenuRenderOffset());
+
+	Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetMeters();
+	float flDistanceToPlayerEyes = vecToPlayerEyes.Length();
+	Vector vecProjectionDirection = vecToPlayerEyes/flDistanceToPlayerEyes;
+
+	float flViewAngleDot = AngleVector(pOwner->GetViewAngles()).Dot(vecProjectionDirection);
+
+	CSPPlayer* pPlayerOwner = static_cast<CSPPlayer*>(pOwner->GetControllingPlayer());
+
+	if (!GameData().GetCommandMenu() && flDistanceToPlayerEyes < 4 && flViewAngleDot < -0.8 && !pPlayerOwner->GetActiveCommandMenu())
+		return true;
+
+	return false;
+}
+
+bool CStructure::CanAutoCloseMenu() const
+{
+	CPlayerCharacter* pOwner = GetOwner()->GetPlayerCharacter();
+
+	if (!pOwner)
+		return false;
+
+	TVector vecPlayerEyes = pOwner->GetLocalOrigin() + pOwner->EyeHeight() * DoubleVector(pOwner->GetLocalUpVector());
+	TVector vecOwnerProjectionPoint = GetLocalOrigin() + GetLocalTransform().TransformVector(GameData().GetCommandMenuRenderOffset());
+
+	Vector vecToPlayerEyes = (vecPlayerEyes - vecOwnerProjectionPoint).GetMeters();
+	float flDistanceToPlayerEyes = vecToPlayerEyes.Length();
+	Vector vecProjectionDirection = vecToPlayerEyes/flDistanceToPlayerEyes;
+
+	float flViewAngleDot = AngleVector(pOwner->GetViewAngles()).Dot(vecProjectionDirection);
+
+	if (GameData().GetCommandMenu() && (GameData().GetCommandMenu()->WantsToClose() || flDistanceToPlayerEyes > 5 || flViewAngleDot > -0.7))
+		return true;
+
+	return false;
 }
 
 void CStructure::SetTurnsToConstruct(int iTurns)
@@ -261,6 +292,10 @@ CStructure* CStructure::CreateStructure(structure_type eType, CSPPlayer* pOwner,
 	case STRUCTURE_PALLET:
 		pStructure = GameServer()->Create<CPallet>("CPallet");
 		break;
+
+	case STRUCTURE_STOVE:
+		pStructure = GameServer()->Create<CStove>("CStove");
+		break;
 	}
 
 	pStructure->GameData().SetPlayerOwner(pOwner->GetPlayerCharacter()->GameData().GetPlayerOwner());
@@ -364,7 +399,8 @@ static const char* g_szStructureNames[] = {
 	"",
 	"Spire",
 	"Mine",
-	"Pallet"
+	"Pallet",
+	"Stove",
 };
 
 const char* GetStructureName(structure_type eStructure)

@@ -10,6 +10,7 @@ typedef enum
 	STRUCTURE_SPIRE,
 	STRUCTURE_MINE,
 	STRUCTURE_PALLET,
+	STRUCTURE_STOVE,
 	STRUCTURE_TOTAL,
 } structure_type;
 
@@ -31,6 +32,9 @@ public:
 	void                    Think();
 
 	void                    PostRender() const;
+
+	bool                    CanAutoOpenMenu() const;
+	bool                    CanAutoCloseMenu() const;
 
 	void                    SetTurnsToConstruct(int iTurns);
 	bool                    IsUnderConstruction() const { return m_iTurnsToConstruct > 0; }

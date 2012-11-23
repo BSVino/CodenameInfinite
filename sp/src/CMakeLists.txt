@@ -54,6 +54,7 @@ set (CI_STRUCTURE_SOURCES
 	entities/structures/spire.cpp
 	entities/structures/mine.cpp
 	entities/structures/pallet.cpp
+	entities/structures/stove.cpp
 )
 
 set (CI_ITEM_SOURCES
