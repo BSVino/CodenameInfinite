@@ -487,7 +487,7 @@ static const char* g_szStructureNames[] = {
 	"Spire",
 	"Mine",
 	"Pallet",
-	"Stove",
+	"Furnace",
 };
 
 const char* GetStructureName(structure_type eStructure)
