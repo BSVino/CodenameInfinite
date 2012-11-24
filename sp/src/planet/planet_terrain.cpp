@@ -143,38 +143,42 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 
 			Vector vecNormal(0, 0, 0);
 
-			Vector vecUp = (vecTerrain.vec3DPosition + vecOrigin).Normalized();
+			//Vector vecUp = (vecTerrain.vec3DPosition + vecOrigin).Normalized();
 
-			if (x > 0)
+			if (x > 0 && y > 0)
 			{
-				CTerrainPoint& vecNeighbor = avecTerrain[y*iVertsPerRow + (x-1)];
-				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
-				Vector vecRight = -vecToNeighbor.Cross(vecUp);
-				vecNormal += vecToNeighbor.Cross(vecRight);
+				CTerrainPoint& vecNeighbor1 = avecTerrain[y*iVertsPerRow + (x-1)];
+				CTerrainPoint& vecNeighbor2 = avecTerrain[(y-1)*iVertsPerRow + x];
+				Vector vecToNeighbor1 = vecNeighbor1.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecToNeighbor2 = vecNeighbor2.vec3DPosition-vecTerrain.vec3DPosition;
+				vecNormal += vecToNeighbor1.Cross(vecToNeighbor2);
 			}
 
-			if (x < iVertsPerRow-1)
+			if (x < iVertsPerRow-1 && y > 0)
 			{
-				CTerrainPoint& vecNeighbor = avecTerrain[y*iVertsPerRow + (x+1)];
-				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
-				Vector vecRight = -vecToNeighbor.Cross(vecUp);
-				vecNormal += vecToNeighbor.Cross(vecRight);
+				CTerrainPoint& vecNeighbor1 = avecTerrain[(y-1)*iVertsPerRow + x];
+				CTerrainPoint& vecNeighbor2 = avecTerrain[y*iVertsPerRow + (x+1)];
+				Vector vecToNeighbor1 = vecNeighbor1.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecToNeighbor2 = vecNeighbor2.vec3DPosition-vecTerrain.vec3DPosition;
+				vecNormal += vecToNeighbor1.Cross(vecToNeighbor2);
 			}
 
-			if (y > 0)
+			if (x < iVertsPerRow-1 && y < iVertsPerRow-1)
 			{
-				CTerrainPoint& vecNeighbor = avecTerrain[(y-1)*iVertsPerRow + x];
-				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
-				Vector vecRight = -vecToNeighbor.Cross(vecUp);
-				vecNormal += vecToNeighbor.Cross(vecRight);
+				CTerrainPoint& vecNeighbor1 = avecTerrain[y*iVertsPerRow + (x+1)];
+				CTerrainPoint& vecNeighbor2 = avecTerrain[(y+1)*iVertsPerRow + x];
+				Vector vecToNeighbor1 = vecNeighbor1.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecToNeighbor2 = vecNeighbor2.vec3DPosition-vecTerrain.vec3DPosition;
+				vecNormal += vecToNeighbor1.Cross(vecToNeighbor2);
 			}
 
-			if (y < iVertsPerRow-1)
+			if (x > 0 && y < iVertsPerRow-1)
 			{
-				CTerrainPoint& vecNeighbor = avecTerrain[(y+1)*iVertsPerRow + x];
-				Vector vecToNeighbor = vecNeighbor.vec3DPosition-vecTerrain.vec3DPosition;
-				Vector vecRight = -vecToNeighbor.Cross(vecUp);
-				vecNormal += vecToNeighbor.Cross(vecRight);
+				CTerrainPoint& vecNeighbor1 = avecTerrain[(y+1)*iVertsPerRow + x];
+				CTerrainPoint& vecNeighbor2 = avecTerrain[y*iVertsPerRow + (x-1)];
+				Vector vecToNeighbor1 = vecNeighbor1.vec3DPosition-vecTerrain.vec3DPosition;
+				Vector vecToNeighbor2 = vecNeighbor2.vec3DPosition-vecTerrain.vec3DPosition;
+				vecNormal += vecToNeighbor1.Cross(vecToNeighbor2);
 			}
 
 			vecTerrain.vecNormal = vecNormal.Normalized();

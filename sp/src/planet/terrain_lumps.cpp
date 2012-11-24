@@ -588,6 +588,8 @@ void CTerrainLump::Render()
 	r.SetUniform("vecStarLightPosition", vecStarLightPosition);
 	r.SetUniform("eScale", eRenderScale);
 	r.SetUniform("flScale", flScale);
+	r.SetUniform("bHasUp", true);
+	r.SetUniform("vecUp", m_vecLocalCenter.Normalized());
 
 	CScalableFloat flDistance = (pPlanet->GetGlobalOrigin() - pCharacter->GetGlobalOrigin()).Length() - pPlanet->GetRadius();
 	float flAtmosphere = (float)RemapValClamped(flDistance, CScalableFloat(1.0f, SCALE_KILOMETER), pPlanet->GetAtmosphereThickness(), 1.0, 0.0);
