@@ -52,26 +52,27 @@ CRenderingContext::CRenderingContext(CRenderer* pRenderer, bool bInherit)
 	if (bInherit && s_aContexts.size() > 1)
 	{
 		CRenderContext& oLastContext = s_aContexts[s_aContexts.size()-2];
+		CRenderContext& oThisContext = GetContext();
 
-		GetContext().m_mProjection = oLastContext.m_mProjection;
-		GetContext().m_mView = oLastContext.m_mView;
-		GetContext().m_mTransformations = oLastContext.m_mTransformations;
+		oThisContext.m_mProjection = oLastContext.m_mProjection;
+		oThisContext.m_mView = oLastContext.m_mView;
+		oThisContext.m_mTransformations = oLastContext.m_mTransformations;
 
-		GetContext().m_hMaterial = oLastContext.m_hMaterial;
-		GetContext().m_pFrameBuffer = oLastContext.m_pFrameBuffer;
-		tstrncpy(GetContext().m_szProgram, PROGRAM_LEN, oLastContext.m_szProgram, PROGRAM_LEN);
-		GetContext().m_pShader = oLastContext.m_pShader;
+		oThisContext.m_hMaterial = oLastContext.m_hMaterial;
+		oThisContext.m_pFrameBuffer = oLastContext.m_pFrameBuffer;
+		tstrncpy(oThisContext.m_szProgram, PROGRAM_LEN, oLastContext.m_szProgram, PROGRAM_LEN);
+		oThisContext.m_pShader = oLastContext.m_pShader;
 
-		GetContext().m_rViewport = oLastContext.m_rViewport;
-		GetContext().m_eBlend = oLastContext.m_eBlend;
-		GetContext().m_flAlpha = oLastContext.m_flAlpha;
-		GetContext().m_bDepthMask = oLastContext.m_bDepthMask;
-		GetContext().m_bDepthTest = oLastContext.m_bDepthTest;
-		GetContext().m_eDepthFunction = oLastContext.m_eDepthFunction;
-		GetContext().m_bCull = oLastContext.m_bCull;
-		GetContext().m_bWinding = oLastContext.m_bWinding;
+		oThisContext.m_rViewport = oLastContext.m_rViewport;
+		oThisContext.m_eBlend = oLastContext.m_eBlend;
+		oThisContext.m_flAlpha = oLastContext.m_flAlpha;
+		oThisContext.m_bDepthMask = oLastContext.m_bDepthMask;
+		oThisContext.m_bDepthTest = oLastContext.m_bDepthTest;
+		oThisContext.m_eDepthFunction = oLastContext.m_eDepthFunction;
+		oThisContext.m_bCull = oLastContext.m_bCull;
+		oThisContext.m_bWinding = oLastContext.m_bWinding;
 
-		m_pShader = GetContext().m_pShader;
+		m_pShader = oThisContext.m_pShader;
 
 		if (m_pShader)
 			m_iProgram = m_pShader->m_iProgram;
@@ -106,25 +107,27 @@ CRenderingContext::~CRenderingContext()
 
 	if (s_aContexts.size())
 	{
-		UseMaterial(GetContext().m_hMaterial);
-		UseFrameBuffer(GetContext().m_pFrameBuffer);
-		UseProgram(GetContext().m_pShader);
+		CRenderContext& oContext = GetContext();
 
-		if (*GetContext().m_szProgram)
+		UseMaterial(oContext.m_hMaterial);
+		UseFrameBuffer(oContext.m_pFrameBuffer);
+		UseProgram(oContext.m_pShader);
+
+		if (*oContext.m_szProgram)
 		{
-			SetUniform("mProjection", GetContext().m_mProjection);
-			SetUniform("mView", GetContext().m_mView);
-			SetUniform("mGlobal", GetContext().m_mTransformations);
+			oContext.m_bProjectionUpdated = false;
+			oContext.m_bViewUpdated = false;
+			oContext.m_bTransformUpdated = false;
 		}
 
-		SetViewport(GetContext().m_rViewport);
-		SetBlend(GetContext().m_eBlend);
-		SetAlpha(GetContext().m_flAlpha);
-		SetDepthMask(GetContext().m_bDepthMask);
-		SetDepthTest(GetContext().m_bDepthTest);
-		SetDepthFunction(GetContext().m_eDepthFunction);
-		SetBackCulling(GetContext().m_bCull);
-		SetWinding(GetContext().m_bWinding);
+		SetViewport(oContext.m_rViewport);
+		SetBlend(oContext.m_eBlend);
+		SetAlpha(oContext.m_flAlpha);
+		SetDepthMask(oContext.m_bDepthMask);
+		SetDepthTest(oContext.m_bDepthTest);
+		SetDepthFunction(oContext.m_eDepthFunction);
+		SetBackCulling(oContext.m_bCull);
+		SetWinding(oContext.m_bWinding);
 	}
 	else
 	{
@@ -152,28 +155,34 @@ CRenderingContext::~CRenderingContext()
 
 void CRenderingContext::SetProjection(const Matrix4x4& m)
 {
-	GetContext().m_mProjection = m;
+	CRenderContext& oContext = GetContext();
 
-	if (m_pShader)
-		SetUniform("mProjection", m);
+	oContext.m_mProjection = m;
+	GetContext().m_bProjectionUpdated = false;
 }
 
 void CRenderingContext::SetView(const Matrix4x4& m)
 {
-	GetContext().m_mView = m;
+	CRenderContext& oContext = GetContext();
 
-	if (m_pShader)
-		SetUniform("mView", m);
+	oContext.m_mView = m;
+	oContext.m_bViewUpdated = false;
 }
 
 void CRenderingContext::Transform(const Matrix4x4& m)
 {
-	GetContext().m_mTransformations *= m;
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_mTransformations *= m;
+	oContext.m_bTransformUpdated = false;
 }
 
 void CRenderingContext::Translate(const Vector& vecTranslate)
 {
-	GetContext().m_mTransformations.AddTranslation(vecTranslate);
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_mTransformations.AddTranslation(vecTranslate);
+	oContext.m_bTransformUpdated = false;
 }
 
 void CRenderingContext::Rotate(float flAngle, Vector vecAxis)
@@ -181,22 +190,34 @@ void CRenderingContext::Rotate(float flAngle, Vector vecAxis)
 	Matrix4x4 mRotation;
 	mRotation.SetRotation(flAngle, vecAxis);
 
-	GetContext().m_mTransformations *= mRotation;
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_mTransformations *= mRotation;
+	oContext.m_bTransformUpdated = false;
 }
 
 void CRenderingContext::Scale(float flX, float flY, float flZ)
 {
-	GetContext().m_mTransformations.AddScale(Vector(flX, flY, flZ));
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_mTransformations.AddScale(Vector(flX, flY, flZ));
+	oContext.m_bTransformUpdated = false;
 }
 
 void CRenderingContext::ResetTransformations()
 {
-	GetContext().m_mTransformations.Identity();
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_mTransformations.Identity();
+	oContext.m_bTransformUpdated = false;
 }
 
 void CRenderingContext::LoadTransform(const Matrix4x4& m)
 {
-	GetContext().m_mTransformations = m;
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_mTransformations = m;
+	oContext.m_bTransformUpdated = false;
 }
 
 void CRenderingContext::SetViewport(const Rect& rViewport)
@@ -333,6 +354,7 @@ void CRenderingContext::RenderBillboard(const CMaterialHandle& hMaterial, float 
 
 	// Clear out any existing rotation so that they don't interfere with the billboarding below.
 	GetContext().m_mTransformations.SetAngles(EAngle(0, 0, 0));
+	GetContext().m_bTransformUpdated = false;
 
 	if (GetContext().m_hMaterial != hMaterial)
 		UseMaterial(hMaterial);
@@ -370,9 +392,11 @@ void CRenderingContext::UseFrameBuffer(const CFrameBuffer* pBuffer)
 
 void CRenderingContext::UseProgram(const tchar* pszProgram)
 {
-	tstrncpy(GetContext().m_szProgram, PROGRAM_LEN, pszProgram, PROGRAM_LEN);
+	CRenderContext& oContext = GetContext();
 
-	GetContext().m_pShader = m_pShader = CShaderLibrary::GetShader(pszProgram);
+	tstrncpy(oContext.m_szProgram, PROGRAM_LEN, pszProgram, PROGRAM_LEN);
+
+	oContext.m_pShader = m_pShader = CShaderLibrary::GetShader(pszProgram);
 
 	if (*pszProgram)
 		TAssert(m_pShader);
@@ -382,23 +406,25 @@ void CRenderingContext::UseProgram(const tchar* pszProgram)
 
 void CRenderingContext::UseProgram(class CShader* pShader)
 {
-	GetContext().m_pShader = m_pShader = pShader;
+	CRenderContext& oContext = GetContext();
+
+	oContext.m_pShader = m_pShader = pShader;
 
 	if (!m_pShader)
 	{
-		GetContext().m_szProgram[0] = '\0';
+		oContext.m_szProgram[0] = '\0';
 		m_iProgram = 0;
 		glUseProgram(0);
 		return;
 	}
 
-	tstrncpy(GetContext().m_szProgram, PROGRAM_LEN, pShader->m_sName.c_str(), PROGRAM_LEN);
+	tstrncpy(oContext.m_szProgram, PROGRAM_LEN, pShader->m_sName.c_str(), PROGRAM_LEN);
 
 	m_iProgram = m_pShader->m_iProgram;
 	glUseProgram((GLuint)m_pShader->m_iProgram);
 
-	SetUniform("mProjection", GetContext().m_mProjection);
-	SetUniform("mView", GetContext().m_mView);
+	oContext.m_bProjectionUpdated = false;
+	oContext.m_bViewUpdated = false;
 }
 
 void CRenderingContext::UseMaterial(const CMaterialHandle& hMaterial)
@@ -420,13 +446,15 @@ void CRenderingContext::UseMaterial(const tstring& sName)
 
 void CRenderingContext::SetupMaterial()
 {
-	if (!GetContext().m_hMaterial.IsValid())
+	CRenderContext& oContext = GetContext();
+
+	if (!oContext.m_hMaterial.IsValid())
 		return;
 
 	if (!m_pShader)
 		return;
 
-	const tstring& sMaterialBlend = GetContext().m_hMaterial->m_sBlend;
+	const tstring& sMaterialBlend = oContext.m_hMaterial->m_sBlend;
 	if (sMaterialBlend == "alpha")
 		SetBlend(BLEND_ALPHA);
 	else if (sMaterialBlend == "additive")
@@ -490,9 +518,9 @@ void CRenderingContext::SetupMaterial()
 		}
 	}
 
-	for (size_t i = 0; i < GetContext().m_hMaterial->m_aParameters.size(); i++)
+	for (size_t i = 0; i < oContext.m_hMaterial->m_aParameters.size(); i++)
 	{
-		auto& oParameter = GetContext().m_hMaterial->m_aParameters[i];
+		auto& oParameter = oContext.m_hMaterial->m_aParameters[i];
 		CShader::CParameter* pShaderParameter = oParameter.m_pShaderParameter;
 
 		TAssert(pShaderParameter);
@@ -561,11 +589,11 @@ void CRenderingContext::SetupMaterial()
 
 	for (size_t i = 0; i < m_pShader->m_asTextures.size(); i++)
 	{
-		if (!GetContext().m_hMaterial->m_ahTextures[i].IsValid())
+		if (!oContext.m_hMaterial->m_ahTextures[i].IsValid())
 			continue;
 
 		glActiveTexture(GL_TEXTURE0+i);
-		glBindTexture(GL_TEXTURE_2D, (GLuint)GetContext().m_hMaterial->m_ahTextures[i]->m_iGLID);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)oContext.m_hMaterial->m_ahTextures[i]->m_iGLID);
 		SetUniform(m_pShader->m_asTextures[i].c_str(), (int)i);
 	}
 }
@@ -824,9 +852,18 @@ void CRenderingContext::EndRender()
 			return;
 	}
 
-	SetUniform("mProjection", GetContext().m_mProjection);
-	SetUniform("mView", GetContext().m_mView);
-	SetUniform("mGlobal", GetContext().m_mTransformations);
+	CRenderContext& oContext = GetContext();
+
+	if (!oContext.m_bProjectionUpdated)
+		SetUniform("mProjection", oContext.m_mProjection);
+
+	if (!oContext.m_bViewUpdated)
+		SetUniform("mView", oContext.m_mView);
+
+	if (!oContext.m_bTransformUpdated)
+		SetUniform("mGlobal", oContext.m_mTransformations);
+
+	oContext.m_bProjectionUpdated = oContext.m_bViewUpdated = oContext.m_bTransformUpdated = true;
 
 	if (m_bTexCoord)
 	{
@@ -868,6 +905,63 @@ void CRenderingContext::EndRender()
 		glDisableVertexAttribArray(m_pShader->m_iNormalAttribute);
 	if (m_pShader->m_iColorAttribute != ~0)
 		glDisableVertexAttribArray(m_pShader->m_iColorAttribute);
+}
+
+void CRenderingContext::CreateVBO(size_t& iVBO, size_t& iVBOSize)
+{
+	TAssert(m_pRenderer);
+	if (!m_pRenderer)
+		return;
+
+	TAssert(s_avecVertices.size());
+	if (!s_avecVertices.size())
+		return;
+
+	TAssert(m_iDrawMode == GL_TRIANGLES);
+
+	size_t iDataSize = 0;
+	iDataSize += s_avecVertices.size()*3;
+
+	for (size_t i = 0; i < s_aavecTexCoords.size(); i++)
+		iDataSize += s_aavecTexCoords[i].size()*2;
+
+	iDataSize += s_avecNormals.size()*3;
+
+	tvector<float> aflData;
+	aflData.reserve(iDataSize);
+
+	TAssert(!s_avecNormals.size() || s_avecVertices.size() == s_avecNormals.size());
+	for (size_t i = 0; i < s_aavecTexCoords.size(); i++)
+		TAssert(!s_aavecTexCoords[i].size() || s_avecVertices.size() == s_aavecTexCoords[i].size());
+
+	for (size_t i = 0; i < s_avecVertices.size(); i++)
+	{
+		Vector& vecVert = s_avecVertices[i];
+		aflData.push_back(vecVert.x);
+		aflData.push_back(vecVert.y);
+		aflData.push_back(vecVert.z);
+
+		if (s_avecNormals.size())
+		{
+			Vector& vecNormal = s_avecNormals[i];
+			aflData.push_back(vecNormal.x);
+			aflData.push_back(vecNormal.y);
+			aflData.push_back(vecNormal.z);
+		}
+
+		for (size_t j = 0; j < s_aavecTexCoords.size(); j++)
+		{
+			if (s_aavecTexCoords[j].size())
+			{
+				Vector2D& vecUV = s_aavecTexCoords[j][i];
+				aflData.push_back(vecUV.x);
+				aflData.push_back(vecUV.y);
+			}
+		}
+	}
+
+	iVBO = m_pRenderer->LoadVertexDataIntoGL(aflData.size()*sizeof(float), aflData.data());
+	iVBOSize = s_avecVertices.size();
 }
 
 void CRenderingContext::BeginRenderVertexArray(size_t iBuffer)
@@ -988,9 +1082,18 @@ void CRenderingContext::SetCustomIntBuffer(const char* pszName, size_t iSize, si
 
 void CRenderingContext::EndRenderVertexArray(size_t iVertices, bool bWireframe)
 {
-	SetUniform("mProjection", GetContext().m_mProjection);
-	SetUniform("mView", GetContext().m_mView);
-	SetUniform("mGlobal", GetContext().m_mTransformations);
+	CRenderContext& oContext = GetContext();
+
+	if (!oContext.m_bProjectionUpdated)
+		SetUniform("mProjection", oContext.m_mProjection);
+
+	if (!oContext.m_bViewUpdated)
+		SetUniform("mView", oContext.m_mView);
+
+	if (!oContext.m_bTransformUpdated)
+		SetUniform("mGlobal", oContext.m_mTransformations);
+
+	oContext.m_bProjectionUpdated = oContext.m_bViewUpdated = oContext.m_bTransformUpdated = true;
 
 	if (bWireframe)
 	{
@@ -1020,9 +1123,18 @@ void CRenderingContext::EndRenderVertexArray(size_t iVertices, bool bWireframe)
 
 void CRenderingContext::EndRenderVertexArrayTriangles(size_t iTriangles, int* piIndices)
 {
-	SetUniform("mProjection", GetContext().m_mProjection);
-	SetUniform("mView", GetContext().m_mView);
-	SetUniform("mGlobal", GetContext().m_mTransformations);
+	CRenderContext& oContext = GetContext();
+
+	if (!oContext.m_bProjectionUpdated)
+		SetUniform("mProjection", oContext.m_mProjection);
+
+	if (!oContext.m_bViewUpdated)
+		SetUniform("mView", oContext.m_mView);
+
+	if (!oContext.m_bTransformUpdated)
+		SetUniform("mGlobal", oContext.m_mTransformations);
+
+	oContext.m_bProjectionUpdated = oContext.m_bViewUpdated = oContext.m_bTransformUpdated = true;
 
 	glDrawElements(GL_TRIANGLES, iTriangles*3, GL_UNSIGNED_INT, piIndices);
 
@@ -1048,9 +1160,18 @@ CVar r_wireframe("r_wireframe", "off");
 
 void CRenderingContext::EndRenderVertexArrayIndexed(size_t iBuffer, size_t iVertices)
 {
-	SetUniform("mProjection", GetContext().m_mProjection);
-	SetUniform("mView", GetContext().m_mView);
-	SetUniform("mGlobal", GetContext().m_mTransformations);
+	CRenderContext& oContext = GetContext();
+
+	if (!oContext.m_bProjectionUpdated)
+		SetUniform("mProjection", oContext.m_mProjection);
+
+	if (!oContext.m_bViewUpdated)
+		SetUniform("mView", oContext.m_mView);
+
+	if (!oContext.m_bTransformUpdated)
+		SetUniform("mGlobal", oContext.m_mTransformations);
+
+	oContext.m_bProjectionUpdated = oContext.m_bViewUpdated = oContext.m_bTransformUpdated = true;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iBuffer);
 	glDrawElements(r_wireframe.GetBool()?GL_LINES:GL_TRIANGLES, iVertices, GL_UNSIGNED_INT, nullptr);
@@ -1093,20 +1214,27 @@ void CRenderingContext::RenderText(const tstring& sText, unsigned iLength, FTFon
 	if (!m_pShader)
 		return;
 
+	CRenderContext& oContext = GetContext();
+
 	if (iLength == -1)
 		iLength = sText.length();
 
 	TAssert(m_pShader->m_iPositionAttribute >= 0);
 	TAssert(m_pShader->m_aiTexCoordAttributes[0] >= 0);
 
-	SetUniform("mProjection", GetContext().m_mProjection);
-	SetUniform("mView", GetContext().m_mView);
+	if (!oContext.m_bProjectionUpdated)
+		SetUniform("mProjection", oContext.m_mProjection);
+
+	if (!oContext.m_bViewUpdated)
+		SetUniform("mView", oContext.m_mView);
 
 	// Take the position out and let FTGL do it. It looks sharper that way.
-	Matrix4x4 mTransformations = GetContext().m_mTransformations;
+	Matrix4x4 mTransformations = oContext.m_mTransformations;
 	Vector vecPosition = mTransformations.GetTranslation();
 	mTransformations.SetTranslation(Vector());
 	SetUniform("mGlobal", mTransformations);
+
+	oContext.m_bProjectionUpdated = oContext.m_bViewUpdated = oContext.m_bTransformUpdated = true;
 
 	ftglSetAttributeLocations(m_pShader->m_iPositionAttribute, m_pShader->m_aiTexCoordAttributes[0]);
 
@@ -1123,3 +1251,9 @@ void CRenderingContext::Finish()
 	glFinish();
 }
 
+CRenderingContext::CRenderContext::CRenderContext()
+{
+	m_bProjectionUpdated = false;
+	m_bViewUpdated = false;
+	m_bTransformUpdated = false;
+}

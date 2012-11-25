@@ -109,7 +109,30 @@ CChunkTrees* CTreeManager::AddChunkTrees(size_t iTerrain, const DoubleVector2D& 
 	oChunkAddress.iTerrain = iTerrain;
 	oChunkAddress.vecMin = vecMin;
 
-	return &m_aChunkTrees.insert(tpair<CChunkAddress, CChunkTrees>(oChunkAddress, CChunkTrees(this))).first->second;
+	CTerrainChunk* pTheChunkWereLookingFor = nullptr;
+	for (size_t i = 0; i < m_pPlanet->GetChunkManager()->GetNumChunks(); i++)
+	{
+		CTerrainChunk* pChunk = m_pPlanet->GetChunkManager()->GetChunk(i);
+		if (!pChunk)
+			continue;
+
+		if (pChunk->GetTerrain() != iTerrain)
+			continue;
+
+		if (pChunk->GetMin2D() != vecMin)
+			continue;
+
+		pTheChunkWereLookingFor = pChunk;
+		break;
+	}
+
+	TAssert(pTheChunkWereLookingFor);
+
+	DoubleMatrix4x4 mChunk;
+	if (pTheChunkWereLookingFor)
+		mChunk = pTheChunkWereLookingFor->GetChunkToPlanet();
+
+	return &m_aChunkTrees.insert(tpair<CChunkAddress, CChunkTrees>(oChunkAddress, CChunkTrees(this, mChunk))).first->second;
 }
 
 bool CTreeManager::IsExtraPhysicsEntTree(size_t iEnt, CTreeAddress& oAddress) const
@@ -155,6 +178,9 @@ void CTreeManager::RemoveTree(const CTreeAddress& oAddress)
 
 	pChunkTrees->RemoveTree(oAddress.iTree);
 }
+
+size_t CChunkTrees::s_iTreeVBO = ~0;
+size_t CChunkTrees::s_iTreeVBOSize = 0;
 
 void CChunkTrees::GenerateTrees(class CTerrainChunk* pChunk)
 {
@@ -242,17 +268,11 @@ void CChunkTrees::Render() const
 	if (!m_avecOrigins.size())
 		return;
 
-	Vector vecUp, vecRight;
-	GameServer()->GetRenderer()->GetCameraVectors(nullptr, &vecRight, nullptr);
-	vecRight *= 2.5;
-	vecUp = m_avecOrigins[m_avecOrigins.size()/2].Normalized() * 10;
-
-	Vector v1 = -vecRight + vecUp;
-	Vector v2 = -vecRight;
-	Vector v3 = vecRight;
-	Vector v4 = vecRight + vecUp;
+	CreateTreeVBO();
 
 	float flScale = (float)CScalableFloat::ConvertUnits(1, m_pManager->m_pPlanet->GetScale(), SCALE_METER);
+
+	Matrix4x4 mTransform = m_mChunk;
 
 	CRenderingContext r(GameServer()->GetRenderer(), true);
 
@@ -267,19 +287,17 @@ void CChunkTrees::Render() const
 
 		DoubleVector vecTree = m_avecOrigins[i];
 
-		r.ResetTransformations();
-		r.Translate((vecTree - m_pManager->m_pPlanet->GetCharacterLocalOrigin())*flScale - vecUp*0.1f);
+		DoubleVector vecToTree = vecTree - m_pManager->m_pPlanet->GetCharacterLocalOrigin();
 
-		r.BeginRenderTriFan();
-			r.TexCoord(0.0f, 1.0f);
-			r.Vertex(v1);
-			r.TexCoord(0.0f, 0.0f);
-			r.Vertex(v2);
-			r.TexCoord(1.0f, 0.0f);
-			r.Vertex(v3);
-			r.TexCoord(1.0f, 1.0f);
-			r.Vertex(v4);
-		r.EndRender();
+		mTransform.SetRightVector(vecToTree.Cross(mTransform.GetUpVector()).Normalized());
+		mTransform.SetTranslation(vecToTree*flScale - mTransform.GetUpVector());
+
+		r.LoadTransform(mTransform);
+
+		r.BeginRenderVertexArray(s_iTreeVBO);
+			r.SetPositionBuffer(0u, 5*sizeof(float));
+			r.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
+		r.EndRenderVertexArray(s_iTreeVBOSize);
 	}
 }
 
@@ -318,4 +336,35 @@ void CChunkTrees::RemoveTree(size_t iTree)
 		GamePhysics()->RemoveExtra(m_aiPhysicsBoxes[iTree]);
 
 	m_abActive[iTree] = false;
+}
+
+void CChunkTrees::CreateTreeVBO()
+{
+	if (s_iTreeVBO != ~0)
+		return;
+
+	Vector vecRight(0, 0, 2.5f);
+	Vector vecUp(0, 10, 0);
+
+	Vector v1 = -vecRight + vecUp;
+	Vector v2 = -vecRight;
+	Vector v3 = vecRight;
+	Vector v4 = vecRight + vecUp;
+
+	CRenderingContext r(GameServer()->GetRenderer());
+
+	r.BeginRenderTris();
+		r.TexCoord(0.0f, 1.0f);
+		r.Vertex(v1);
+		r.TexCoord(0.0f, 0.0f);
+		r.Vertex(v2);
+		r.TexCoord(1.0f, 0.0f);
+		r.Vertex(v3);
+		r.TexCoord(0.0f, 1.0f);
+		r.Vertex(v1);
+		r.TexCoord(1.0f, 0.0f);
+		r.Vertex(v3);
+		r.TexCoord(1.0f, 1.0f);
+		r.Vertex(v4);
+	r.CreateVBO(s_iTreeVBO, s_iTreeVBOSize);
 }

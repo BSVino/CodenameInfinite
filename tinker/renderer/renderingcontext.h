@@ -36,9 +36,16 @@ protected:
 	class CRenderContext
 	{
 	public:
+		CRenderContext();
+
+	public:
 		Matrix4x4			m_mProjection;
 		Matrix4x4			m_mView;
 		Matrix4x4			m_mTransformations;
+
+		bool                m_bProjectionUpdated;
+		bool                m_bViewUpdated;
+		bool                m_bTransformUpdated;
 
 		CMaterialHandle		m_hMaterial;
 		const class CFrameBuffer*	m_pFrameBuffer;
@@ -132,6 +139,7 @@ public:
 	void					Color(const ::Color& c);	// Per-attribute color
 	void					Vertex(const Vector& v);
 	void					EndRender();
+	void                    CreateVBO(size_t& iVBO, size_t& iVBOSize);
 
 	void					BeginRenderVertexArray(size_t iBuffer=0);
 	void					SetPositionBuffer(float* pflBuffer, size_t iStrideBytes=0);

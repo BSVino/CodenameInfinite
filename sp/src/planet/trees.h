@@ -1,19 +1,49 @@
 #pragma once
 
 #include <vector.h>
+#include <matrix.h>
 #include <tvector.h>
 #include <tmap.h>
 
 #include "treeaddress.h"
+
+class CChunkAddress
+{
+public:
+	size_t         iTerrain;
+	DoubleVector2D vecMin;
+
+public:
+	bool operator<(const CChunkAddress& b) const
+	{
+		if (iTerrain < b.iTerrain)
+			return true;
+
+		if (iTerrain > b.iTerrain)
+			return false;
+
+		if (vecMin.x < b.vecMin.x)
+			return true;
+
+		if (vecMin.x > b.vecMin.x)
+			return false;
+
+		if (vecMin.y < b.vecMin.y)
+			return true;
+
+		return false;
+	}
+};
 
 class CChunkTrees
 {
 	friend class CTreeManager;
 
 public:
-	CChunkTrees(class CTreeManager* pManager)
+	CChunkTrees(class CTreeManager* pManager, const DoubleMatrix4x4& mChunk)
 	{
 		m_pManager = pManager;
+		m_mChunk = mChunk;
 
 		m_bTreesGenerated = false;
 	}
@@ -31,7 +61,11 @@ public:
 	void          RemoveTree(size_t iTree);
 
 private:
+	static void   CreateTreeVBO();
+
+private:
 	class CTreeManager*   m_pManager;
+	DoubleMatrix4x4       m_mChunk;
 
 	bool    m_bTreesGenerated;
 
@@ -45,6 +79,9 @@ private:
 	tvector<DoubleVector> m_avecOrigins;
 	tvector<size_t>       m_aiPhysicsBoxes;
 	tvector<bool>         m_abActive;   // Should really use a bit vector of some kind but meh.
+
+	static size_t         s_iTreeVBO;
+	static size_t         s_iTreeVBOSize;
 };
 
 class CTreeManager
@@ -73,33 +110,6 @@ public:
 private:
 	class CPlanet*  m_pPlanet;
 
-	class CChunkAddress
-	{
-	public:
-		size_t         iTerrain;
-		DoubleVector2D vecMin;
-
-	public:
-		bool operator<(const CChunkAddress& b) const
-		{
-			if (iTerrain < b.iTerrain)
-				return true;
-
-			if (iTerrain > b.iTerrain)
-				return false;
-
-			if (vecMin.x < b.vecMin.x)
-				return true;
-
-			if (vecMin.x > b.vecMin.x)
-				return false;
-
-			if (vecMin.y < b.vecMin.y)
-				return true;
-
-			return false;
-		}
-	};
 
 	tmap<CChunkAddress, CChunkTrees> m_aChunkTrees;
 };

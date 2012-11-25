@@ -746,6 +746,9 @@ bool CRenderer::HardwareSupported()
 
 size_t CRenderer::LoadVertexDataIntoGL(size_t iSizeInBytes, float* aflVertices)
 {
+	// If it's only floats doubles and the occasional int then it should always be a multiple of four bytes.
+	TAssert(iSizeInBytes%4 == 0);
+
 	GLuint iVBO;
 	glGenBuffers(1, &iVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, iVBO);
