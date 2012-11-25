@@ -195,13 +195,13 @@ size_t CSPGame::StructureCost(structure_type eStructure, item_t eItem) const
 	{
 	case STRUCTURE_MINE:
 		if (eItem == ITEM_WOOD)
-			return 2;
+			return 3;
 		else
 			return 0;
 
 	case STRUCTURE_PALLET:
-		if (eItem == ITEM_WOOD)
-			return 1;
+		if (eItem == ITEM_STONE)
+			return 2;
 		else
 			return 0;
 
@@ -209,12 +209,12 @@ size_t CSPGame::StructureCost(structure_type eStructure, item_t eItem) const
 		if (eItem == ITEM_WOOD)
 			return 5;
 		else if (eItem == ITEM_STONE)
-			return 3;
+			return 8;
 		else
 			return 0;
 
 	case STRUCTURE_STOVE:
-		if (eItem == ITEM_WOOD)
+		if (eItem == ITEM_STONE)
 			return 3;
 		else if (eItem == ITEM_DIRT)
 			return 5;
