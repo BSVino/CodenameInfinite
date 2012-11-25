@@ -41,7 +41,7 @@ void CSPCharacter::TaskThink()
 			m_hBuild = pBuild = FindNearestBuildStructure();
 
 		CVoxelTree* pVoxelTree = nullptr;
-		if (!GameData().GetLump())
+		if (GameData().GetLump())
 			pVoxelTree = GameData().GetLump()->GetVoxelTree();
 
 		if (m_hWaitingFor)
