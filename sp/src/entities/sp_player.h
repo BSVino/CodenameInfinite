@@ -27,7 +27,7 @@ public:
 
 	class CPlayerCharacter*			GetPlayerCharacter() const;
 
-	bool                ShouldRender() const;
+	bool                ShouldRenderTransparent() const;
 	void                PostRender() const;
 
 	void                    EnterConstructionMode(structure_type eStructure);

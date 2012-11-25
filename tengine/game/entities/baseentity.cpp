@@ -927,6 +927,25 @@ void CBaseEntity::Use(const tvector<tstring>& sArgs)
 	Use(nullptr);
 }
 
+bool CBaseEntity::ShouldRender() const
+{
+	if ((size_t)m_iModel != ~0)
+		return true;
+	
+	if (m_hMaterialModel.IsValid())
+		return m_hMaterialModel->m_sBlend == "none";
+
+	return false;
+}
+
+bool CBaseEntity::ShouldRenderTransparent() const
+{
+	if (m_hMaterialModel.IsValid())
+		return m_hMaterialModel->m_sBlend != "none";
+
+	return false;
+}
+
 CVar show_centers("debug_show_centers", "off");
 
 void CBaseEntity::PreRender() const
@@ -961,30 +980,19 @@ void CBaseEntity::Render() const
 
 		ModifyContext(&r);
 
-		if (r.GetAlpha() > 0)
+		if (r.GetAlpha() == 0)
+			continue;
+
+		if (ShouldRenderModel())
 		{
-			if (ShouldRenderModel())
+			if (m_iModel != (size_t)~0)
 			{
-				if (m_iModel != (size_t)~0)
-				{
-					TPROF("CRenderingContext::RenderModel()");
-					r.RenderModel(GetModelID(), this);
-				}
-
-				if (m_hMaterialModel.IsValid())
-				{
-					if (GameServer()->GetRenderer()->IsRenderingTransparent())
-					{
-						TPROF("CRenderingContext::RenderModel(Material)");
-						r.SetBlend(BLEND_ALPHA);
-						r.Scale(0, (float)m_vecScale.Get().y, (float)m_vecScale.Get().x);
-						r.RenderMaterialModel(m_hMaterialModel, this);
-					}
-				}
+				TPROF("CRenderingContext::RenderModel()");
+				r.RenderModel(GetModelID(), this);
 			}
-
-			OnRender(&r);
 		}
+
+		OnRender(&r);
 	} while (false);
 
 	PostRender();
@@ -1007,6 +1015,58 @@ void CBaseEntity::Render() const
 			r.Vertex(Vector(0, 0, 1));
 		r.EndRender();
 	}
+}
+
+void CBaseEntity::RenderTransparent() const
+{
+	TPROF("CBaseEntity::RenderTransparent");
+
+	if (!IsVisible())
+		return;
+
+	PreRender();
+
+	do {
+		CGameRenderingContext r(GameServer()->GetRenderer(), true);
+
+		// If another context already set this, don't clobber it.
+		if (!r.GetActiveFrameBuffer())
+			r.UseFrameBuffer(GameServer()->GetRenderer()->GetSceneBuffer());
+
+		r.Transform(GetRenderTransform());
+
+		if (m_bRenderInverted)
+			r.SetWinding(!r.GetWinding());
+
+		if (m_bDisableBackCulling)
+			r.SetBackCulling(false);
+
+		ModifyContext(&r);
+
+		if (r.GetAlpha() == 0)
+			continue;
+
+		if (ShouldRenderModel())
+		{
+			if (m_iModel != (size_t)~0)
+			{
+				TPROF("CRenderingContext::RenderModel()");
+				r.RenderModel(GetModelID(), this);
+			}
+
+			if (m_hMaterialModel.IsValid())
+			{
+				TPROF("CRenderingContext::RenderModel(Material)");
+				r.SetBlend(BLEND_ALPHA);
+				r.Scale(0, (float)m_vecScale.Get().y, (float)m_vecScale.Get().x);
+				r.RenderMaterialModel(m_hMaterialModel, this);
+			}
+		}
+
+		OnRender(&r);
+	} while (false);
+
+	PostRender();
 }
 
 void CBaseEntity::Delete()

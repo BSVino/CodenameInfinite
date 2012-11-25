@@ -77,7 +77,8 @@ protected:
 	Vector			m_avecSkyboxUP[6];
 	Vector			m_avecSkyboxDN[6];
 
-	tvector<CBaseEntity*>	m_apRenderList;
+	tvector<CBaseEntity*>	m_apRenderOpaqueList;
+	tvector<CBaseEntity*>	m_apRenderTransparentList;
 	bool			m_bRenderingTransparent;
 
 	bool			m_bBatchThisFrame;

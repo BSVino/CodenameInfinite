@@ -46,6 +46,9 @@ void CPallet::Think()
 
 bool CPallet::ShouldRender() const
 {
+	if (IsUnderConstruction())
+		return false;
+
 	return SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
 }
 

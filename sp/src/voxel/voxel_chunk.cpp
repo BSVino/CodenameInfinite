@@ -42,14 +42,14 @@ CVoxelChunk::~CVoxelChunk()
 		GamePhysics()->RemoveExtra(m_aiPhysicsEnts[i]);
 }
 
-void CVoxelChunk::Render() const
+void CVoxelChunk::Render(bool bTransparent) const
 {
 	CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
 	Matrix4x4 mRender = Matrix4x4(m_pTree->GetTreeToPlanet() - pCharacter->GetLocalOrigin());
 
 	for (size_t i = 1; i < ITEM_BLOCKS_TOTAL; i++)
 	{
-		if (m_aiVBO[i] && !GameServer()->GetRenderer()->IsRenderingTransparent())
+		if (m_aiVBO[i] && !bTransparent)
 		{
 			CRenderingContext c(GameServer()->GetRenderer(), true);
 
@@ -63,7 +63,7 @@ void CVoxelChunk::Render() const
 			c.SetTexCoordBuffer(3*sizeof(float), 5*sizeof(float), 0);
 			c.EndRenderVertexArray(m_aiVBOSize[i]);
 		}
-		else if (m_aiVBODesignations[i] && GameServer()->GetRenderer()->IsRenderingTransparent())
+		else if (m_aiVBODesignations[i] && bTransparent)
 		{
 			CRenderingContext c(GameServer()->GetRenderer(), true);
 

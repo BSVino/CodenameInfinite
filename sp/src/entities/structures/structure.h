@@ -32,6 +32,7 @@ public:
 
 	void                    Think();
 
+	bool                    ShouldRenderTransparent() const;
 	void                    PostRender() const;
 
 	bool                    CanAutoOpenMenu() const;

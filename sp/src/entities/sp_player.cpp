@@ -268,7 +268,7 @@ CPlayerCharacter* CSPPlayer::GetPlayerCharacter() const
 	return static_cast<CPlayerCharacter*>(m_hCharacter.GetPointer());
 }
 
-bool CSPPlayer::ShouldRender() const
+bool CSPPlayer::ShouldRenderTransparent() const
 {
 	return (m_eConstructionMode || m_eBlockPlaceMode || m_eBlockDesignateMode) && SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
 }

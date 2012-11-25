@@ -104,6 +104,9 @@ void CMine::Think()
 
 bool CMine::ShouldRender() const
 {
+	if (IsUnderConstruction())
+		return false;
+
 	return SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
 }
 
@@ -111,7 +114,10 @@ void CMine::PostRender() const
 {
 	BaseClass::PostRender();
 
-	if (GameServer()->GetRenderer()->IsRenderingTransparent())
+	if (IsUnderConstruction() && !GameServer()->GetRenderer()->IsRenderingTransparent())
+		return;
+
+	if (!IsUnderConstruction() && GameServer()->GetRenderer()->IsRenderingTransparent())
 		return;
 
 	Vector vecUp, vecRight;

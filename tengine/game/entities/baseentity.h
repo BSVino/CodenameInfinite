@@ -632,12 +632,14 @@ public:
 	DECLARE_ENTITY_INPUT(Use);
 	DECLARE_ENTITY_OUTPUT(OnUsed);
 
-	virtual bool							ShouldRender() const { return (size_t)m_iModel != ~0 || m_hMaterialModel.IsValid(); };
+	virtual bool							ShouldRender() const;
+	virtual bool                            ShouldRenderTransparent() const;
 	virtual bool							ShouldRenderModel() const { return true; };
 	virtual void							PreRender() const;
 	virtual void							ModifyContext(class CRenderingContext* pContext) const {};
 	virtual void							ModifyShader(class CRenderingContext* pContext) const {};
 	void									Render() const;
+	void                                    RenderTransparent() const;
 	virtual void							OnRender(class CRenderingContext* pContext) const {};
 	virtual void							PostRender() const {};
 

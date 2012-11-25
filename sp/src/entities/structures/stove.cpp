@@ -85,6 +85,9 @@ void CStove::Think()
 
 bool CStove::ShouldRender() const
 {
+	if (IsUnderConstruction())
+		return false;
+
 	return SPGame()->GetSPRenderer()->GetRenderingScale() == SCALE_RENDER;
 }
 

@@ -50,6 +50,14 @@ void CBot::Think()
 	}
 }
 
+bool CBot::ShouldRenderTransparent() const
+{
+	if (GameData().GetCommandMenu())
+		return true;
+
+	return BaseClass::ShouldRenderTransparent();
+}
+
 void CBot::PostRender() const
 {
 	BaseClass::PostRender();

@@ -20,7 +20,7 @@ public:
 	void       UnloadVBO();
 	void       UnloadPhysics();
 
-	void       Render() const;
+	void       Render(bool bTransparent) const;
 
 	bool       PlaceBlock(item_t eItem, const IVector& vecBlock);
 	item_t     GetBlock(const IVector& vecBlock) const;

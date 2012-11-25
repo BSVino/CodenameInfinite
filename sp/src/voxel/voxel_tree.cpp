@@ -34,8 +34,17 @@ void CVoxelTree::Unload()
 
 void CVoxelTree::Render() const
 {
+	// Voxel trees are child to lumps which are child to planets. If I add planets
+	// to the transparent render list then it'll grow way too big. It doesn't make
+	// sense anyway since the planet origin is so far away, sorting by its distance
+	// to the camera is kinda dumb. So instead we'll just render the transparent
+	// stuff right here.
+
 	for (auto it = m_aChunks.begin(); it != m_aChunks.end(); it++)
-		it->second.Render();
+		it->second.Render(false);
+
+	for (auto it = m_aChunks.begin(); it != m_aChunks.end(); it++)
+		it->second.Render(true);
 }
 
 bool CVoxelTree::PlaceBlock(item_t eItem, const CScalableVector& vecLocal)

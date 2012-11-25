@@ -10,6 +10,8 @@
 #include "planet/planet.h"
 #include "planet/terrain_chunks.h"
 #include "ui/command_menu.h"
+#include "entities/sp_game.h"
+#include "sp_renderer.h"
 
 #include "spire.h"
 #include "mine.h"
@@ -135,6 +137,20 @@ void CStructure::Think()
 		if (GameData().GetCommandMenu())
 			GameData().GetCommandMenu()->Think();
 	}
+}
+
+bool CStructure::ShouldRenderTransparent() const
+{
+	if (SPGame()->GetSPRenderer()->GetRenderingScale() != SCALE_RENDER)
+		return false;
+
+	if (IsUnderConstruction())
+		return true;
+
+	if (GameData().GetCommandMenu())
+		return true;
+
+	return BaseClass::ShouldRenderTransparent();
 }
 
 void CStructure::PostRender() const

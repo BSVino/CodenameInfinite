@@ -97,7 +97,7 @@ void CBulletPhysics::AddEntity(CBaseEntity* pEntity, collision_type_t eCollision
 			}
 			else
 			{
-				TAssert(flHeight > flRadius*2); // Couldn't very well make a capsule this way could we?
+				TAssert(flHeight >= flRadius*2); // Couldn't very well make a capsule this way could we?
 
 				m_apCharacterShapes[sIdentifier] = new btCapsuleShape(flRadius, flHeight - flRadius*2);
 			}

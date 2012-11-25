@@ -82,13 +82,16 @@ void CGameRenderer::Render()
 bool DistanceCompare(CBaseEntity* a, CBaseEntity* b)
 {
 	TVector vecCamera = GameServer()->GetCameraManager()->GetCameraPosition();
-	return ((a->GetGlobalOrigin() - vecCamera).LengthSqr() > (b->GetGlobalOrigin() - vecCamera).LengthSqr());
+	return ((a->BaseGetRenderOrigin() - vecCamera).LengthSqr() > (b->BaseGetRenderOrigin() - vecCamera).LengthSqr());
 }
 
 void CGameRenderer::RenderEverything()
 {
-	m_apRenderList.reserve(CBaseEntity::GetNumEntities());
-	m_apRenderList.clear();
+	m_apRenderOpaqueList.reserve(CBaseEntity::GetNumEntities());
+	m_apRenderOpaqueList.clear();
+
+	m_apRenderTransparentList.reserve(CBaseEntity::GetNumEntities());
+	m_apRenderTransparentList.clear();
 
 	bool bFrustumCulling = r_cullfrustum.GetBool() && ShouldCullByFrustum();
 
@@ -102,33 +105,44 @@ void CGameRenderer::RenderEverything()
 		if (pEntity->IsDeleted())
 			continue;
 
-		if (!pEntity->ShouldRender())
+		if (!pEntity->IsVisible())
+			continue;
+
+		bool bRenderOpaque = pEntity->ShouldRender();
+		bool bRenderTransparent = pEntity->ShouldRenderTransparent();
+
+		if (!bRenderOpaque && !bRenderTransparent)
 			continue;
 
 		if (bFrustumCulling && !IsSphereInFrustum(pEntity->GetGlobalCenter(), (float)pEntity->GetBoundingRadius()))
 			continue;
 
-		m_apRenderList.push_back(pEntity);
-	}
+		if (bRenderOpaque)
+			m_apRenderOpaqueList.push_back(pEntity);
 
-	sort(m_apRenderList.begin(), m_apRenderList.end(), DistanceCompare);
+		if (bRenderTransparent)
+			m_apRenderTransparentList.push_back(pEntity);
+	}
 
 	m_bRenderingTransparent = false;
 
 	BeginBatching();
 
 	// First render all opaque objects
-	size_t iEntites = m_apRenderList.size();
+	size_t iEntites = m_apRenderOpaqueList.size();
 	for (size_t i = 0; i < iEntites; i++)
-		m_apRenderList[i]->Render();
+		m_apRenderOpaqueList[i]->Render();
 
 	RenderBatches();
 
 	m_bRenderingTransparent = true;
 
+	sort(m_apRenderTransparentList.begin(), m_apRenderTransparentList.end(), DistanceCompare);
+
 	// Now render all transparent objects.
+	iEntites = m_apRenderTransparentList.size();
 	for (size_t i = 0; i < iEntites; i++)
-		m_apRenderList[i]->Render();
+		m_apRenderTransparentList[i]->RenderTransparent();
 
 	if (ShouldRenderParticles())
 		CParticleSystemLibrary::Render();
