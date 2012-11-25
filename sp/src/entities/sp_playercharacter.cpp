@@ -86,12 +86,12 @@ void CPlayerCharacter::Think()
 			else if (pPlanet->GetChunkManager()->HasGroupCenter())
 			{
 				CTraceResult tr;
-				GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() - Vector(0, 1000, 0), this);
+				GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation() + Vector(0, m_aabbPhysBoundingBox.Size().y/2, 0), GetPhysicsTransform().GetTranslation() - Vector(0, 1000, 0), this);
 
 				if (tr.m_flFraction == 1)
 				{
 					// There is no ground below the player. Is there ground above the player?
-					GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation(), GetPhysicsTransform().GetTranslation() + Vector(0, 1000, 0), this);
+					GamePhysics()->TraceLine(tr, GetPhysicsTransform().GetTranslation() + Vector(0, m_aabbPhysBoundingBox.Size().y/2, 0), GetPhysicsTransform().GetTranslation() + Vector(0, 1000, 0), this);
 
 					if (tr.m_flFraction != 1)
 					{
