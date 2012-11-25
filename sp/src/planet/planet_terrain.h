@@ -126,6 +126,7 @@ public:
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iX, size_t iY, size_t iStep, size_t iRowsToIndex, size_t iRowsTotal, bool bSkirt = false);
 	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows, bool bPhysicsCenter, float flScale3DPosition = 1);
 	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bSkirt = false);
+	static Vector               GetTerrainPointNormal(const tvector<CTerrainPoint>& avecTerrain, size_t x, size_t y, size_t iVertsPerRow);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();
 	void						RebuildShell2Indices();

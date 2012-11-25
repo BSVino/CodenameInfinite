@@ -13,6 +13,7 @@
 #include "entities/structures/spire.h"
 #include "entities/items/pickup.h"
 #include "planet/trees.h"
+#include "planet/planet_terrain.h"
 #include "voxel/voxel_tree.h"
 
 REGISTER_ENTITY(CDisassembler);
@@ -80,6 +81,28 @@ void CDisassembler::Think()
 				pPlayer->GameData().GetVoxelTree()->RemoveBlock(m_vecDisassemblingBlock);
 			else if (m_vecDisassemblingGround != TVector() && pPlayer->GameData().GetPlanet())
 			{
+				CPlanet* pPlanet = pPlayer->GameData().GetPlanet();
+
+				Matrix4x4 mTransform = pPlayer->GetPhysicsTransform();
+
+				Vector vecEye = mTransform.GetTranslation() + Vector(0, 1, 0)*pPlayer->EyeHeight();
+				Vector vecDirection = pPlayer->GameData().TransformVectorLocalToPhysics(AngleVector(pPlayer->GetViewAngles()));
+
+				CTraceResult tr;
+				GamePhysics()->TraceLine(tr, vecEye, vecEye + vecDirection*Range(), pOwner);
+
+				TAssert(pPlayer->GameData().GetPlanet()->IsExtraPhysicsEntGround(tr.m_iHitExtra));
+
+				// Use the surface normal to determine what kind of pickup should appear.
+				Vector vecUp = m_vecDisassemblingGround.Normalized();
+				float flDot = (float)pPlayer->GameData().TransformVectorPhysicsToLocal(tr.m_vecNormal).Dot(vecUp);
+
+				item_t eItem = ITEM_DIRT;
+				if (flDot < 0.7)
+					eItem = ITEM_STONE;
+				else if (flDot < 0.8)
+					eItem = (RandomInt(0, 1) == 1)?ITEM_DIRT:ITEM_STONE;
+
 				CPickup* pDisassembled = GameServer()->Create<CPickup>("CPickup");
 				pDisassembled->GameData().SetPlayerOwner(pPlayer->GameData().GetPlayerOwner());
 				pDisassembled->GameData().SetPlanet(pPlayer->GameData().GetPlanet());
@@ -87,7 +110,7 @@ void CDisassembler::Think()
 				pDisassembled->SetMoveParent(pPlayer->GameData().GetPlanet());
 				pDisassembled->SetLocalTransform(pPlayer->GetLocalTransform());
 				pDisassembled->SetLocalOrigin(m_vecDisassemblingGround + pPlayer->GetLocalTransform().GetUpVector()*0.3f);
-				pDisassembled->SetItem(ITEM_DIRT);
+				pDisassembled->SetItem(eItem);
 			}
 			else if (m_oDisassemblingTree.IsValid() && pPlayer->GameData().GetPlanet())
 			{
