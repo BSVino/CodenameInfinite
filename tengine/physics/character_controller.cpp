@@ -155,6 +155,8 @@ void CCharacterController::CharacterMovement(btCollisionWorld* pCollisionWorld, 
 	else
 		bMovement |= PlayerWalk(pCollisionWorld, deltaTime);
 
+	m_vecCurrentVelocity = (m_pGhostObject->getWorldTransform().getOrigin() - mCharacter.getOrigin()) / deltaTime;
+
 	if (bMovement)
 		pPhysicsEntity->m_oMotionState.setWorldTransform(m_pGhostObject->getWorldTransform());
 }
@@ -196,10 +198,10 @@ void CCharacterController::playerStep(btCollisionWorld* pCollisionWorld, btScala
 
 bool CCharacterController::PlayerWalk(btCollisionWorld* pCollisionWorld, btScalar dt)
 {
-	m_vecCurrentVelocity = PerpendicularComponent(m_vecMoveVelocity, GetUpVector());
-
-	if (m_vecCurrentVelocity.length2() < 0.001f)
+	if (m_vecMoveVelocity.length2() < 0.001f)
 		return false;
+
+	m_vecCurrentVelocity = PerpendicularComponent(m_vecMoveVelocity, GetUpVector()).normalized() * m_vecMoveVelocity.length();
 
 	btTransform mWorld;
 	mWorld = m_pGhostObject->getWorldTransform();
@@ -490,34 +492,24 @@ bool CCharacterController::RecoverFromPenetration(btCollisionWorld* pCollisionWo
 					}
 				}
 
-				btScalar dist = pt.getDistance();
+				btScalar flDistance = pt.getDistance();
+				btScalar flMargin = std::max(obA->getCollisionShape()->getMargin(), obB->getCollisionShape()->getMargin());
 
-				if (dist < -0.0001f)
+				if (flDistance < -flMargin)
 				{
-					if (dist < maxPen)
+					flDistance += flMargin;
+
+					if (flDistance < maxPen)
 					{
-						maxPen = dist;
+						maxPen = flDistance;
 						m_vecTouchingNormal = pt.m_normalWorldOnB * directionSign;
 					}
 
 					btScalar flDot = pt.m_normalWorldOnB.dot(GetUpVector());
-					if (flDot > 0.9999f)
-						m_vecCurrentPosition += GetUpVector() * (directionSign * dist * 1.001f);
-					else if (flDot > 0.707)
-					{
-						TAssert(obA == m_pGhostObject);
-
-						// Find the point at which it should intersect if we move it straight up.
-						Vector vecNewTouch;
-						RayIntersectsPlane(Ray(Vector(pt.m_positionWorldOnA), Vector(GetUpVector())), Vector(pt.m_positionWorldOnB), Vector(pt.m_normalWorldOnB), &vecNewTouch);
-						btVector3 vecNewTouch2(vecNewTouch.x, vecNewTouch.y, vecNewTouch.z);
-
-						m_vecCurrentPosition += btVector3(0, ((vecNewTouch2.y() - pt.m_positionWorldOnA.y()) * 1.001f), 0);
-					}
-					//else if (flDot < 0.01f)
-					//	m_vecCurrentPosition += (m_vecCurrentPosition - pt.m_positionWorldOnB).normalized() * (directionSign * dist * 1.001f);
+					if (flDot > 0.707f)
+						m_vecCurrentPosition += GetUpVector() * (directionSign * flDistance * 1.001f);
 					else
-						m_vecCurrentPosition += pt.m_normalWorldOnB * (directionSign * dist * 1.001f);
+						m_vecCurrentPosition += pt.m_normalWorldOnB * (directionSign * flDistance * 1.001f);
 
 					bPenetration = true;
 				} else {
@@ -588,6 +580,9 @@ void CCharacterController::UpdateTargetPositionBasedOnCollision(const btVector3&
 
 		vecParallelDir = ParallelComponent(vecReflectDir, vecHitNormal);
 		vecPerpendicularDir = PerpendicularComponent(vecReflectDir, vecHitNormal);
+
+		if (m_hEntity->IsFlying() || !m_hEntity->GetGroundEntity())
+			vecPerpendicularDir.normalize();
 
 		m_vecTargetPosition = m_vecCurrentPosition;
 
@@ -660,7 +655,7 @@ void CCharacterController::StepForwardAndStrafe(btCollisionWorld* pCollisionWorl
 			{
 				currentDir.normalize();
 				/* See Quake2: "If velocity is against original velocity, stop ead to avoid tiny oscilations in sloping corners." */
-				if (currentDir.dot(m_vecMoveVelocityNormalized) <= btScalar(0.0))
+				if (currentDir.dot(m_vecCurrentVelocity.normalized()) <= btScalar(0.0))
 					break;
 			} else
 			{
