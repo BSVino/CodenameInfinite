@@ -3,6 +3,9 @@
 
 #include <tengine/game/entities/baseentity.h>
 
+#include <tinker/textures/texturehandle.h>
+#include <tinker/textures/materiallibrary.h>
+
 #include "sp_common.h"
 
 class CTerrainPoint
@@ -125,7 +128,7 @@ public:
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iRows, bool bSkirt = false);
 	static size_t               BuildMeshIndices(tvector<unsigned int>& aiIndices, const tvector<CTerrainCoordinate>& aiExclude, size_t iX, size_t iY, size_t iStep, size_t iRowsToIndex, size_t iRowsTotal, bool bSkirt = false);
 	static void                 BuildKDTree(tvector<CKDPointTreeNode>& aNodes, tvector<CKDPointTreePoint>& aPoints, const tvector<CTerrainPoint>& avecTerrain, size_t iRows, bool bPhysicsCenter, float flScale3DPosition = 1);
-	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bSkirt = false);
+	size_t                      BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecCenter, bool bForTexture = false);
 	static Vector               GetTerrainPointNormal(const tvector<CTerrainPoint>& avecTerrain, size_t x, size_t y, size_t iVertsPerRow);
 	void						CreateShell1VBO();
 	void						CreateShell2VBO();
@@ -133,7 +136,7 @@ public:
 
 	void						Render(class CRenderingContext* c) const;
 
-	DoubleVector				GenerateOffset(const DoubleVector2D& vecCoordinate);
+	DoubleVector                GenerateOffset(const DoubleVector2D& vecCoordinate, float flHeightThreshold = 0.0f);
 	float                       GenerateTrees(const DoubleVector2D& vecCoordinate);
 
 	tvector<CTerrainArea>       FindNearbyAreas(size_t iMaxDepth, size_t iStartDepth, const DoubleVector2D& vecSearchMin, const DoubleVector2D& vecSearchMax, const DoubleVector& vecSearch, double flMaxDistance);
@@ -155,10 +158,15 @@ protected:
 	size_t                      m_iShell2VBO;
 	size_t                      m_iShell2IBO;
 	size_t                      m_iShell2IBOSize;
+	CTextureHandle              m_hShell2LowTexture;
 
 	bool						m_bGeneratingShell2;
 	tvector<float>				m_aflShell2Drop;
 	tvector<unsigned int>       m_aiShell2Drop;
+
+	bool                        m_bTextureDropReady;
+	tvector<Vector>             m_avecTextureDrop;
+	size_t                      m_iTextureDropSize;
 
 	bool                        m_bKDTreeAvailable;
 	tvector<CKDPointTreeNode>   m_aKDNodes;

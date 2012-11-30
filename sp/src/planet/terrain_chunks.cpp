@@ -581,7 +581,7 @@ void CTerrainChunk::GenerateTerrain()
 	m_vecLocalCenter = pTerrain->CoordToWorld(vecCoordCenter) + pTerrain->GenerateOffset(vecCoordCenter);
 
 	tvector<CTerrainPoint> avecTerrain;
-	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToChunk, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter, true);
+	size_t iRows = pTerrain->BuildTerrainArray(avecTerrain, m_mPlanetToChunk, iResolution, m_vecMin, m_vecMax, m_vecLocalCenter);
 	m_mChunkToPlanet = m_mPlanetToChunk.InvertedRT();
 
 	DoubleVector vecCorner1 = avecTerrain[0].vec3DPosition;

@@ -71,6 +71,7 @@ CPlanet::CPlanet()
 {
 	if (!s_pShell2Generator)
 	{
+		// Make sure the texture generation in CreateShell2VBO() doesn't still use a static buffer before increasing the number of threads.
 		s_pShell2Generator = new CParallelizer(GenerateShell2Callback, 1);
 		s_pShell2Generator->Start();
 	}

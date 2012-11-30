@@ -9,6 +9,7 @@
 #include <tinker/application.h>
 #include <tinker/profiler.h>
 #include <tengine/renderer/game_renderer.h>
+#include <tinker/textures/texturelibrary.h>
 
 #include "entities/sp_game.h"
 #include "sp_renderer.h"
@@ -26,6 +27,7 @@ CPlanetTerrain::CPlanetTerrain(class CPlanet* pPlanet, Vector vecDirection)
 	m_iShell2IBO = 0;
 
 	m_bGeneratingShell2 = false;
+	m_bTextureDropReady = false;
 
 	m_bKDTreeAvailable = false;
 }
@@ -47,6 +49,13 @@ void CPlanetTerrain::Think()
 	}
 	oLock.Unlock();
 
+	if (m_bTextureDropReady)
+	{
+		m_hShell2LowTexture = CTextureLibrary::AddTexture(m_avecTextureDrop.data(), m_iTextureDropSize, m_iTextureDropSize);
+		m_avecTextureDrop.set_capacity(0);
+		m_bTextureDropReady = false;
+	}
+
 	if (m_bGeneratingShell2)
 	{
 		CMutexLocker oLock2 = m_pPlanet->s_pShell2Generator->GetLock();
@@ -60,13 +69,17 @@ void CPlanetTerrain::Think()
 	}
 	else if (!m_iShell2VBO && !m_bGeneratingShell2)
 	{
-		if (m_pPlanet->GameData().GetScalableRenderOrigin().LengthSqr() < CScalableFloat(100.0f, SCALE_MEGAMETER)*CScalableFloat(100.0f, SCALE_MEGAMETER))
+		CPlayerCharacter* pCharacter = SPGame()->GetLocalPlayerCharacter();
+		if (m_pPlanet == pCharacter->GameData().GetPlanet() || !pCharacter->GameData().GetPlanet())
 		{
-			m_bGeneratingShell2 = true;
+			if (m_pPlanet->GameData().GetScalableRenderOrigin().LengthSqr() < CScalableFloat(100.0f, SCALE_MEGAMETER)*CScalableFloat(100.0f, SCALE_MEGAMETER))
+			{
+				m_bGeneratingShell2 = true;
 
-			CShell2GenerationJob oJob;
-			oJob.pTerrain = this;
-			m_pPlanet->s_pShell2Generator->AddJob(&oJob, sizeof(oJob));
+				CShell2GenerationJob oJob;
+				oJob.pTerrain = this;
+				m_pPlanet->s_pShell2Generator->AddJob(&oJob, sizeof(oJob));
+			}
 		}
 	}
 	else if (m_iShell2VBO)
@@ -79,9 +92,8 @@ void CPlanetTerrain::Think()
 	}
 }
 
-size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecOrigin, bool bSkirt)
+size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, DoubleMatrix4x4& mPlanetToChunk, size_t iDepth, const DoubleVector2D& vecMin, const DoubleVector2D& vecMax, const DoubleVector& vecOrigin, bool bForTexture)
 {
-	bSkirt = false;
 	size_t iQuadsPerRow = (size_t)pow(2.0f, (float)iDepth);
 	size_t iVertsPerRow = iQuadsPerRow + 1;
 	avecTerrain.resize(iVertsPerRow*iVertsPerRow);
@@ -106,6 +118,10 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 
 	mPlanetToChunk = mChunk.InvertedRT();
 
+	float flHeightThreshold = 0;
+	if (bForTexture)
+		flHeightThreshold = 0.001f;
+
 	for (size_t x = 0; x < iVertsPerRow; x++)
 	{
 		double flX = RemapVal((double)x, 0, (double)iVertsPerRow-1, vecMin.x, vecMax.x);
@@ -121,9 +137,12 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 			vecTerrain.vec2DPosition = vecPoint;
 
 			// Offsets are generated in planet space, add them right onto the quad position.
-			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + GenerateOffset(vecPoint);
+			vecTerrain.vec3DPosition = CoordToWorld(vecPoint) + GenerateOffset(vecPoint, flHeightThreshold);
 
-//			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
+			if (bForTexture)
+				continue;
+
+			//			vecTerrain.vecNormal = vecTerrain.vec3DPosition.Normalized();
 
 			vecTerrain.vecPhys = mPlanetToChunk * (vecTerrain.vec3DPosition * flScale);
 
@@ -135,12 +154,16 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 		}
 	}
 
-	for (size_t x = 0; x < iVertsPerRow; x++)
+	if (!bForTexture)
 	{
-		for (size_t y = 0; y < iVertsPerRow; y++)
-			avecTerrain[y*iVertsPerRow + x].vecNormal = GetTerrainPointNormal(avecTerrain, x, y, iVertsPerRow);
+		for (size_t x = 0; x < iVertsPerRow; x++)
+		{
+			for (size_t y = 0; y < iVertsPerRow; y++)
+				avecTerrain[y*iVertsPerRow + x].vecNormal = GetTerrainPointNormal(avecTerrain, x, y, iVertsPerRow);
+		}
 	}
 
+#if 0
 	if (bSkirt)
 	{
 		avecTerrain.resize(iVertsPerRow*iVertsPerRow + iVertsPerRow*4);
@@ -175,6 +198,7 @@ size_t CPlanetTerrain::BuildTerrainArray(tvector<CTerrainPoint>& avecTerrain, Do
 			vecSkirt4.vec3DPosition -= vecToCenter*flSkirtLength;
 		}
 	}
+#endif
 
 	return iVertsPerRow;
 }
@@ -679,6 +703,47 @@ void CPlanetTerrain::CreateShell2VBO()
 	m_bKDTreeAvailable = false;
 	CPlanetTerrain::BuildKDTree(m_aKDNodes, m_aKDPoints, avecTerrain, iRows, false, flScale);
 	m_bKDTreeAvailable = true;
+
+	avecTerrain.set_capacity(0);
+
+	size_t iTextureSize = 256;
+	size_t iDepth = (size_t)(log((double)iTextureSize)/log(2.0));
+
+	static tvector<CTerrainPoint> avecTextureTerrain;
+	avecTextureTerrain.reserve((iTextureSize+1)*(iTextureSize+1));
+
+	// Remake the terrain array with much greater resolution for the texture.
+	size_t iTextureRows = BuildTerrainArray(avecTextureTerrain, mChunkToPlanet, iDepth, Vector2D(0, 0), Vector2D(1, 1), Vector(0, 0, 0), true);
+
+	double flSeaLevel = m_pPlanet->GetRadius().GetUnits(m_pPlanet->GetScale()) - 0.0002;
+	double flSeaLevelSqr = flSeaLevel * flSeaLevel;
+
+	double flDeepSeaLevel = flSeaLevel - 0.001;
+	double flDeepSeaLevelSqr = flDeepSeaLevel * flDeepSeaLevel;
+
+	double flMountainTopLevel = flSeaLevel + 0.006;
+	double flMountainTopLevelSqr = flMountainTopLevel * flMountainTopLevel;
+
+	tvector<Vector> avecTexture;
+	avecTexture.resize((iTextureRows-1)*(iTextureRows-1));
+	for (size_t y = 0; y < iTextureRows-1; y++)
+	{
+		for (size_t x = 0; x < iTextureRows-1; x++)
+		{
+			DoubleVector vecTexelPosition = (avecTextureTerrain[y*iTextureRows + x].vec3DPosition + avecTextureTerrain[(y+1)*iTextureRows + x+1].vec3DPosition + avecTextureTerrain[y*iTextureRows + x].vec3DPosition + avecTextureTerrain[(y+1)*iTextureRows + x+1].vec3DPosition)/4;
+			double flHeightSqr = vecTexelPosition.LengthSqr();
+
+			if (flHeightSqr < flSeaLevelSqr)
+				avecTexture[y*(iTextureRows-1)+x] = LerpValueClamped<Vector>(Vector(12.0f/255, 37.0f/255, 129.0f/255), Vector(55.0f/255, 93.0f/255, 233.0f/255), (float)flHeightSqr, (float)flDeepSeaLevelSqr, (float)flSeaLevelSqr);
+			else
+				avecTexture[y*(iTextureRows-1)+x] = LerpValueClamped<Vector>(Vector(37.0f/255, 84.0f/255, 14.0f/255), Vector(59.0f/255, 116.0f/255, 30.0f/255), (float)flHeightSqr, (float)flSeaLevelSqr, (float)flMountainTopLevelSqr);
+		}
+	}
+
+	TAssert(!m_bTextureDropReady);
+	swap(m_avecTextureDrop, avecTexture);
+	m_iTextureDropSize = iTextureRows-1;
+	m_bTextureDropReady = true;
 }
 
 // This isn't multithreaded but I'll leave the locks in there in case I want to do so later.
@@ -744,12 +809,27 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 
 	if (!m_bGeneratingShell2 && m_iShell2VBO && !bLowRes)
 	{
-		c->BeginRenderVertexArray(m_iShell2VBO);
-		c->SetPositionBuffer(0u, 10*sizeof(float));
-		c->SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
-		c->SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
-		c->SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
-		c->EndRenderVertexArrayIndexed(m_iShell2IBO, m_iShell2IBOSize);
+		if (m_hShell2LowTexture->m_iGLID)
+		{
+			//r.UseMaterial("textures/earth.mat");
+			c->BindTexture(m_hShell2LowTexture->m_iGLID, 0);
+
+			c->BeginRenderVertexArray(m_iShell2VBO);
+			c->SetPositionBuffer(0u, 10*sizeof(float));
+			c->SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
+			c->SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
+			c->SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
+			c->EndRenderVertexArrayIndexed(m_iShell2IBO, m_iShell2IBOSize);
+		}
+		else
+		{
+			c->BeginRenderVertexArray(m_iShell2VBO);
+			c->SetPositionBuffer(0u, 10*sizeof(float));
+			c->SetNormalsBuffer(3*sizeof(float), 10*sizeof(float));
+			c->SetTexCoordBuffer(6*sizeof(float), 10*sizeof(float), 0);
+			c->SetTexCoordBuffer(8*sizeof(float), 10*sizeof(float), 1);
+			c->EndRenderVertexArrayIndexed(m_iShell2IBO, m_iShell2IBOSize);
+		}
 	}
 	else
 	{
@@ -762,7 +842,7 @@ void CPlanetTerrain::Render(class CRenderingContext* c) const
 	}
 }
 
-DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
+DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate, float flHeightThreshold)
 {
 	DoubleVector2D vecAdjustedCoordinate = vecCoordinate;
 	Vector vecDirection = GetDirection();
@@ -783,11 +863,13 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 
 	static double aflFreqFactors[TERRAIN_NOISE_ARRAY_SIZE] =
 	{
-		15,      // Continents
-		1000,
-		3000,   // Mountains
+		2.5,     // Continents
+		12.5,
+		50,
+		150,
+		3000,    // Mountains
 		10000,
-		30000,  // Large hills
+		30000,   // Large hills
 		100000,
 		400000,
 		1500000, // Rough terrain
@@ -797,6 +879,8 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	{
 		0.01,
 		0.005,
+		0.003,
+		0.002,
 		0.002,
 		0.0005,
 		0.0002,
@@ -808,7 +892,9 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 	static double aflAlphaFreqFactors[TERRAIN_NOISE_ARRAY_SIZE] =
 	{
 		0,
-		100,
+		0,
+		0,
+		10,
 		300,
 		1000,
 		3000,
@@ -822,18 +908,42 @@ DoubleVector CPlanetTerrain::GenerateOffset(const DoubleVector2D& vecCoordinate)
 
 	for (size_t i = 0; i < TERRAIN_NOISE_ARRAY_SIZE; i++)
 	{
+		if (aflHeightFactors[i] < flHeightThreshold)
+			continue;
+
 		double flXFactor = vecAdjustedCoordinate.x * aflFreqFactors[i];
 		double flYFactor = vecAdjustedCoordinate.y * aflFreqFactors[i];
-		double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
-		double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
-		double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
 
-		double a = m_pPlanet->m_aNoiseArray[i][3].Noise(vecAdjustedCoordinate.x * aflAlphaFreqFactors[i], vecAdjustedCoordinate.y * aflAlphaFreqFactors[i]);
+		DoubleVector vecTerrain;
+		if (i >= 5)
+		{
+			double x = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
+			double y = m_pPlanet->m_aNoiseArray[i][1].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
+			double z = m_pPlanet->m_aNoiseArray[i][2].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
 
-		double flScale = RemapValClamped(a, -0.2, 0.4, 0.0, 1.0);
-		double flOverdrive = RemapValClamped(a, 0.8, 1.0, 1.0, 1.5);
+			vecTerrain = DoubleVector(x, y, z);
+		}
+		else
+		{
+			double flHeight = m_pPlanet->m_aNoiseArray[i][0].Noise(flXFactor, flYFactor) * aflHeightFactors[i] * flRadiusScalar;
 
-		vecOffset += DoubleVector(x, y, z) * (flScale*flOverdrive);
+			vecTerrain = CoordToWorld(vecCoordinate).Normalized() * flHeight;
+		}
+
+		double flAlpha;
+		if (aflAlphaFreqFactors[i] > 0)
+		{
+			double a = m_pPlanet->m_aNoiseArray[i][3].Noise(vecAdjustedCoordinate.x * aflAlphaFreqFactors[i], vecAdjustedCoordinate.y * aflAlphaFreqFactors[i]);
+
+			double flScale = RemapValClamped(a, -0.2, 0.4, 0.0, 1.0);
+			double flOverdrive = RemapValClamped(a, 0.8, 1.0, 1.0, 1.5);
+
+			flAlpha = flScale*flOverdrive;
+		}
+		else
+			flAlpha = 1;
+
+		vecOffset += vecTerrain * flAlpha;
 	}
 
 	return vecOffset;

@@ -9,7 +9,7 @@
 #include "treeaddress.h"
 #include "lumpaddress.h"
 
-#define TERRAIN_NOISE_ARRAY_SIZE 8
+#define TERRAIN_NOISE_ARRAY_SIZE 10
 
 class CPlanetTerrain;
 class CTerrainLump;
